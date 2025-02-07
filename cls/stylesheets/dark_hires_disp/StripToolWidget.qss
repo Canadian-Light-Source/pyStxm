@@ -1,0 +1,12 @@
+
+/* the are outside the actual plot where the axis and tick strings are */
+StripToolWidget#stripToolWidget	QFrame {
+    background-color: master_background_color;
+}
+
+StripToolWidget#stripToolWidget QFrame > QWidget{
+    color: white;
+    background-color: master_background_color;
+    font:  16px;
+ }
+

@@ -1,0 +1,27 @@
+
+/* changing this color affects a lot of the QLabels
+Especially the plot axis ticks color
+*/
+QWidget > QLabel{
+
+	color: gray_255_rgb;
+	background-color: transparent;
+	
+}
+
+#stripToolFbkLbl{
+	color: gray_255_rgb;
+	background-color: transparent;
+	
+}
+
+ca_aiLabelWidget{
+	color: gray_255_rgb;
+	background-color: master_background_color;
+	
+}
+
+
+
+
+

@@ -1,0 +1,4 @@
+
+QSplitter{
+background-color: gray_10_rgb;
+}

@@ -1,0 +1,25 @@
+
+/* the are outside the actual plot where the axis and tick strings are */
+
+CurveViewerWidget#CurveViewerWidget QFrame,
+CurveViewerWidget#spectraWidget QFrame {
+   color: white;
+   background-color: master_background_color;
+}
+/* the area just below the area with the axis ticks , white tick font*/
+CurveViewerWidget#CurveViewerWidget QFrame > QWidget,
+CurveViewerWidget#spectraWidget QFrame > QWidget {
+   color: white;
+   background-color: master_background_color;
+}
+CurveViewerWidget#CurveViewerWidget #curvePlotBgrnd,
+CurveViewerWidget#spectraWidget #spectraPlotCanvasBgrnd {
+   color: white;
+	background-color: gray_55;
+}
+
+E712ControlWidget QFrame > QWidget{
+   color: white;
+   background-color: master_background_color;
+   font:  18px;
+}

@@ -1,0 +1,4 @@
+
+QGraphicsView {
+ background-color: gray_145_rgb;
+ }

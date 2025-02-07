@@ -1,0 +1,36 @@
+
+/* base QFrame that the plotTabWidget sits on */
+QFrame{
+background-color: gray_210;
+}
+
+
+QFrame#centralFrame, .QWidget{
+    background-color: master_background_color;
+}
+
+/*QFrame:hover {
+     background-color: gray_100_rgb;
+ }
+*/
+
+QFrame#loadscan_frame:hover{
+     /*background-color: gray_10_rgb;*/
+	background-color: gray_150_rgb;
+	border: 2px solid gray_180_rgb;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QFrame#loadscan_frame{
+     /*background-color: gray_100_rgb;*/
+	border: 2px solid gray_130_rgb;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QFrame#calibCamPlotFrame, .QWidget{
+    background-color: master_background_color;
+}
+
+

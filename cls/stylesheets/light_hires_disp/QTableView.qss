@@ -1,0 +1,41 @@
+/*
+TableView#scan_q_tv QHeaderView{ 
+	font-size: 8pt; 
+		
+}
+*/
+
+
+#SpatialScanTableView{
+	 font-size: 8pt;
+}
+
+#SpatialScanTableView,#EnergyScanTableView, #PolarizationTableView{
+	background-color: gray_210_rgb;
+}
+
+#SpatialScanTableView,#EnergyScanTableView, #PolarizationTableView::!selected{
+	background-color: gray_210_rgb;
+}
+
+#ScanQTableView{
+	background-color: gray_30_rgb;
+}
+
+QTableView QHeaderView::section {
+	background-color: gray_130_rgb;
+}
+QTableView QHeaderView::section:checked {
+	background-color: gray_130_rgb;
+}
+
+
+/*QHeaderView::section {
+    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                      stop:0 #616161, stop: 0.5 #505050,
+                                      stop: 0.6 #434343, stop:1 #656565);
+    color: white;
+    padding-left: 4px;
+    border: 1px solid #6c6c6c;
+}*/
+

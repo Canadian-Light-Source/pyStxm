@@ -1,0 +1,9 @@
+
+QStackedWidget{
+   background-color: master_background_color;
+}
+
+
+#imagePlotFrame{
+   background-color: master_background_color;
+}

@@ -1,0 +1,41 @@
+/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+QDockWidget
+{ 
+   /*background-color: master_background_color;*/
+   /*background-color: gray_120_rgb;*/
+   border-top: 1px solid black;
+   font: 14px "MS Shell Dlg 2"; 
+   
+}
+
+
+
+
+QDockWidget  .QWidget{
+   background-color: master_background_color;
+}
+QDockWidget  .QFrame{
+   background-color: master_background_color;
+   
+}
+
+/* for the area around the plot */
+QDockWidget  .CurveViewerWidget{
+   background-color: master_background_color;
+   /*color: gray_20_rgb;*/
+   /*border: 0px solid black;*/
+}
+
+QDockWidget .QScrollArea{
+    border: 0px solid gray_30_rgb;
+}
+QDockWidget::title
+{
+   /*background: gray_230_rgb;*/
+   background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 gray_220_rgb, stop:1 gray_190_rgb);
+   font: bold;
+   color: gray_250_rgb;
+   border: 2px groove gray_70_rgb;
+   padding: 0.4em;
+}

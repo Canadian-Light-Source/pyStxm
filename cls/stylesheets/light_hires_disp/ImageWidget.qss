@@ -1,0 +1,42 @@
+
+CameraRuler#calibCamWidget QFrame{
+    background-color: master_background_color;
+}
+CameraRuler#calibCamWidget .QWidget{
+    background-color: master_background_color;
+}
+/* the area just below the area with the axis ticks */
+ImageWidgetPlot#lineByLineImageDataWidget QFrame > QWidget{
+   background-color: master_background_color;
+}
+
+/* the outer area where the axis ticks strings are */
+ImageWidgetPlot#lineByLineImageDataWidget QFrame{
+   background-color: master_background_color;
+}
+
+ImageWidgetPlot#lineByLineImageDataWidget QFrame > QFrame{
+   background-color: master_background_color;
+}
+
+ImageDialog{
+   background-color: master_background_color;
+}
+
+
+/*
+
+QTabWidget	#lineByLineImageDataWidget{
+   background-color: gray_10_rgb;
+}
+*/
+/*
+#xCrossSection,#yCrossSection{
+
+	background-color: gray_20_rgb;
+}
+
+#imagePlotBgrnd{
+    background-color: gray_20_rgb;
+}
+*/

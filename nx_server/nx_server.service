@@ -1,0 +1,21 @@
+[Unit]
+Description=NX_SERVER Using Conda Environment
+After=network.target
+
+[Service]
+User=sm-user
+Group=acl_prj14g03649_rw
+Type=simple
+#ExecStart=/home/sm-user/.conda/envs/nx_server/bin/python /home/sm-user/git_sandbox/pyStxm3/cls/data_io/nx_server.py
+ExecStart=/home/sm-user/.conda/envs/nx_server/bin/python /home/sm-user/git_sandbox/branches/278/pyStxm3/nx_server/nx_server.py
+WorkingDirectory=/home/sm-user/git_sandbox/pyStxm3/
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/home/sm-user/git_sandbox/pyStxm3
+Environment="PATH=/home/sm-user/.conda/envs/nx_server/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Restart=always
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+

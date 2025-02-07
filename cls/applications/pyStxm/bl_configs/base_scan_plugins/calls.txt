@@ -1,0 +1,19 @@
+execution calls when START is pressed
+
+Detector scan (PxP)
+
+OSA scan (PxP)
+
+OSA Focus (PxP)
+
+Coarse Image Scan (LxL)
+
+Fine Image Scan (PxP)
+
+Fine Image Scan (LxL)
+
+Coarse Focus Scan (LxL)
+
+Fine Focus Scan (LxL)
+
+

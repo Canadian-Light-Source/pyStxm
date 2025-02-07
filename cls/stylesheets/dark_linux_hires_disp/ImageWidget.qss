@@ -1,0 +1,51 @@
+
+CameraRuler#calibCamWidget QFrame{
+    background-color: master_background_color;
+}
+CameraRuler#calibCamWidget .QWidget{
+    background-color: master_background_color;
+}
+/* the area just below the area with the axis ticks */
+ImageWidgetPlot#lineByLineImageDataWidget QFrame > QWidget{
+    color: white;
+   background-color: master_background_color;
+}
+
+/* the outer area where the axis ticks strings are for the contrast tool 
+for main LineByLineimageWidget*/
+ImageWidgetPlot#lineByLineImageDataWidget QFrame{
+   background-color: master_background_color;
+}
+
+/* the outer area where the axis ticks strings are for the contrast tool 
+for ptycho ptychoCamPlot*/
+ImageWidgetPlot#ptychoCamPlot QFrame{
+   background-color: master_background_color;
+}
+
+
+/*
+ImageWidgetPlot#lineByLineImageDataWidget QFrame > QFrame{
+   background-color: master_background_color;
+}
+*/
+
+ImageDialog{
+   background-color: master_background_color;
+}
+
+#contrastPlotCanvasBgrnd{
+	background-color: gray_20_rgb;
+}
+
+
+/*
+ImageWidgetPlot#lineByLineImageDataWidget > QwtPlotCanvas{
+
+	background-color: gray_20_rgb;
+}
+
+#imagePlotBgrnd{
+    background-color: gray_20_rgb;
+}
+*/

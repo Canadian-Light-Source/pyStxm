@@ -1,0 +1,18 @@
+/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+QMainWindow{
+	 background-color: gray_65_rgb;
+}
+
+/* this is the area around main widgets that provide spacer type widgets */
+QMainWindow::separator {
+	background-color: gray_70_rgb;
+}
+
+QMainWindow::separator:hover {
+}
+/*----------------------------------------------------------------------------*/
+:disabled{
+   color: gray_130_rgb;
+}
+

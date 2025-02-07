@@ -1,0 +1,5 @@
+
+QSpinBox{
+    font: bold master_font_size "MS Shell Dlg 2";
+    font-weight: bold;
+}

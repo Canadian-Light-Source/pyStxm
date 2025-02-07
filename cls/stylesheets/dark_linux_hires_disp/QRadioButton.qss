@@ -1,0 +1,23 @@
+
+/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+/*QRadioButton::indicator:unchecked{
+     image: url(UI:checkbox_unchecked.png);
+ }
+
+QRadioButton::indicator:unchecked:disabled{
+     image: url(UI:checkbox_unchecked_disabled.png);
+ }
+
+QRadioButton::indicator:checked{
+     image: url(UI:checkbox_checked.png);
+ }
+
+QRadioButton::indicator:checked:disabled{
+     image: url(UI:checkbox_checked_disabled.png);
+ }*/
+
+QRadioButton{
+    font: master_font_size;
+    color: white;
+}

@@ -1,0 +1,71 @@
+/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+/*QLabel{
+	background-color: transparent; 
+		border: 2px solid green;
+    border-radius: 4px;
+    padding: 2px;
+    background-image: url(images/welcome.png);
+    border: 1px solid gray;
+  	color: gray_0;
+}
+*/
+
+QLabel{
+    background-color: transparent;
+	font: 14px "MS Shell Dlg 2"; 
+	
+}	
+
+
+QLabel#posFbkLbl{
+	
+  color: black;
+  /*background-color: master_background_color;*/
+  /*background-color: rgb(30, 150, 254);*/
+  background-color: app_ltgray;;
+  border-radius: 2px;
+  border: 1px solid gray;
+  /*font: bold 14px "MS Shell Dlg 2";  */
+  font: 14px "MS Shell Dlg 2";  
+}
+
+
+
+QLabel#mtrNameFld{
+  background-color: gray_210_rgb;
+  color: gray_0;
+  font:  14px "MS Shell Dlg 2";
+}
+
+QLabel#unitsLbl{
+	background-color: master_background_color;
+  color: black;
+}
+
+
+/* Temperatures and Pressures*/
+/*#pvNameLbl{
+  background-color: app_superltblue;
+  color: gray_0;
+  border: 1px solid gray;
+  font: bold 14px "MS Shell Dlg 2";  
+  
+}*/
+
+/* Temperatures and Pressures*/
+QLabel#devNameLbl{
+  background-color: gray_210_rgb;
+  font:  14px
+}
+
+QLabel#stripToolFbkLbl{
+
+  color: black;
+  font: bold 24px "MS Shell Dlg 2";
+
+}
+
+
+
+

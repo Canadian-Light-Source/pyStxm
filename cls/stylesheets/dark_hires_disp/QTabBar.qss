@@ -1,0 +1,88 @@
+/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+/*enum
+QTabBar::RoundedNorth			0	The normal rounded look above the pages
+QTabBar::RoundedSouth			1	The normal rounded look below the pages
+QTabBar::RoundedWest			2	The normal rounded look on the left side of the pages
+QTabBar::RoundedEast			3	The normal rounded look on the right side the pages
+QTabBar::TriangularNorth	4	Triangular tabs above the pages.
+QTabBar::TriangularSouth	5	Triangular tabs similar to those used in the Excel spreadsheet, for example
+QTabBar::TriangularWest		6	Triangular tabs on the left of the pages.
+QTabBar::TriangularEast		7	Triangular tabs on the right of the pages.
+*/
+
+QTabBar{
+	background-color: master_background_color;
+	font: bold master_font_size Arial;
+
+}
+
+QTabBar::tab{
+	/*color: gray_20_rgb;*/
+
+	font: bold master_font_size Arial;
+	margin: 1px;
+
+	min-width: 2ex;
+	padding: 1px;
+
+}
+
+
+/* the tabars that are on the top */
+QTabBar[shape="0"]::tab{
+	/*min-width: 50px;*/
+	min-width: 26ex;
+	padding: 3px 10px;
+
+	border-bottom: 1px solid gray_90_rgb;
+	border-top-right-radius: 5px;
+
+}
+/* on top and selected */
+QTabBar[shape="0"]::tab:selected{
+
+}
+
+QTabBar[shape="1"]::tab{
+
+}
+
+/* the tabars that are on the left */
+QTabBar[shape="2"]::tab{
+	padding: 7px 3px;
+
+	border-right: 1px solid gray_90_rgb;
+	border-top-left-radius: 5px;
+}
+QTabBar[shape="3"]::tab{
+
+}
+
+
+QTabBar::tab:selected{
+
+	/*color: app_ltblue;*/
+	color: white;
+	background-color: gray_30_rgb;
+	/* border-color: gray_65_rgb; */
+	border: none;
+	font-weight: bold;
+}
+
+
+
+QTabBar::tab:!selected {
+
+	/*color: unselected_item_txt; */
+	/*background-color: unselected_item_bkgrnd;*/
+
+	color: gray_180_rgb;
+	background-color: gray_90_rgb;
+
+	border-color: gray_65_rgb;
+	margin-top: 2px;
+}
+
+
+

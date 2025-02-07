@@ -1,0 +1,27 @@
+The server nx_server must be installed on a computer that 
+has a mount point to the data computer loki such that the
+/etc/fstab file contains the entry:
+	...
+	loki.clsi.ca:/beamlinedata /beamlinedata nfs defaults 0 0
+	...
+in its list of mount points.
+
+The service runs a python file pyStxm3/cls/data_io/nx_server.py
+it opens a zmq socket and receives data from an instance of pyStxm3 
+in the form of a serialized dict, the service is used to:
+- save nexus nxstxm and nxptyho files to loki
+- remove garbage tiff files following a ptychography scan
+- reposnd back if the service is running on linux or windows
+  (so that the instance of pyStxm3 can determine the appropriate data_dir format)
+- repond to pyStxm3 if the service is running or not
+
+To install the service perform the following as root:
+>dzdo su
+1. copy the file nx_server.service to /etc/systemd/system/nx_server.service
+2. sudo systemctl enable nx_server
+3. sudo systemctl daemon-reload
+4. sudo systemctl start nx_server.service
+5. sudo systemctl status nx_server.service (To see the status of nx_server service)
+6. sudo journalctl -u nx_server -f (to view console output of nx_server.py)
+7. sudo systemctl stop nx_server.service (To stop service)
+8. sudo systemctl restart nx_server.service

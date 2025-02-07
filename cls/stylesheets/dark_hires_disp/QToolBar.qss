@@ -1,0 +1,28 @@
+QToolBar{
+    background-color: gray_85_rgb;
+    border: 0px;
+    
+}
+
+QToolBar:horizontal{
+    /*background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 gray_60_rgb, stop:1 gray_90_rgb);*/
+    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 gray_100_rgb, stop:1 gray_85_rgb);
+
+    
+
+   border-bottom: 2px groove gray_70_rgb;
+}
+
+QToolBar:vertical{
+    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 gray_100_rgb, stop:1 gray_85_rgb);
+}
+
+QToolBar:separator{
+   background-color:qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 gray_180_rgb, stop:1 gray_90_rgb);;
+   border-bottom: 1px solid black;
+   width:1px;
+   height:1px;
+   margin:5px;
+}
+
+

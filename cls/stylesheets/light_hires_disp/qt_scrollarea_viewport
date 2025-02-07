@@ -1,0 +1,5 @@
+
+
+#qt_scrollarea_viewport{
+    background-color: gray_50_rgb;
+}

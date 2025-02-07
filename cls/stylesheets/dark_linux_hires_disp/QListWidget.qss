@@ -1,0 +1,7 @@
+
+/* this is needed for the ItemList in a plotpy plotter, the scrollable area is black otherwise*/
+QListWidget{
+    border: 0px solid gray_30_rgb;
+    background-color: gray_255_rgb;
+
+}

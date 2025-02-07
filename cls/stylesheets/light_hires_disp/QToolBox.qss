@@ -1,0 +1,31 @@
+
+QToolBox::tab{
+    /*background-color: gray_85_rgb;*/
+    background-color: qlineargradient(x1:0, y1:-1, x2:0, y2:1, stop:0 gray_170_rgb, stop:1 gray_190_rgb);
+    color: gray_25_rgb;
+    border: 1px solid gray_75_rgb;
+    font: bold 14px "MS Shell Dlg 2";
+    
+}
+
+QToolBox::tab:selected{
+	/*color: app_ltblue;*/
+	color: black;
+	background-color: white;
+	border-bottom-color: gray_65_rgb;
+	font: bold 14px;
+}
+
+
+QToolBox::tab:!selected{
+	color: gray_80_rgb;
+	background-color: gray_220_rgb;
+    border-bottom-color: gray_75_rgb;
+    font: 14px;
+ 	/*border-left-radius: 4px;
+    border-right-radius: 4px;
+   */
+}
+
+
+

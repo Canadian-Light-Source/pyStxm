@@ -1,0 +1,12 @@
+
+/* this is the background for the list that is displayed for a QCombobox */
+QComboBox QListView
+{
+	background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 gray_220_rgb, stop:1 gray_190_rgb);
+	font: 14px
+}
+
+QComboBox {
+    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 gray_220_rgb, stop:1 gray_190_rgb);
+	font: 14px
+}

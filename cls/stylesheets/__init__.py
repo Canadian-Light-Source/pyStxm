@@ -4,6 +4,7 @@
 """
 import os
 from PyQt5 import QtGui
+from PyQt5.uic.Compiler.qtproxies import QtCore, QtWidgets
 
 from cls.utils.cfgparser import ConfigClass
 from cls.utils.dirlist import dirlist
@@ -99,6 +100,7 @@ def gen_gray_rgb_str():
     while v < 255:
         print(f"gray_{int(v)} = rgb({int(v)},{int(v)},{int(v)})")
         v += 5
+
 
 #force_screen_size=1920
 force_screen_size=None

@@ -20,8 +20,8 @@ from bcm.devices import Counter
 
 
 if BACKEND == 'epics':
-    from bcm.devices import sample_abstract_motor, e712_sample_motor
-    from bcm.devices import E712WGDevice
+    from bcm.devices.ophyd.stxm_sample_mtr import sample_abstract_motor, e712_sample_motor
+    from bcm.devices.ophyd.pi_e712 import E712WGDevice
     from bcm.devices.ophyd.e712_wavegen.e712 import E712ControlWidget
     from bcm.devices.ophyd.qt.daqmx_counter_input import (
         DAQmxCounter,
@@ -171,25 +171,25 @@ class device_config(dev_config_base):
         self.dev_dct = self.get_dev_dct(cfg_fpath)
 
         for k in list(self.dev_dct.keys()):
-            # if k.find("DETECTORS") > -1:
-            #     print()
             d_lst = self.dev_dct[k]
+            if k == "POSITIONERS":
+                # send SAMPLE abstract motors to back
+                # this ensures the abstract device is created *after* its coarse and fine motors
+                d_lst = sorted(d_lst, key=lambda dct: "SAMPLE" in dct["name"])
             for p_dct in d_lst:
                 # pad the dict if it doesnt contain a desc field
-                if "desc" not in p_dct.keys():
+                if "desc" not in p_dct:
                     p_dct["desc"] = ""
 
-                # if p_dct['name'].find('DNM_BEAM_DEFOCUS') > -1:
-                #     print()
                 if splash:
                     splash.show_msg(
                         "connecting to: [%s]" % p_dct["name"].replace("DNM_", "")
                     )
                 print("connecting to: [%s]" % p_dct["name"].replace("DNM_", ""))
 
-                if k not in self.devices.keys():
+                if k not in self.devices:
                     self.devices[k] = {}
-                self.devices[k]["%s" % p_dct["name"]] = self.create_instance(k, p_dct)
+                self.devices[k][p_dct["name"]] = self.create_instance(k, p_dct)
 
         print("finished connecting to devices")
         self.done = True
@@ -247,7 +247,7 @@ class device_config(dev_config_base):
         """
         # assign a unique id to each detector that will be used to reference it later in code
         if dct['class'].find("E712") > -1:
-            from bcm.devices import E712WGDevice
+            from bcm.devices.ophyd.pi_e712 import E712WGDevice
             from bcm.devices.ophyd.e712_wavegen.e712 import E712ControlWidget
 
         if (dct['class'].find("DAQmx") or dct['class'].find("SimLineDetector"))  > -1:

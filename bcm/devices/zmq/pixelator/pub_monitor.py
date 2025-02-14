@@ -47,8 +47,8 @@ def pub_monitor(host, port, ignore_detector=False):
 
 if __name__ == "__main__":
     # Set the host and port dynamically
-    HOST = "VOPI1610-005"  # Replace with the PUB socket host
+    HOST = "localhost"  # Replace with the PUB socket host
     PORT = 56561        # Replace with the PUB socket port
 
     # Start the PUB socket monitor
-    pub_monitor(HOST, PORT, ignore_detector=True)
+    pub_monitor(HOST, PORT, ignore_detector=False)

@@ -14,12 +14,19 @@ from bcm.devices.zmq import dcs_server_name
 
 from cls.utils.prog_dict_utils import set_prog_dict, make_progress_dict
 from cls.utils.environment import get_environ_var
+from cls.utils.ssh.port_forwarding_utils import is_port_forwarded
+from cls.appWidgets.dialogs import message_no_btns
 
 PYSTXM_DCS_HOST = get_environ_var('PYSTXM_DCS_HOST')
 
 PIX_HOST=PYSTXM_DCS_HOST
 PIX_SUBPORT=56561
 PIX_REQPORT=56562
+
+if is_port_forwarded(PIX_SUBPORT):
+    message_no_btns("Remote DCS Detected", "It has been detected that the DCS server is remote because it "
+                        f"appears the DCS ports ({PIX_SUBPORT},{PIX_REQPORT}), are being forwarded, \n"
+                        f"just wanted to let you know")
 
 if dcs_server_name.find('pixelator') > -1:
     from bcm.devices.zmq.pixelator.pixelator_commands import cmd_func_map_dct

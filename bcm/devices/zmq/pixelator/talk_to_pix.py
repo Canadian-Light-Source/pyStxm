@@ -108,7 +108,7 @@ class ZMQApp(QMainWindow):
 
 if __name__ == "__main__":
     # Set the HOST variable dynamically
-    HOST = "VOPI1610-005"  # Change this value to the appropriate host as needed
+    HOST = "localhost"  # Change this value to the appropriate host as needed
 
     app = QApplication(sys.argv)
 

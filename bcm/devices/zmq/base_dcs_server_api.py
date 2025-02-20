@@ -12,6 +12,9 @@ class BaseDcsServerApi(QtCore.QObject):
     scan_status = QtCore.pyqtSignal(object)  # a signal to be emitted when scan status changes
     progress = QtCore.pyqtSignal(object)  # a signal to be emitted when scan status changes
     exec_result = QtCore.pyqtSignal(object)
+    msg_to_app = QtCore.pyqtSignal(object) # a singal used to send message to the app from the DCS server,
+                                           # ex: filename to tell app what teh filename and data dir are before scan
+                                           # execution
     def __init__(self, parent):
         super().__init__(None)
         self.parent = parent
@@ -39,8 +42,6 @@ class BaseDcsServerApi(QtCore.QObject):
         dct['run_uids'] = []
 
         return dct
-
-
 
 
     def _update_device_feedback(self, dcs_devname: str, value: Union[int, float], app_devname: str=None) -> None:
@@ -245,15 +246,27 @@ class BaseDcsServerApi(QtCore.QObject):
         To be implemented by inheriting class
         Parameters
         ----------
-        name: of the osa
-        zp_def: dict of osa details
+        data: data from server to app
 
-        Returns: bool True for success False for failed
+        Returns: None
         -------
 
         """
         print(f"BaseDcsServerApi: on_new_data: emitting [{data}]")
         self.new_data.emit(data)
+
+    def on_msg_to_app(self, data: dict) -> None:
+        """
+        To be implemented by inheriting class
+        Parameters
+        ----------
+        data: data from server to app
+
+        Returns: None
+        -------
+
+        """
+        pass
 
 
     def on_init_beamline_components(self,components_dct: dict) -> None:

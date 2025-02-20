@@ -823,6 +823,10 @@ class DcsServerApi(BaseDcsServerApi):
 
         elif resp[0].find("filename") > -1:
             print(f"process_SUB_rcv_messages: {resp}")
+            dct = {}
+            # make sure that Pixelator didnt send us a name with a suffix
+            dct['filename'] = {'name':resp[1], 'dir':resp[2]}
+            self.on_msg_to_app(dct)
 
         elif resp[0].find("focalStatus") > -1:
             print(f"process_SUB_rcv_messages: {resp}")
@@ -1342,4 +1346,11 @@ class DcsServerApi(BaseDcsServerApi):
         dct['run_uids'] = [0]
         self.paused = False
         self.parent.exec_result.emit(dct)
+
+    def on_msg_to_app(self, msg: dict) -> None:
+        """
+        send a specific message from DCS server to pyStxm
+        """
+        print(f"DcsServerApi: on_msg_to_app: emitting [{msg}]")
+        self.parent.msg_to_app.emit(msg)
 

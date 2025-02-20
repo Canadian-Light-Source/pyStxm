@@ -1,5 +1,6 @@
 
 from typing import Dict, Optional, Tuple
+import subprocess
 
 from cls.utils.log import get_module_logger
 
@@ -52,6 +53,26 @@ def check_windows_procs_running(procs_to_check: Optional[Dict[str, Tuple[str, Op
             return False
 
     return True
+
+
+
+
+def is_linux_process_running(process_name):
+    try:
+        # Run the 'pgrep' command to check for the process
+        result = subprocess.run(['pgrep', '-f', process_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # If the return code is 0, the process is running
+        return result.returncode == 0
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
+
+# # Example usage
+# process_name = "python"
+# if is_process_running(process_name):
+#     print(f"The process '{process_name}' is running.")
+# else:
+#     print(f"The process '{process_name}' is not running.")
 
 
 

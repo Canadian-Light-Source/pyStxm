@@ -7,6 +7,7 @@ from cls.utils.enum_utils import Enum
 
 H5_FILE_SUFFIX = "h5"
 TIFF_FILE_SUFFIX = "tiff"
+PLACEHOLDER_FILENAME="FILENAME"
 
 endstation_id_types = Enum("AMB", "UHV", "BASIC")
 

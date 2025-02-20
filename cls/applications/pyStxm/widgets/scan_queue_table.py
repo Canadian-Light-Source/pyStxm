@@ -8,20 +8,10 @@ import os
 from PyQt5 import QtCore, QtGui, QtWidgets
 import math
 
-# from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
-
-# from cls.utils.prog_dict_utils import (
-#     make_progress_dict,
-#     PROG_DCT_ID,
-#     PROG_DCT_SPID,
-#     PROG_DCT_PERCENT,
-#     PROG_DCT_STATE,
-# )
-
 from cls.data_io.stxm_data_io import STXMDataIo
 from cls.stylesheets import master_colors, get_style
 from cls.utils.roi_utils import get_sp_db_from_wdg_com
-from cls.types.stxmTypes import scan_status_types, scan_image_types, scan_types
+from cls.types.stxmTypes import scan_status_types, scan_image_types, scan_types, PLACEHOLDER_FILENAME
 from cls.utils.roi_dict_defs import *
 
 from cls.utils.dict_utils import dct_get, dct_put
@@ -611,6 +601,27 @@ class ScanQueueTableWidget(QtWidgets.QWidget):
             layout.addWidget(self.pmapFld)
 
         self.file_suffix = "hdf5"
+
+    def override_filenames(self, fname: str) -> None:
+        """
+        added to support DCS server setting the filename after a scan request has been issued
+        the DCS Server is used the filename is set by the DCS server usually after the fact so
+        the filename before the issued scan request is 'check_log_for_filename'
+        """
+        model = self.table_view.model()
+        rows = model.model_data
+        fname_len = 1
+        for i in range(model.rowCount()):
+            # the first column is the filename
+            nm = rows[i][0].replace(PLACEHOLDER_FILENAME, fname)
+            # make sure there isnt multiple file_suffix's
+            nm = nm.replace(".hdf5.hdf5", ".hdf5")
+            model.modify_data(i, 0, nm)
+            #fname_len = dpi_scaled(120) + 4 * len(rows[i][0])
+            fname_len = dpi_scaled(7 * len(nm))
+
+        self.table_view.setColumnWidth(0, fname_len)
+
 
     def on_set_row(self):
         row = int(str(self.rowFld.text()))
@@ -1456,6 +1467,7 @@ class ScanQueueTableWidget(QtWidgets.QWidget):
         if row_num < len(self.fname_list):
             fname = self.fname_list[row_num]
             # fname = '%s' % (prfx,  row_num, self.file_suffix)
+
         return fname
 
     def make_image_fname(self, prfx, row_num, sample_pos=1):

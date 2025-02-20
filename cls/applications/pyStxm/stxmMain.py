@@ -38,6 +38,7 @@ from cls.utils.log import (
     get_module_logger,
     log_to_qt_and_to_file,
 )
+from cls.utils.environment import get_environ_var
 from cls.utils.json_utils import dict_to_json
 from cls.utils.fileUtils import get_file_path_as_parts
 from cls.utils.roi_dict_defs import *
@@ -492,6 +493,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         # MAIN_OBJ.engine_widget.engine.engine_state_changed.connect(self.on_re_state_changed)
         MAIN_OBJ.engine_widget.prog_changed.connect(self.on_run_engine_progress)
         # MAIN_OBJ.engine_widget.state_changed.connect(self.status_label.on_state_change)
+        MAIN_OBJ.engine_widget.msg_to_app.connect(self.on_dcs_msg_to_app)
         self.status_label.connect_to_engine(MAIN_OBJ.engine_widget.engine)
 
         # self.status_label.changed.connect(self.on_status_changed)
@@ -2871,6 +2873,23 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         )
         self.status_list.append(QtWidgets.QLabel(es_txt))
 
+        if MAIN_OBJ.get_device_backend().find("zmq") > -1:
+            dcs_proc_name = get_environ_var('DCS_HOST_PROC_NAME')
+            var_color = status_fbk_color
+            if MAIN_OBJ.engine_widget.is_dcs_server_local():
+                s = "LOCAL"
+            else:
+                s = "REMOTE"
+                var_color = master_colors["app_yellow"]["rgb_str"]
+
+            dcs_txt_txt = format_text(
+                f"{dcs_proc_name} Instance:",
+                s,
+                title_color=status_title_color,
+                var_color=var_color,
+            )
+            self.status_list.append(QtWidgets.QLabel(dcs_txt_txt))
+
         sm_txt = format_text(
             "Scanning Mode:",
             MAIN_OBJ.get_sample_scanning_mode_string(),
@@ -3675,12 +3694,14 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             sp_db = sp_rois[sp_id]
             master_seq_dct = master_get_seq_names(
                 self.active_user.get_data_dir(),
-                prefix_char=MAIN_OBJ.get_datafile_prefix(),
+                main_obj=MAIN_OBJ,
                 thumb_ext="jpg",
                 dat_ext="hdf5",
                 stack_dir=False,
                 num_desired_datafiles=1,
             )
+
+
             self.assign_datafile_names_to_sp_db(sp_db, master_seq_dct[0])
             ret = scan_class.configure(self.cur_wdg_com, sp_id=sp_id, line=False)
             if not ret:
@@ -3751,7 +3772,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             #num_images_lst = self.determine_num_thumbnail_images_required(self.cur_wdg_com)
             master_seq_dct = master_get_seq_names(
                 self.active_user.get_data_dir(),
-                prefix_char=MAIN_OBJ.get_datafile_prefix(),
+                main_obj=MAIN_OBJ,
                 thumb_ext="jpg",
                 dat_ext="hdf5",
                 stack_dir=False,
@@ -3892,7 +3913,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 )[idx]
                 master_seq_dct = master_get_seq_names(
                     self.active_user.get_data_dir(),
-                    prefix_char=MAIN_OBJ.get_datafile_prefix(),
+                    main_obj=MAIN_OBJ,
                     thumb_ext="jpg",
                     dat_ext="hdf5",
                     num_desired_datafiles=num_images,
@@ -4000,7 +4021,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             sp_db = sp_rois[sp_id]
             master_seq_dct = master_get_seq_names(
                 self.active_user.get_data_dir(),
-                prefix_char=MAIN_OBJ.get_datafile_prefix(),
+                main_obj=MAIN_OBJ,
                 thumb_ext="jpg",
                 dat_ext="hdf5",
                 stack_dir=False,
@@ -4218,26 +4239,15 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         """
         print(name, doc)
 
-    # def get_data_as_array(self, hdr, strm_nm, det_nm, final_shape):
-    #     """
-    #
-    #     :param hdr:
-    #     :param strm_nm:
-    #     :param final_shape:
-    #     :return:
-    #     """
-    #     strm_data = hdr.table(strm_nm)
-    #     d = strm_data[det_nm]
-    #     _1d_arr = np.array(d.get_values())
-    #     (num_vals,) = _1d_arr.shape
-    #     num_final_shape = final_shape[0] * final_shape[1]
-    #     if num_vals != num_final_shape:
-    #         # aborted scan so needs to be padded
-    #         _1d_arr.resize(num_final_shape, refcheck=False)
-    #         final_arr = _1d_arr.reshape(final_shape)
-    #     else:
-    #         final_arr = _1d_arr.reshape(final_shape)
-    #     return final_arr
+    def on_dcs_msg_to_app(self, msg):
+        """
+        handle specific messages from teh DCS server to pyStxm
+        """
+        print(f"on_dcs_msg_to_app: received[{msg}]")
+        # do something to the scan_q_table if the message is 'filename'
+        msg_key = list(msg.keys())[0]
+        if msg_key == 'filename':
+            self.scan_progress_table.override_filenames(msg['filename']['name'])
 
     def on_run_engine_progress(self, re_prog_dct):
         """
@@ -4311,7 +4321,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         data_dir = self.active_user.get_data_dir()
         fprefix = str(MAIN_OBJ.get_datafile_prefix()) + str(
-            get_next_file_num_in_seq(data_dir, prefix_char=MAIN_OBJ.get_datafile_prefix(), extension="hdf5"))
+            get_next_file_num_in_seq(data_dir, main_obj=MAIN_OBJ, extension="hdf5"))
 
         scan_type = self.get_cur_scan_type()
         first_uid = run_uids[0]

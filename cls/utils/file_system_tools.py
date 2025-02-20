@@ -5,6 +5,7 @@ Created on May 6, 2016
 """
 import os
 import string
+from cls.types.stxmTypes import PLACEHOLDER_FILENAME
 
 def is_locked(filepath):
     """Checks if a file is locked by opening it in append mode.
@@ -357,7 +358,7 @@ def make_base_datafile_name_dct():
 #####################################################
 def master_get_seq_names(
     path,
-    prefix_char="C",
+    main_obj=None,
     thumb_ext="jpg",
     dat_ext="hdf5",
     stack_dir=False,
@@ -407,6 +408,30 @@ def master_get_seq_names(
             }
 
     """
+    if main_obj is None:
+        raise Exception(f"master_get_seq_names: MAIN_OBJ argument cannot be None")
+    prefix_char = main_obj.get_datafile_prefix()
+
+    if main_obj.get_device_backend().find("zmq") > -1:
+        # if the DCS server is using zmq the data is being saved by the DCS server so it will use its own file names
+        n_dct = {}
+        for i in range(num_desired_datafiles):
+            dct = make_base_datafile_name_dct()
+            dct["data_dir"] = path
+            #dct["prefix"] = prefix_char + str(0)
+            dct["prefix"] = PLACEHOLDER_FILENAME
+            dct["stack_flbl"] = "%s.%s img/%d" % (
+                dct["prefix"],
+                dat_ext,
+                1,
+            )
+            dct["stack_dir"] = os.path.join(path, prefix_char + str(i))
+            dct["thumb_name"] = f"{dct['prefix']}_{i:03d}"
+            dct["data_name"] = "%s" % dct["prefix"]
+            dct["data_ext"] = dat_ext
+            dct["thumb_ext"] = thumb_ext
+            n_dct[i] = dct
+        return n_dct
 
     if os.path.isdir(path):
         next_seq_num = get_next_seq_num(

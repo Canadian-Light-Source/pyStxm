@@ -14,8 +14,8 @@ set PATH_TO_NX_DEFINITIONS="PATH HERE"
 
 
 :: this is the IP addr of the computer that is running the NXserver, again only relevant for BlueSky configs
-:: set NX_SERVER_HOST="IP ADDR HERE"
-set NX_SERVER_HOST="10.52.32.28"
+set NX_SERVER_HOST="IP ADDR HERE"
+
 
 :: if pyStxm is run on windows then the path to the main data directory will needs to be specified here as a windows path
 set PYSTXM_DATA_DIR="c:\tmp"

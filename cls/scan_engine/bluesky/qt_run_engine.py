@@ -355,6 +355,7 @@ class EngineWidget(QWidget):
     state_changed = pyqtSignal(str, str)
     exec_result = pyqtSignal(object)
     prog_changed = pyqtSignal(object)
+    msg_to_app = pyqtSignal(object)
 
     def __init__(self, engine=None, plan_creator=None, mongo_db_nm="mongo_databroker",parent=None):
         # Instantiate widget information and layout
@@ -367,7 +368,7 @@ class EngineWidget(QWidget):
         self._new_state = ""
         self.prog_changed = self.engine.prog_changed
 
-        self.db = Broker.named(mongo_db_nm)#"pystxm_amb_bl10ID1")
+        self.db = Broker.named(mongo_db_nm)
         self.engine.subscribe(self.db.insert)
 
         self.sd = SupplementalData()
@@ -379,6 +380,12 @@ class EngineWidget(QWidget):
             self.engine.plan_creator = plan_creator
 
         self.engine.exec_result.connect(self.on_exec_result)
+
+    def is_dcs_server_local(self):
+        """
+        this is not implemented for the local RunEngine, will change when move to BS Queueserver
+        """
+        return True
 
     def on_state_changed(self, new_state, old_state):
         self._old_state = old_state

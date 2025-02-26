@@ -13,7 +13,6 @@ from ophyd.signal import EpicsSignal, EpicsSignalRO
 from PyQt5 import QtCore, QtWidgets
 
 from bcm.devices.ophyd.motor import MotorQt
-from bcm.devices.zmq.pixelator.positioner_defines import MAX_PIEZO_RANGE
 from cls.utils.log import get_module_logger
 from cls.utils.roi_dict_defs import *
 

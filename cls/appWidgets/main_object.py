@@ -165,7 +165,6 @@ class main_object_base(QtCore.QObject):
         """
         the BACKEND is set to zmq so instanciate the zmq_device_manager
         """
-        #self.zmq_dev_mgr = ZMQDevManager(devices_dct)
         self.engine_widget = ZMQEngineWidget(devices_dct)
         result, dcs_params_dct = self.engine_widget.engine.connect_to_dcs_server(devices_dct)
         
@@ -224,9 +223,6 @@ class main_object_base(QtCore.QObject):
             return True
         else:
             return False
-
-
-
 
 
     def make_linux_data_dir(self, data_dir: str) -> str:

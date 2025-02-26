@@ -22,6 +22,7 @@ class user_obj(object):
         bl_config_nm = appConfig.get_value("MAIN", "bl_config")
         blConfig = load_beamline_preset(bl_config_nm)
         data_dir = blConfig["BL_CFG_MAIN"]["data_dir"]
+        data_sub_dir = blConfig["BL_CFG_MAIN"]["data_sub_dir"]
         if "ptycho_cam_data_dir" in blConfig["BL_CFG_MAIN"].keys():
             #self.ptycho_cam_data_dir = blConfig["BL_CFG_MAIN"]["ptycho_cam_data_dir"]
             self.ptycho_cam_data_dir = blConfig["BL_CFG_MAIN"]["linux_data_dir"]
@@ -36,6 +37,7 @@ class user_obj(object):
         self._enabled = False
         self._group = None
         self._base_data_dir = data_dir
+        self._data_sub_dir = data_sub_dir
         self._data_dir = None
         self._sample_ids = {}
         self._cur_sample_id = None
@@ -51,14 +53,16 @@ class user_obj(object):
         self._sample_ids[id] = shobj
 
     def print_user(self):
-        print("username: %s" % self._userName)
+        print(f"username: {self._userName}")
         # print 'password: %s' % self.password
-        print("access_lvl: %s" % self._access_lvl)
-        print("description: %s" % self._description)
-        print("date_created: %s" % self._date_created)
-        print("enabled: %s" % self._enabled)
-        print("group: %s" % self._group)
-        print("base_data_dir: %s" % os.path.join(self._base_data_dir, self._userName))
+        print(f"access_lvl: {self._access_lvl}")
+        print(f"description: {self._description}")
+        print(f"date_created: {self._date_created}")
+        print(f"enabled: {self._enabled}")
+        print(f"group: {self._group}")
+        #print(f"base_data_dir: {os.path.join(self._base_data_dir, self._userName)}")
+        print(f"base_data_dir: {self._base_data_dir}")
+        print(f"data_sub_dir: {self._data_sub_dir}")
         # print 'data_dir: %s' % self._data_dir
 
     def set_username(self, name):
@@ -125,24 +129,39 @@ class user_obj(object):
         year = int(today.strftime("%Y"))
         dayNum = int(today.strftime("%d"))
 
-        _usrDir = os.path.join(self._base_data_dir, self._userName)
-        # first see if the users directory is exists, if not make it
-        self.ensure_dir(_usrDir)
-        # now make actual data directory
-        self._data_dir = os.path.join(_usrDir, "%s" % t.strftime("%m%d"))
+        if self._data_sub_dir == '_cur_date_':
+            self._data_dir = os.path.join(self._base_data_dir, str(self._date_created))
+
+        elif self._data_sub_dir == '_default_':
+            _usrDir = os.path.join(self._base_data_dir, self._userName)
+            # first see if the users directory is exists, if not make it
+            self.ensure_dir(_usrDir)
+            # now make actual data directory
+            self._data_dir = os.path.join(_usrDir, str(t.strftime("%m%d")))
+
+        else:
+            #use the explicit string from the beamline config
+            _usrDir = os.path.join(self._base_data_dir, self._data_sub_dir)
+            # first see if the users directory is exists, if not make it
+            self.ensure_dir(_usrDir)
+            # now make actual data directory
+            self._data_dir = os.path.join(_usrDir, str(t.strftime("%m%d")))
+
         self.ensure_dir(self._data_dir)
 
     def ensure_dir(self, dir):
         if os.path.exists(dir):
             pass
         else:
-            os.mkdir(dir)
+            os.makedirs(dir, exist_ok=True)
+            #os.mkdir(dir)
 
     def make_basedata_dir(self):
         if os.path.exists(self._data_dir):
             pass
         else:
-            os.mkdir(self._data_dir)
+            #os.mkdir(self._data_dir)
+            os.makedirs(self._data_dir, exist_ok=True)
 
 
 if __name__ == "__main__":

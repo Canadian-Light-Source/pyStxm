@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # this is the host name of th ecomputer that is running the DCS (Pixelator Controller)
-export PYSTXM_DCS_HOST="localhost"
+export DCS_HOST="localhost"
+export DCS_HOST_PROC_NAME="Pixelator"
+export DCS_SUB_PORT="56561"
+export DCS_REQ_PORT="56562"
 
 # This is the IP address of the computer that has the binary cnxvalidate on it, note this is only relevant for BlueSky configurations
 # Pixelator configs save their own files

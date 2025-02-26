@@ -15,20 +15,27 @@ from bcm.devices.zmq import dcs_server_name
 from cls.utils.prog_dict_utils import set_prog_dict, make_progress_dict
 from cls.utils.environment import get_environ_var
 from cls.utils.ssh.port_forwarding_utils import is_port_forwarded
+from cls.utils.process_utils import is_linux_process_running
 from cls.appWidgets.dialogs import message_no_btns
 
-PYSTXM_DCS_HOST = get_environ_var('PYSTXM_DCS_HOST')
+DCS_HOST = get_environ_var('DCS_HOST')
+DCS_HOST_PROC_NAME = get_environ_var('DCS_HOST_PROC_NAME')
+DCS_SUB_PORT = int(get_environ_var('DCS_SUB_PORT'))
+DCS_REQ_PORT = int(get_environ_var('DCS_REQ_PORT'))
 
-PIX_HOST=PYSTXM_DCS_HOST
-PIX_SUBPORT=56561
-PIX_REQPORT=56562
+HOST_IS_LOCAL = True
 
-if is_port_forwarded(PIX_SUBPORT):
-    message_no_btns("Remote DCS Detected", "It has been detected that the DCS server is remote because it "
-                        f"appears the DCS ports ({PIX_SUBPORT},{PIX_REQPORT}), are being forwarded, \n"
-                        f"just wanted to let you know")
+if is_port_forwarded(DCS_SUB_PORT):
+    # check to see if even though the ports are forwarded Pixelator is running on the same machine as this one
+    if not is_linux_process_running(DCS_HOST_PROC_NAME):
+        # message_no_btns(f"Remote [{DCS_HOST_PROC_NAME}] DCS Detected", f"It has been detected that the DCS server for [{DCS_HOST_PROC_NAME}] is remote because it "
+        #                     f"appears the DCS ports ({DCS_SUB_PORT},{DCS_REQ_PORT}), are being forwarded, \n"
+        #                     f"\tjust wanted to let you know",
+        #                 )
+        HOST_IS_LOCAL = False
 
-if dcs_server_name.find('pixelator') > -1:
+#if dcs_server_name.find('pixelator') > -1:
+if dcs_server_name.find(DCS_HOST_PROC_NAME.lower()) > -1:
     from bcm.devices.zmq.pixelator.pixelator_commands import cmd_func_map_dct
     from bcm.devices.zmq.pixelator.app_dcs_devnames import dcs_to_app_devname_map
     from bcm.devices.zmq.pixelator.pixelator_dcs_server_api import DcsServerApi
@@ -53,6 +60,7 @@ class ZMQDevManager(QWidget):
     doc_changed = pyqtSignal(str, object)
     exec_result = pyqtSignal(object)
     prog_changed = pyqtSignal(object)
+    msg_to_app = pyqtSignal(object)
     # bl_component_changed = pyqtSignal(str, object) #component name, val or dict
 
     def __init__(self, devices_dct, parent=None):
@@ -63,15 +71,16 @@ class ZMQDevManager(QWidget):
         self.dcs_server_api = DcsServerApi(self)
         self.dcs_server_api.scan_status.connect(self.on_scan_status)
         self.dcs_server_api.progress.connect(self.on_scan_progress)
+        self.dcs_server_is_local = HOST_IS_LOCAL
 
         # SUB socket: Subscribing to the publisher
         self.sub_socket = self.context.socket(zmq.SUB)
-        self.sub_socket.connect(f"tcp://{PIX_HOST}:{PIX_SUBPORT}")  # Connect to the PUB socket
+        self.sub_socket.connect(f"tcp://{DCS_HOST}:{DCS_SUB_PORT}")  # Connect to the PUB socket
         self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
 
         # REQ socket: Sending requests to the REP socket
         self.req_socket = self.context.socket(zmq.REQ)
-        self.req_socket.connect(f"tcp://{PIX_HOST}:{PIX_REQPORT}")  # Connect to the REP socket
+        self.req_socket.connect(f"tcp://{DCS_HOST}:{DCS_REQ_PORT}")  # Connect to the REP socket
 
         self.loop = None  # Event loop placeholder
 
@@ -141,6 +150,11 @@ class ZMQDevManager(QWidget):
 
         self.start_feedback()
 
+    def is_dcs_server_local(self):
+        """
+        return if the dcs server host is local or not
+        """
+        return self.dcs_server_is_local
 
     @property
     def state(self):
@@ -174,6 +188,12 @@ class ZMQDevManager(QWidget):
         """
         # print(f"ZMQDevManager: on_scan_progress:   {prog_dct}")
         self.prog_changed.emit(prog_dct)
+
+    def on_dcs_msg_to_app(self, msg):
+        """
+
+        """
+        self.msg_to_app.emit(msg)
 
     def emit_progress(self, info_dct):
         # make_progress_dict(sp_id=None, percent=0.0, cur_img_idx=0)
@@ -272,6 +292,7 @@ class ZMQDevManager(QWidget):
     def process_queue_synchronously(self):
         # Schedule the async processQueue to run on the asyncio event loop
         asyncio.run_coroutine_threadsafe(self.process_SUB_rcv_messages(), self.zmq_dev_server_thread.loop)
+
     async def process_SUB_rcv_messages(self):
         """
         This function process messages received on the SUB socket from teh dcs server

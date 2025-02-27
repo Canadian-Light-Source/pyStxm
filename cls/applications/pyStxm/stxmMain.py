@@ -4321,7 +4321,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         data_dir = self.active_user.get_data_dir()
         fprefix = str(MAIN_OBJ.get_datafile_prefix()) + str(
-            get_next_file_num_in_seq(data_dir, main_obj=MAIN_OBJ, extension="hdf5"))
+            get_next_file_num_in_seq(data_dir, extension="hdf5"))
 
         scan_type = self.get_cur_scan_type()
         first_uid = run_uids[0]

@@ -48,7 +48,7 @@ class ThreadJsonSave(threading.Thread):
         threading.Thread.__init__(self, name=name)
         self.data_dct = data_dct
         self.name = "JSON-SV." + name
-        self.fpath = fpath
+        self.fpath = str(fpath)
         self.verbose = verbose
         # print 'ThreadJsonSave: [%s] started' % self.name
 

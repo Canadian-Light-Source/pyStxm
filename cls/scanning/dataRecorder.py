@@ -731,13 +731,14 @@ class HdrData(DataRecorder):
 
 
 def go():
+    fpath =  r"C:\controls\py2.7\Beamlines\sm\data\guest\Sep12\A110217/test.json"
     saveQueue = queue.Queue()
-    saveThread = ThreadJsonSave(saveQueue)
+    saveThread = ThreadJsonSave(saveQueue, fpath=fpath)
     saveThread.setDaemon(True)
     saveThread.start()
 
     dct = {}
-    dct["fpath"] = r"C:\controls\py2.7\Beamlines\sm\data\guest\Sep12\A110217/test.json"
+    dct["fpath"] = fpath
     dct["datetime"] = datetime.datetime.now()
     saveQueue.put_nowait(dct)
 

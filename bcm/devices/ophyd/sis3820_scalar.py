@@ -1038,9 +1038,12 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
         }
         """
         if self._acquiring:
-            raise RuntimeError(
-                "Acquisition still in progress. Call complete()" " first."
-            )
+            # raise RuntimeError(
+            #     "Acquisition still in progress. Call complete()" " first."
+            # )
+            print(f"SIS3820ScalarDevice: collect(): Acquisition still in progress. scan likely aborted, Calling complete(). ")
+            _logger.debug(f"SIS3820ScalarDevice: collect(): Acquisition still in progress. scan likely aborted, Calling complete().")
+            self.complete()
 
         self._collected_data = self.read()
         collected = self._collected_data

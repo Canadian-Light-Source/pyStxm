@@ -4,6 +4,10 @@ Created on Dec 8, 2017
 
 @author: bergr
 """
+import warnings
+#this will be removed in the future when an upgrade to the latest BlueSky/ophyd
+warnings.filterwarnings("ignore", message="The document type 'bulk_events' has been deprecated")
+
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp

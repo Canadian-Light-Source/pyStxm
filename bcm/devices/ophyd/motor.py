@@ -444,12 +444,7 @@ class MotorQt(EpicsMotor, QObject):
         check the start stop values against current soft limits
         return False if beyond else True if they are reachable
         """
-        if start <= self.get_low_limit():
-            return(False)
-        if stop >= self.get_high_limit():
-            return(False)
-        return(True)
-
+        return self.get_low_limit() < start and stop < self.get_high_limit()
 
     def get(self, attr=None):
         if attr is None:

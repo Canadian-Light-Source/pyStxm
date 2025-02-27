@@ -3534,6 +3534,18 @@ class MultiRegionScanParamBase(ScanParamWidget):
             mtr_x = self.main_obj.get_sample_fine_positioner("X")
             mtr_y = self.main_obj.get_sample_fine_positioner("Y")
 
+        # ensure that preset ranges are set from BL config before checking limits
+        if hasattr(mtr_x, "set_coarse_fine_ranges"):
+            mtr_x.set_coarse_fine_ranges(
+                coarse=self.main_obj.get_preset_as_float("max_coarse_x"),
+                fine=self.main_obj.get_preset_as_float("max_fine_x"),
+            )
+        if hasattr(mtr_y, "set_coarse_fine_ranges"):
+            mtr_y.set_coarse_fine_ranges(
+                coarse=self.main_obj.get_preset_as_float("max_coarse_y"),
+                fine=self.main_obj.get_preset_as_float("max_fine_y"),
+            )
+
         mtr_ev = self.main_obj.device("DNM_ENERGY")
         mtr_offset = self.main_obj.device("DNM_EPU_OFFSET")
         mtr_angle = self.main_obj.device("DNM_EPU_ANGLE")

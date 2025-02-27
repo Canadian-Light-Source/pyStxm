@@ -978,7 +978,6 @@ class dev_config_base(QtCore.QObject):
         # self.devices['PRESETS'] = {}
         self.devices["ACTUATORS"] = {}
         self.devices["WIDGETS"] = {}
-        self.devices["WIDGETS"] = {}
 
         self.snapshot = {}
         self.snapshot["HEARTBEATS"] = {}

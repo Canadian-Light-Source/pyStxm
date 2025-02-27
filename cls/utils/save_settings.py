@@ -31,25 +31,26 @@ class SaveSettings(QtCore.QObject):
 
     changed = QtCore.pyqtSignal()
 
-    def __init__(self, fname, dct_template=None):
+    def __init__(self, fpath, dct_template=None):
         super(SaveSettings, self).__init__()
         self.defdct = {}
         if dct_template is None:
             self.dct_template = {}
         else:
             self.dct_template = dct_template
-        self.fname = fname
-        self.init_SaveSettings(fname)
+        self.fpath = str(fpath)
+        self.init_SaveSettings(self.fpath)
 
-    def init_SaveSettings(self, fname=None):
-        if not os.path.isfile(self.fname):
+    def init_SaveSettings(self, fpath=None):
+        fpath = str(fpath)
+        if not os.path.isfile(self.fpath):
             self.defdct = self.get_default_dct()
-            self.defdct["fpath"] = self.fname
-            self.save_json_obj(self.defdct)
+            self.defdct["fpath"] = self.fpath
+            self.save_json_obj(self.defdct, fpath=self.fpath)
         else:
             # read from disk
-            self.defdct = self.loadJson(fname)
-            self.defdct["fpath"] = self.fname
+            self.defdct = self.loadJson(fpath)
+            self.defdct["fpath"] = self.fpath
 
     def add_section(self, section, value, overwrite=False):
         dct_put(self.defdct, section, value, overwrite)
@@ -57,15 +58,15 @@ class SaveSettings(QtCore.QObject):
 
     def get_default_dct(self):
         dct = copy.copy(self.dct_template)
-        dct["fpath"] = self.fname
+        dct["fpath"] = self.fpath
         return dct
 
     def update(self):
         # _logger.debug('SaveSettings.update()')
-        self.save_json_obj(self.defdct, self.fname)
+        self.save_json_obj(self.defdct, self.fpath)
 
-    def save_json_obj(self, dct, fname=None):
-        saveThread = ThreadJsonSave(dct)
+    def save_json_obj(self, dct, fpath=None):
+        saveThread = ThreadJsonSave(dct, fpath=fpath)
         saveThread.setDaemon(True)
         saveThread.start()
 

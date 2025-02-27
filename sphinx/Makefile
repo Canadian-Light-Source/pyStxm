@@ -29,15 +29,15 @@ install ::
 	$(PYTHON) -m pip install -r requirements.txt
 
 clean ::
-	$(RM) -rf ./source/$(BUILD_DIR)
+	$(RM) -rf $(BUILD_DIR)
 
 html:
-	$(SPHINX) -b html -W ./source/ ./source/$(BUILD_DIR)/html
+	$(SPHINX) -b html -W . $(BUILD_DIR)/html
 
 all ::
 	$(MAKE) clean
 	$(MAKE) html
-	@echo "HTML built: `ls -lAFgh source/build/html/index.html`"
+	@echo "HTML built: `ls -lAFgh build/html/index.html`"
 
 
 

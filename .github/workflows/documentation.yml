@@ -52,15 +52,17 @@ jobs:
       - name: Install Requirements
         run: |
           python3 -m pip install --upgrade pip setuptools
+          cd sphinx
           make install
           python3 -m pip list
 
       - name: Build Documentation
         run: |
+          cd sphinx
           make html
-          ls -lAFgh _build/html/index.html
+          ls -lAFgh build/html/index.html
           mkdir -p build
-          mv _build/html/* build
+          mv build/html/* build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

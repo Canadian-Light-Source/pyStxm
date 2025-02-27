@@ -19,8 +19,17 @@ permissions:
   contents: write
 
 jobs:
-  docs:
+  build-linux:
+    name: CI py${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.12' ]
+      max-parallel: 5
+    env:
+      python_version: ${{ matrix.python-version }}
+      python_deploy_version: '3.8' # version to use for deployment
+    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4

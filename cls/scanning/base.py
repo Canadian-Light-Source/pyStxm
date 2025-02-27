@@ -3531,8 +3531,8 @@ class MultiRegionScanParamBase(ScanParamWidget):
             mtr_x = self.main_obj.device("DNM_GONI_X")
             mtr_y = self.main_obj.device("DNM_GONI_Y")
         else:
-            mtr_x = self.main_obj.get_sample_fine_positioner("X")
-            mtr_y = self.main_obj.get_sample_fine_positioner("Y")
+            mtr_x = self.main_obj.get_sample_positioner("X")
+            mtr_y = self.main_obj.get_sample_positioner("Y")
 
         # ensure that preset ranges are set from BL config before checking limits
         if hasattr(mtr_x, "set_coarse_fine_ranges"):

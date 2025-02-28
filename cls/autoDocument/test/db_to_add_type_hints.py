@@ -45,13 +45,13 @@
 #     for file_path, log_entries in log_entries_by_file.items():
 #         print(f'Adding type hints to: [{file_path}]')
 #         add_type_hints_to_file(file_path, log_entries)
-
 import ast
 import astor
 import os
 import json
 
 class TypeHintAdder(ast.NodeTransformer):
+    allowed_return_types = {'int', 'float', 'str', 'list', 'dict'}
 
     def __init__(self, log_entry: dict) -> None:
         self.log_entry = log_entry
@@ -61,7 +61,7 @@ class TypeHintAdder(ast.NodeTransformer):
             for arg in node.args.args:
                 if arg.arg != 'self' and arg.arg in self.log_entry['arg_types']:
                     arg.annotation = ast.Name(id=self.log_entry['arg_types'][arg.arg], ctx=ast.Load())
-            if self.log_entry['return_type'] != 'NoneType':
+            if self.log_entry['return_type'] in self.allowed_return_types:
                 node.returns = ast.Name(id=self.log_entry['return_type'], ctx=ast.Load())
         return self.generic_visit(node)
 

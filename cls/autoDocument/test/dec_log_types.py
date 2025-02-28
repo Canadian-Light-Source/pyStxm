@@ -10,7 +10,7 @@ def save_log_entries():
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log_types_db.json'), 'w', encoding='utf-8') as file:
         json.dump(log_entries, file, indent=4)
 
-atexit.register(save_log_entries)
+# atexit.register(save_log_entries)
 
 def log_types(func: Callable) -> Callable:
     def wrapper(*args, **kwargs):

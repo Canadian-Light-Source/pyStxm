@@ -64,7 +64,7 @@ def add_decorator_and_import_to_file(input_file: str, output_file: str) -> None:
         names=[ast.alias(name='log_types', asname=None)], level=0)
     tree.body.insert(0, import_statement)
 
-    with open(output_file, 'w') as file:
+    with open(output_file, 'w', encoding='utf-8') as file:
         file.write(astor.to_source(tree))
 
 

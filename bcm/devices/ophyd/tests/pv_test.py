@@ -66,8 +66,6 @@ class SinglePv(Device):
                         'timestamp': time.time()
                         }}
 
-    def set
-
     def describe(self):
         '''
         on return from super().describe() res is the following:

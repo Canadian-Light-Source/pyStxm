@@ -181,46 +181,46 @@ class BaseTomographyWithE712WavegenScanClass(BaseScan):
                         yield from bps.mv(ev_mtr, ev_sp)
                         # self.dwell = ev_roi[DWELL]
                         self.dwell = self.setpointsDwell
-                            # take a single image that will be saved with its own run scan id
-                            img_dct = self.img_idx_map["%d" % self._current_img_idx]
-                            md = {
-                                "metadata": dict_to_json(
-                                    self.make_standard_metadata(
-                                        entry_name=img_dct["entry"],
-                                        scan_type=self.scan_type,
-                                        dets=dets,
-                                    )
+                        # take a single image that will be saved with its own run scan id
+                        img_dct = self.img_idx_map["%d" % self._current_img_idx]
+                        md = {
+                            "metadata": dict_to_json(
+                                self.make_standard_metadata(
+                                    entry_name=img_dct["entry"],
+                                    scan_type=self.scan_type,
+                                    dets=dets,
                                 )
-                            }
+                            )
+                        }
 
-                            if img_dct["entry"] not in entrys_lst:
-                                entrys_lst.append(img_dct["entry"])
-                                # only take the baseline once
-                                if self.use_hdw_accel:
-                                    print(
-                                        "Creating new baseline measurement for [%s]"
-                                        % img_dct["entry"]
-                                    )
-                                    yield from self.make_single_image_e712_plan(
-                                        dets, gate, md=md, do_baseline=True
-                                    )
-                                else:
-                                    yield from self.make_single_image_plan(
-                                        dets, gate, md=md, do_baseline=True
-                                    )
-
+                        if img_dct["entry"] not in entrys_lst:
+                            entrys_lst.append(img_dct["entry"])
+                            # only take the baseline once
+                            if self.use_hdw_accel:
+                                print(
+                                    "Creating new baseline measurement for [%s]"
+                                    % img_dct["entry"]
+                                )
+                                yield from self.make_single_image_e712_plan(
+                                    dets, gate, md=md, do_baseline=True
+                                )
                             else:
-                                # this data will be used to add to previously created entries
-                                if self.use_hdw_accel:
-                                    yield from self.make_single_image_e712_plan(
-                                        dets, gate, md=md, do_baseline=False
-                                    )
-                                else:
-                                    yield from self.make_single_image_plan(
-                                        dets, gate, md=md, do_baseline=False
-                                    )
+                                yield from self.make_single_image_plan(
+                                    dets, gate, md=md, do_baseline=True
+                                )
 
-                            self._current_img_idx += 1
+                        else:
+                            # this data will be used to add to previously created entries
+                            if self.use_hdw_accel:
+                                yield from self.make_single_image_e712_plan(
+                                    dets, gate, md=md, do_baseline=False
+                                )
+                            else:
+                                yield from self.make_single_image_plan(
+                                    dets, gate, md=md, do_baseline=False
+                                )
+
+                        self._current_img_idx += 1
 
                 entry_idx += 1
 

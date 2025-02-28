@@ -51,7 +51,7 @@ class DecoratorAdder(ast.NodeTransformer):
 def add_decorator_and_import_to_file(input_file: str, output_file: str) -> None:
     print(f"Processing file: {os.path.abspath(input_file)}")
 
-    with open(input_file, 'r') as file:
+    with open(input_file, 'r', encoding='utf-8') as file:
         tree = ast.parse(file.read())
 
     # Add the decorator to each function

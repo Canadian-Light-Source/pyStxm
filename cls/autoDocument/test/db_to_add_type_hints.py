@@ -72,7 +72,7 @@ def add_type_hints_to_file(file_path: str, log_entries: list) -> None:
         tree = TypeHintAdder(log_entry).visit(tree)
         ast.fix_missing_locations(tree)
     with open(file_path, 'w', encoding='utf-8') as file:
-        file.write(astor.to_source(tree))
+        file.write(astor.to_source(tree).replace('->', '-> '))
 
 if __name__ == '__main__':
     log_entries_by_file = {}

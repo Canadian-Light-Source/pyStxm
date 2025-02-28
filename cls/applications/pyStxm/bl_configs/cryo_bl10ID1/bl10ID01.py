@@ -82,7 +82,7 @@ SCANNING_MODE = 'SAMPLEXY'
 class dev_config_sim_ambient(dev_config_base):
     def __init__(self, splash=None):
         super(dev_config_sim_ambient, self).__init__(splash=splash)
-        print 'Using simulated DEVICES'
+        print('Using simulated DEVICES')
         self.beamline = 'Ambient STXM 10ID1'
         self.sscan_rec_prfx = 'amb'
         self.es_id = endstation_id_types.AMBIENT

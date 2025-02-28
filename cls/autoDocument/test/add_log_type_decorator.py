@@ -68,11 +68,16 @@ def add_decorator_and_import_to_file(input_file: str, output_file: str) -> None:
         file.write(astor.to_source(tree))
 
 
-if __name__ == "__main__":
-    project_dir = r'C:\controls\github\log_types\pyStxm\cls\applications'  # Replace with your project directory
+def do_decorate(project_dir):
     for root, _, files in os.walk(project_dir):
         for file in files:
             if file.endswith('.py'):
                 input_file = os.path.join(root, file)
                 output_file = input_file  # Overwrite the original file
                 add_decorator_and_import_to_file(input_file, output_file)
+
+if __name__ == "__main__":
+    project_dir = r'C:\controls\github\log_types\pyStxm\bcm'
+    do_decorate(project_dir)
+    project_dir = r'C:\controls\github\log_types\pyStxm\cls'
+    do_decorate(project_dir)

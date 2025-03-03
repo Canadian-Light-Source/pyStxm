@@ -156,11 +156,13 @@ elif scanning_mode == "COARSE_ZONEPLATE":
 
 if (sample_mode is not None) and (fine_sample_mode is not None):
     # instanciate DEVICE_CFG here which will be imported later
+    ex_list = blConfig.get_list('POSITIONER_PANEL_EXCLUDE_LIST', 'exclude_list', all=True)
     DEVICE_CFG = device_config(
         splash=splash,
         bl_config_nm=bl_config_nm,
         sample_pos_mode=sample_mode,
         fine_sample_pos_mode=fine_sample_mode,
+        posner_panel_exclusion_list=ex_list,
     )
 
 else:

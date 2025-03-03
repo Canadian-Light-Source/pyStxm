@@ -1,46 +1,14 @@
 # -*- coding:utf-8 -*-
-########################################################
-# Copyright © 2011 Canadian Light Source Inc. (CLSI) All rights reserved.
-#
-# Permission to use, copy, modify, and distribute this software and its
-# documentation for any purpose and without fee or royalty is hereby granted,
-# provided that the full text of this NOTICE appears on ALL copies of the
-# software and documentation or portions thereof, including modifications,
-# that you make.
-#
-# THIS SOFTWARE IS PROVIDED BY CLSI "AS IS" AND CLSI EXPRESSLY DISCLAIMS
-# LIABILITY FOR ANY AND ALL DAMAGES AND LOSSES (WHETHER DIRECT, INCIDENTAL,
-#  CONSEQUENTIAL OR OTHERWISE) ARISING FROM OR IN ANY WAY RELATED TO THE
-# USE OF SOFTWARE, INCLUDING, WITHOUT LIMITATION, DAMAGES TO ANY COMPUTER,
-# SOFTWARE OR DATA ARISING OR RESULTING FROM USE OF THIS SOFTWARE.
-# BY WAY OF EXAMPLE, BUT NOT LIMITATION, CLSI MAKE NO REPRESENTATIONS OR
-# WARRANTIES OF MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR
-# THAT THE USE OF THE SOFTWARE  OR DOCUMENTATION WILL NOT INFRINGE ANY THIRD
-# PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS. CLSI WILL BEAR NO
-# LIABILITY FOR ANY USE OF THIS SOFTWARE OR DOCUMENTATION.
-#
-# Title to copyright in this software and any associated documentation will
-# at all times remain with CLSI. The reproduction of CLSI and its trademarks
-# is strictly prohibited, except with the prior written consent of CLSI.
-#########################################################
-
 """
 This module provides an interface to load and retrieve elements of a config file
-based on the ConfigParser python mudule
+based on the ConfigParser python module
 """
 import sys
 import configparser, os
+import simplejson as json
 
 from cls.utils.log import get_module_logger
 
-__author__ = "bergr"
-__copyright__ = "Copyright 2011, The Canadian Lightsource"
-__credits__ = ["bergr", "?"]
-__license__ = "GPL"
-__version__ = "3.0.0"
-__maintainer__ = "bergr"
-__email__ = "russ.berg@lightsource.ca"
-__status__ = "Development"
 
 # put 3rd party imports here
 _logger = get_module_logger(__name__)
@@ -91,14 +59,17 @@ class ConfigClass(object):
         self.cfgDict["MAIN"] = self.config.defaults()
         self.sections = self.config.sections()
 
-    def get_value(self, section, option):
+    def get_value(self, section, option, all=False):
         # use the configParser that will perform substitutions 0, 1 is for raw
         if (section == "MAIN") or self.config.has_section(section):
 
             if self.config.has_option(section, option):
 
                 val = self.config.get(section, option)
-                val = val.replace(" ", "").split(",")[0]
+                if all:
+                    return val
+                else:
+                    val = val.replace(" ", "").split(",")[0]
             else:
                 _logger.error(
                     "option [%s] does not exist in section [%s]" % (option, section)
@@ -109,6 +80,17 @@ class ConfigClass(object):
             val = None
         # print self.config.get(section, item, 0)
         return val
+
+    def get_list(self, section, option, all=False):
+        """
+        return a list of values from a comma separated list
+        """
+        list_str = self.get_value(section, option, all=True)
+        if list_str:
+            ret_list = json.loads(list_str)
+            return ret_list
+        else:
+            return None
 
     def get_all(self):
         """

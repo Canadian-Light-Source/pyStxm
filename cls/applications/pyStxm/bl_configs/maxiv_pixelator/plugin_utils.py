@@ -5,7 +5,7 @@ from cls.utils.log import get_module_logger
 
 from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
 from cls.stylesheets import get_style
-
+from cls.types.stxmTypes import scan_sub_types
 
 _logger = get_module_logger(__name__)
 ########################################################################
@@ -82,6 +82,8 @@ def init_scan_req_member_vars(self):
     self.point_delay_val = 0.0
     self.defocus_enabled = 0.0
     self.adapt_pos_precision_enabled = 0.0
+    self.coarse_only = False
+    self.scan_point_or_line_mode = scan_sub_types.POINT_BY_POINT # or LINE_UNIDIR
 
     if hasattr(self, 'scanReqDetailsBtn'):
         self.scanReqDetailsBtn.clicked.connect(lambda: show_scan_request_details(self))
@@ -110,6 +112,8 @@ def init_scan_req_member_vars(self):
     dct['line_delay'] = None
     dct['point_delay'] = None
     dct['line_repeat'] = None
+    dct['coarse_only'] = None
+    dct['scan_point_or_line_mode'] = None
     dct['polarization'] = None
     # assign it to plugin
     self.default_scan_rec_setting_dct = dct
@@ -145,9 +149,50 @@ def set_scan_rec_default(self, attr: str, val):
             set_field(self, 'pointDelay', val)
         elif attr == 'line_repeat':
             set_spin_box(self, 'lineRep', val)
+        elif attr == 'coarse_only':
+            set_check_box(self, 'coarseOnly', val)
+        elif attr == 'scan_point_or_line_mode':
+            set_combo_box(self, 'scanTypeSel', val)
         elif attr == 'polarization':
             # not sure this one can be overridden
             pass
+
+def scan_rec_enable_widget(self, name, val):
+    """
+    given the name of the scan rec field enable or disable its widget
+    """
+    # self.scan_req_wdg.setEnabled(True)
+    if name == 'tiling':
+        self.scan_req_wdg.tilingChkBox.setEnabled(val)
+    elif name == 'adapt_precision':
+        self.scan_req_wdg.adaptPosPrecChkBox.setEnabled(val)
+    elif name == 'auto_defocus':
+        self.scan_req_wdg.autoDefocusChkBox.setEnabled(val)
+    elif name == 'y_axis_fast':
+        self.scan_req_wdg.yAxisFastChkBox.setEnabled(val)
+    elif name == 'meander':
+        self.scan_req_wdg.meanderChkBox.setEnabled(val)
+    elif name == 'prec_field':
+        self.scan_req_wdg.precisionFld.setEnabled(val)
+    elif name == 'defocus_diam_field':
+        self.scan_req_wdg.defocusDiamFld.setEnabled(val)
+    elif name == 'accel_dist':
+        self.scan_req_wdg.accelDistFld.setEnabled(val)
+    elif name == 'tile_delay':
+        self.scan_req_wdg.tileDelayFld.setEnabled(val)
+    elif name == 'line_delay':
+        self.scan_req_wdg.lineRepSpinBox.setEnabled(val)
+    elif name == 'point_delay':
+        self.scan_req_wdg.pointDelayFld.setEnabled(val)
+    elif name == 'line_repeat':
+        self.scan_req_wdg.lineRepSpinBox.setEnabled(val)
+    elif name == 'coarse_only':
+        self.scan_req_wdg.coarseOnlyChkBox.setEnabled(val)
+    elif name == 'scan_point_or_line_mode':
+        self.scan_req_wdg.scanTypeSelComboBox.setEnabled(val)
+    elif name == 'polarization':
+        # not sure this one can be overridden
+        pass
 
 def set_check_box(self, name, val):
 
@@ -166,6 +211,12 @@ def set_spin_box(self, name, val):
     if hasattr(self.scan_req_wdg, f'{name}SpinBox'):
         a = getattr(self.scan_req_wdg, f'{name}SpinBox')
         a.setValue(val)
+
+def set_combo_box(self, name, val):
+
+    if hasattr(self.scan_req_wdg, f'{name}ComboBox'):
+        a = getattr(self.scan_req_wdg, f'{name}ComboBox')
+        a.setChecked(val)
 
 def on_close_button(self):
     """
@@ -210,6 +261,8 @@ def get_scan_request_dct(self):
     dct['line_delay'] = float(self.scan_req_wdg.lineDelayFld.text())
     dct['point_delay'] = float(self.scan_req_wdg.pointDelayFld.text())
     dct['line_repeat'] = int(self.scan_req_wdg.lineRepSpinBox.value())
+    dct['coarse_only'] = True if self.scan_req_wdg.coarseOnlyChkBox.isChecked() else False
+    dct['scan_point_or_line_mode'] = 'Point by Point' if self.scan_req_wdg.scanTypeSelComboBox.currentIndex() == scan_sub_types.POINT_BY_POINT else 'Constant Velocity'
     dct['polarization'] = "" # self.scan_req_wdg.polComboBox.currentText()
 
     for k, v in self.default_scan_rec_setting_dct.items():
@@ -240,6 +293,8 @@ def get_empty_scan_request_dct(self):
     dct['line_delay'] = 0.0
     dct['point_delay'] = 0.0
     dct['line_repeat'] = 1
+    dct['coarse_only'] = False
+    dct['scan_point_or_line_mode'] = scan_sub_types.POINT_BY_POINT
     dct['polarization'] = "" # self.scan_req_wdg.polComboBox.currentText()
 
     return dct

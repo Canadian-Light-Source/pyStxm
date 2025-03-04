@@ -32,6 +32,13 @@ class PointSpecScanParam(BasePointSpecScanParam):
         )
 
         init_scan_req_member_vars(self)
+        # the default scan rec settings dict was created above now force tiling to be True for this plugin
+        set_scan_rec_default(self, 'tiling', True)
+        # disable widgets not used by this scan
+        scan_rec_enable_widget(self, 'meander', False)
+        scan_rec_enable_widget(self, 'y_axis_fast', False)
+        scan_rec_enable_widget(self, 'auto_defocus', False)
+        scan_rec_enable_widget(self, 'defocus_diam_field', False)
         connect_scan_req_detail_flds_to_validator(self)
 
     def update_data(self):

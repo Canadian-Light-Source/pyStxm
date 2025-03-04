@@ -9,6 +9,7 @@ import pathlib
 
 from ophyd.epics_motor import EpicsMotor
 from ophyd.signal import EpicsSignalBase
+from ophyd.sim import det1, det2, det3, noisy_det
 
 from bcm.backend import BACKEND
 #from bcm.devices import Mbbi
@@ -17,7 +18,6 @@ from bcm.devices import Bo
 from bcm.devices import Transform
 from bcm.devices import MotorQt
 from bcm.devices import Counter
-
 
 if BACKEND == 'epics':
     from bcm.devices import sample_abstract_motor, e712_sample_motor
@@ -42,11 +42,8 @@ else:
 #from bcm.devices import BaseOphydGate
 from bcm.devices import DCSShutter, init_pv_report_file
 
-
-
 from cls.appWidgets.main_object import dev_config_base, POS_TYPE_BL, POS_TYPE_ES
 
-# RUSS FEB25 from cls.appWidgets.splashScreen import get_splash
 from cls.appWidgets.splashScreen import get_splash
 from cls.applications.pyStxm import abs_path_to_ini_file
 from cls.types.stxmTypes import (
@@ -58,11 +55,6 @@ from cls.utils.cfgparser import ConfigClass
 from cls.utils.log import get_module_logger
 from cls.applications.pyStxm.bl_configs.utils import make_basedevice
 
-from ophyd.sim import det1, det2, det3, noisy_det
-
-
-#from bcm.devices.zmq.PUBSUB.asyncio.zmq_device import ZMQMotor, ZMQBo, ZMQMBBo
-
 _logger = get_module_logger(__name__)
 
 
@@ -73,6 +65,7 @@ class device_config(dev_config_base):
         bl_config_nm=None,
         sample_pos_mode=sample_positioning_modes.COARSE,
         fine_sample_pos_mode=sample_fine_positioning_modes.SAMPLEFINE,
+        posner_panel_exclusion_list=[]
     ):
         super(device_config, self).__init__(splash=splash)
 
@@ -99,63 +92,8 @@ class device_config(dev_config_base):
 
         # self.perform_device_connection_check(verbose=True)
 
-        if self.sample_pos_mode is sample_positioning_modes.GONIOMETER:
-            self.set_exclude_positioners_list(
-                [
-                    "DNM_SAMPLE_X",
-                    "DNM_SAMPLE_Y",
-                    "DNM_ZONEPLATE_Z",
-                    "DNM_SAMPLE_FINE_X",
-                    "DNM_SAMPLE_FINE_Y",
-                    "DNM_COARSE_X",
-                    "DNM_COARSE_Y",
-                    "DNM_SCANCOARSE_X",
-                    "DNM_SCANCOARSE_Y",
-                    "AUX1",
-                    "AUX2",
-                    "Cff",
-                    "PeemM3Trans",
-                ]
-            )
-        elif self.sample_pos_mode is sample_positioning_modes.COARSE:
-            if self.fine_sample_pos_mode is sample_fine_positioning_modes.SAMPLEFINE:
-                self.exclude_list = [
-                    "DNM_GONI_X",
-                    "DNM_GONI_Y",
-                    "DNM_GONI_Z",
-                    "DNM_GONI_THETA",
-                    "DNM_SAMPLE_FINE_X",
-                    "DNM_SAMPLE_FINE_Y",
-                    "DNM_SAMPLE_ROT_ANGLE",
-                    "DNM_SCANCOARSE_X",
-                    "DNM_SCANCOARSE_Y",
-                    "AUX1",
-                    "AUX2",
-                    "Cff",
-                    "PeemM3Trans",
-                ]
-            else:
-                # zoneplate
-                self.exclude_list = [
-                    "DNM_GONI_X",
-                    "DNM_GONI_Y",
-                    "DNM_GONI_Z",
-                    "DNM_GONI_THETA",
-                    "DNM_ZONEPLATE_X",
-                    "DNM_ZONEPLATE_Y",
-                    "DNM_ZONEPLATE_Z",
-                    "DNM_SAMPLE_ROT_ANGLE",
-                    "DNM_SAMPLE_FINE_X",
-                    "DNM_SAMPLE_FINE_Y",
-                    "DNM_COARSE_X",
-                    "DNM_COARSE_Y",
-                    "DNM_SCANCOARSE_X",
-                    "DNM_SCANCOARSE_Y",
-                    "AUX1",
-                    "AUX2",
-                    "Cff",
-                    "PeemM3Trans",
-                ]
+        self.set_exclude_positioners_list(posner_panel_exclusion_list)
+
         # init_posner_snapshot_cbs(self.devices['POSITIONERS'])
         # self.close_splash()
 

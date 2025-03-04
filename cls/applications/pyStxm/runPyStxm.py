@@ -40,26 +40,6 @@ def clean_up():
     MAIN_OBJ.cleanup()
 
 
-# def check_for_existing_python_processes():
-#     """
-#     sometimes I have seen during development that old python.exe processes are still kicking around which
-#     could lead to strange behaviour, do a check and see if there are more than 1 running, if so force exit
-#     """
-#     py_cnt = 0
-#     ex = False
-#     # procs = [p.name() for p in psutil.process_iter()]
-#     procs = list(psutil.process_iter())
-#     for p in procs:
-#         pnm = p.name()
-#         if pnm.find("python.exe") > -1:
-#             py_cnt += 1
-#             if py_cnt > 1:
-#                 print("There appears to already be a python executable running")
-#                 ex = True
-#         # else:
-#         #     print(f'Found [{pnm}]')
-#     if ex:
-#         exit()
 def check_for_existing_python_processes():
     """
     sometimes I have seen during development that old python.exe processes are still kicking around which
@@ -167,6 +147,43 @@ def trace_calls(frame, event, arg):
     return
 
 
+# set the backend to use so that when other modules import this one they can get the correct devices
+def update_backend_string_from_beamline_config():
+    """
+    this function write the backend string to the backend.py file based on the backend specified in the beamline config
+    file
+    """
+    from cls.applications.pyStxm import abs_path_to_ini_file
+    from cls.utils.cfgparser import ConfigClass
+    from cls.appWidgets.bl_config_loader import (
+        load_beamline_device_config,
+        load_beamline_preset,
+    )
+
+    appConfig = ConfigClass(abs_path_to_ini_file)
+    # get the current scanning mode from teh app.ini configuration
+    bl_config_nm = appConfig.get_value("MAIN", "bl_config")
+    bl_config_dct = load_beamline_preset(bl_config_nm)
+    dcs_backend = bl_config_dct["BL_CFG_MAIN"]["dcs_backend"]
+    content = f"""
+# this generated file simply delcares the name of the backend to be used, it is purely just this variable so\n
+# that it can simply be imported and checked by other files\n
+# set the backend that should be used\n
+BACKEND='{dcs_backend}'"""
+
+    absolute_path = os.path.abspath(__file__)
+    # Get the directory containing the file
+    abs_directory = os.path.dirname(absolute_path)
+    file_path = os.path.join(abs_directory, "..","..","..","bcm","backend.py")
+
+    try:
+        # Open the file in write mode
+        with open(file_path, 'w') as file:
+            file.write(content)
+        print(f"Successfully wrote to {file_path}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
 def go():
     """
     the main launch function for pystxm
@@ -222,4 +239,6 @@ def go():
 
 if __name__ == "__main__":
     # profile_it()
+    update_backend_string_from_beamline_config()
+    time.sleep(0.1)
     go()

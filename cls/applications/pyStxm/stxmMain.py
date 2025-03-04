@@ -1132,14 +1132,29 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.actionAbout_pyStxm.triggered.connect(self.on_about_pystxm)
         self.actionpyStxm_help.triggered.connect(self.on_pystxm_help)
         self.actionSwitch_User.triggered.connect(self.on_switch_user)
-        self.actionDisplay_DCSServer_msgs.triggered.connect(self.on_show_dcs_server_msgs)
+        # self.actionDisplay_DCSServer_msgs.triggered.connect(self.on_show_dcs_server_msgs)
         self.dcsServerWindow.contextMenuEvent = self.dcsServerWindow_ContextMenuEvent
 
         if MAIN_OBJ.get_device_backend() == 'epics':
             # only connect it if running BlueSky RunEngine
             self.actionDisplay_RunEngine_docs.triggered.connect(self.on_show_runengine_docs)
+            #disable DCS menu item
+            self.actionDisplay_DCSServer_msgs.setEnabled(False)
+            self.actionDisplay_DCSServer_msgs.setChecked(False)
         else:
+            # disable BS RE docs menu item
             self.actionDisplay_RunEngine_docs.setEnabled(False)
+            self.actionDisplay_RunEngine_docs.setChecked(False)
+
+            # enable DCS messages being available in Info tab
+            self.actionDisplay_DCSServer_msgs.setEnabled(True)
+            self.actionDisplay_DCSServer_msgs.setChecked(True)
+            reconnect_signal(
+                MAIN_OBJ.engine_widget.engine,
+                MAIN_OBJ.engine_widget.engine.msg_changed,
+                self.print_dcs_server_msg,
+            )
+
 
         self.actionValidate_saved_files.triggered.connect(self.on_validate_saved_files)
         self.actionResume_Motors.triggered.connect(self.on_resume_from_emergency_stop)

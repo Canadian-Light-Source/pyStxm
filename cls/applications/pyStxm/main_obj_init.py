@@ -22,7 +22,7 @@ from cls.appWidgets.bl_config_loader import (
     load_beamline_preset,
 )
 
-from bcm.devices import BACKEND
+# from bcm.devices import BACKEND
 
 # from twisted.python.components import globalRegistry
 _logger = get_module_logger(__name__)
@@ -45,6 +45,7 @@ beamline_desc = bl_config_dct["BL_CFG_MAIN"]["beamline_desc"]
 endstation_name = bl_config_dct["BL_CFG_MAIN"]["endstation_name"]
 endstation_prefix = bl_config_dct["BL_CFG_MAIN"]["endstation_prefix"]
 datafile_prefix = bl_config_dct["BL_CFG_MAIN"]["datafile_prefix"]
+dcs_backend = bl_config_dct["BL_CFG_MAIN"]["dcs_backend"]
 scanning_mode = bl_config_dct["SCANNING_MODE"]["scanning_mode"]
 
 if "PTYCHO_CAMERA" in bl_config_dct.keys():
@@ -57,6 +58,7 @@ else:
 
 #MAIN_OBJ = main_object_base(beamline_desc, endstation_name, beamline_id=bl_config_nm, main_cfg=appConfig)
 MAIN_OBJ = main_object_base(beamline_desc, endstation_name, beamline_cfg_dct=bl_config_dct, main_cfg=appConfig)
+MAIN_OBJ.set_device_backend(dcs_backend)
 MAIN_OBJ.set_datafile_prefix(datafile_prefix)
 # MAIN_OBJ.set_thumbfile_suffix('jpg')
 MAIN_OBJ.set_endstation_prefix(endstation_prefix)

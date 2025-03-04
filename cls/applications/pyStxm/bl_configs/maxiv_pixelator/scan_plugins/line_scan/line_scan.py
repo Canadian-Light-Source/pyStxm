@@ -13,9 +13,12 @@ from cls.utils.roi_dict_defs import *
 from cls.applications.pyStxm.bl_configs.base_scan_plugins.line_scan.line_scan import (
     BaseLineScanParam,
 )
-from cls.applications.pyStxm.bl_configs.sls_pixelator.plugin_utils import (connect_scan_req_detail_flds_to_validator,
+from cls.applications.pyStxm.bl_configs.maxiv_pixelator.plugin_utils import (connect_scan_req_detail_flds_to_validator,
     init_scan_req_member_vars)
 from cls.utils.roi_utils import wdg_to_sp, get_sp_db_from_wdg_com
+
+from cls.applications.pyStxm.bl_configs.maxiv_pixelator.plugin_utils import (connect_scan_req_detail_flds_to_validator,
+    init_scan_req_member_vars, set_scan_rec_default, scan_rec_enable_widget)
 
 _logger = get_module_logger(__name__)
 
@@ -31,7 +34,16 @@ class LineSpecScanParam(BaseLineScanParam):
         )
 
         init_scan_req_member_vars(self)
+        # the default scan rec settings dict was created above now force tiling to be True for this plugin
+        set_scan_rec_default(self, 'tiling', True)
+        # disable widgets not used by this scan
+        scan_rec_enable_widget(self, 'meander', False)
+        scan_rec_enable_widget(self, 'y_axis_fast', False)
+        scan_rec_enable_widget(self, 'auto_defocus', False)
+        scan_rec_enable_widget(self, 'defocus_diam_field', False)
+
         connect_scan_req_detail_flds_to_validator(self)
+
 
 
     def init_plugin(self):

@@ -15,7 +15,7 @@ from cls.applications.pyStxm.bl_configs.base_scan_plugins.fine_image_scans.fine_
     )
 from cls.types.stxmTypes import scan_sub_types
 
-from cls.applications.pyStxm.bl_configs.sls_pixelator.plugin_utils import (connect_scan_req_detail_flds_to_validator,
+from cls.applications.pyStxm.bl_configs.maxiv_pixelator.plugin_utils import (connect_scan_req_detail_flds_to_validator,
     init_scan_req_member_vars, set_scan_rec_default)
 
 _logger = get_module_logger(__name__)
@@ -48,13 +48,21 @@ class SampleFineImageScanParam(BaseFineImageScansParam):
         # the sub type in the base plugin is checked and set each time the data is updated, it checks to see
         # if the y_roi is a horizontal line or not, we overide this here because the
         # pixelator coarse stages do not support LxL constant velocity mode scanning
+        posner_name_x = 'DNM_SAMPLE_FINE_X'
+        posner_name_y = 'DNM_SAMPLE_FINE_Y'
+
+        dct = self.get_scan_request()
+        if dct['coarse_only']:
+            posner_name_x = 'DNM_COARSE_X'
+            posner_name_y = 'DNM_COARSE_Y'
+
         (sp_roi_dct, sp_ids, sp_id, sp_db) = wdg_to_sp(self.wdg_com)
         if len(sp_db) > 0:
             for _id in sp_ids:
                 sp_db = get_sp_db_from_wdg_com(self.wdg_com, _id)
                 x_roi = dct_get(sp_db, SPDB_X)
-                x_roi[POSITIONER] = 'DNM_SAMPLE_FINE_X'
+                x_roi[POSITIONER] = posner_name_x
                 y_roi = dct_get(sp_db, SPDB_Y)
-                y_roi[POSITIONER] = 'DNM_SAMPLE_FINE_Y'
+                y_roi[POSITIONER] = posner_name_y
 
         return self.wdg_com

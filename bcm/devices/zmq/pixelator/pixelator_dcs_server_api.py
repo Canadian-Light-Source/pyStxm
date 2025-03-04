@@ -319,10 +319,11 @@ class ScanClass(object):
         """
         app_scan_type_str = get_scan_type_str_from_wdg_com(self.wdg_com)
         self.scan_type_str = self.map_app_scan_name_to_dcs_scan_name(app_scan_type_str)
-        if self.scan_pxp:
-            line_mode = "Point by Point"
-        else:
-            line_mode = "Constant Velocity"
+        # if self.scan_pxp:
+        #     line_mode = "Point by Point"
+        # else:
+        #     line_mode = "Constant Velocity"
+        line_mode = self.wdg_scan_req['scan_point_or_line_mode']
 
         scan_request = gen_base_req_structure(self.scan_type_str)
 

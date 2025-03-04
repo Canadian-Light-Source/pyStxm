@@ -1,0 +1,439 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Visualization &mdash; pyStxm 3.00 Manual 3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme_overrides.css?v=1e529003" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=110ea713"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/js/version_switch.js?v=21d7c133"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Splash Screen" href="../../splash.html" />
+    <link rel="prev" title="Scan Control and Status" href="../scan_ctrl.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            pyStxm 3.00 Manual
+              <img src="../../../_static/pyStxmSplash.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">User Interface</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../index.html#pystxm-main-screen">pySTXM Main Screen</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../counts.html">Counts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scan_ctrl.html">Scan Control and Status</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Data Visualization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#images">Images</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../splash.html">Splash Screen</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tools/tools_2d.html">2D Selection Tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tools/tools_lines.html">Line Selection Tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tools/tools_point.html">Point Selection Tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data/index.html">Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ioc_apps.html">IOC Applications</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../ioc_apps/index.html">IOC Application Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../prefs/index.html">Preferences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../regions.html">Regions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../regions.html#counts">Counts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scan_plugin_prefs.html">Scan plugin and preferences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scan_plugins/index.html">Scan Plugins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scan_plugins/tools/2d_sel.html">2D Selection Tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scan_plugins/tools/index.html">Tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../session_info.html">Session Info</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../configuration/index.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tools/index.html">Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../scanning/index.html">Scan Plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data/index.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_prefs/index.html">Preferences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../sts_bar/index.html">Status Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../devices/index.html">Devices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../info/index.html">Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../trouble_shooting/index.html">Trouble Shooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developers_guide/index.html">Developers Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rst_examples.html">RST Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">pyStxm 3.00 Manual</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">User Interface</a></li>
+      <li class="breadcrumb-item active">Data Visualization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/interface/window_system/data_visualization/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="data-visualization">
+<h1>Data Visualization<a class="headerlink" href="#data-visualization" title="Link to this heading"></a></h1>
+<figure class="align-left" id="id1">
+<img alt="../../../_images/data_vis_tabs.png" src="../../../_images/data_vis_tabs.png" />
+<figcaption>
+<p><span class="caption-text">Data vlisualization tabs</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The data visualization area of the application is where the data is displayed as it arrives from the detector(s). It is
+located in the center of the application so it is always in view for inspection as well as interaction by the user.</p>
+<figure class="align-center" id="id2">
+<img alt="../../../_images/data_vis_panel.png" src="../../../_images/data_vis_panel.png" />
+<figcaption>
+<p><span class="caption-text">Data Visualization panel</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The Data Visualization panel is separated into 3 different tabs:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Images</p></li>
+<li><p>Spectra</p></li>
+<li><p>Calibration Camera</p></li>
+</ul>
+</div></blockquote>
+<hr class="docutils" />
+<section id="images">
+<h2>Images<a class="headerlink" href="#images" title="Link to this heading"></a></h2>
+<figure class="align-left" id="id3">
+<a class="reference internal image-reference" href="../../../_images/data_vis_images.png"><img alt="../../../_images/data_vis_images.png" src="../../../_images/data_vis_images.png" style="width: 465.0px; height: 479.5px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Images tab showing the result of a Fine Image scan</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<div class="refbox admonition">
+<p class="admonition-title">Mouse controls for the plot window</p>
+<dl class="field-list simple">
+<dt class="field-odd">LeftBtn<span class="colon">:</span></dt>
+<dd class="field-odd"><p><kbd class="kbd docutils literal notranslate">LMB</kbd> Selects images and shapes, drag handles of shapes to resize</p>
+</dd>
+<dt class="field-even">MiddleBtn<span class="colon">:</span></dt>
+<dd class="field-even"><p><kbd class="kbd docutils literal notranslate">MMB</kbd> Click and drag to pan the image, click once to autoscale image</p>
+</dd>
+<dt class="field-odd">RightBtn<span class="colon">:</span></dt>
+<dd class="field-odd"><p><kbd class="kbd docutils literal notranslate">RMB</kbd> Click and drag left and right to zoom the image</p>
+</dd>
+</dl>
+</div>
+<br><br><br><br><br><p>When performing a 2D scan such as a Detector, OSA, Coarse or Fine Image scan, the data will
+appear on the <strong>Image</strong> tab as the pixel data comes in.</p>
+<p>The Images plot window is made up of
+a central plot for displaying the actual data, 2 cross section plots on top and the right side
+for showing cross section histogram data and a Contrast adjustment tool on the bottom of the
+window.</p>
+<section id="update-cross-sections">
+<h3>Update Cross Sections<a class="headerlink" href="#update-cross-sections" title="Link to this heading"></a></h3>
+<figure class="align-left" id="id4">
+<a class="reference internal image-reference" href="../../../_images/data_vis_alt_crosshair.png"><img alt="../../../_images/data_vis_alt_crosshair.png" src="../../../_images/data_vis_alt_crosshair.png" style="width: 458.0px; height: 395.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Crosshair visible when <kbd class="kbd docutils literal notranslate">Alt</kbd> is pressed</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<div class="refbox admonition">
+<p class="admonition-title">To update the plot cross sections</p>
+<dl class="field-list simple">
+<dt class="field-odd">Hotkey<span class="colon">:</span></dt>
+<dd class="field-odd"><p><kbd class="kbd docutils literal notranslate">Alt</kbd> hold it down and move mouse over image in plot window</p>
+</dd>
+</dl>
+</div>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><p>With an image visable in the plot window you can update the cross section plots by holding <kbd class="kbd docutils literal notranslate">Alt</kbd>
+down while moving the mouse over the image. When you do this there will be a cross hair displayed on
+the plot and the cross sections will update to reflect where the cross hair is on the image.</p>
+</section>
+<section id="contrast-adjustment">
+<h3>Contrast Adjustment<a class="headerlink" href="#contrast-adjustment" title="Link to this heading"></a></h3>
+<figure class="align-center" id="id5">
+<a class="reference internal image-reference" href="../../../_images/plotting_contrast_tool_base.png"><img alt="../../../_images/plotting_contrast_tool_base.png" src="../../../_images/plotting_contrast_tool_base.png" style="width: 809.0px; height: 131.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Contrast tool below main pltting window</span><a class="headerlink" href="#id5" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>With an image visable AND SELECTED in the plot window, you can update the contrast of the image with the
+contrast tool by grabbing one of the red handles at either end of the histogram and dragging it left or right.
+You can also slide the entire slected region left or right by clicking <kbd class="kbd docutils literal notranslate">LMB</kbd> in the middle of the selcted area
+and dragging left or right.</p>
+<figure class="align-center" id="id6">
+<a class="reference internal image-reference" href="../../../_images/plotting_contrast_tool_handles.png"><img alt="../../../_images/plotting_contrast_tool_handles.png" src="../../../_images/plotting_contrast_tool_handles.png" style="width: 809.0px; height: 131.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Red handles to adjust the contrast</span><a class="headerlink" href="#id6" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>When the image is initially loaded the contrast handles will appear at the minnimum and maximum data values.</p>
+<figure class="align-left" id="id7">
+<a class="reference internal image-reference" href="../../../_images/plotting_contrast.png"><img alt="../../../_images/plotting_contrast.png" src="../../../_images/plotting_contrast.png" style="width: 325.20000000000005px; height: 378.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Example when handles adjusted towards left</span><a class="headerlink" href="#id7" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id8">
+<a class="reference internal image-reference" href="../../../_images/plotting_contrast_2.png"><img alt="../../../_images/plotting_contrast_2.png" src="../../../_images/plotting_contrast_2.png" style="width: 325.6px; height: 379.6px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Example when handles adjusted towards right</span><a class="headerlink" href="#id8" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p><em>Max/Min data range</em></p>
+<figure class="align-right" id="id9">
+<a class="reference internal image-reference" href="../../../_images/plotting_contrast_tool_maxrngscale.png"><img alt="../../../_images/plotting_contrast_tool_maxrngscale.png" src="../../../_images/plotting_contrast_tool_maxrngscale.png" style="width: 102.0px; height: 117.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Min/Max data button</span><a class="headerlink" href="#id9" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>To set the values back to the min and max data values press the min/max button to the left of the contrast tool.</p>
+<br><br><br><br><p><em>Toggle Autoscaling</em></p>
+<figure class="align-right" id="id10">
+<a class="reference internal image-reference" href="../../../_images/plotting_contrast_tool_autoscale.png"><img alt="../../../_images/plotting_contrast_tool_autoscale.png" src="../../../_images/plotting_contrast_tool_autoscale.png" style="width: 102.0px; height: 117.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Autoscale button shown as ENABLED</span><a class="headerlink" href="#id10" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>To set the contrast tool to auto scale when new data is added, or to turn off auto scaling as data is added toggle the autoscale button on or off.
+If on a blue box will appear around the button, if no blue box then it is toggled off.</p>
+<br><br><br></section>
+<section id="drag-and-drop-file-loading">
+<h3>Drag and Drop file loading<a class="headerlink" href="#drag-and-drop-file-loading" title="Link to this heading"></a></h3>
+<figure class="align-center" id="id11">
+<a class="reference internal image-reference" href="../../../_images/data_vis_alt_img_drg_drp.png"><img alt="../../../_images/data_vis_alt_img_drg_drp.png" src="../../../_images/data_vis_alt_img_drg_drp.png" style="width: 537.0px; height: 393.75px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Load a previously collected dataset by dragging and dropping</span><a class="headerlink" href="#id11" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>Users can reload a dataset by dragging and dropping it onto the image plot. An example of when this
+is handy is when you want to use a previous scan as the source for a new scan, you drag and drop the
+previous scan on the screen then using the selection tools you would select the region of interest
+for the new scan.</p>
+<p><strong>Video of multiple drag and drop of images of different sizes, pan, zoom</strong></p>
+<video width="640" height="480" controls src="dragdropzoom.mp4"></video><hr class="docutils" />
+<section id="spectra">
+<h4>Spectra<a class="headerlink" href="#spectra" title="Link to this heading"></a></h4>
+<figure class="align-left" id="id12">
+<a class="reference internal image-reference" href="../../../_images/data_vis_spec.png"><img alt="../../../_images/data_vis_spec.png" src="../../../_images/data_vis_spec.png" style="width: 463.5px; height: 480.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Spectra data loaded into spectra viewer</span><a class="headerlink" href="#id12" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The Spectra tab contains a plot for viewing spectra data as it is being acquired or by dragging and
+dropping it from the ThumbnailViewer widget. The scans that currently use the Spectra scan plotter are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Fine Point Scan</strong> &lt;LINK&gt;</p></li>
+<li><p><strong>Positioner Scan</strong> &lt;LINK&gt;</p></li>
+</ul>
+</div></blockquote>
+<p>It is pretty straight forward, as the points are collected during the scan they are plotted on the screen.</p>
+<figure class="align-left" id="id13">
+<a class="reference internal image-reference" href="../../../_images/data_vis_spec_lgnd.png"><img alt="../../../_images/data_vis_spec_lgnd.png" src="../../../_images/data_vis_spec_lgnd.png" style="width: 102.0px; height: 44.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Spectra plot trace legend</span><a class="headerlink" href="#id13" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The name of the trace appears in a legend in the top left corner, the <strong>nxStxm Nexus</strong> &lt;LINK HERE&gt; file
+format definition is the source of the naming convention <strong>entry</strong>, because there is only 1 trace in this
+example it has the name <strong>entry0</strong>.</p>
+<p>As with the images plot you can drag and drop spectra data from the <strong>ThumbnailViewer</strong> &lt;LINK HERE&gt; onto the
+spectra plotter and it will load the data.</p>
+<figure class="align-left" id="id14">
+<a class="reference internal image-reference" href="../../../_images/data_vis_spec_multiple.png"><img alt="../../../_images/data_vis_spec_multiple.png" src="../../../_images/data_vis_spec_multiple.png" style="width: 372.8px; height: 384.40000000000003px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Spectra plot trace legend</span><a class="headerlink" href="#id14" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>If the scan contains multiple entry’s then each entry will be assigned its own color and again the trace
+name and color will be displayed in the legend.</p>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br></section>
+<hr class="docutils" />
+<section id="calibration-camera">
+<h4>Calibration Camera<a class="headerlink" href="#calibration-camera" title="Link to this heading"></a></h4>
+<p>The purpose of the Calibration Camera tab is to quickly set the initial positions of the  following stages:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Zoneplate Z</p></li>
+<li><p>OSA Z</p></li>
+<li><p>Detector Z</p></li>
+</ul>
+</div></blockquote>
+<figure class="align-center" id="id15">
+<a class="reference internal image-reference" href="../../../_images/data_vis_calibcam_stages.png"><img alt="../../../_images/data_vis_calibcam_stages.png" src="../../../_images/data_vis_calibcam_stages.png" style="width: 486.0px; height: 561.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Calibration camera tab</span><a class="headerlink" href="#id15" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The calibration camera is the view from a camera that is mounted on the top of the cryo-STXM tank and it is
+looking down into the STXM through a viewport.</p>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><p>The video image is used along with a measurement tool to set the positions of each stage.</p>
+<figure class="align-center">
+<a class="reference internal image-reference" href="../../../_images/data_vis_calibcam_mtool.png"><img alt="../../../_images/data_vis_calibcam_mtool.png" src="../../../_images/data_vis_calibcam_mtool.png" style="width: 493.0px; height: 208.0px;" />
+</a>
+</figure>
+</section>
+</section>
+<section id="how-to-calibrate">
+<h3>How to Calibrate<a class="headerlink" href="#how-to-calibrate" title="Link to this heading"></a></h3>
+<dl class="field-list simple">
+<dt class="field-odd">1<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Turn the high voltage power to <strong>OFF</strong> on the PMT</p>
+</dd>
+<dt class="field-even">2<span class="colon">:</span></dt>
+<dd class="field-even"><p>Turn the light inside the tank to <strong>ON</strong></p>
+</dd>
+<dt class="field-odd">3<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Get a frame of video by first pressing the <strong>Grab Image</strong> button, the frame of video will then be presented on the screen.</p>
+</dd>
+<dt class="field-even">4<span class="colon">:</span></dt>
+<dd class="field-even"><p>Next decide where the sample holder is <strong>as this will always be the 0 position</strong> from which all other positions will be measured.</p>
+</dd>
+<dt class="field-odd">5<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Using the <strong>Measurement Tool</strong>, click on the location of the sample holder and drag towards the Zoneplate stopping when you get to the Zoneplate.</p>
+</dd>
+</dl>
+<figure class="align-center" id="id16">
+<a class="reference internal image-reference" href="../../../_images/data_vis_calibcam_cal_zp.png"><img alt="../../../_images/data_vis_calibcam_cal_zp.png" src="../../../_images/data_vis_calibcam_cal_zp.png" style="width: 609.6px; height: 451.20000000000005px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Click and drag to measure</span><a class="headerlink" href="#id16" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-left" id="id17">
+<a class="reference internal image-reference" href="../../../_images/data_vis_calibcam_cal_zp_initpos.png"><img alt="../../../_images/data_vis_calibcam_cal_zp_initpos.png" src="../../../_images/data_vis_calibcam_cal_zp_initpos.png" style="width: 324.0px; height: 218.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Position of ZpZ before calibration</span><a class="headerlink" href="#id17" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p><em>In this example the measured position is 2543.44um, because the sample is the 0 position and the Zoneplate is upstream
+of the sample the position for the Zoneplate is negative so the value that is entered into the Zoneplate Z field
+is -2543.44</em>.</p>
+<br><br><br><br><br><br><dl class="field-list simple">
+<dt class="field-odd">6<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Enter the new value of Zoneplate Z into the Zoneplate Z field, when you change the value the background color of the field will change to blue indicating that the value is changed but not yet recorded, if you change focus to another widget before pressing <kbd class="kbd docutils literal notranslate">Enter</kbd> the value in the field will return to the value before the change. In order to record the new value you must press <kbd class="kbd docutils literal notranslate">Enter</kbd>, when you do the value wil be updated and the background color will return to white.</p>
+</dd>
+</dl>
+<figure class="align-left" id="id18">
+<a class="reference internal image-reference" href="../../../_images/data_vis_calibcam_cal_zp_val_2.png"><img alt="../../../_images/data_vis_calibcam_cal_zp_val_2.png" src="../../../_images/data_vis_calibcam_cal_zp_val_2.png" style="width: 198.0px; height: 90.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">New value of Zoneplate Z entered into field</span><a class="headerlink" href="#id18" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id19">
+<a class="reference internal image-reference" href="../../../_images/data_vis_calibcam_cal_zp_val_3.png"><img alt="../../../_images/data_vis_calibcam_cal_zp_val_3.png" src="../../../_images/data_vis_calibcam_cal_zp_val_3.png" style="width: 204.0px; height: 98.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">New value of Zoneplate Z after <kbd class="kbd docutils literal notranslate">Enter</kbd> pressed</span><a class="headerlink" href="#id19" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id20">
+<a class="reference internal image-reference" href="../../../_images/data_vis_calibcam_cal_zp_val_4.png"><img alt="../../../_images/data_vis_calibcam_cal_zp_val_4.png" src="../../../_images/data_vis_calibcam_cal_zp_val_4.png" style="width: 307.0px; height: 31.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">New value of Zoneplate Z has now been set to the calibrated value</span><a class="headerlink" href="#id20" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<dl class="field-list simple">
+<dt class="field-odd">7<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Calibrate OSA Z by clicking and dragging the left handle on the Measurement Tool and dragging it to the OSA Z position.</p>
+</dd>
+<dt class="field-even">8<span class="colon">:</span></dt>
+<dd class="field-even"><p>Enter the value for OSA Z in teh OSA Z field, <strong>again this will be a negative number</strong> because the OSA Z stage is upstream of the sample.</p>
+</dd>
+<dt class="field-odd">9<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Now drag the left most handle of the Measurement Tool to the right to the tip of the Detector.</p>
+</dd>
+<dt class="field-even">10<span class="colon">:</span></dt>
+<dd class="field-even"><p>Enter the value for Detector Z in teh Detector Z field <strong>NOTE: this is now a positive value</strong> because the Detector is downstream of the sample.</p>
+</dd>
+</dl>
+<p>Calibration is now done.</p>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br></section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../scan_ctrl.html" class="btn btn-neutral float-left" title="Scan Control and Status" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../splash.html" class="btn btn-neutral float-right" title="Splash Screen" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Canadian Lightsource.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

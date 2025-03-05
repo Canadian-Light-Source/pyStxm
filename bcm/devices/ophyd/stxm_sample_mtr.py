@@ -4,24 +4,24 @@ Created on 2014-07-03
 @author: bergr
 """
 #!/usr/bin/env python
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import pyqtSignal
-import time
 import math
-import numpy as np
+import time
 
-from bcm.devices import MotorQt
+import numpy as np
+from ophyd.device import Component as Cpt
 from ophyd.signal import EpicsSignal, EpicsSignalRO
-from ophyd.device import Device, Component as Cpt
-#from cls.utils.decorators import QTasync
+from PyQt5 import QtCore, QtWidgets
+
+from bcm.devices.ophyd.motor import MotorQt
 from cls.utils.log import get_module_logger
 from cls.utils.roi_dict_defs import *
+
 
 _logger = get_module_logger(__name__)
 
 MAX_PIEZO_RANGE = 250.0
-MAX_DELTA_FINE_RANGE_UM = MAX_PIEZO_RANGE / 2.0
-MIN_INTERFER_RESET_RANGE_UM = MAX_DELTA_FINE_RANGE_UM / 4.0
+# MAX_DELTA_FINE_RANGE_UM = MAX_PIEZO_RANGE / 2.0
+# MIN_INTERFER_RESET_RANGE_UM = MAX_DELTA_FINE_RANGE_UM / 4.0
 MAX_DELTA_POS_CHNG_UM = 1000
 MAX_FINE_SCAN_VELO = 10000
 MAX_COARSE_SCAN_VELO = 2500
@@ -76,9 +76,12 @@ class sample_abstract_motor(MotorQt):
         self.POWER_OFF = 0
         self.POWER_ON = 1
 
-        self._coarse_mtr = None
-        self._fine_mtr = None
+        self._coarse_mtr: MotorQt = None
+        self._fine_mtr: e712_sample_motor = None
         self.mtr_busy = False
+
+        self._max_coarse_range: float = 10000.  # sane default, may be overridden
+        self._max_fine_range: float = MAX_PIEZO_RANGE  # sane default, may be overridden
 
         self.pos = None
         self.prev_velo = None
@@ -86,6 +89,20 @@ class sample_abstract_motor(MotorQt):
         self.finish_move_timer.setSingleShot(True)
         self.finish_move_timer.timeout.connect(self.finish_abs_move)
 
+    @property
+    def max_fine_range(self) -> float:
+        """Maximum travel range for fine piezo motor; in microns (um)"""
+        return self._max_fine_range
+
+    @property
+    def max_delta_fine_range(self) -> float:
+        """Maximum travel range, relative from center, for fine piezo motor; in microns (um)"""
+        return self.max_fine_range / 2.0
+
+    @property
+    def min_interfer_reset_range(self) -> float:
+        """Minimum difference threshold to trigger a reset of the interferometer; in microns (um)"""
+        return self.max_delta_fine_range / 4.0
 
     def do_autozero(self):
         """
@@ -97,16 +114,20 @@ class sample_abstract_motor(MotorQt):
         #give it time to move
         i = 1
         movn = self._fine_mtr.motor_is_moving.get()
+        movn_timeout_sec = 5  # max timeout for .MOVN to go high
+        movn_time_intval = 0.01
         while movn != 1:
-            time.sleep(0.01)
+            time.sleep(movn_time_intval)
             if (i % 10) == 0:
                 QtWidgets.QApplication.processEvents()
             movn = self._fine_mtr.motor_is_moving.get()
             i += 1
+            if i > (movn_timeout_sec / movn_time_intval):
+                break
         #loop here until it is finished
         i = 1
         while movn != 0:
-            time.sleep(0.01)
+            time.sleep(movn_time_intval)
             if (i % 10) == 0:
                 QtWidgets.QApplication.processEvents()
             movn = self._fine_mtr.motor_is_moving.get()
@@ -119,7 +140,7 @@ class sample_abstract_motor(MotorQt):
         override the lower level epics motor as this class is now providing the functionality
         that used to be provided by the Abstract Motor Driver (removed in Fall of 2022)
         """
-        self.move_to_position(pos,None)
+        self.move_to_position(pos)
 
     def set_piezo_power_off(self):
         """ convienience function to set the power off"""
@@ -131,7 +152,7 @@ class sample_abstract_motor(MotorQt):
         #print("set_piezo_power_on[%s] turning power on" % self._fine_mtr.name)
         self._fine_mtr.servo_power.put(self.POWER_ON)
 
-    def set_coarse_fine_mtrs(self, coarse=None, fine=None):
+    def set_coarse_fine_mtrs(self, coarse: MotorQt, fine: "e712_sample_motor"):
         '''
         coarse is an instance of the coarse Epics motor as is fine
         '''
@@ -158,6 +179,12 @@ class sample_abstract_motor(MotorQt):
         """
         return(self._fine_mtr)
 
+    def set_coarse_fine_ranges(self, coarse: float, fine: float):
+        if coarse:
+            self._max_coarse_range = coarse
+        if fine:
+            self._max_fine_range = fine
+
     def on_status_changed(self, stat):
         print(stat)
 
@@ -178,17 +205,22 @@ class sample_abstract_motor(MotorQt):
         smin_in_range = False
         smax_in_range = False
         smin, smax = self.calc_scan_range(roi)
-        fbk = self._fine_mtr.user_readback.get()
+        fbk = float(self._fine_mtr.user_readback.get())
         # now calc max range from current center
-        cmin = fbk - MAX_DELTA_FINE_RANGE_UM
-        cmax = fbk + MAX_DELTA_FINE_RANGE_UM
+        cmin = fbk - self.max_delta_fine_range
+        cmax = fbk + self.max_delta_fine_range
         #if it is then check to see if the scan range will work
         if smin > cmin:
             smin_in_range = True
         if smax < cmax:
             smax_in_range = True
+        return smin_in_range and smax_in_range
 
-        return(smin_in_range and smax_in_range)
+    def check_scan_limits(self, start: float, stop: float, coarse_only: bool = False) -> bool:
+        # the fine piezo stage will have a small relative range,
+        # but we may move the coarse stepper stage to compensate
+        fine_in_rel_range = math.fabs(stop - start) < self.max_fine_range
+        return (fine_in_rel_range or coarse_only) and self._coarse_mtr.check_scan_limits(start, stop)
 
     def move_fine_to_coarse_fbk_pos(self):
         """
@@ -206,33 +238,24 @@ class sample_abstract_motor(MotorQt):
         """
         pos_chk = self.do_position_check(self._fine_mtr, center)
         volt_chk = self.do_voltage_check()
-        if pos_chk and volt_chk:
-            return(True)
-        else:
-            return(False)
+        return pos_chk and volt_chk
 
-    def do_position_check(self, mtr, setpoint):
+    def do_position_check(self, mtr: MotorQt, setpoint: float):
         """
         take a motor and check to see if its feedback position is within a deadband of the setpoint
         """
-        import math
-        fbk = mtr.user_readback.get()
-        if math.fabs(fbk - setpoint) > 5.0:
-            return False
-        else:
-            return True
+        fbk = float(mtr.user_readback.get())
+        threshold = 5.0
+        return  math.fabs(fbk - setpoint) <= threshold
 
     def do_voltage_check(self):
         """
         take a fine (piezo) motor and check to see if its current voltage is within +-10 volts of mid range (50)
         if it is return True else False
         """
-        import math
-        volt_fbk = self._fine_mtr.output_volt_rbv.get()
-        if math.fabs(E712_MID_RANGE_VOLTS - volt_fbk) <= 10.0:
-            return True
-        else:
-            return False
+        volt_fbk = float(self._fine_mtr.output_volt_rbv.get())
+        threshold = 10.0
+        return math.fabs(E712_MID_RANGE_VOLTS - volt_fbk) <= threshold
 
     def do_interferometer_check(self):
         """
@@ -241,35 +264,35 @@ class sample_abstract_motor(MotorQt):
         """
         _logger.info(f"do_interferometer_check: starting with {self._fine_mtr.name}")
         #check delta fbk with piezo relaxed
-        ffbk1 = self._fine_mtr.user_readback.get()
+        ffbk1 = float(self._fine_mtr.user_readback.get())
         self._fine_mtr.servo_power.put(0)
         # push mid range volts to open loop so that peizo should be in center of physical range
 
-        cfbk = self._coarse_mtr.user_readback.get()
+        cfbk = float(self._coarse_mtr.user_readback.get())
 
-        ffbk2 = self._fine_mtr.user_readback.get()
-        _logger.info(f"Waiting for fine fbk to settle")
+        ffbk2 = float(self._fine_mtr.user_readback.get())
+        _logger.info("Waiting for fine fbk to settle")
         #loop until it settles
         i = 0
         while (math.fabs(ffbk2 - ffbk1) > 2.0) and (i < 50):
             if i % 2:
-                ffbk2 = self._fine_mtr.user_readback.get()
+                ffbk2 = float(self._fine_mtr.user_readback.get())
             else:
-                ffbk1 = self._fine_mtr.user_readback.get()
+                ffbk1 = float(self._fine_mtr.user_readback.get())
             time.sleep(0.02)
             i += 1
 
         ffbk = ffbk1
 
         d_rng = math.fabs(cfbk - ffbk)
-        if d_rng > MIN_INTERFER_RESET_RANGE_UM:
-            print(f"do_interferometer_check: (delta range) {d_rng} > {MIN_INTERFER_RESET_RANGE_UM}(MIN_INTERFER_RESET_RANGE_UM) range too large Resetting interferometer")
+        if d_rng > self.min_interfer_reset_range:
+            print(f"do_interferometer_check: (delta range) {d_rng} > {self.min_interfer_reset_range}(MIN_INTERFER_RESET_RANGE_UM) range too large Resetting interferometer")
             self.reset_interferometers()
 
             #if we did a reset, loop here until the feedbacks match
             i = 0
             while (math.fabs(ffbk - cfbk) > 1.0) and (i < 50):
-                ffbk = self._fine_mtr.user_readback.get()
+                ffbk = float(self._fine_mtr.user_readback.get())
                 time.sleep(0.02)
                 i += 1
 
@@ -305,7 +328,7 @@ class sample_abstract_motor(MotorQt):
             # #push mid range volts to open loop so that peizo should be in center of physical range
             # self._fine_mtr.output_volt.put(E712_MID_RANGE_VOLTS)
 
-            c_fbk = self._coarse_mtr.user_readback.get()
+            c_fbk = float(self._coarse_mtr.user_readback.get())
             d_pos = center - c_fbk
             if abs(d_pos) > MAX_DELTA_OFF_CENTER:
                 self._coarse_mtr.move(center, wait=True)
@@ -456,7 +479,7 @@ class sample_abstract_motor(MotorQt):
         #     # if it is a large move then do the reset
         #     do_interfer_reset = True
 
-        if np.fabs(delta_rng) > MAX_DELTA_FINE_RANGE_UM:
+        if np.fabs(delta_rng) > self.max_delta_fine_range:
             # coarse move
             # make sure servo is off
             self._fine_mtr.servo_power.put(0)
@@ -506,10 +529,7 @@ class sample_abstract_motor(MotorQt):
         """
         fbk = mtr.get_position()
         abs_delta = math.fabs(pos - fbk)
-        if abs_delta <= deadband:
-            return True
-        else:
-            return False
+        return abs_delta <= deadband
 
     def move_coarse_to_position(self, pos, do_interfer_reset=False):
         """
@@ -528,7 +548,7 @@ class sample_abstract_motor(MotorQt):
         #calc delta to know if its a coarse or fine move
         delta_rng = cur_pos - pos
 
-        if np.fabs(delta_rng) > MAX_DELTA_FINE_RANGE_UM:
+        if np.fabs(delta_rng) > self.max_delta_fine_range:
             #coarse move
             self._coarse_mtr.velocity.put(MAX_COARSE_MOTOR_VELO)
             if not skip_crs_mv:

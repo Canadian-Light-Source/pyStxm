@@ -172,56 +172,61 @@ class BaseLineSpecScanClass(BaseScan):
         an API function that will be called if it exists for all scans
         call a specific scan start for fine scans
         """
-        mtr_dct = self.determine_samplexy_posner_pvs()
-        mtr_x = self.main_obj.device(mtr_dct["sx_name"])
-        mtr_y = self.main_obj.device(mtr_dct["sy_name"])
-
-        # #determine if the scan will violate soft limits
-        accel_dist_prcnt_pv, deccel_dist_prcnt_pv = self.get_accel_deccel_pvs()
-
-        ACCEL_DISTANCE = self.x_roi[RANGE] * accel_dist_prcnt_pv.get()
-        DECCEL_DISTANCE = self.x_roi[RANGE] * deccel_dist_prcnt_pv.get()
-        xstart = self.x_roi[START] - ACCEL_DISTANCE
-        xstop = self.x_roi[STOP] + DECCEL_DISTANCE
-        ystart, ystop = self.y_roi[START] , self.y_roi[STOP]
-
-        #check if beyond soft limits
-        # if the soft limits would be violated then return False else continue and return True
-        if not mtr_x.check_scan_limits(xstart, xstop):
-            _logger.error("Scan would violate soft limits of X motor")
-            return(False)
-        if not mtr_y.check_scan_limits(ystart, ystop):
-            _logger.error("Scan would violate soft limits of Y motor")
-            return(False)
-
-        if self.is_fine_scan:
-            super().fine_scan_go_to_scan_start()
-        else:
-
-            # before starting scan check the interferometers, note BOTH piezo's must be off first
-            mtr_x.set_piezo_power_off()
-            mtr_y.set_piezo_power_off()
-
-            if not mtr_x.do_voltage_check():
-                self.mtr_recenter_msg.show()
-                mtr_x.do_autozero()
-            if not mtr_y.do_voltage_check():
-                self.mtr_recenter_msg.show()
-                mtr_y.do_autozero()
-
-            mtr_x.do_interferometer_check()
-            mtr_y.do_interferometer_check()
-
-            self.mtr_recenter_msg.hide()
-
-            mtr_x.move_coarse_to_scan_start(start=xstart, stop=self.x_roi[STOP], npts=self.x_roi[NPOINTS], dwell=self.dwell)
-            mtr_y.move_coarse_to_position(ystart, False)
-
-            #coarse focus scan
-            mtr_x.set_piezo_power_off()
-            mtr_y.set_piezo_power_off()
-
-        return(True)
+        # this is now checked earlier by the scan pluggin because the multi region widget needs to update its UI colors
+        # accordingly, so we can just assume if it made it this far its good to go
+        return True
+        # mtr_dct = self.determine_samplexy_posner_pvs()
+        # # mtr_x = self.main_obj.device(mtr_dct["sx_name"])
+        # # mtr_y = self.main_obj.device(mtr_dct["sy_name"])
+        # mtr_x = self.main_obj.get_sample_positioner("X")
+        # mtr_y = self.main_obj.get_sample_positioner("Y")
+        #
+        # # #determine if the scan will violate soft limits
+        # accel_dist_prcnt_pv, deccel_dist_prcnt_pv = self.get_accel_deccel_pvs()
+        #
+        # ACCEL_DISTANCE = self.x_roi[RANGE] * accel_dist_prcnt_pv.get()
+        # DECCEL_DISTANCE = self.x_roi[RANGE] * deccel_dist_prcnt_pv.get()
+        # xstart = self.x_roi[START] - ACCEL_DISTANCE
+        # xstop = self.x_roi[STOP] + DECCEL_DISTANCE
+        # ystart, ystop = self.y_roi[START] , self.y_roi[STOP]
+        #
+        # #check if beyond soft limits
+        # # if the soft limits would be violated then return False else continue and return True
+        # if not mtr_x.check_scan_limits(xstart, xstop):
+        #     _logger.error("Scan would violate soft limits of X motor")
+        #     return(False)
+        # if not mtr_y.check_scan_limits(ystart, ystop):
+        #     _logger.error("Scan would violate soft limits of Y motor")
+        #     return(False)
+        #
+        # if self.is_fine_scan:
+        #     super().fine_scan_go_to_scan_start()
+        # else:
+        #
+        #     # before starting scan check the interferometers, note BOTH piezo's must be off first
+        #     mtr_x.set_piezo_power_off()
+        #     mtr_y.set_piezo_power_off()
+        #
+        #     if not mtr_x.do_voltage_check():
+        #         self.mtr_recenter_msg.show()
+        #         mtr_x.do_autozero()
+        #     if not mtr_y.do_voltage_check():
+        #         self.mtr_recenter_msg.show()
+        #         mtr_y.do_autozero()
+        #
+        #     mtr_x.do_interferometer_check()
+        #     mtr_y.do_interferometer_check()
+        #
+        #     self.mtr_recenter_msg.hide()
+        #
+        #     mtr_x.move_coarse_to_scan_start(start=xstart, stop=self.x_roi[STOP], npts=self.x_roi[NPOINTS], dwell=self.dwell)
+        #     mtr_y.move_coarse_to_position(ystart, False)
+        #
+        #     #coarse focus scan
+        #     mtr_x.set_piezo_power_off()
+        #     mtr_y.set_piezo_power_off()
+        #
+        # return(True)
 
     # def configure_devs(self, dets):
     #     """

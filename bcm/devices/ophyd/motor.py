@@ -439,10 +439,12 @@ class MotorQt(EpicsMotor, QObject):
         if self.high_limit_val.connected:
             return self.high_limit_val.put(val)
 
-    def check_scan_limits(self, start, stop):
+    def check_scan_limits(self, start: float, stop: float, coarse_only: bool = False) -> bool:
         """
         check the start stop values against current soft limits
         return False if beyond else True if they are reachable
+
+        check_coarse_only is included for API support and not used
         """
         return self.get_low_limit() < start and stop < self.get_high_limit()
 

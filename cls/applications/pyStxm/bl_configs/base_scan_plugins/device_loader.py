@@ -18,9 +18,10 @@ from bcm.devices import Bo
 from bcm.devices import Transform
 from bcm.devices import MotorQt
 from bcm.devices import Counter
+from bcm.devices import sample_abstract_motor
 
 if BACKEND == 'epics':
-    from bcm.devices.ophyd.stxm_sample_mtr import sample_abstract_motor, e712_sample_motor
+    from bcm.devices.ophyd.stxm_sample_mtr import e712_sample_motor
     from bcm.devices.ophyd.pi_e712 import E712WGDevice
     from bcm.devices.ophyd.e712_wavegen.e712 import E712ControlWidget
     from bcm.devices.ophyd.qt.daqmx_counter_input import (

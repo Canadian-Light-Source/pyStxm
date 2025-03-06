@@ -137,8 +137,7 @@ class BaseScanTableModel(QtCore.QAbstractTableModel):
         col = self.get_column_with_name(field)
         if col is not None:
             self._field_validity_map[row, col] = valid
-            parent = QtCore.QModelIndex()
-            self.dataChanged.emit(parent, parent)
+
 
     def is_empty(self):
         return not any(self.scanListData)

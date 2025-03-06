@@ -3522,17 +3522,26 @@ class MultiRegionScanParamBase(ScanParamWidget):
     def check_multi_region_scan_limits(self) -> bool:
         """Check the multi-region scanning parameters and limits for spatial stages, energy, and polarization positioners.
 
+        This needs to check two things:
+        1. The scan parameters are within the soft limits of the positioners.
+        2. The scan parameters are within the scanable ranges of the positioners, ex: fine scan with stxm_sample motor
+
         Returns ``True`` if scan parameters are valid; otherwise``False``.
         """
         ret = True
-
+        check_coarse_only = True
         # get motor definitions
         if self.sample_positioning_mode == sample_positioning_modes.GONIOMETER:
             mtr_x = self.main_obj.device("DNM_GONI_X")
             mtr_y = self.main_obj.device("DNM_GONI_Y")
         else:
-            mtr_x = self.main_obj.get_sample_fine_positioner("X")
-            mtr_y = self.main_obj.get_sample_fine_positioner("Y")
+            if self.scan_class.is_fine_scan:
+                check_coarse_only = False
+                mtr_x = self.main_obj.get_sample_fine_positioner("X")
+                mtr_y = self.main_obj.get_sample_fine_positioner("Y")
+            else:
+                mtr_x = self.main_obj.get_sample_positioner("X")
+                mtr_y = self.main_obj.get_sample_positioner("Y")
 
         # ensure that preset ranges are set from BL config before checking limits
         if hasattr(mtr_x, "set_coarse_fine_ranges"):
@@ -3555,14 +3564,14 @@ class MultiRegionScanParamBase(ScanParamWidget):
         for sp_id, sp_roi in sp_regions:
             xstart, ystart, xstop, ystop = sp_roi[SPDB_RECT]
 
-            if not mtr_x.check_scan_limits(xstart, xstop):
+            if not mtr_x.check_scan_limits(xstart, xstop, check_coarse_only):
                 _logger.error("Scan would violate soft limits of X motor")
                 self.multi_region_widget.sp_widg.table_view.set_x_roi_is_valid(sp_id, valid=False)
                 ret = False
             else:
                 self.multi_region_widget.sp_widg.table_view.set_x_roi_is_valid(sp_id, valid=True)
 
-            if not mtr_y.check_scan_limits(ystart, ystop):
+            if not mtr_y.check_scan_limits(ystart, ystop, check_coarse_only):
                 _logger.error("Scan would violate soft limits of Y motor")
                 self.multi_region_widget.sp_widg.table_view.set_y_roi_is_valid(sp_id, valid=False)
                 ret = False

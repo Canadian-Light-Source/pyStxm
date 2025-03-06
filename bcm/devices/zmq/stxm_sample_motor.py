@@ -473,7 +473,6 @@ class sample_abstract_motor(ZMQMotor):
         cur_pos = self._fine_mtr.user_readback.get()
 
         # calc delta to know if its a coarse or fine move
-        # todo
         delta_rng = cur_pos - pos
         # if np.fabs(delta_rng) > MAX_DELTA_POS_CHNG_UM:
         #     # if it is a large move then do the reset

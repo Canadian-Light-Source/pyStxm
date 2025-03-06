@@ -127,6 +127,24 @@ the service is used to:
 The nx_server service must be installed on a computer that 
 has a mount point to the data computer such that the ```/etc/fstab``` file contains the entry in its list of mount points.
 
+**Service Commands**:
+
+    - Enable the service: 
+        >sudo systemctl enable nx_server
+    - Force a reload of the service file:
+        >sudo systemctl daemon-reload
+    - Start the service:
+        >sudo systemctl start nx_server.service  
+    - Check the status:
+        >sudo systemctl status nx_server.service
+    - View the output of the nx_server.py file:
+        >sudo journalctl -u nx_server -f 
+    - Stop the service:
+        >sudo systemctl stop nx_server.service 
+    - Restart the service:
+        >sudo systemctl restart nx_server.service 
+
+
 --------------------------------------
 ### Configure pyStxm with Pixelator
 

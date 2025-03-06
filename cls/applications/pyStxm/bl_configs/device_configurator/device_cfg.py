@@ -282,7 +282,7 @@ class Device_Configure(QtWidgets.QWidget):
                         dlist = dev_dct[k][sig_dct]
                         for _dct in dlist:
                             self.do_insert(k, _dct, con_sts[_dct["dcs_nm"]])
-        # print('DONE build_database')
+        print(f'DONE build_database: [{self.devdb_path.as_posix()}]')
         # self.dev_db.close()
 
         return True

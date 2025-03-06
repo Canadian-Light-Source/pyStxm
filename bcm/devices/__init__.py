@@ -176,13 +176,8 @@ elif USE_PIXELATOR:
     #from .ophyd.stringin import Stringin
     #from .ophyd.waveform import Waveform
     from .zmq.motor import ZMQMotor as MotorQt
-    # from .ophyd.stxm_sample_mtr import (
-    #     sample_abstract_motor,
-    #     sample_motor,
-    #     e712_sample_motor,
-    # )
-    from .zmq.motor import ZMQMotor as sample_abstract_motor
-    from .zmq.motor import ZMQMotor as sample_motor
+    from .zmq.stxm_sample_motor import sample_abstract_motor, sample_motor
+    # from .zmq.motor import ZMQMotor as sample_motor
     # from .zmq.zmq_device import ZMQMotor as e712_sample_motor
 
     # from .ophyd.pi_e712 import E712WGDevice

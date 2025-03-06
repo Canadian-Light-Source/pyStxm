@@ -73,6 +73,7 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
         self._det_subscription = None
         self._det_prog_subscription = None
         self._saved_one = False
+        self.is_fine_scan = True
 
     def filter_detector_list(self, dets, det_type=detector_types.POINT):
         """

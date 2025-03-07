@@ -74,7 +74,7 @@ dev_dct["POSITIONERS"] = [
     {
         "name": "DNM_SAMPLE_X",
         "desc": "Sample_X",
-        "class": "MotorQt",
+        "class": "sample_abstract_motor",
         "dcs_nm": "SampleX",
         "pos_type": "POS_TYPE_ES",
         "fine_mtr_name": "DNM_SAMPLE_FINE_X",
@@ -83,7 +83,7 @@ dev_dct["POSITIONERS"] = [
     {
         "name": "DNM_SAMPLE_Y",
         "desc": "Sample_Y",
-        "class": "MotorQt",
+        "class": "sample_abstract_motor",
         "dcs_nm": "SampleY",
         "pos_type": "POS_TYPE_ES",
         "fine_mtr_name": "DNM_SAMPLE_FINE_Y",

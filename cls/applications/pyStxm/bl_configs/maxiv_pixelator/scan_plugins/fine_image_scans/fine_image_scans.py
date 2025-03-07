@@ -38,11 +38,6 @@ class SampleFineImageScanParam(BaseFineImageScansParam):
 
         connect_scan_req_detail_flds_to_validator(self)
         
-    def check_scan_limits(self) -> bool:
-        #return self.check_multi_region_scan_limits()
-        # we will let Pixelator decide if the scan is too big or not
-        return True
-
     def update_data(self):
         self.wdg_com = super().update_data(force_pxp=True)
         # the sub type in the base plugin is checked and set each time the data is updated, it checks to see

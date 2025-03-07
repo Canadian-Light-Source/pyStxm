@@ -88,6 +88,17 @@ class sample_abstract_motor(MotorQt):
         self.finish_move_timer = QtCore.QTimer()
         self.finish_move_timer.setSingleShot(True)
         self.finish_move_timer.timeout.connect(self.finish_abs_move)
+    #     self._coarse_scanable_range = 10
+    #     self._fine_scanable_range = 10
+    #     # default of 10um, note this is different than the low and high soft limits, those
+    #     # are set by the coarse motors for an e712 motor because it needs to be able to use setpoint values that are
+    #     # in the range of the coarse motor, scanable range is the actual physical range of the piezo stage and will
+    #     # come from the max_fine_x and max_fine_y declarations in the bealmline config file
+    #
+    # def set_scanable_ranges(self, coarse: float, fine: float) -> None:
+    #     self._coarse_scanable_range = coarse
+    #     self._fine_scanable_range = fine
+
 
     @property
     def max_fine_range(self) -> float:
@@ -216,11 +227,29 @@ class sample_abstract_motor(MotorQt):
             smax_in_range = True
         return smin_in_range and smax_in_range
 
+    # def check_scan_limits(self, start: float, stop: float, coarse_only: bool = False) -> bool:
+    #     # the fine piezo stage will have a small relative range,
+    #     # but we may move the coarse stepper stage to compensate
+    #     fine_in_rel_range = math.fabs(stop - start) < self.max_fine_range
+    #     return (fine_in_rel_range or coarse_only) and self._coarse_mtr.check_scan_limits(start, stop)
+    #
+
     def check_scan_limits(self, start: float, stop: float, coarse_only: bool = False) -> bool:
-        # the fine piezo stage will have a small relative range,
-        # but we may move the coarse stepper stage to compensate
+        """
+        check the start stop values against current soft limits
+        return False if beyond else True if they are reachable
+
+        check_coarse_only is included for API support and not used
+        """
         fine_in_rel_range = math.fabs(stop - start) < self.max_fine_range
-        return (fine_in_rel_range or coarse_only) and self._coarse_mtr.check_scan_limits(start, stop)
+        can_got_to_target = (fine_in_rel_range or coarse_only) and self._coarse_mtr.check_scan_limits(start, stop)
+
+        if can_got_to_target:
+            # check fine stage
+            fine_in_rel_range = math.fabs(stop - start) < self.max_fine_range
+            return fine_in_rel_range or coarse_only
+        else:
+            return False
 
     def move_fine_to_coarse_fbk_pos(self):
         """
@@ -686,6 +715,7 @@ class sample_motor(MotorQt):
         self.POWER_OFF = 0
         self.POWER_ON = 1
 
+
     def set_power(self, val):
         """
         turn on or off teh power to the stage
@@ -786,6 +816,41 @@ class e712_sample_motor(MotorQt):
         self.POWER_OFF = 0
         self.POWER_ON = 1
         self.marker_start_pos = 0
+        self._max_coarse_range: float = 10000.  # sane default, may be overridden
+        self._max_fine_range: float = MAX_PIEZO_RANGE  # sane default, may be overridden
+    #     self._coarse_scanable_range = 10
+    #     self._fine_scanable_range = 10
+    #     # default of 10um, note this is different than the low and high soft limits, those
+    #     # are set by the coarse motors for an e712 motor because it needs to be able to use setpoint values that are
+    #     # in the range of the coarse motor, scanable range is the actual physical range of the piezo stage and will
+    #     # come from the max_fine_x and max_fine_y declarations in the bealmline config file
+    #
+    # def set_scanable_ranges(self, coarse: float, fine: float) -> None:
+    #     self._coarse_scanable_range = coarse
+    #     self._fine_scanable_range = fine
+
+    def set_coarse_fine_ranges(self, coarse: float, fine: float):
+        if coarse:
+            self._max_coarse_range = coarse
+        if fine:
+            self._max_fine_range = fine
+
+    def check_scan_limits(self, start: float, stop: float, coarse_only: bool = False) -> bool:
+        """
+        check the start stop values against current soft limits
+        return False if beyond else True if they are reachable
+
+        check_coarse_only is included for API support and not used
+        """
+        can_got_to_target = super().check_scan_limits(start, stop, coarse_only)
+
+        if can_got_to_target:
+            # check fine stage
+            fine_in_rel_range = math.fabs(stop - start) < self._max_fine_range
+            return fine_in_rel_range or coarse_only
+        else:
+            return False
+
 
     def set_marker_position(self, pos):
         """

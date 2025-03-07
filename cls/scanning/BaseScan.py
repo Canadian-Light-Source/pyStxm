@@ -4747,6 +4747,7 @@ class BaseScan(QtCore.QObject):
         self.stack = False
         self.is_horiz_line = (self.sp_db["Y"]["RANGE"] <  0.0001)
 
+
         if self.scan_sub_type == scan_sub_types.LINE_UNIDIR:
             # LINE_UNIDIR
             self.is_lxl = True
@@ -4773,7 +4774,7 @@ class BaseScan(QtCore.QObject):
 
         self.update_roi_member_vars(self.sp_db)
         ret = self.verify_scan_velocity()
-
+        self.determine_scan_res()
         #return if the scan velo was verified or not so that we can bail out of the scan before getting any deeper
         return(ret)
 

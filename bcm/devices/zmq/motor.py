@@ -107,6 +107,15 @@ class ZMQMotor(ZMQBaseDevice):
         self.set_low_limit(self._low_limit)
         self.set_high_limit(self._high_limit)
         self.spmg_enum.set(spmg_enumerations['Go'])
+        self.scanable_range = 1000
+
+        # default of 10um, note this is different than the low and high soft limits, those
+        # are set by the coarse motors for an e712 motor because it needs to be able to use setpoint values that are
+        # in the range of the coarse motor, scanable range is the actual physical range of the piezo stage and will
+        # come from the max_fine_x and max_fine_y declarations in the bealmline config file
+
+    def set_max_scanable_range(self, rng: float) -> None:
+        self.scanable_range = rng
 
     def calc_scan_range(self, roi):
         """
@@ -292,10 +301,13 @@ class ZMQMotor(ZMQBaseDevice):
             vmax = self.velocity.get()
         return vmax
 
-    def check_scan_limits(self, start, stop):
+    def check_scan_limits(self, start: float, stop: float, coarse_only: bool = False) -> bool:
         """
         check the start stop values against current soft limits
         return False if beyond else True if they are reachable
+
+        check_coarse_only is included for API support and not used
+
         """
         if start <= self.get_low_limit():
             return(False)

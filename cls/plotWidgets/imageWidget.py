@@ -513,6 +513,8 @@ class ImageWidgetPlot(PlotDialog):
         self.zoom_scale = 1.0
         self.zoom_rngx = 1.0
         self.zoom_rngy = 1.00
+
+
         #
         #
         # create an instance of InputState so that I can
@@ -4165,8 +4167,6 @@ class ImageWidgetPlot(PlotDialog):
             self.widthSc = 1
             array = np.empty((int(rows), int(cols)))
             array[:] = np.NAN
-            # array = np.zeros((int(rows), int(cols)))
-            # array[:] = 0
             array[0][0] = 0
             # print(f'initData: creating self.data[img_idx] id = {id(self.data[img_idx])}')
             self.wPtr = 0
@@ -4375,41 +4375,8 @@ class ImageWidgetPlot(PlotDialog):
             if show:
                 self.show_data(item_name)
 
-    # def addPoint(self, img_idx, y, x, val, show=False):
-    #     """
-    #     addPoint(): description
-    #
-    #     :param y: y description
-    #     :type y: y type
-    #
-    #     :param x: x description
-    #     :type x: x type
-    #
-    #     :param val: val description
-    #     :type val: val type
-    #
-    #     :param show=False: show=False description
-    #     :type show=False: show=False type
-    #
-    #     :returns: None
-    #     """
-    #     """ this function adds a new point to the 2d array
-    #     """
-    #     # if(not self.dataAtMax):
-    #     # if(len(self.data) == 0):
-    #     if len(self.data) > 0:
-    #         rows, cols = self.data[img_idx].shape
-    #         if (y < rows) and (x < cols):
-    #             # remember this == a 2d array array[row][column] so it == [array[y][x]
-    #             # so that it will display the data from bottom/up left to right
-    #             self.data[img_idx][y, x] = val
-    #
-    #         if show:
-    #             self.show_data(img_idx)
-    #
-    #         if self._auto_contrast:
-    #             self.apply_auto_contrast(img_idx)
-    def addPoint(self, item_name, y, x, val, show=False):
+
+    def add_point(self, item_name, y, x, val, show=False):
         """
         addPoint(): description
 
@@ -4446,7 +4413,7 @@ class ImageWidgetPlot(PlotDialog):
                 if self._auto_contrast:
                     self.apply_auto_contrast(item_name)
 
-    def addLineAtRowCol(self, item_name, row, col, line, show=False):
+    def add_line_at_row_col(self, item_name, row, col, line, show=False):
         """
         addLine(): description
 
@@ -4546,9 +4513,9 @@ class ImageWidgetPlot(PlotDialog):
         else:
             _logger.error(f"stxmImageWidget: addLine: item with name {item_name} does not exist")
 
-    def addVerticalLine(self, item_name, col, line, show=False):
+    def add_vertical_line(self, item_name, col, line, show=False):
         """
-        addVerticalLine(): description
+        add_vertical_line(): description
 
         :param col: column description
         :type col: col type
@@ -4584,6 +4551,59 @@ class ImageWidgetPlot(PlotDialog):
             data[:, col] = line[0:rows]
 
             #     self.show_data(img_idx, self.data[img_idx])
+            if show:
+                # self.show_data(img_idx, self.data)
+                if self._auto_contrast:
+                    self.apply_auto_contrast(item_name)
+                self.replot()
+        else:
+            _logger.error(
+                "ImageWidget: add_vertical_line: self.data[%s] == None" % item_name
+            )
+
+    def add_vertical_line_at_row_col(self, item_name, row, col, line, show=False):
+        """
+        addVerticalLine(): this function adds a new vertical line to the 2d array
+
+        :param col: column description
+        :type col: col type
+
+        :param line: line description
+        :type line: line type
+
+        :param show=False: show=False description
+        :type show=False: show=False type
+
+        :returns: None
+        """
+
+        # print 'addLine: row=%d' % row
+        # print 'addLine: data length = %d vals' % len(line)
+        if self.image_is_new:
+            self.image_is_new = False
+            if col != 0:
+                return
+        # this == a catch for a spurious previsou row being sent
+        # at the start of a scan, fix this sometime
+
+        # print 'row=%d' % row
+        item = self.get_image_item(item_name)
+        if item:
+            rows, cols = item.data.shape
+
+            if col >= cols:
+                col = cols - 1
+
+            line_len = len(line)
+            # the first pixel in teh nan array has been set to 0.0 in init_items
+            # if its left as nan the contrast tool throws an exception, maybe addressed in plotpy in future
+            if item.data[0][col] == 0.0:
+                index = 0
+            else:
+                index = np.where(np.isnan(item.data[:, col]))[0][0]
+            # print(f"addVerticalLineAtRowCol: row={row}, col={col}, index={index}")
+            item.data[index:index + line_len, col] = line #line[0:rows]
+
             if show:
                 # self.show_data(img_idx, self.data)
                 if self._auto_contrast:
@@ -6034,7 +6054,7 @@ class ImageWidgetPlot(PlotDialog):
         #     item.boundingRect().moveCenter(self.items[0].boundingRect().center())
         #     item.update_bounds()
 
-        if fprefix not in items:
+        if fprefix not in self.items.keys():
             plot.add_item(item, z=MAX_IMAGE_Z - 1)
             self.items[fprefix] = item
             self.data[fprefix] = item.data

@@ -3061,8 +3061,14 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     data = val[det_name]
                     if col == 0:
                         self.do_roi_update(det_name, prog_dct)
-                        self.lineByLineImageDataWidget.reset_item_data(det_name)
-                    self.lineByLineImageDataWidget.addVerticalLine(det_name, col, data, True)
+
+                    if is_tiled:
+                        # print(f"add_line_to_plot: add_vertical_line_at_row_col({det_name}, {row}, {col}, {data}, True)")
+                        self.lineByLineImageDataWidget.add_vertical_line_at_row_col(det_name, row, col, data, True)
+                    else:
+                        # print(f"add_line_to_plot: add_vertical_line({det_name}, {col}, {data}, True)")
+                        self.lineByLineImageDataWidget.add_vertical_line(det_name, col, data, True)
+
 
             elif det_name is not None:
                 # added to support SLS Pixelator
@@ -3070,7 +3076,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 if (col == 0) and (row == 0):
                     self.do_roi_update(det_name, prog_dct)
                     self.lineByLineImageDataWidget.reset_item_data(det_name)
-                self.lineByLineImageDataWidget.addVerticalLine(det_name, col, data, True)
+                self.lineByLineImageDataWidget.add_vertical_line(det_name, col, data, True)
 
         elif det_name is not None:
             # added to support SLS Pixelator
@@ -3079,7 +3085,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 self.do_roi_update(det_name, prog_dct)
                 self.lineByLineImageDataWidget.reset_item_data(det_name)
             data = val[det_name]
-            self.lineByLineImageDataWidget.addLineAtRowCol(det_name, row, col, data, True)
+            self.lineByLineImageDataWidget.add_line_at_row_col(det_name, row, col, data, True)
             # print(f"self.lineByLineImageDataWidget.addLineAtRowCol({det_name}, {row}, {col}, {val[det_name]}, True)")
         else:
             if row > 0:
@@ -3212,7 +3218,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     # print(f"val[{det_name}]")
                     if row == 0 and col == 0:
                         self.lineByLineImageDataWidget.reset_item_data(det_name)
-                    self.lineByLineImageDataWidget.addPoint(det_name, row, col, data, True)
+                    self.lineByLineImageDataWidget.add_point(det_name, row, col, data, True)
                 else:
                     print("counter_to_plotter_com_dct: error", counter_to_plotter_com_dct)
 

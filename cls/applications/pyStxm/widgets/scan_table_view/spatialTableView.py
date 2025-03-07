@@ -202,12 +202,20 @@ class SpatialScanTableView(BaseScanTableView):
         self.tablemodel.set_row_field_state(index, "STOPX", valid=valid)
         self.tablemodel.set_row_field_state(index, "RANGEX", valid=valid)
         self.tablemodel.set_row_field_state(index, "CENTERX", valid=valid)
+        parent = QtCore.QModelIndex()
+        self.tablemodel.dataChanged.emit(parent, parent)
+        selection_model = self.selectionModel()
+        selection_model.clearSelection()
 
     def set_y_roi_is_valid(self, index: int, *, valid: bool):
         self.tablemodel.set_row_field_state(index, "STARTY", valid=valid)
         self.tablemodel.set_row_field_state(index, "STOPY", valid=valid)
         self.tablemodel.set_row_field_state(index, "RANGEY", valid=valid)
         self.tablemodel.set_row_field_state(index, "CENTERY", valid=valid)
+        parent = QtCore.QModelIndex()
+        self.tablemodel.dataChanged.emit(parent, parent)
+        selection_model = self.selectionModel()
+        selection_model.clearSelection()
 
     def set_model_column_defaults(self):
         """

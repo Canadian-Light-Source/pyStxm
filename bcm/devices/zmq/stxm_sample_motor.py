@@ -481,7 +481,7 @@ class sample_abstract_motor(ZMQMotor):
         if np.fabs(delta_rng) > self.max_delta_fine_range:
             # coarse move
             # make sure servo is off
-            self._fine_mtr.servo_power.put(0)
+            # self._fine_mtr.servo_power.put(0)
             # # push mid range volts to open loop so that peizo should be in center of physical range
             # self._fine_mtr.output_volt.put(E712_MID_RANGE_VOLTS)
             self._coarse_mtr.velocity.put(MAX_COARSE_MOTOR_VELO)
@@ -498,8 +498,8 @@ class sample_abstract_motor(ZMQMotor):
 
         else:
             # fine move
-            print("move_to_position 2 [%s] turning power on" % self._fine_mtr.name)
-            self._fine_mtr.servo_power.put(1)
+            # print("move_to_position 2 [%s] turning power on" % self._fine_mtr.name)
+            # self._fine_mtr.servo_power.put(1)
             if not skip_fine_mv:
                 self._fine_mtr.move(pos, wait=True)
 

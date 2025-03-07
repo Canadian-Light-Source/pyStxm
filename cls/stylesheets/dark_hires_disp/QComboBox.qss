@@ -76,4 +76,14 @@ QComboBox QListView
     color:rgb(255,255,255);
 }
 
+#scanTypeSelComboBox{
+    font: 18px ;
+	min-width: 2em;
+	/*padding: 2px 12px 11px 13px;*/
+	/*
+	background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+		stop: 0 gray_80_rgb, stop: 0.2 gray_70_rgb,
+		stop: 0.5 gray_60_rgb, stop: 1.0 gray_40_rgb);
+    */
+}
 

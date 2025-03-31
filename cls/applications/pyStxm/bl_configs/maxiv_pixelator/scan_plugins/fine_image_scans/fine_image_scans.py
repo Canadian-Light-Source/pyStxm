@@ -45,8 +45,11 @@ class SampleFineImageScanParam(BaseFineImageScansParam):
         # pixelator coarse stages do not support LxL constant velocity mode scanning
         posner_name_x = 'DNM_SAMPLE_FINE_X'
         posner_name_y = 'DNM_SAMPLE_FINE_Y'
+        # posner_name_x = 'DNM_SAMPLE_X'
+        # posner_name_y = 'DNM_SAMPLE_Y'
 
         dct = self.get_scan_request()
+
         if dct['coarse_only']:
             posner_name_x = 'DNM_COARSE_X'
             posner_name_y = 'DNM_COARSE_Y'

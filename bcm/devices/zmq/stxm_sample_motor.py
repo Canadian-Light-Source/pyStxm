@@ -258,42 +258,6 @@ class sample_abstract_motor(ZMQMotor):
         look at the feedbacks of the coarse and fine motors and decide if the interferometers should be reset
         function ALWAYS returns with piezo power off
         """
-        # _logger.info(f"do_interferometer_check: starting with {self._fine_mtr.name}")
-        # #check delta fbk with piezo relaxed
-        # ffbk1 = float(self._fine_mtr.user_readback.get())
-        # self._fine_mtr.servo_power.put(0)
-        # # push mid range volts to open loop so that peizo should be in center of physical range
-        #
-        # cfbk = float(self._coarse_mtr.user_readback.get())
-        #
-        # ffbk2 = float(self._fine_mtr.user_readback.get())
-        # _logger.info("Waiting for fine fbk to settle")
-        # #loop until it settles
-        # i = 0
-        # while (math.fabs(ffbk2 - ffbk1) > 2.0) and (i < 50):
-        #     if i % 2:
-        #         ffbk2 = float(self._fine_mtr.user_readback.get())
-        #     else:
-        #         ffbk1 = float(self._fine_mtr.user_readback.get())
-        #     time.sleep(0.02)
-        #     i += 1
-        #
-        # ffbk = ffbk1
-        #
-        # d_rng = math.fabs(cfbk - ffbk)
-        # if d_rng > self.min_interfer_reset_range:
-        #     print(f"do_interferometer_check: (delta range) {d_rng} > {self.min_interfer_reset_range}(MIN_INTERFER_RESET_RANGE_UM) range too large Resetting interferometer")
-        #     self.reset_interferometers()
-        #
-        #     #if we did a reset, loop here until the feedbacks match
-        #     i = 0
-        #     while (math.fabs(ffbk - cfbk) > 1.0) and (i < 50):
-        #         ffbk = float(self._fine_mtr.user_readback.get())
-        #         time.sleep(0.02)
-        #         i += 1
-        #
-        # _logger.info(f"do_interferometer_check: [{i}] leaving with {self._fine_mtr.name} and its coarse counter part being roughly the same")
-        # _logger.info(f"do_interferometer_check: [{i}] {self._fine_mtr.name}={ffbk} and {self._coarse_mtr.name}={cfbk}")
         pass
 
     def move_to_scan_start(self, start=0.0, stop=0.0, npts=1, dwell=1.0, start_in_center=False, line_scan=True):
@@ -304,77 +268,6 @@ class sample_abstract_motor(ZMQMotor):
         start_in_center: if the scan is going to be a fine scan then we want the coarse motors to go to the center of the scan
                             as the piezo's are going to do all the moving and they need to be in the center of their ranges
         """
-        # #self.do_interferometer_check()
-        # #fine_pwr = self._fine_mtr.servo_power.get()
-        # self._coarse_mtr.update_msta()
-        # # check to see if motor is already on a limit because if it is and you request a move it will throw an exception
-        # self._coarse_mtr.velocity.put(MAX_COARSE_SCAN_VELO)
-        # range = stop - start
-        # center = (start + stop) / 2.0
-        #
-        # #make sure to convert dwell (ms) to sec
-        # exposure_time = (dwell * 0.001) * npts
-        # velo = range / exposure_time
-        #
-        # #now move to scan start
-        # if start_in_center:
-        #     # fine scan acceleration range will be different than coarse scans
-        #     accdecc_rng = range * 0.05
-        #     # #make sure servo is off
-        #     # self._fine_mtr.servo_power.put(0)
-        #     # #push mid range volts to open loop so that peizo should be in center of physical range
-        #     # self._fine_mtr.output_volt.put(E712_MID_RANGE_VOLTS)
-        #
-        #     c_fbk = float(self._coarse_mtr.user_readback.get())
-        #     d_pos = center - c_fbk
-        #     if abs(d_pos) > MAX_DELTA_OFF_CENTER:
-        #         self._coarse_mtr.move(center, wait=True)
-        #         #self.reset_interferometers()
-        #
-        #     # print("move_to_scan_start 1 [%s] turning power on" % self._fine_mtr.name)
-        #     # self._fine_mtr.servo_power.put(1)
-        #     # self._fine_mtr.move(start - accdecc_rng, wait=True)
-        #
-        #
-        #     # set scanning velo
-        #     if line_scan:
-        #         self._fine_mtr.velocity.put(velo)
-        #     else:
-        #         #use max velo for point scans
-        #         self._fine_mtr.velocity.put(MAX_FINE_SCAN_VELO)
-        #
-        #     if self.do_position_check(self._coarse_mtr, center):
-        #         print("move_to_scan_start: motor is in position")
-        #     else:
-        #         print("move_to_scan_start: motor is not at the setpoint yet")
-        #
-        # else:
-        #     accdecc_rng = range * 0.05
-        #     # make sure servo is off
-        #     # self._fine_mtr.servo_power.put(0)
-        #     # # push mid range volts to open loop so that peizo should be in center of physical range
-        #     # self._fine_mtr.output_volt.put(E712_MID_RANGE_VOLTS)
-        #     self._coarse_mtr.move(start - accdecc_rng, wait=True)
-        #     #self.reset_interferometers()
-        #     print("move_to_scan_start 2 [%s] turning power on" % self._fine_mtr.name)
-        #     self._fine_mtr.servo_power.put(1)
-        #     self._fine_mtr.move(start - accdecc_rng, wait=True)
-        #     #self._fine_mtr.servo_power.put(fine_pwr)
-        #
-        #     # set scanning velo
-        #     if line_scan:
-        #         self._coarse_mtr.velocity.put(velo)
-        #     else:
-        #         # use max velo for point scans
-        #         self._coarse_mtr.velocity.put(MAX_COARSE_SCAN_VELO)
-        #
-        #     if self.do_position_check(self._coarse_mtr, start - accdecc_rng):
-        #         print("move_to_scan_start: motor is in position")
-        #     else:
-        #         print("move_to_scan_start: motor is not at the setpoint yet")
-        #
-        # # set the trigger positions
-        # self.config_start_stop(start=start, stop=stop, npts=npts, accRange=accdecc_rng, deccRange=accdecc_rng, line=True)
         pass
 
     def move_coarse_to_scan_start(self, start=0.0, stop=0.0, npts=1, dwell=1.0, start_in_center=False, line_scan=True):
@@ -385,142 +278,30 @@ class sample_abstract_motor(ZMQMotor):
         start_in_center: if the scan is going to be a fine scan then we want the coarse motors to go to the center of the scan
                             as the piezo's are going to do all the moving and they need to be in the center of their ranges
         """
-        # #self.do_interferometer_check()
-        #
-        # # self._fine_mtr.servo_power.put(0)
-        # # # push mid range volts to open loop so that peizo should be in center of physical range
-        # # self._fine_mtr.output_volt.put(E712_MID_RANGE_VOLTS)
-        # # self.reset_interferometers()
-        #
-        # self._coarse_mtr.update_msta()
-        # # check to see if motor is already on a limit because if it is and you request a move it will throw an exception
-        # self._coarse_mtr.velocity.put(MAX_COARSE_SCAN_VELO)
-        # range = stop - start
-        # center = (start + stop) / 2.0
-        #
-        # #make sure to convert dwell (ms) to sec
-        # exposure_time = (dwell * 0.001) * npts
-        # velo = range / exposure_time
-        #
-        # #now move to scan start
-        # if start_in_center:
-        #     # fine scan acceleration range will be different than coarse scans
-        #     accdecc_rng = range * 0.05
-        #     c_fbk = self._coarse_mtr.user_readback.get()
-        #     d_pos = center - c_fbk
-        #     if abs(d_pos) > MAX_DELTA_OFF_CENTER:
-        #         self._coarse_mtr.move(center, wait=True)
-        #
-        #     if self.do_position_check(self._coarse_mtr, center):
-        #         print("move_to_scan_start: motor is in position")
-        #     else:
-        #         print("move_to_scan_start: motor is not at the setpoint yet")
-        #
-        # else:
-        #     accdecc_rng = range * 0.05
-        #     self._coarse_mtr.move(start - accdecc_rng, wait=True)
-        #
-        #     # set scanning velo
-        #     if line_scan:
-        #         self._coarse_mtr.velocity.put(velo)
-        #     else:
-        #         # use max velo for point scans
-        #         self._coarse_mtr.velocity.put(MAX_COARSE_SCAN_VELO)
-        #
-        #     if self.do_position_check(self._coarse_mtr, start - accdecc_rng):
-        #         print("move_to_scan_start: motor is in position")
-        #     else:
-        #         print("move_to_scan_start: motor is not at the setpoint yet")
-        #
-        # # set the trigger positions
-        # self.config_start_stop(start=start, stop=stop, npts=npts, accRange=accdecc_rng, deccRange=accdecc_rng, line=True)
         pass
 
     def motor_on_a_limit(self, mtr):
         """
         an status exception is thrown if the motor is already on a limit and you try to move into it
+
+        This should be the DCS servers issue to check so just return that it is not on a limit
         """
-        # mtr.update_msta()
-        # lls = mtr.msta_dct.msta_fields['minus_ls']['val']
-        # hls = mtr.msta_dct.msta_fields['plus_ls']['val']
-        # if lls or hls:
-        #     return(True)
-        # else:
-        #     return(False)
         return False
 
 
     def move_to_position(self, pos, do_interfer_reset=False):
         """
-        control both the fine and the coarse motors to move to the given position, checking the range from the current position
-        to see if it is a fine move or a coarse move
+        the DCS server handles the coordinated control of the abstract positioner so just send the setpoint
         """
-        # self.do_interferometer_check()
-        # self, pos, do_interfer_reset = self
-        self.pos = pos
-        skip_crs_mv = False
-        skip_fine_mv = False
-        if self.motor_on_a_limit(self._coarse_mtr):
-            skip_crs_mv = True
-            _logger.warn(f"Coarse motor {self._coarse_mtr.name} is already on a limit")
-
-        if self.motor_on_a_limit(self._fine_mtr):
-            skip_fine_mv = True
-            _logger.warn(f"Fine motor {self._fine_mtr.name} is already on a limit")
-
-        # check to see if motor is already on a limit because if it is and you request a move it will throw an exception
-        self.prev_velo = self._coarse_mtr.velocity.get()
-        cur_pos = self._fine_mtr.user_readback.get()
-
-        # calc delta to know if its a coarse or fine move
-        delta_rng = cur_pos - pos
-        # if np.fabs(delta_rng) > MAX_DELTA_POS_CHNG_UM:
-        #     # if it is a large move then do the reset
-        #     do_interfer_reset = True
-
-        if np.fabs(delta_rng) > self.max_delta_fine_range:
-            # coarse move
-            # make sure servo is off
-            # self._fine_mtr.servo_power.put(0)
-            # # push mid range volts to open loop so that peizo should be in center of physical range
-            # self._fine_mtr.output_volt.put(E712_MID_RANGE_VOLTS)
-            self._coarse_mtr.velocity.put(MAX_COARSE_MOTOR_VELO)
-            if not skip_crs_mv:
-                self._coarse_mtr.move(pos, wait=False)
-            dly = np.fabs(delta_rng/MAX_COARSE_MOTOR_VELO) * 1000
-            # print(f"move_to_position: finish_move_timer delay = {dly:.2f}ms")
-            self.finish_move_timer.start(int(dly))
-
-            # if do_interfer_reset:
-            #     print("Calling reset_interferometer()")
-            #     self.reset_interferometers()
-            # print("finished reset_interferometer()")
-
-        else:
-            # fine move
-            # print("move_to_position 2 [%s] turning power on" % self._fine_mtr.name)
-            # self._fine_mtr.servo_power.put(1)
-            if not skip_fine_mv:
-                self._fine_mtr.move(pos, wait=True)
+        self.set('user_setpoint', pos)
 
 
     def finish_abs_move(self):
         """
         a signal handler that will finish teh abs move, basically turn on servo and push final position
+
+        handled by the DCS server
         """
-        # fine move
-        # movn = self._coarse_mtr.motor_is_moving.get()
-        # if movn:
-        #     self.finish_move_timer.start(25)
-        #     return
-        # self.finish_move_timer.stop()
-        # #print(f"finish_abs_move [{self._fine_mtr.name}] turning power on, setting coarse velo to {self.prev_velo:.2f}")
-        # self._fine_mtr.servo_power.put(1)
-        # #print(f"finish_abs_move: pushing setpoint to fine motor ")
-        # self._fine_mtr.move(self.pos, wait=False)
-        # # set scanning velo
-        # #print(f"finish_abs_move: coarse velocity reset")
-        # self._coarse_mtr.velocity.put(self.prev_velo)
         pass
 
     def is_within_deadband(self, mtr, pos, deadband=1.0):
@@ -535,41 +316,18 @@ class sample_abstract_motor(ZMQMotor):
         """
         control both the fine and the coarse motors to move to the given position, checking the range from the current position
         to see if it is a fine move or a coarse move
+
+        handled by the DCS server
         """
-        # skip_crs_mv = False
-        # if self.motor_on_a_limit(self._coarse_mtr):
-        #     skip_crs_mv = True
-        #     _logger.warn(f"Coarse motor {self._coarse_mtr.name} is already on a limit")
-        #
-        # # check to see if motor is already on a limit because if it is and you request a move it will throw an exception
-        # prev_velo = self._coarse_mtr.velocity.get()
-        # cur_pos = self._fine_mtr.user_readback.get()
-        #
-        # #calc delta to know if its a coarse or fine move
-        # delta_rng = cur_pos - pos
-        #
-        # if np.fabs(delta_rng) > self.max_delta_fine_range:
-        #     #coarse move
-        #     self._coarse_mtr.velocity.put(MAX_COARSE_MOTOR_VELO)
-        #     if not skip_crs_mv:
-        #         if self.is_within_deadband(self._coarse_mtr, pos, 500):
-        #             self._coarse_mtr.move(pos, wait=False)
-        #         else:
-        #             self._coarse_mtr.move(pos, wait=True)
-        #
-        #     # set scanning velo
-        #     self._coarse_mtr.velocity.put(prev_velo)
-        # else:
-        #     #its a fine move
-        #     self._fine_mtr.move(pos, wait=True)
+        pass
 
     def reset_interferometers(self, arg=0):
         """
         NOTE: This will cause BOTH axis to set their positions to the coarse motors for X and Y respectively
+        todo:
+        the DCS server may or may not offer this capability so might be implemented in the future
         """
         # _logger.info("Resetting the Interferometers")
-        # self.set_coarse_pos.put(1, use_complete=True)
-        # time.sleep(0.250)
         pass
 
     def reset_interferometer_with_atz(self, arg=0):
@@ -577,6 +335,8 @@ class sample_abstract_motor(ZMQMotor):
         NOTE: this is per axis,
         this will cause the fine stage to execute an autozero  (which will put it into the center of its
         physical and voltage ranges, then set the position of the fine stage to be the same as the coarse stage
+        todo:
+        the DCS server may or may not offer this capability so might be implemented in the future
         """
         #self.atz_set_coarse_pos.put(1)
         pass
@@ -613,40 +373,20 @@ class sample_abstract_motor(ZMQMotor):
         :param line=True: line=True description
         :type line=True: line=True type
         :returns: None
+
+        todo:
+        the DCS server may or may not offer this capability so might be implemented in the future
         """
-        # if line:
-        #     lstart = start - accRange
-        #     lstop = stop + deccRange
-        #     # set the member variable
-        #     self.marker_start_pos = start
-        #     # start
-        #     # self._config_start_stop(xscan, x_posnum, lstart, lstop, 2)
-        #     self._fine_mtr.scan_start.put(lstart)
-        #     self._fine_mtr.scan_stop.put(lstop)
-        #     self._fine_mtr.marker_start.put(start)
-        #     self._fine_mtr.marker_stop.put(stop) #this will cause driver to push trigger command to E712
-        #     #self.set_marker.put(1000000)
-        # else:
-        #     self._fine_mtr.marker_position = 1000000
-        #     self._fine_mtr.scan_start.put(1000000)
-        #     self._fine_mtr.scan_stop.put(1000000)
-        #     self._fine_mtr.marker_start.put(1000000)
-        #     self._fine_mtr.marker_stop.put(1000000)#this will cause driver to push trigger command to E712
-        #     #self.set_marker.put(1000000)
         pass
 
     def enable_marker_position(self, en):
         '''
         this assumes that all other markers have already been set and this function
         is called as part of a line by line scan to essentially enable and disable the triggering
+
+        todo:
+        the DCS server may or may not offer this capability so might be implemented in the future
         '''
-        # if en:
-        #     mrkr_pos = self.marker_start_pos
-        # else:
-        #     mrkr_pos = 1000000
-        #
-        # self._fine_mtr.marker_start.put(mrkr_pos)
-        # self._fine_mtr.set_marker.put(mrkr_pos)
         pass
 
 #
@@ -712,159 +452,9 @@ class sample_motor(ZMQMotor):
         self, start=0.0, stop=0.0, npts=1, accRange=0.0, deccRange=1.0, line=True
     ):
         """
+        todo:
+        the DCS server may or may not offer this capability so might be implemented in the future
 
         """
-#         if line:
-#             lstart = start - accRange
-#             lstop = stop + deccRange
-#             # start
-#             # self._config_start_stop(xscan, x_posnum, lstart, lstop, 2)
-#             self.scan_start.put(lstart)
-#             self.scan_stop.put(lstop)
-#             self.marker_start.put(start)
-#             self.marker_stop.put(stop)
-#             self.set_marker.put(1000000)
-#         else:
-#             self.scan_start.put(1000000)
-#             self.scan_stop.put(1000000)
-#             self.marker_start.put(1000000)
-#             self.marker_stop.put(1000000)
-#             self.set_marker.put(1000000)
-# #
-#
-# class e712_sample_motor(ZMQMotor):
-#     """
-#     Represents an motor that is typically a piezo motor, either a sample fine stage or a zoneplate X/Y stage
-#     """
-#
-#     mode = Cpt(EpicsSignal, ":Mode", kind="omitted")
-#     scan_start = Cpt(EpicsSignal, ":ScanStart", kind="omitted")
-#     scan_stop = Cpt(EpicsSignal, ":ScanStop", kind="omitted")
-#     marker_start = Cpt(EpicsSignal, ":MarkerStart", kind="omitted")
-#     marker_stop = Cpt(EpicsSignal, ":MarkerStop", kind="omitted")
-#     set_marker = Cpt(EpicsSignal, ":SetMarker", kind="omitted")
-#     auto_zero = Cpt(EpicsSignal, ":AutoZero", kind="omitted")
-#     servo_power = Cpt(EpicsSignal, ":ServoPower", kind="omitted")
-#     servo_power_rbv = Cpt(EpicsSignalRO, ":ServoPower_RBV", kind="omitted")
-#     output_volt = Cpt(EpicsSignal, ":OutputVolt", kind="omitted")
-#     output_volt_rbv = Cpt(EpicsSignalRO, ":OutputVolt_RBV", kind="omitted")
-#
-#     dig_flt_bwidth_rbv = Cpt(EpicsSignalRO, ":DigFltBWidth_RBV", kind="omitted")
-#     dig_flt_parm1_rbv = Cpt(EpicsSignalRO, ":DigFltParm1_RBV", kind="omitted")
-#     dig_flt_parm2_rbv = Cpt(EpicsSignalRO, ":DigFltParm2_RBV", kind="omitted")
-#     dig_flt_parm3_rbv = Cpt(EpicsSignalRO, ":DigFltParm3_RBV", kind="omitted")
-#     dig_flt_parm4_rbv = Cpt(EpicsSignalRO, ":DigFltParm4_RBV", kind="omitted")
-#     dig_flt_parm5_rbv = Cpt(EpicsSignalRO, ":DigFltParm5_RBV", kind="omitted")
-#     cap_sens_b_parm_rbv = Cpt(EpicsSignalRO, ":CapSensBParm_RBV", kind="omitted")
-#     cap_sens_m_parm_rbv = Cpt(EpicsSignalRO, ":CapSensMParm_RBV", kind="omitted")
-#     p_term_rbv = Cpt(EpicsSignalRO, ":PTerm_RBV", kind="omitted")
-#     i_term_rbv = Cpt(EpicsSignalRO, ":ITerm_RBV", kind="omitted")
-#     d_term_rbv = Cpt(EpicsSignalRO, ":DTerm_RBV", kind="omitted")
-#     slew_rate_rbv = Cpt(EpicsSignalRO, ":SlewRate_RBV", kind="omitted")
-#     notch_freq1_rbv = Cpt(EpicsSignalRO, ":NotchFreq1_RBV", kind="omitted")
-#     notch_freq2_rbv = Cpt(EpicsSignalRO, ":NotchFreq2_RBV", kind="omitted")
-#     notch_reject1_rbv = Cpt(EpicsSignalRO, ":NotchReject1_RBV", kind="omitted")
-#     notch_reject2_rbv = Cpt(EpicsSignalRO, ":NotchReject2_RBV", kind="omitted")
-#     notch_bw1_rbv = Cpt(EpicsSignalRO, ":NotchBW1_RBV", kind="omitted")
-#     notch_bw2_rbv = Cpt(EpicsSignalRO, ":NotchBW2_RBV", kind="omitted")
-#
-#     def __init__(self, signal_name, **kwargs):
-#         ZMQMotor.__init__(self, signal_name, **kwargs)
-#         self.POWER_OFF = 0
-#         self.POWER_ON = 1
-#         self.marker_start_pos = 0
-#
-#     def set_marker_position(self, pos):
-#         """
-#         must be set before calling enable_mrker_position
-#         """
-#         self.marker_start_pos = pos
-#
-#     def enable_marker_position(self, en):
-#         '''
-#         this assumes that all other markers have already been set and this function
-#         is called as part of a line by line scan to essentially enable and disable the triggering
-#         '''
-#         if en:
-#             mrkr_pos = self.marker_start_pos
-#         else:
-#             mrkr_pos = 1000000
-#
-#         self.marker_start.put(mrkr_pos)
-#         self.set_marker.put(mrkr_pos)
-#
-#     def get_stage_params(self):
-#         dct = {}
-#         dct["DigFltBWidth"] = self.dig_flt_bwidth_rbv.get()
-#         dct["DigFltParm1"] = self.dig_flt_parm1_rbv.get()
-#         dct["DigFltParm2"] = self.dig_flt_parm2_rbv.get()
-#         dct["DigFltParm3"] = self.dig_flt_parm3_rbv.get()
-#         dct["DigFltParm4"] = self.dig_flt_parm4_rbv.get()
-#         dct["DigFltParm5"] = self.dig_flt_parm5_rbv.get()
-#         dct["CapSensBParm"] = self.cap_sens_b_parm_rbv.get()
-#         dct["CapSensMParm"] = self.cap_sens_m_parm_rbv.get()
-#         dct["PTerm"] = self.p_term_rbv.get()
-#         dct["ITerm"] = self.i_term_rbv.get()
-#         dct["DTerm"] = self.d_term_rbv.get()
-#         dct["SlewRate"] = self.slew_rate_rbv.get()
-#         # dct['SlewRate'] = self.velocity')
-#         dct["NotchFreq1"] = self.notch_freq1_rbv.get()
-#         dct["NotchFreq2"] = self.notch_freq2_rbv.get()
-#         dct["NotchReject1"] = self.notch_reject1_rbv.get()
-#         dct["NotchReject2"] = self.notch_reject2_rbv.get()
-#         dct["NotchBW1"] = self.notch_bw1_rbv.get()
-#         dct["NotchBW2"] = self.notch_bw2_rbv.get()
-#
-#         return dct
-#
-#     def set_power(self, val):
-#         """
-#         turn on or off teh power to the stage
-#         :param val:
-#         :return:
-#         """
-#         self.servo_power.put(val)
-#
-#     def set_mode(self, mode):
-#         """
-#         put the mode value to the PV
-#         :param mode:
-#         :return:
-#         """
-#         self.mode.put(mode)
-#
-#
-# if __name__ == "__main__":
-#     import sys
-#     from PyQt5.QtWidgets import QApplication
-#     app = QApplication([])
-#
-#     #mtr = sample_motor("IOC:m100")
-#     coarseX = ZMQMotor("SMTR1610-3-I12-45", name="COARSE_X")
-#     fineX = e712_sample_motor("PZAC1610-3-I12-40", name="SAMPLE_FINE_X")
-#     abs_mtrX = sample_abstract_motor("PSMTR1610-3-I12-00", name="SAMPLE_X")
-#     abs_mtrX.set_coarse_fine_mtrs(coarse=coarseX, fine=fineX)
-#
-#     coarseY = ZMQMotor("SMTR1610-3-I12-46", name="COARSE_Y")
-#     fineY = e712_sample_motor("PZAC1610-3-I12-41", name="SAMPLE_FINE_Y")
-#     abs_mtrY = sample_abstract_motor("PSMTR1610-3-I12-01", name="SAMPLE_Y")
-#     abs_mtrY.set_coarse_fine_mtrs(coarse=coarseY, fine=fineY)
-#
-#     start = 623.5
-#     stop = range = start * -1
-#     npts = 100
-#     accdecc_rng = range * 0.05
-#
-#     #abs_mtr.move_to_scan_start(start=start, stop=stop, npts=npts, accRange=accdecc_rng, deccRange=accdecc_rng, dwell=5.0, line=True)
-#
-#     #print(fine.user_readback.get())
-#     abs_mtrX.do_autozero()
-#     abs_mtrX.reset_interferometers()
-#     # abs_mtrX.move_to_position(375, do_interfer_reset=True)
-#
-#     # abs_mtrY.reset_interferometer()
-#     #abs_mtrY.move_to_position((723, True))
-#     #abs_mtrY.reset_interferometer_with_atz(1)
-#
-#
-#     sys.exit(app.exec_())
+        pass
+

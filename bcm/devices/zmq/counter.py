@@ -167,6 +167,9 @@ class ZMQCounter(ZMQBaseDevice):
         # print(f"process_data emitting: {plot_dct}")
         self.new_plot_data.emit(plot_dct)
 
+    def get_name(self):
+        return self.name
+
     def get_position(self):
         return self.get("VAL")
 

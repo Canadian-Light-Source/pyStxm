@@ -7,12 +7,11 @@ Created on 04/11/2022
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
 from cls.data_io.stxm_data_io import STXMDataIo
 from cls.utils.log import get_module_logger
-from cls.types.stxmTypes import scan_sub_types
 from cls.applications.pyStxm.bl_configs.base_scan_plugins.det_scan.det_scan import (
     BaseDetectorScanParam,
 )
 
-from cls.applications.pyStxm.bl_configs.maxiv_pixelator.plugin_utils import init_scan_req_member_vars
+from cls.applications.pyStxm.bl_configs.pixelator_common.plugin_utils import init_scan_req_member_vars
 
 _logger = get_module_logger(__name__)
 

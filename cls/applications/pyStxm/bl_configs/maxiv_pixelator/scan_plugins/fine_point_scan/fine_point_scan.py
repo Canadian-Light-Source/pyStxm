@@ -12,8 +12,8 @@ from cls.utils.roi_dict_defs import *
 from cls.applications.pyStxm.bl_configs.base_scan_plugins.fine_point_scan.fine_point_scan import (
     BasePointSpecScanParam,
 )
-from cls.applications.pyStxm.bl_configs.maxiv_pixelator.plugin_utils import (connect_scan_req_detail_flds_to_validator,
-    init_scan_req_member_vars,set_scan_rec_default,scan_rec_enable_widget)
+from cls.applications.pyStxm.bl_configs.pixelator_common.plugin_utils import (connect_scan_req_detail_flds_to_validator,
+                                                                              init_scan_req_member_vars, set_scan_rec_default, scan_rec_enable_widget)
 from cls.utils.roi_utils import get_sp_db_from_wdg_com, wdg_to_sp
 from cls.utils.dict_utils import dct_get
 

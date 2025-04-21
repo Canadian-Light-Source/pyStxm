@@ -1,8 +1,44 @@
 import sys
 import zmq
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QLineEdit, QPushButton, QLabel
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QLineEdit, QPushButton, QLabel
 from PyQt5.QtCore import QTimer
 
+commands = ['initialize',
+    'recordedChannels',
+    'detectorSettings',
+    'updateDetectorSettings',
+    'estimatedTime',
+    'scanRequest',
+    'abortScan',
+    'pauseScan'
+    'resumeScan',
+    'scanStatus',
+    'moveRequest',
+    'moveStatus',
+    'homeRequest',
+    'positionerStatus',
+    'modified positioner definition',
+    'modified zonePlate definition',
+    'zonePlateFocus',
+    'oscilloscopeDefinition',
+    'focusType',
+    'scanTypeArchive',
+    'localFileScanTypeArchive',
+    'allMotorsOff',
+    'resetInterferometer',
+    'OSA_IN',
+    'OSA_OUT',
+    'ZonePlate IN',
+    'ZonePlate OUT',
+    'Sample OUT',
+    'topupMode',
+    'beamShutterMode',
+    'loadFile directory',
+    'loadFile file',
+    'loadDefinition',
+    'change user',
+    'script info'
+    ]
 
 class ZMQApp(QMainWindow):
     def __init__(self, host):
@@ -17,12 +53,12 @@ class ZMQApp(QMainWindow):
         self.layout = QVBoxLayout(self.main_widget)
 
         # Label for command part
-        self.cmd_label = QLabel("Enter command (First Part of Multipart):", self)
+        self.cmd_label = QLabel("Select command (First Part of Multipart):", self)
         self.layout.addWidget(self.cmd_label)
 
-        # Text field to type the command (part 0 of the multipart message)
-        self.cmd_input_field = QLineEdit(self)
-        self.cmd_input_field.setPlaceholderText("Enter command (part 0)")
+        # ComboBox to select the command (part 0 of the multipart message)
+        self.cmd_input_field = QComboBox(self)
+        self.cmd_input_field.addItems(commands)
         self.layout.addWidget(self.cmd_input_field)
 
         # Label for multipart message parts
@@ -38,6 +74,10 @@ class ZMQApp(QMainWindow):
         self.send_multipart_button = QPushButton("Send Multipart Request", self)
         self.layout.addWidget(self.send_multipart_button)
         self.send_multipart_button.clicked.connect(self.send_multipart_request)
+
+        # Label to display the received message
+        self.received_message_label = QLabel("Received message will be displayed here.", self)
+        self.layout.addWidget(self.received_message_label)
 
         self.setCentralWidget(self.main_widget)
 
@@ -60,28 +100,23 @@ class ZMQApp(QMainWindow):
 
     def send_multipart_request(self):
         """Send a multipart message via the REQ socket with a command as the first part."""
-        command = self.cmd_input_field.text()  # Part 0 (command)
+        command = self.cmd_input_field.currentText()  # Part 0 (command)
         multipart_message = self.multipart_input_field.text()  # Parts 1, 2, ...
 
         if command and multipart_message:
-            # Split the multipart message by commas
-            parts = multipart_message.split(',')
             print(f"Sending multipart request with command: {command}")
-            print(f"Sending multipart parts: {parts}")
+            print(f"Sending multipart message: {multipart_message}")
 
             # First send the command as part 0
             self.req_socket.send_string(command, zmq.SNDMORE)
 
-            # Then send the other parts as part 1, part 2, etc.
-            for i, part in enumerate(parts):
-                if i < len(parts) - 1:
-                    self.req_socket.send_string(part, zmq.SNDMORE)
-                else:
-                    self.req_socket.send_string(part)
+            # Send the multipart message as a single part
+            self.req_socket.send_string(multipart_message)
 
             # Wait for the reply from the REP socket
             reply = self.req_socket.recv_string()
             print(f"Received reply: {reply}")
+            self.received_message_label.setText(f"Received reply: {reply}")
 
     def receive_sub_message(self):
         """Poll and receive multipart messages from the SUB socket."""
@@ -98,13 +133,14 @@ class ZMQApp(QMainWindow):
                 if parts[0].find('detectorValues') > -1:
                     pass
                 else:
+                    received_message = "\n".join(parts)
                     print("SUB: Received multipart message:")
                     for i, part in enumerate(parts):
                         print(f"Part {i + 1}: {part}")
+                    self.received_message_label.setText(received_message)
         except zmq.Again:
             # No message received
             pass
-
 
 if __name__ == "__main__":
     # Set the HOST variable dynamically

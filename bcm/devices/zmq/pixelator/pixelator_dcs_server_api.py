@@ -747,10 +747,14 @@ class DcsServerApi(BaseDcsServerApi):
                 i = 0
                 for app_devname in list(self.parent.devices['POSITIONERS'].keys()):
                     pos = values[i]['position']
+                    status = values[i]['status']
                     self._update_device_feedback(app_devname, pos, app_devname=app_devname)
+                    self._update_device_status(app_devname, status, app_devname=app_devname)
                     # print(f"process_SUB_rcv_messages:positionerStatus: [{app_devname}]  value={pos}")
                     self.parent.devices['POSITIONERS'][app_devname]['position'] = pos
+                    self.parent.devices['POSITIONERS'][app_devname]['status'] = status
                     self.devices[app_devname]['position'] = pos
+                    self.devices[app_devname]['status'] = status
                     i += 1
 
         elif resp[0].find("moveStatus") > -1:
@@ -887,6 +891,7 @@ class DcsServerApi(BaseDcsServerApi):
                         dev = self.parent.devs[app_devname]['dev']
                         dev.set_connected(True)
                         dev.set_desc(positioner_dct['description'])
+                        dev.set_positioner_dct(positioner_dct)
                         if hasattr(dev, 'set_low_limit'):
                             dev.set_low_limit(positioner_dct['lowerSoftLimit'])
                         if hasattr(dev, 'set_high_limit'):
@@ -966,6 +971,7 @@ class DcsServerApi(BaseDcsServerApi):
         """
         dcs_devname = put_dct['dcs_name']
         value = put_dct['value']
+        attr =  put_dct['attr']
 
         #only try to put to a pixelator device if it exists on Pixelator
 
@@ -1034,6 +1040,57 @@ class DcsServerApi(BaseDcsServerApi):
             str_val = dev.ctrl_enum_strs[value]
             reply = self.parent.zmq_dev_server_thread.send_receive(['beamShutterMode', json.dumps(str_val)])
             # dev.update_position(value, False)
+
+        elif attr.find('low_limit_val') > -1:
+            # modified positioner definition
+            # {
+            #     "name": "SampleX"
+            #     , "axisName": "SampleX"
+            #     , "description": "Fine translation of the sample along the X-axis"
+            #     , "unit": "(μm)"
+            #     , "velocityUnit": "(μm/ms)"
+            #     , "coarsePositioner": "CoarseX"
+            #     , "finePositioner": ""
+            #     , "hardwareUnitFactor": 1000.0
+            #     , "distributionMode": "n"
+            #     , "autoOffMode": "Never"
+            #     , "positionOffset": 0.0
+            #     , "upperSoftLimit": 60000.0
+            #     , "lowerSoftLimit": -50000.0
+            #     , "maxVelocity": 300.0
+            #     , "beamlineControlPosition": 0
+            #     , "atPositionCheckInterval": 0.002
+            #     , "atPositionCheckTimeout": 10.0
+            #     , "destination": 1200.0
+            # }
+            #
+            # send a modified positioner definition
+            # ['positionerStatus', '[{"name":"DNM_A0","position":298.0,"status":"ok"}]']
+            reply = self.parent.zmq_dev_server_thread.send_receive(
+                ['modified positioner definition', json.dumps({"name": dcs_devname, "lowerSoftLimit": value})])
+
+            # if reply[0]['status'] == 'ok':
+            #     selected = True
+            # else:
+            #     print(f"send_scan_request: send modified positioner definition failed, reply={reply}")
+        elif attr.find('high_limit_val') > -1:
+
+            reply = self.parent.zmq_dev_server_thread.send_receive(
+                ['modified positioner definition', json.dumps({"name": dcs_devname, "upperSoftLimit": value})])
+
+            # if reply[0]['status'] == 'ok':
+            #     selected = True
+            # else:
+            #     print(f"send_scan_request: send modified positioner definition failed, reply={reply}")
+        elif attr.find('position_offset') > -1:
+
+            reply = self.parent.zmq_dev_server_thread.send_receive(
+                ['modified positioner definition', json.dumps({"name": dcs_devname, "positionOffset": value})])
+
+        elif attr.find('auto_on_off') > -1:
+
+            reply = self.parent.zmq_dev_server_thread.send_receive(
+                ['modified positioner definition', json.dumps({"name": dcs_devname, "autoOffMode": value})])
 
         else:
 

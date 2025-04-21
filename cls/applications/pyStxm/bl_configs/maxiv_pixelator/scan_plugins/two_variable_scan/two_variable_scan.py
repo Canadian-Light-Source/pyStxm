@@ -12,7 +12,7 @@ from cls.utils.log import get_module_logger
 from cls.applications.pyStxm.bl_configs.base_scan_plugins.two_variable_scan.two_variable_scan import (
     BaseTwoVariableScanParam,
 )
-from cls.applications.pyStxm.bl_configs.maxiv_pixelator.plugin_utils import init_scan_req_member_vars
+from cls.applications.pyStxm.bl_configs.pixelator_common.plugin_utils import init_scan_req_member_vars
 
 _logger = get_module_logger(__name__)
 

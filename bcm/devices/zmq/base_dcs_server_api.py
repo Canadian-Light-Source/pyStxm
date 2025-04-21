@@ -63,6 +63,25 @@ class BaseDcsServerApi(QtCore.QObject):
             dev = self.parent.devs[app_devname]['dev']
             dev.update_position(value, False)
 
+    def _update_device_status(self, dcs_devname: str, value: Union[int, float, str], app_devname: str=None) -> None:
+        """
+        a convenience function to find the ZMQ device and call update_position()
+        Parameters
+        ----------
+        dcs_devname
+
+        Returns
+        -------
+
+        """
+
+        if app_devname is None:
+            app_devname = self.parent.dcs_to_appname_map[dcs_devname]
+        if app_devname in self.parent.devs.keys():
+            #print(f"_update_device_feedback: updating [{app_devname}={value}]")
+            dev = self.parent.devs[app_devname]['dev']
+            dev.update_device_status(value)
+
     def _update_detector_device_feedback(self, dct: dict) -> None:
         """
         a convenience function to find the ZMQ detector device and call update_position()

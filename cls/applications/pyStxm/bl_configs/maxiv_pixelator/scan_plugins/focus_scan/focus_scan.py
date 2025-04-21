@@ -10,9 +10,8 @@ from cls.utils.log import get_module_logger
 
 from cls.applications.pyStxm.bl_configs.base_scan_plugins.focus_scan.focus_scan import (
     BaseFocusScanParam,
-    USE_E712_HDW_ACCEL,
 )
-from cls.applications.pyStxm.bl_configs.maxiv_pixelator.plugin_utils import init_scan_req_member_vars
+from cls.applications.pyStxm.bl_configs.pixelator_common.plugin_utils import init_scan_req_member_vars
 
 _logger = get_module_logger(__name__)
 

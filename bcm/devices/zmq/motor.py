@@ -82,16 +82,19 @@ class ZMQMotor(ZMQBaseDevice):
         self._velocity = 0
         self._acceleration = 0
         self.position = 0
+        self._position_offset = 0
+        self._auto_on_off = "Always"
 
         if 'low_limit' in kwargs.keys():
             self._low_limit = kwargs['low_limit']
         if 'high_limit' in kwargs.keys():
             self._high_limit = kwargs['high_limit']
 
-        self.attrs = ['low_limit_val','high_limit_val', 'motor_done_move',
+        # all of these attrs will be created as ZMSignals
+        self.attrs = ['low_limit_val','high_limit_val', 'motor_done_move', 'auto_on_off',
                      'spmg_enum', 'at_low_limit_val', 'at_high_limit_val',
                      'user_readback', 'user_setpoint', 'velocity', 'acceleration',
-                     'max_velo']
+                     'max_velo', 'position_offset']
 
         for _attr in self.attrs:
             # use a colon to separate prefix from attribute
@@ -193,6 +196,21 @@ class ZMQMotor(ZMQBaseDevice):
     def set_high_limit(self, val):
         self._high_limit = val
         self.high_limit_val.set(self._high_limit)
+
+    def set_position_offset(self, val):
+        """
+        set the position offset for the motor
+        """
+        self._position_offset = val
+        self.position_offset.set(self._position_offset)
+
+    def set_auto_on_off(self, valstr):
+        """
+        set the position offset for the motor
+        """
+        self._auto_on_off = valstr
+        self.auto_on_off.set(self._auto_on_off)
+
 
     def get(self, attr_name=None):
         if attr_name is None:

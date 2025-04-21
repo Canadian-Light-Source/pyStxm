@@ -37,10 +37,13 @@ DEVICE_CFG = None
 
 # get the current scanning mode from teh app.ini configuration
 bl_config_nm = appConfig.get_value("MAIN", "bl_config")
+abs_bl_config_path = f"{abs_path_to_ini_file}".replace("app.ini",os.path.join("bl_configs",bl_config_nm))
 bl_config_dct = load_beamline_preset(bl_config_nm)
 print(f"Loading beam line configuration from [{bl_config_nm}]")
 
 # get the beamline specifics, found in bl_configs/<bl>/<bl>.ini
+bl_config_dct['UI_OVERRIDES']['bl_config_path'] = abs_bl_config_path
+
 beamline_desc = bl_config_dct["BL_CFG_MAIN"]["beamline_desc"]
 endstation_name = bl_config_dct["BL_CFG_MAIN"]["endstation_name"]
 endstation_prefix = bl_config_dct["BL_CFG_MAIN"]["endstation_prefix"]

@@ -1,4 +1,5 @@
 import time
+from typing import Union
 
 from PyQt5.QtCore import pyqtSignal, QObject, QTimer
 
@@ -53,6 +54,7 @@ class ZMQBaseSignal(QObject):
         self.connected = True
         self._read_pv_connection_callbacks = []
         self._readback = 0
+        self._is_on = False
 
         if "desc" in kwargs.keys():
             self._desc = kwargs['desc']
@@ -67,6 +69,17 @@ class ZMQBaseSignal(QObject):
     #     set the readback value
     #     """
     #     self._readback = value
+
+    def set_on_off(self, value: Union[int, bool, str]):
+        if isinstance(value, int):
+            self._is_on = value != 0
+        elif isinstance(value, bool):
+            self._is_on = value
+        elif isinstance(value, str):
+            self._is_on = value.lower() != "off"
+
+    def get_on_off_status(self):
+        return self._is_on
 
     def set_connected(self, con):
         """
@@ -140,8 +153,16 @@ class ZMQSignal(ZMQBaseSignal):
         self._readback = value
         # do not send back to the DCS that a user_readback value needs to be changed
         if self.name.find('user_readback') == -1:
-            print(f"ZMQSignal: set: send to ZMQ [{self.name}:PUT:{value}]")
-            self.do_put.emit({'command': 'PUT', 'name': self.name, 'dcs_name': self.dcs_name, 'attr': None, 'value': value})
+            nm_lst = self.name.split(':')
+            dcs_name = nm_lst[0]
+            if len(nm_lst) > 1:
+                attr = nm_lst[1]
+                print(f"ZMQSignal: set: send to ZMQ [{self.name}:PUT:{value}  attr={attr}]")
+            else:
+                print(f"ZMQSignal: set: send to ZMQ [{self.name}:PUT:{value}]")
+                attr = None
+
+            self.do_put.emit({'command': 'PUT', 'name': self.name, 'dcs_name': dcs_name, 'attr': attr, 'value': value})
 
 
 
@@ -188,6 +209,7 @@ class ZMQBaseDevice(ZMQBaseSignal):
         self._old_is_moving = 0
         self._egu = ""
         self.val_only = 0
+        self._positioner_dct = {}
         self._timer = QTimer()
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self._init_feedback)
@@ -243,7 +265,31 @@ class ZMQBaseDevice(ZMQBaseSignal):
 
     def get_units(self):
         return self.get_egu()
-    def update_position(self, value, is_moving):
+
+    def set_positioner_dct(self, dct):
+        """
+        set the positioner dct that was given by the DCS server when connection to the DCS server was initialized
+        """
+        self._positioner_dct = dct
+
+    def get_positioner_dct_value(self, key):
+        """
+        get the value from the positioner dct
+        :param key: the key to get from the positioner dct
+        :return: the value from the positioner dct
+        """
+        if key in self._positioner_dct.keys():
+            return self._positioner_dct[key]
+        return None
+
+    def update_device_status(self, value):
+        """
+        this function is called from update_widgets() in the ZMQDevManager while it process' the queue from PIXELATOR
+        """
+        # print(f"ZMQBaseDevice: update_status: [{self.name}={value}]")
+        self.set_on_off(value)
+
+    def update_position(self, value, is_moving=False):
         """
         this function is called from update_widgets() in the ZMQDevManager while it process' the queue from PIXELATOR
         """

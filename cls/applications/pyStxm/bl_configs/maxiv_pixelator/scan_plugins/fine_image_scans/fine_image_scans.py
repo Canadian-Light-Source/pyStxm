@@ -8,15 +8,13 @@ import os
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
 from cls.data_io.stxm_data_io import STXMDataIo
 from cls.utils.log import get_module_logger
-from cls.stylesheets import get_style
 
 from cls.applications.pyStxm.bl_configs.base_scan_plugins.fine_image_scans.fine_image_scans import (
     BaseFineImageScansParam,
     )
-from cls.types.stxmTypes import scan_sub_types
 
-from cls.applications.pyStxm.bl_configs.maxiv_pixelator.plugin_utils import (connect_scan_req_detail_flds_to_validator,
-    init_scan_req_member_vars, set_scan_rec_default)
+from cls.applications.pyStxm.bl_configs.pixelator_common.plugin_utils import (connect_scan_req_detail_flds_to_validator,
+                                                                              init_scan_req_member_vars, set_scan_rec_default)
 
 _logger = get_module_logger(__name__)
 

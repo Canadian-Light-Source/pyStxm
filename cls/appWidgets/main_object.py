@@ -8,7 +8,7 @@ from tinydb import TinyDB, Query
 import simplejson as json
 
 from nx_server.nx_server import NX_SERVER_CMNDS, NX_SERVER_REPONSES
-from cls.utils.dict_utils import dct_put, dct_get, dct_merge
+from cls.utils.dict_utils import dct_put, dct_get, dct_merge, find_key_in_dict
 from cls.utils.version import get_version
 from cls.utils.process_utils import check_windows_procs_running
 from cls.data_io.zmq_utils import send_to_server
@@ -191,6 +191,15 @@ class main_object_base(QtCore.QObject):
             #now updates teh PRESETS sections
             dct_put(self.main_obj, "PRESETS.OSA_DEFS", self.beamline_cfg_dct['OSA_DEFS'])
             dct_put(self.main_obj, "PRESETS.ZP_DEFS", self.beamline_cfg_dct['ZP_DEFS'])
+        return result
+
+    def get_beamline_cfg_preset(self, preset_name: str =None):
+        """
+        search the entire bl config dict and return the preset if it exists
+        """
+        result = None
+        if preset_name:
+            result = find_key_in_dict(self.beamline_cfg_dct, preset_name)
         return result
 
     def set_dcs_zoneplate_definitions(self, zp_defs: dict):

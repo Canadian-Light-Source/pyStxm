@@ -16,6 +16,7 @@ from .StxmControlBeamTool import StxmControlBeamTool
 from .beamspotShape import BeamSpotShape
 from .ShowFocusLocationTool import ShowFocusLocationTool
 from .clsSigSelectionTool import clsSignalSelectTool
+from .clsCheckableSignalSelectionTool import clsCheckableSignalSelectTool
 from .clsHorizSelectPositionTool import clsHorizSelectPositionTool
 from .clsCrossHairSelectPositionTool import clsCrossHairSelectPositionTool
 from .clsROITool import ROITool
@@ -40,6 +41,7 @@ __all__ = [
     "BeamSpotShape",
     "ShowFocusLocationTool",
     "clsSignalSelectToolTool",
+    "clsCheckableSignalSelectTool",
     "clsHorizSelectPositionTool",
     "clsCrossHairSelectPositionTool",
     "ROITool",

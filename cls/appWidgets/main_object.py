@@ -216,6 +216,41 @@ class main_object_base(QtCore.QObject):
         if self.get_device_backend() == 'zmq':
             self.engine_widget.engine.set_osa_definitions(osa_defs)
 
+    def get_detectors(self) -> dict:
+        """
+        get the list of seleected detector names from the engine widget
+        """
+        dct = {}
+        if self.get_device_backend() == 'zmq':
+            detector_devs = self.get_devices_in_category("DETECTORS")
+            det_nms = list(detector_devs.keys())
+            # selected_det_names = self.engine_widget.engine.get_selected_detector_names()
+            # for det_nm in det_nms:
+            #     for sel_det_nm in selected_det_names:
+            #         selected = False
+            #         if sel_det_nm == det_nm:
+            #             selected = True
+            #         dct[det_nm] = {'selected': selected, 'dev': detector_devs[det_nm]}
+            for det_nm in det_nms:
+                dct[det_nm] = {'selected': True, 'dev': detector_devs[det_nm]}
+        return dct
+
+    def set_selected_detectors(self, det_nm_lst: [list]):
+        """
+        set the selected detectors in the engine widget -> BSky or ZMQ DCS server
+
+        Only ZMQ supported at the moment
+        """
+        if self.get_device_backend() == 'zmq':
+            self.engine_widget.engine.select_detectors(det_nm_lst)
+
+    def set_oscilloscope_definition(self, osc_def: dict):
+        """
+
+        """
+        if self.get_device_backend() == 'zmq':
+            self.engine_widget.engine.set_oscilloscope_definition(osc_def)
+
     def dev_exists(self, app_devname):
         """
         takes a device name and returns True if the device exists in the database and False if not

@@ -723,7 +723,13 @@ class DcsServerApi(BaseDcsServerApi):
                 f"received an update for [recordedChannels]={resp[1]}")
             self.parent.selected_detectors = detname_lst
 
+        elif resp[0].find("chartmode_detector_update") > -1:
+            value_dct_lst = json.loads(resp[1])
+            for val_dct in value_dct_lst:
+                self._update_device_feedback(val_dct["name"], val_dct["value"])
+
         elif resp[0].find("detectorValues") > -1:
+            # print(f"process_SUB_rcv_messages: self.parent.selected_detectors={self.parent.selected_detectors}")
             values = json.loads(resp[1])
             if len(self.parent.selected_detectors) > 0 and (len(self.parent.selected_detectors) == len(values)):
                 det_vals_zip = zip(self.parent.selected_detectors, values)
@@ -734,10 +740,10 @@ class DcsServerApi(BaseDcsServerApi):
                 self.parent.selected_detectors = [DEFAULT_DETECTOR]
                 det_vals_zip = zip(self.parent.selected_detectors, values)
 
-            for dcs_devname, val in det_vals_zip:
-                # print(f"det [{dcs_devname}] = {val:.2f}")
-                self._update_device_feedback(dcs_devname, val)
-                #print(f"process_SUB_rcv_messages: received an update for [detectorValues]={resp[1]} but I do not know the names of the detectors")
+            # for dcs_devname, val in det_vals_zip:
+            #     # print(f"det [{dcs_devname}] = {val:.2f}")
+            #     self._update_device_feedback(dcs_devname, val)
+            #     #print(f"process_SUB_rcv_messages: received an update for [detectorValues]={resp[1]} but I do not know the names of the detectors")
 
         elif resp[0].find("positionerStatus") > -1:
             # print(f"positionerStatus: resp={resp}")
@@ -889,6 +895,10 @@ class DcsServerApi(BaseDcsServerApi):
                     app_devname = dcs_to_app_devname_map[dcs_devname]
                     if app_devname in list(self.parent.devs.keys()):
                         dev = self.parent.devs[app_devname]['dev']
+                        #set device name (the app device name like DNM_PMT etc) and the device dcs_name (Counter0)
+                        dev.name = app_devname
+                        dev.dcs_name = dcs_devname
+
                         dev.set_connected(True)
                         dev.set_desc(positioner_dct['description'])
                         dev.set_positioner_dct(positioner_dct)
@@ -914,21 +924,25 @@ class DcsServerApi(BaseDcsServerApi):
             self.devices['DNM_A0']['dev'] = self.parent.devs['DNM_A0']['dev']
             self.devices['DNM_A0']['dev'].set_connected(True)
             
-            #self.parent.devices['POSITIONERS'] = self.parent.devs
+            # WHAT IS THIS CODE DOING ??
             idx = 0
+            sel_dets = []
             for det_dct in self.parent.detector_definition:
-                det_name = det_dct['name']
+                #det_name = det_dct['name']
+                dcs_det_name = det_dct['name']
+                det_name = dcs_to_app_devname_map[dcs_det_name]
                 selected = False
-                if det_name.find(DEFAULT_DETECTOR) > -1:
-                    reply = self.parent.zmq_dev_server_thread.send_receive(['recordedChannels', json.dumps([det_name])])
-                    if reply[0]['status'] == 'ok':
-                        selected = True
+                # if det_name.find(DEFAULT_DETECTOR) > -1:
+                #     reply = self.parent.zmq_dev_server_thread.send_receive(['recordedChannels', json.dumps([det_name])])
+                #     if reply[0]['status'] == 'ok':
+                #         selected = True
 
                 self.parent.devices['DETECTORS'][det_name] = {'idx':idx, 'unit': det_dct['unit'], 'selected': selected}
-                self.parent.selected_detectors = [det_name]
+                sel_dets.append(det_name)
                 idx += 1
 
-
+            self.parent.selected_detectors = sel_dets
+            self.select_detectors(sel_dets)
 
             #assign some default values to pyStxm devices that do not have a corresponding Pixelator device
             # DNM_FOCAL_LENGTH = Energy * A1
@@ -1115,7 +1129,7 @@ class DcsServerApi(BaseDcsServerApi):
         """
         self.scan_class.reset()
         scan_request = self.scan_class.convert_scan_request(wdg_com)
-        self.send_default_detector_select()
+        # self.send_default_detector_select()
         reply = self.parent.zmq_dev_server_thread.send_receive(
             ['scanRequest', json.dumps(scan_request)])
         if reply[0]['status'] == 'ok':
@@ -1370,6 +1384,37 @@ class DcsServerApi(BaseDcsServerApi):
 
         return res
 
+    def set_oscilloscope_definition(self, osc_def: dict) -> bool:
+        """
+        construct the oscilloscope definition from teh app data given in osc_def
+        osc_def = {}
+        osc_def["feedback_interval"] = float(self.interval_fld.text())
+        osc_def["feedback_on_off"] = self.on_off_checkbox.isChecked()
+        osc_def["count_rate"] = self.count_checkbox.isChecked()
+
+        for Pixelator send the following
+        oscilloscopeDefinition
+        {
+            "interval": 0.5
+            , "on": 0
+            , "countRate": 1
+        }
+        """
+        #
+        dct = {
+            "interval": osc_def["feedback_interval"]
+            , "on": 1 if osc_def["feedback_on_off"] else 0
+            , "countRate": osc_def["count_rate"]
+        }
+
+        reply = self.parent.zmq_dev_server_thread.send_receive(['oscilloscopeDefinition', json.dumps(dct)])
+        if reply[0]['status'] == 'ok':
+            res = True
+        else:
+            print(f"send_scan_request: send set_osa_definitions failed, reply={reply}")
+
+        return res
+
     def get_osa_definitions(self) -> dict:
         """
         Pixelator doesnt take a command to "get" information it will publish information when it changes
@@ -1411,4 +1456,50 @@ class DcsServerApi(BaseDcsServerApi):
         """
         print(f"DcsServerApi: on_msg_to_app: emitting [{msg}]")
         self.parent.msg_to_app.emit(msg)
+
+    def get_selected_detector_names(self) -> []:
+        """
+        To be implemented by inheriting class
+        Parameters
+        ----------
+        self
+
+        Returns: list of strings
+        -------
+
+        """
+        # self.parent.devices['DETECTORS'][det_name] = {'idx': idx, 'unit': det_dct['unit'], 'selected': selected}
+        # self.parent.selected_detectors = [det_name]
+        # print("DcsServerApi: get_selected_detector_names: has not been implemented")
+        app_det_names = []
+        for dcs_det_name in self.parent.selected_detectors:
+            if dcs_det_name[0:4] == "DNM_":
+                app_det_names.append(dcs_det_name)
+            else:
+                app_det_names.append(dcs_to_app_devname_map[dcs_det_name])
+
+        return app_det_names
+
+    def select_detectors(self, det_nm_lst):
+        """
+        send the message to the Pixelator to select the detectors by name
+        """
+        if len(det_nm_lst) > 0:
+            det_names = self.ensure_dcs_detector_names(det_nm_lst)
+            reply = self.parent.zmq_dev_server_thread.send_receive(['recordedChannels', json.dumps(det_names)])
+            if reply[0]['status'] == 'ok':
+                selected = True
+
+    def ensure_dcs_detector_names(self, det_nm_lst: [list]) -> [list]:
+        """
+        take a list of detector names and make sure that all names returned are DCS names
+        """
+        ret_lst = []
+        for nm in det_nm_lst:
+            if nm.find('DNM_') > -1:
+                ret_lst.append(app_to_dcs_devname_map[nm])
+            else:
+                ret_lst.append(nm)
+        return ret_lst
+
 

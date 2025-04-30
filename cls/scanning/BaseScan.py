@@ -540,7 +540,7 @@ class BaseScan(QtCore.QObject):
         :return:
         """
         # make the first selected detector in the list the "default"
-        if dets is not None:
+        if dets is not None and len(dets) > 0:
             #ok this is not very elegant so likely a better solution will be implemented in the future
             #if the first selected detector is the SIS3820 then grab the name of the first enabled channel and use it as the default
             #as this is the name that will be first in the data file

@@ -536,6 +536,7 @@ class ScanClass(object):
                 "tile_num": sl_dct['tile_num'], "ev_idx": sl_dct['outer_idx'], "prog": cur_img_progress, "pol_idx": sl_dct['tile_num'],
                 "total_prog": all_scans_progress}
 
+
     def handle_scanStarted(self, scan_request):
         """
         parse the scan request and set the member variables
@@ -704,6 +705,18 @@ class DcsServerApi(BaseDcsServerApi):
         dct = self.scan_class.intake_scan_line_data(resp, self.parent.selected_detectors)
         return dct
 
+    def intake_plot_data(self, resp):
+        """
+        resp = '0 0 0 0 ', '0 0 ', '1 25 ', '[20.5650,20.1760,20.5530,20.2820,20.1760,20.0870,20.5080,20.5030,20.4770,20.6060,20.3750,20.1760,20.2540,20.160,20.6820,20.0230,20.110,20.8350,20.6390,20.4680,20.8190,20.0390,20.5670,20.0110,20.9050]
+        from messages like below
+            ['scanLineData', '0 0 0 0 ', '0 0 ', '1 25 ', '[20.5650,20.1760,20.5530,20.2820,20.1760,20.0870,20.5080,20.5030,20.4770,20.6060,20.3750,20.1760,20.2540,20.160,20.6820,20.0230,20.110,20.8350,20.6390,20.4680,20.8190,20.0390,20.5670,20.0110,20.9050]']
+            ['scanLineData', '0 0 0 0 ', '1 0 ', '1 25 ', '[20.940,20.080,20.3650,20.20,20.7250,20.3890,20.2080,20.1390,20.4540,20.8170,20.8690,20.4690,20.5490,20.4280,20.020,20.0970,20.6520,20.5390,20.030,20.5520,20.7720,20.6410,20.1220,20.0420,20.8220]']
+            ['scanLineData', '0 0 0 0 ', '2 0 ', '1 25 ', '[20.2660,20.0480,20.70,20.4280,20.2650,20.8170,20.0980,20.3610,20.8350,20.8060,20.4940,20.1120,20.7710,20.3220,20.1030,20.590,20.2160,20.6660,20.6030,20.8620,20.6680,20.8230,20.7090,20.8320,20.2680]']
+
+        """
+        dct = self.scan_class.intake_plot_data(resp)
+        return dct
+
     def process_SUB_rcv_messages(self, resp):
         """
         receives the message that teh dcs server had posted on its PUB socket, figure out what it is and call
@@ -730,20 +743,21 @@ class DcsServerApi(BaseDcsServerApi):
 
         elif resp[0].find("detectorValues") > -1:
             # print(f"process_SUB_rcv_messages: self.parent.selected_detectors={self.parent.selected_detectors}")
-            values = json.loads(resp[1])
-            if len(self.parent.selected_detectors) > 0 and (len(self.parent.selected_detectors) == len(values)):
-                det_vals_zip = zip(self.parent.selected_detectors, values)
-                # for dcs_devname, val in det_vals_zip:
-                #     # print(f"det [{dcs_devname}] = {val:.2f}")
-                #     self._update_device_feedback(dcs_devname, val)
-            else:
-                self.parent.selected_detectors = [DEFAULT_DETECTOR]
-                det_vals_zip = zip(self.parent.selected_detectors, values)
-
-            # for dcs_devname, val in det_vals_zip:
-            #     # print(f"det [{dcs_devname}] = {val:.2f}")
-            #     self._update_device_feedback(dcs_devname, val)
-            #     #print(f"process_SUB_rcv_messages: received an update for [detectorValues]={resp[1]} but I do not know the names of the detectors")
+            pass
+            # values = json.loads(resp[1])
+            # if len(self.parent.selected_detectors) > 0 and (len(self.parent.selected_detectors) == len(values)):
+            #     det_vals_zip = zip(self.parent.selected_detectors, values)
+            #     # for dcs_devname, val in det_vals_zip:
+            #     #     # print(f"det [{dcs_devname}] = {val:.2f}")
+            #     #     self._update_device_feedback(dcs_devname, val)
+            # else:
+            #     self.parent.selected_detectors = [DEFAULT_DETECTOR]
+            #     det_vals_zip = zip(self.parent.selected_detectors, values)
+            #
+            # # for dcs_devname, val in det_vals_zip:
+            # #     # print(f"det [{dcs_devname}] = {val:.2f}")
+            # #     self._update_device_feedback(dcs_devname, val)
+            # #     #print(f"process_SUB_rcv_messages: received an update for [detectorValues]={resp[1]} but I do not know the names of the detectors")
 
         elif resp[0].find("positionerStatus") > -1:
             # print(f"positionerStatus: resp={resp}")
@@ -786,20 +800,12 @@ class DcsServerApi(BaseDcsServerApi):
 
         elif resp[0].find("scanLineData") > -1:
             # print(f"process_SUB_rcv_messages: {resp}")
+            # pass
             dct = self.intake_scan_line_data(resp)
             if dct['det_name'] in self.parent.selected_detectors:
                 # print(f"det [{dcs_devname}] = {val:.2f}")
                 self._update_detector_device_feedback(dct)
 
-        elif resp[0].find("plotData") > -1:
-            pass
-            # print(f"process_SUB_rcv_messages: {resp}")
-            # dct = json.loads(resp[1])
-            # if dct['det_name'] in self.parent.selected_detectors:
-            #     # print(f"det [{dcs_devname}] = {val:.2f}")
-            #     d = {'det_name': dct['det_name'], 'row': dct['row'], 'col': dct['col'], 'shape': len(dct['value']),
-            #             'value': dct['value'], 'is_tiled': self.scan_class.tiling, 'is_partial': True if not self.scan_class.tiling else False}
-            #     self._update_detector_device_feedback(d)
         elif resp[0].find("scanAborted") > -1:
             print(f"process_SUB_rcv_messages: {resp}")
 

@@ -61,6 +61,7 @@ from cls.utils.sig_utils import reconnect_signal, disconnect_signal
 
 from cls.plotWidgets.imageWidget import ImageWidgetPlot
 from cls.plotWidgets.striptool.stripToolWidget import StripToolWidget
+from cls.plotWidgets.striptool.chartWidget import ChartingWidget
 from cls.plotWidgets.curveWidget import (
     CurveViewerWidget,
 )
@@ -94,6 +95,7 @@ from cls.devWidgets.ophydLabelWidget import (
 from cls.appWidgets.user_account.login import loginWidget
 
 from cls.applications.pyStxm.widgets.contact_sheet import ContactSheet
+from cls.applications.pyStxm.widgets.select_detectors_panel import DetectorsPanel
 from cls.appWidgets.dialogs import excepthook, notify as dialog_notify, warn as dialog_warn
 
 # from cls.appWidgets.spyder_console import ShellWidget#, ShellDock
@@ -439,6 +441,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.setup_main_gui()
         self.setup_image_plot()
         self.setup_spectra_plot()
+        self.setup_chartmode_plot()
         self.setup_stack_rois_plot()
 
         # In most cases, when (un)docking multiple widgets from the same area, they may take up an annoying
@@ -1498,7 +1501,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         #self.init_ptycho_data_viewer()
 
         # load the app status panel
-        self.setup_ioc_software_status()
+        self.setup_select_detectors_frame()
 
         # load the sscan status panel
         # self.setup_sscan_status()
@@ -1554,26 +1557,30 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 break
             self.walk_children_for_on_focus_event(ch)
 
-    def setup_ioc_software_status(self):
+    def setup_select_detectors_frame(self):
         """
-        add a list of IOC application heart beat pv's to the 'Status' tab of the main application. The status
-        of each heart beat will update based on wether the app is running or not
+        add all of the current selected detectors to the panel
         :return:
         """
-        ioc_apps_wdg = IOCAppsPanel(MAIN_OBJ)
-        ioc_apps_wdg.setProperty("alertField", True)
-        ioc_apps_wdg.alert.connect(self.on_panel_alert)
+        self.sel_detectors_panel = DetectorsPanel(sel_changed_cb=self.on_selected_detectors_changed)
+
+        # ioc_apps_wdg = IOCAppsPanel(MAIN_OBJ)
+        # ioc_apps_wdg.setProperty("alertField", True)
+        # ioc_apps_wdg.alert.connect(self.on_panel_alert)
         vlayout = QtWidgets.QVBoxLayout()
-        vlayout.addWidget(ioc_apps_wdg)
+        vlayout.addWidget(self.sel_detectors_panel)
 
         spacer = QtWidgets.QSpacerItem(
             20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding
         )
         vlayout.addItem(spacer)
-
-        self.IOCSwStatusGrpBx.setLayout(vlayout)
+        self.selectDetectorsGrpBx.setLayout(vlayout)
         # tb = self.mainTabWidget.tabBar()
         # tb.paintEvent = self.ioc_apps_paintEvent
+
+    def on_selected_detectors_changed(self, sel_det_lst):
+        # print(f"stxmMain: on_selected_detectors_changed: {sel_dct}")
+        MAIN_OBJ.set_selected_detectors(sel_det_lst)
 
     def on_panel_alert(self, alert_dct):
         from cls.appWidgets.base_content_panel import alert_lvls
@@ -2378,6 +2385,42 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         vbox.addWidget(self.spectraWidget)
         self.spectraPlotFrame.setLayout(vbox)
 
+    def setup_chartmode_plot(self):
+
+        """
+        setup_chartmode_plot(): description
+
+        :returns: None
+        """
+        selected_det_dct = MAIN_OBJ.get_detectors()
+
+        vbox = QtWidgets.QVBoxLayout()
+        self.chartspectraWidget = ChartingWidget(5.0, signals_dct=selected_det_dct,
+                                                 parent=self,
+                                                 scale_factor=1.0,
+                                                 select_cb=self.update_oscilloscope_definition)
+        self.chartspectraWidget.setObjectName("chartspectraWidget")
+
+        plot = self.chartspectraWidget.scanplot.get_plot()
+        pcan = plot.canvas()
+        pcan.setObjectName("chartspectraWidgetCanvasBgrnd")
+
+        # detector_devs = MAIN_OBJ.get_devices_in_category("DETECTORS")
+        # # det_nms = list(detector_devs.keys())
+
+
+        vbox.addWidget(self.chartspectraWidget)
+        self.chartPlotFrame.setLayout(vbox)
+
+    def update_oscilloscope_definition(self, osc_def):
+        """
+
+        based on the selection of the detectors in the chart mode panel signal tool send the command to the
+        DCS server
+        """
+        # print(f"chart_mode_select_detectors: {det_lst}")
+        MAIN_OBJ.set_oscilloscope_definition(osc_def)
+
     def setup_stack_rois_plot(self):
 
         """
@@ -3050,6 +3093,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         emit_do_integrations = False
         if self.executingScan.scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
+            # print(f'add_line_to_plot: {counter_to_plotter_com_dct}')
             if row > 0:
                 self.executingScan.image_started = False
 
@@ -3264,6 +3308,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         :returns: None
         """
         """ a function to take data (a full line) and add it to the configured plotters """
+        # print(f"add_point_to_spectra: {counter_to_plotter_com_dct}")
         # det_id = counter_to_plotter_com_dct[CNTR2PLOT_DETID]
         # row = counter_to_plotter_com_dct[CNTR2PLOT_ROW]
         col = counter_to_plotter_com_dct[CNTR2PLOT_COL]
@@ -3272,7 +3317,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         prog_dct = counter_to_plotter_com_dct[CNTR2PLOT_PROG_DCT]
         # is_tiled = counter_to_plotter_com_dct[CNTR2PLOT_IS_TILED]
         # is_partial = counter_to_plotter_com_dct[CNTR2PLOT_IS_PARTIAL]
-        # print(f"add_point_to_spectra: {counter_to_plotter_com_dct}")
+
 
         if type(val) == dict:
             det_names = list(val.keys())
@@ -4074,6 +4119,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         # set the visual_signals_obj plot min and maxs
         self.visual_signals_obj.set_plot_boundaries(rect[0], rect[1], rect[2], rect[3])
+        if len(final_det_nms) < 1:
+            _logger.error("No detectors are selected, the scan cannot be executed")
+            self.set_buttons_for_starting()
+            return
 
         _scan_plotter.set_selected_detectors(final_det_nms)
         self.roiSpectraWidget.set_selected_detectors(final_det_nms)

@@ -83,7 +83,7 @@ import copy
 
 color_list = {}
 # supply colors in the order I want them
-clr_keys = ["b", "y", "g", "c", "m", "k", "w", "G", "r"]
+clr_keys = ["b", "y", "r", "g", "c", "m", "k", "w", "G"]
 for key in clr_keys:
     color_list[key] = {
         "clr": COLORS[key] if key != "b" else master_colors["app_ltblue"]["rgb_hex"],  # override blue
@@ -104,6 +104,9 @@ def get_next_color(use_dflt=True):
 
     return dflt_clr
 
+def get_color_by_idx(i):
+    assert i < len(clr_keys), f"Index {i} is out of range for clr_keys with length {len(clr_keys)}"
+    return color_list[clr_keys[i]]["clr"]
 
 def reset_color_idx():
     global color_list
@@ -228,12 +231,12 @@ def dump_brushstyle_choices():
         i += 1
 
 
-def dump_style_options(self):
-    self.dump_curve_styles()
-    self.dump_line_styles()
-    self.dump_marker_choices()
-    self.dump_brushstyle_choices()
-    self.dump_marker_style_choices()
+def dump_style_options():
+    dump_curve_styles()
+    dump_line_styles()
+    dump_marker_choices()
+    dump_brushstyle_choices()
+    dump_marker_style_choices()
 
 
 def get_histogram_style(color):
@@ -284,6 +287,34 @@ def get_basic_line_style(color, marker="NoSymbol", width=2.0):
     dct["symbol"]["marker"] = marker
 
     dct["curvestyle"] = "Lines"
+    dct["curvetype"] = "Yfx"
+
+    dct["shade"] = 0.00
+    dct["fitted"] = False
+    dct["baseline"] = 0.0
+
+    return dct
+
+def get_basic_dot_style(color, marker="NoSymbol", width=2.0):
+    dct = {}
+
+    #   refer to CurveParam in plotpy.styles
+    dct["line"] = {}
+    dct["line"]["style"] = "SolidLine"
+    dct["line"]["color"] = color_str_as_hex(color)
+    dct["line"]["width"] = width
+
+    dct["symbol"] = {}
+    dct["symbol"]["size"] = 7
+    dct["symbol"]["alpha"] = 0.0
+    dct["symbol"]["edgecolor"] = color_str_as_hex(color)
+    dct["symbol"]["facecolor"] = color_str_as_hex(color)
+    # dct['symbol']['marker'] = 'Diamond'
+    # dct['symbol']['marker'] = 'NoSymbol'
+    # dct['symbol']['marker'] = 'Star1'
+    dct["symbol"]["marker"] = marker
+
+    dct["curvestyle"] = "Dots"
     dct["curvetype"] = "Yfx"
 
     dct["shade"] = 0.00
@@ -460,6 +491,7 @@ class CurveViewerWidget(PlotDialog):
         self._data_dir = ""
         self.data_io = None
         self.selected_detectors = []
+        self.selected_detectors_dct = {}
         self.det_curve_nms = {}
         self.type = type
         if self.type == "basic":
@@ -490,9 +522,23 @@ class CurveViewerWidget(PlotDialog):
 
     def get_selected_detectors(self):
         '''
+        THIS IS IMPORTANT FOR THE SIGNAL SELECTION TOOL
         return the current list of detectors that have been selected by the parent widget
         '''
-        return(self.selected_detectors)
+        return self.selected_detectors
+
+    def get_selected_detectors_dct(self):
+        """
+        for signal checkable tool to retrieve the names and slected states of all signals
+        """
+        return self.selected_detectors_dct
+
+    def set_selected_detectors_dct(self, det_dct={}):
+        '''
+        walk a list of detector names and set the checked attribute on the acition in the pulldown menu
+        '''
+        self.selected_detectors_dct = det_dct
+
 
     def set_selected_detectors(self, det_nm_lst=[]):
         '''
@@ -747,7 +793,7 @@ class CurveViewerWidget(PlotDialog):
 
         self.get_default_tool().activate()
 
-    def remove_all_tools(self):
+    def remove_all_tools(self, force=False):
         """
         register_viewer_tools(): description
         [16] []
@@ -758,8 +804,13 @@ class CurveViewerWidget(PlotDialog):
         [21] []
         :returns: None
         """
-        #keep_list = ["Save as...", "Copy to clipboard snapshot", "Print", "Help"]
-        keep_idxs = [16, 17, 18, 19, 20, 21]
+        if force:
+            #  keep "Help"
+            keep_idxs = [21]
+        else:
+            #keep_list = ["Save as...", "Copy to clipboard snapshot", "Print", "Help"]
+            keep_idxs = [16, 17, 18, 19, 20, 21]
+
         toolbar = self.plot.manager.get_toolbar()
         actions = toolbar.actions()
         i = 0
@@ -831,7 +882,8 @@ class CurveViewerWidget(PlotDialog):
     def set_time_window(self, curve_names_list, val):
         self.max_seconds = val
         for curve_name in curve_names_list:
-            self.curve_objs[curve_name].set_time_window(val)
+            if curve_name in self.curve_objs.keys():
+                self.curve_objs[curve_name].set_time_window(val)
 
     def add_x_point(self, curve_name, point, update=False):
         self.curve_objs[curve_name].add_x_point(point, update)
@@ -1131,7 +1183,7 @@ class CurveViewerWidget(PlotDialog):
         self.get_itemlist_panel().show()
         self.plot.set_items_readonly(False)
 
-    def addTool(self, toolstr):
+    def addTool(self, toolstr, **kwargs):
         """a function that allows inheriting widgets to add tools
         where tool is a valid guiqwt tool"""
 
@@ -1165,6 +1217,8 @@ class CurveViewerWidget(PlotDialog):
             tool = self.add_tool(AnnotatedPointTool)
         elif toolstr == "tools.clsSignalSelectTool":
             tool = self.add_tool(tools.clsSignalSelectTool)
+        elif toolstr == "tools.clsCheckableSignalSelectTool":
+            tool = self.add_tool(tools.clsCheckableSignalSelectTool, **kwargs)
         elif toolstr == "tools.clsROITool":
             tool = self.add_tool(tools.ROITool)
         elif toolstr == "SegmentTool":
@@ -1229,7 +1283,24 @@ class CurveViewerWidget(PlotDialog):
                     is_clean = False
                     break
 
-
+    def delete_curve_item(self, curve_nm):
+        """
+        for some reason it requires iterations to remove all of the CurveItems from the plot
+        this function keeps at it until the job is done
+        """
+        is_clean = False
+        while not is_clean:
+            plot_items = self.plot.get_items()
+            for item in plot_items:
+                if type(item) != GridItem:
+                    self.delPlotItem(item, replot=True)
+            #check if all CurveItems are gone?
+            is_clean = True
+            plot_items = self.plot.get_items()
+            for item in plot_items:
+                if type(item) == CurveItem:
+                    is_clean = False
+                    break
 
     def clear_plot(self):
         reset_color_idx()
@@ -1600,6 +1671,7 @@ if __name__ == "__main__":
     #from cls.appWidgets.spyder_console import ShellWidget  # , ShellDock
     from cls.data_io.stxm_data_io import STXMDataIo
 
+    #dump_style_options()
     #make_sig_selection_wip()
     app = QtWidgets.QApplication(sys.argv)
     # # show_std_icons()

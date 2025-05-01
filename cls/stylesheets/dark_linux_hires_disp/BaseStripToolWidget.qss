@@ -1,0 +1,12 @@
+
+/* the are outside the actual plot where the axis and tick strings are */
+BaseStripToolWidget#chartspectraWidget	QFrame {
+    background-color: master_background_color;
+}
+
+BaseStripToolWidget#chartspectraWidget QFrame > QWidget{
+    color: white;
+    background-color: master_background_color;
+    font:  16px;
+ }
+

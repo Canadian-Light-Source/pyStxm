@@ -149,18 +149,9 @@ class ChartingWidget(QtWidgets.QWidget):
         add_actions(self.scanplot.manager.get_toolbar('default'), [self.reset_plot_action])
         add_actions(self.scanplot.manager.get_toolbar('default'), [self.autoscale_action])
         self.scanplot.add_separator_tool()
-        #self.scanplot.addTool("tools.clsSignalSelectTool")
 
-
-        # # Example usage:
-        # # Assuming `self` is a QMainWindow or a QWidget with a QToolBar
-        # toolbar = QToolBar("My Toolbar")
-        # self.addToolBar(toolbar)
         self.scanplot.add_separator_tool()
         self.add_label_lineedit_to_toolbar(self.scanplot.manager.get_toolbar("default"), "Interval:", width=75, val=self.updateInterval)
-
-        t = self.scanplot.addTool("tools.clsCheckableSignalSelectTool", signals_dct=signals_dct)
-        t.changed.connect(self.on_selection_changed)
 
         self.updateQueue = queue.Queue()
 
@@ -261,6 +252,14 @@ class ChartingWidget(QtWidgets.QWidget):
         # Add the QWidgetAction to the toolbar
         toolbar.addAction(widget_action)
 
+    def update_signal_list(self, sel_det_lst: list):
+        """
+        when this is called update the
+        """
+        # update the list in tool and select all
+        # print(f"ChartingWidget: update_selected_detectors: {sel_det_lst}")
+        self.on_selection_changed(sel_det_lst)
+
     def on_execute_callback(self):
         """
         get the data and call the callback with a dict of arguments
@@ -275,14 +274,12 @@ class ChartingWidget(QtWidgets.QWidget):
         """
         Handle the checkbox toggled signal.
         """
-        print(f"Count rate Checkbox toggled: {'On' if checked else 'Off'}")
         self.on_execute_callback()
 
     def on_checkbox_toggled(self, checked):
         """
         Handle the checkbox toggled signal.
         """
-        print(f"Checkbox toggled: {'On' if checked else 'Off'}")
         self.on_execute_callback()
 
     def on_interval_changed(self):
@@ -291,7 +288,6 @@ class ChartingWidget(QtWidgets.QWidget):
         """
         fld = self.sender()
         val = fld.text()
-        print(f"on_ineterval_changed: val={val}")
         self.on_execute_callback()
 
     def set_selected_detectors_dct(self, sel_detectors_names):
@@ -324,7 +320,7 @@ class ChartingWidget(QtWidgets.QWidget):
         :param keys: List of keys whose 'selected' attribute should be set to True.
         :param dict_of_dicts: The dictionary of dictionaries.
         """
-        #first deslect all signals
+        #first deselect all signals
         for k in dict_of_dicts.keys():
             dict_of_dicts[k]["selected"] = False
         #now set the ones that are selected
@@ -380,11 +376,6 @@ class ChartingWidget(QtWidgets.QWidget):
         aplot.ensurePolished()
         # aplot.polish()
         aplot.replot()
-
-    def get_sigList(self):
-        l1 = sigList.replace(" ", "")
-        list = l1.split(",")
-        return list
 
     def on_timer(self):
         # print('BaseStripToolWidget.py: 265: on_timer()')
@@ -466,50 +457,6 @@ class ChartingWidget(QtWidgets.QWidget):
             # self.bpmsigs[name]['val'] = val
             dct = {"name": name, "val": val}
             self.updateQueue.put_nowait(dct)
-
-    def set_scanplot_axis_strs(self, dacq):
-        """
-        set the plot axis strings for our cfg file
-        """
-        plotStrs = self.dacq.acq_info.get_pv_names()
-        title = dacq.acq_info.get_scan_name()
-        self.currentScanName = title
-        self.scanplot.setPlotAxisStrs(title, plotStrs[0], plotStrs[1])
-        self.init_feedback_panel(plotStrs)
-
-    def init_feedback_panel(self, ctrlPvNames):
-        """
-        There is a panel that shows the current scan motor position feedback
-        so that the user can see what the motor is doing.
-        Use the one that is the motor (SMTR), but use the first by default
-        """
-        name = ctrlPvNames[0]
-        for nm in ctrlPvNames:
-            if nm.find("SMTR") > -1:
-                name = nm
-
-        if self.ctrlrFbkPv != None:
-            self.ctrlrFbkPv.changed.disconnect()
-
-        self.ctrlrLbl.setText(name)
-        self.ctrlrFbkPv = ca.PV(name)
-        self.ctrlrFbkPv.changed.connect(self.on_ctrlFbkpv_changed)
-
-    def on_ctrlFbkpv_changed(self, val):
-        """
-        handler to update the Controlelr feedback label when the PV changes
-        """
-        # print 'on_ringpv_changed: %f' % val
-        s = "%.2f" % val
-        self.ctrlrFbkFld.setText(s)
-
-    def on_startup(self):
-        """
-        Signal handler that is connected to the startup signal emitted
-        by the acquisition module
-        """
-
-        _logger.info("wireScanViewWidg: callback from acq start")
 
 
 def runApp(mode):

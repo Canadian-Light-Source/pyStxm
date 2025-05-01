@@ -82,6 +82,7 @@ class main_object_base(QtCore.QObject):
 
     changed = QtCore.pyqtSignal()
     export_msg = QtCore.pyqtSignal(object)
+    seldets_changed = QtCore.pyqtSignal(list) #when the user selects different detectors emit this signal with list of app_devnames
 
     def __init__(self, name, endstation, beamline_cfg_dct=None, splash=None, main_cfg=None):
 
@@ -243,6 +244,8 @@ class main_object_base(QtCore.QObject):
         """
         if self.get_device_backend() == 'zmq':
             self.engine_widget.engine.select_detectors(det_nm_lst)
+        #emit to all connected handlers that the user has selected different detectors
+        self.seldets_changed.emit(det_nm_lst)
 
     def set_oscilloscope_definition(self, osc_def: dict):
         """

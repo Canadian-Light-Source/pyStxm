@@ -2393,13 +2393,14 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         :returns: None
         """
         selected_det_dct = MAIN_OBJ.get_detectors()
-
+        MAIN_OBJ.seldets_changed.connect(self.update_chart_selected_detectors)
         vbox = QtWidgets.QVBoxLayout()
         self.chartspectraWidget = ChartingWidget(5.0, signals_dct=selected_det_dct,
                                                  parent=self,
                                                  scale_factor=1.0,
                                                  select_cb=self.update_oscilloscope_definition)
         self.chartspectraWidget.setObjectName("chartspectraWidget")
+
 
         plot = self.chartspectraWidget.scanplot.get_plot()
         pcan = plot.canvas()
@@ -2411,6 +2412,13 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         vbox.addWidget(self.chartspectraWidget)
         self.chartPlotFrame.setLayout(vbox)
+
+    def update_chart_selected_detectors(self, sel_det_lst: list):
+        """
+        update the chart when the user selects different detectors
+        """
+        self.chartspectraWidget.update_signal_list(sel_det_lst)
+
 
     def update_oscilloscope_definition(self, osc_def):
         """
@@ -3535,8 +3543,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         """
 
         # here get the counters that the user has selected and populate the counter dict
-        dets_pnl = self.get_pref_panel("DetectorsPanel")
-        sel_dets_lst = dets_pnl.get_selected_detectors(scan_class)
+        sel_dets_lst = self.sel_detectors_panel.get_selected_detectors()
         dets = []
         for d in sel_dets_lst:
             if d["name"].find("SIS3820") > -1:

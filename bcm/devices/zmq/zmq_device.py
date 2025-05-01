@@ -45,7 +45,7 @@ class ZMQBaseSignal(QObject):
     do_get = pyqtSignal(object)  # dict
     changed = pyqtSignal(object)  # dict (epics style)
     on_connect = pyqtSignal(object,object,object) # pvname=None,conn=None,pv=None
-    def __init__(self, name, dcs_name, **kwargs):
+    def __init__(self, dcs_name, name, **kwargs):
         super().__init__(None)
         self.name = name
         # print(f"creating new ZMQBaseSignal instance of [{name}]")
@@ -249,6 +249,8 @@ class ZMQBaseDevice(ZMQBaseSignal):
         return self
     def get_name(self):
         return self.name
+    def get_dcs_name(self):
+        return self.dcs_name
     def set_desc(self, desc):
         self._desc = desc
     def get_desc(self):

@@ -27,8 +27,8 @@ shutter_modes = Enum("Manual", "Auto")
 class MultiSelectable(ZMQBaseDevice):
     """class for a typical multi selectable like what would be for a combo box"""
 
-    def __init__(self, signal_name):
-        super(MultiSelectable, self).__init__(signal_name, write_pv=signal_name, backend=BACKEND)
+    def __init__(self, signal_name, name):
+        super(MultiSelectable, self).__init__(signal_name, name=name, write_pv=signal_name, backend=BACKEND)
         self.ready = True
         self.ctrl_enum_strs = [] #['Auto', 'Open', 'Close', 'Auto Line']
         self.fbk_enum_strs = [] #['CLOSED', 'OPEN']

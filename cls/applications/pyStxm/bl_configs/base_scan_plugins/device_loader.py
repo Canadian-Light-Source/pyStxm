@@ -233,7 +233,7 @@ class device_config(dev_config_base):
         elif dct["class"] == "MotorQt":
             # d = Motor_Qt(dct['dcs_nm'], name=dct['name'], desc=dct['desc'])#, pos_set=dct['pos_type'])
             d = MotorQt(
-                dct["dcs_nm"], name=dct["dcs_nm"], desc=dct["desc"]
+                dct["dcs_nm"], name=dct["name"], desc=dct["desc"]
             )
             if "units" in dct.keys():
                 d.set_units(dct["units"])
@@ -241,7 +241,7 @@ class device_config(dev_config_base):
         elif dct["class"] == "EpicsMotor":
             # d = Motor_Qt(dct['dcs_nm'], name=dct['name'], desc=dct['desc'])#, pos_set=dct['pos_type'])
             d = EpicsMotor(
-                dct["dcs_nm"], name=dct["dcs_nm"]
+                dct["dcs_nm"], name=dct["name"]
             )
 
         elif dct["class"] == "sample_abstract_motor":
@@ -254,7 +254,7 @@ class device_config(dev_config_base):
             d = BaseOphydGate(dct["dcs_nm"], name=dct["name"])
 
         elif dct["class"] == "DCSShutter":
-            d = DCSShutter(dct["dcs_nm"])
+            d = DCSShutter(dct["dcs_nm"], name=dct["name"])
             if 'ctrl_enum_strs' in dct.keys():
                 d.set_ctrl_enum_strings(dct["ctrl_enum_strs"])
 
@@ -262,7 +262,7 @@ class device_config(dev_config_base):
                 d.set_fbk_enum_strings(dct["fbk_enum_strs"])
 
         elif dct["class"] == "MultiSelectable":
-            d = MultiSelectable(dct["dcs_nm"])
+            d = MultiSelectable(dct["dcs_nm"], name=dct["name"])
             if 'ctrl_enum_strs' in dct.keys():
                 d.set_ctrl_enum_strings(dct["ctrl_enum_strs"])
 
@@ -300,7 +300,7 @@ class device_config(dev_config_base):
         elif dct["class"] == "Mbbi":
             d = Mbbi(dct["dcs_nm"])
         elif dct["class"] == "Transform":
-            d = Transform(dct["dcs_nm"])
+            d = Transform(dct["dcs_nm"], name=dct["name"])
         elif dct["class"] == "E712WGDevice":
             d = E712WGDevice(dct["dcs_nm"], name=dct["name"])
         elif dct["class"] == "E712ControlWidget":
@@ -323,7 +323,7 @@ class device_config(dev_config_base):
             pass
 
         elif dct["class"] == "Counter":
-            d = Counter(dct["dcs_nm"])
+            d = Counter(dct["dcs_nm"], name=dct["name"])
 
         elif dct["class"] == "make_basedevice":
             if "units" not in dct.keys():

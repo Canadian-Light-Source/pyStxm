@@ -217,7 +217,7 @@ def get_energy_setpoints_from_entry(entry_dct: dict, counter: Optional[str] = No
     data = ev_rois[0]['SETPOINTS']
     return data
 
-class ThumbnailWidget(QtWidgets.QGraphicsWidget):
+class CantactSheetWidget(QtWidgets.QGraphicsWidget):
     update_view = QtCore.pyqtSignal()
     select = QtCore.pyqtSignal(object)
     launch_viewer = QtCore.pyqtSignal(object)
@@ -2696,7 +2696,7 @@ class ContactSheet(QtWidgets.QWidget):
 
         return (graphics_wdg.cur_row, graphics_wdg.cur_column)
 
-    def on_drag(self, obj: ThumbnailWidget, event: QtWidgets.QGraphicsSceneDragDropEvent):
+    def on_drag(self, obj: CantactSheetWidget, event: QtWidgets.QGraphicsSceneDragDropEvent):
         """
         on_drag(): description
 
@@ -2785,7 +2785,7 @@ class ContactSheet(QtWidgets.QWidget):
         sp_db = sp_db
 
         if fname == "..":
-            thumb_widget = ThumbnailWidget(
+            thumb_widget = CantactSheetWidget(
                 fstr,
                 None,
                 data,
@@ -2797,7 +2797,7 @@ class ContactSheet(QtWidgets.QWidget):
             )
 
         elif is_folder:
-            thumb_widget = ThumbnailWidget(
+            thumb_widget = CantactSheetWidget(
                 fstr,
                 sp_db,
                 data,
@@ -2821,7 +2821,7 @@ class ContactSheet(QtWidgets.QWidget):
                 entry_dct=entry_dct,
                 counter=self,
             )
-            thumb_widget = ThumbnailWidget(
+            thumb_widget = CantactSheetWidget(
                 fstr,
                 sp_db,
                 data,
@@ -2833,7 +2833,7 @@ class ContactSheet(QtWidgets.QWidget):
             )
         else:
 
-            thumb_widget = ThumbnailWidget(
+            thumb_widget = CantactSheetWidget(
                 fstr, sp_db, data, title, info_dct, scan_type=stype, parent=self
             )
 
@@ -3623,7 +3623,7 @@ class ContactSheet(QtWidgets.QWidget):
 
 
 
-    def do_load_thumbs(self, thumbs: List[ThumbnailWidget], thumb_cache: List[ThumbnailWidget],
+    def do_load_thumbs(self, thumbs: List[CantactSheetWidget], thumb_cache: List[CantactSheetWidget],
                        graphics_widget: MainGraphicsWidget, scene: QtWidgets.QGraphicsScene,
                        view: QtWidgets.QGraphicsView):
         """

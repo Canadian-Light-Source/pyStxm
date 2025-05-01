@@ -45,11 +45,9 @@ class OsaFocusScanClass(BaseOsaFocusScanClass):
         :param det_lst is a list of detector ophyd objects
         :return:
         """
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!! for now connect only the first detector, in the future though this needs to setup an emitter for each selected detector
-        # so that the detectors data can be stored and plottable items can be created and built as the scan progresses
         if len(det_lst) > 0 and hasattr(det_lst[0], 'name'):
-            d = det_lst[0]
-            if hasattr(d, 'reset'):
-                d.reset()
-            d.new_plot_data.connect(func)
-            self._det_subscription = d
+            for d in det_lst:
+                if hasattr(d, 'reset'):
+                    d.reset()
+                d.new_plot_data.connect(func)
+                self._det_subscriptions.append(d)

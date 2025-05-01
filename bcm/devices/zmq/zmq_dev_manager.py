@@ -442,6 +442,7 @@ class ZMQDevManager(QWidget):
         This function accepts a list of detector names and sets the selected detectors to this list
         """
         assert isinstance(det_nm_lst, list), f"select_detectors: det_nm_lst must be a list, not {type(det_nm_lst)}"
+        self.selected_detectors = det_nm_lst
         self.dcs_server_api.select_detectors(det_nm_lst)
 
     def set_oscilloscope_definition(self, osc_def: dict):

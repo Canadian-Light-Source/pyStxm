@@ -103,7 +103,7 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
               <enum>QTabWidget::North</enum>
              </property>
              <property name="currentIndex">
-              <number>0</number>
+              <number>2</number>
              </property>
              <widget class="QWidget" name="imageTab">
               <attribute name="title">
@@ -368,7 +368,7 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
              </widget>
              <widget class="QWidget" name="chartmodeTab">
               <attribute name="title">
-               <string>Chart mode</string>
+               <string>Charting</string>
               </attribute>
               <layout class="QVBoxLayout" name="verticalLayout_11">
                <property name="spacing">
@@ -894,7 +894,7 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
         <enum>QTabWidget::West</enum>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab_scans">
         <property name="sizePolicy">

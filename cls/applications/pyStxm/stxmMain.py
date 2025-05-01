@@ -902,9 +902,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         self.scan_in_progress = True
         self.startBtn.setEnabled(False)
-        # self.stopBtn.setEnabled(True)
         self.pauseBtn.setEnabled(True)
-        self.scansFrame.setEnabled(False)
+        self.mainTabWidget.setEnabled(False)
 
         # self.contact_sheet.set_drag_enabled(False)
 
@@ -923,11 +922,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.scan_elapsed_timer.stop()
         self.scan_in_progress = False
         self.startBtn.setEnabled(True)
-        # self.stopBtn.setEnabled(False)
         self.pauseBtn.setEnabled(False)
         self.pauseBtn.setChecked(False)
-        self.scansFrame.setEnabled(True)
-        # self.scan_tbox_widgets[self.scan_panel_idx].set_editable()
+        self.mainTabWidget.setEnabled(True)
+
         if hasattr(self, "contact_sheet"):
             self.contact_sheet.set_drag_enabled(True)
         if hasattr(self, "lineByLineImageDataWidget"):

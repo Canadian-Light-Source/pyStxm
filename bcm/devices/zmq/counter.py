@@ -190,3 +190,6 @@ class ZMQCounter(ZMQBaseDevice):
         # restrict value to 0 thru 7
         val = val % 7
         return obj.set(val)
+
+    def is_chan_enabled(self, chan_name=None):
+        return True

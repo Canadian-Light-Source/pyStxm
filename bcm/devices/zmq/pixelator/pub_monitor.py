@@ -51,4 +51,4 @@ if __name__ == "__main__":
     PORT = 56561        # Replace with the PUB socket port
 
     # Start the PUB socket monitor
-    pub_monitor(HOST, PORT, ignore_detector=False)
+    pub_monitor(HOST, PORT, ignore_detector=True)

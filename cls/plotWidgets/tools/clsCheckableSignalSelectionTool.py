@@ -52,7 +52,9 @@ class clsCheckableSignalSelectTool(CommandTool):
             tip=_("Select signals to view"),
             toolbar_id=toolbar_id
         )
+
         self._selected_signals = []
+
         self.action.setEnabled(True)
         self.action.setIconText("Signals  ")
         self.parent_obj_nm = "NONE"
@@ -80,6 +82,25 @@ class clsCheckableSignalSelectTool(CommandTool):
         Check if two lists have the same contents, regardless of order.
         """
         return Counter(list1) == Counter(list2)
+
+    def update_signal_list(self, sig_lst):
+        """
+        update the signame list and rebuild the menu
+        {'DNM_PMT': {'selected': True,
+          'dev': <bcm.devices.zmq.counter.ZMQCounter at 0x7ff27cd73e20>},
+         'DNM_COUNTER1': {'selected': True,
+          'dev': <bcm.devices.zmq.counter.ZMQCounter at 0x7ff27cd73f40>},
+         'DNM_ANALOG0': {'selected': True,
+          'dev': <bcm.devices.zmq.counter.ZMQCounter at 0x7ff27cd7c0d0>}
+        }
+        """
+        dct = {}
+        for sig_nm in sig_lst:
+            dct[sig_nm] = {"selected": True}
+
+        self.signals_dct = dct
+        print(f"clsCheckableSignalSelectTool: dct={dct}")
+        self.create_action_menu(self.manager)
 
     def create_action_menu(self, manager):
         """Create and return a checkable menu for the tool's action"""

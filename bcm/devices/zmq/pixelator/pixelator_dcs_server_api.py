@@ -54,16 +54,6 @@ def gen_non_tiled_map_entry(sdInnerRegionIdx, arr_npoints, npoints_x):
     pixel_col = (starting_pixel_index + 0) % npoints_x
     return {'row': pixel_row, 'col': pixel_col}
 
-# def get_non_tiled_row_col(sdInnerRegionIdx, arr_npoints, npoints_x):
-#     # npoints_x = Number of pixels each data array represents
-#     # Calculate the starting pixel index in the 1D image representation
-#     starting_pixel_index = sdInnerRegionIdx * arr_npoints
-#
-#     # Calculate the grid locations for all 20 points
-#     #pixel_positions = []
-#     pixel_row = (starting_pixel_index + 0) // npoints_x
-#     pixel_col = (starting_pixel_index + 0) % npoints_x
-#     return {'row': pixel_row, 'col': pixel_col}
 
 class ScanClass(object):
     def __init__(self):
@@ -397,39 +387,40 @@ class ScanClass(object):
         return scan_request
 
 
-    def calculate_progress(self, total_time: str, elapsed_time: str, remaining_time: str) -> float:
-        """
-        Calculate the percentage progress based on total and elapsed time.
-
-        Args:
-            total_time (str): Total time in the format '00h 18m 12s'.
-            elapsed_time (str): Elapsed time in the format '00h 03m 04s'.
-
-        Returns:
-            float: Percentage progress as a float value.
-        """
-
-        def time_to_seconds(time_str: str) -> int:
-            """Convert time string to total seconds."""
-            h, m, s = 0, 0, 0
-            if 'h' in time_str:
-                h = int(time_str.split('h')[0].strip())
-                time_str = time_str.split('h')[1]
-            if 'm' in time_str:
-                m = int(time_str.split('m')[0].strip())
-                time_str = time_str.split('m')[1]
-            if 's' in time_str:
-                s = int(time_str.split('s')[0].strip())
-            return h * 3600 + m * 60 + s
-
-        total_seconds = time_to_seconds(total_time)
-        elapsed_seconds = time_to_seconds(elapsed_time)
-        remaining_seconds = time_to_seconds(remaining_time)
-
-        if total_seconds == 0:  # Avoid division by zero
-            return 0.0
-
-        return (elapsed_seconds / total_seconds) * 100
+    # def calculate_progress(self, total_time: str, elapsed_time: str, remaining_time: str) -> float:
+    #     """
+    #     Calculate the percentage progress based on total and elapsed time coming from Pixelator,
+    #     this may be used in teh future if Pixelator can give accurate timeing
+    #
+    #     Args:
+    #         total_time (str): Total time in the format '00h 18m 12s'.
+    #         elapsed_time (str): Elapsed time in the format '00h 03m 04s'.
+    #
+    #     Returns:
+    #         float: Percentage progress as a float value.
+    #     """
+    #
+    #     def time_to_seconds(time_str: str) -> int:
+    #         """Convert time string to total seconds."""
+    #         h, m, s = 0, 0, 0
+    #         if 'h' in time_str:
+    #             h = int(time_str.split('h')[0].strip())
+    #             time_str = time_str.split('h')[1]
+    #         if 'm' in time_str:
+    #             m = int(time_str.split('m')[0].strip())
+    #             time_str = time_str.split('m')[1]
+    #         if 's' in time_str:
+    #             s = int(time_str.split('s')[0].strip())
+    #         return h * 3600 + m * 60 + s
+    #
+    #     total_seconds = time_to_seconds(total_time)
+    #     elapsed_seconds = time_to_seconds(elapsed_time)
+    #     remaining_seconds = time_to_seconds(remaining_time)
+    #
+    #     if total_seconds == 0:  # Avoid division by zero
+    #         return 0.0
+    #
+    #     return (elapsed_seconds / total_seconds) * 100
 
 
     def intake_scan_status(self, dct):
@@ -525,15 +516,18 @@ class ScanClass(object):
 
     def intake_scan_line_data(self, resp, selected_det_names):
         """
-        resp = '0 0 0 0 ', '0 0 ', '1 25 ', '[20.5650,20.1760,20.5530,20.2820,20.1760,20.0870,20.5080,20.5030,20.4770,20.6060,20.3750,20.1760,20.2540,20.160,20.6820,20.0230,20.110,20.8350,20.6390,20.4680,20.8190,20.0390,20.5670,20.0110,20.9050]
-
+        resp = '0 0 0 0 ', '0 0 ', '1 25 ', '[20.5650,20.1760,20.5530,20.282...,20.8190,20.0390,20.5670,20.0110,20.9050]
+        The scan progress needs to take into account the total number of selected detectors otherwise it will think all
+        data is for one detector and give an incorrect progress
         """
         sl_dct = self.handle_scanLineData(resp[1:])
 
         self.ttl_points_received += sl_dct['data_size']
         self.cur_img_points_received += sl_dct['data_size']
-        all_scans_progress = int(float(self.ttl_points_received / self._total_num_points) * 100.0)
-        cur_img_progress = int(float(self.cur_img_points_received / (self.npoints_rows * self.npoints_cols)) * 100.0)
+
+        # calc the progress
+        all_scans_progress = int(float((self.ttl_points_received / self._total_num_points) * 100.0)/len(selected_det_names))
+        cur_img_progress = int(float((self.cur_img_points_received / (self.npoints_rows * self.npoints_cols)) * 100.0)/len(selected_det_names))
         self._scan_line_data_cntr += 1
         return {'det_name': selected_det_names[sl_dct['det_chan_idx']], 'row': sl_dct['row'], 'col': sl_dct['col'], 'shape': sl_dct['data_shape'],
                 'value': sl_dct['data'], 'is_tiled': self.tiling, 'is_partial': True if not self.tiling else False,

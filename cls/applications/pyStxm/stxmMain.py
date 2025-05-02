@@ -913,6 +913,20 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             # do not allow user to delete currently acquiring image
             self.lineByLineImageDataWidget.enable_menu_action("Clear Plot", False)
 
+    def enable_disable_scan_btns(self, enable=False):
+        """
+        disable the buttons if the user is not on the scans_tab
+        """
+        if enable:
+            self.startBtn.setEnabled(True)
+            self.pauseBtn.setEnabled(True)
+            self.stopBtn.setEnabled(True)
+        else:
+            self.startBtn.setEnabled(False)
+            self.pauseBtn.setEnabled(False)
+            self.stopBtn.setEnabled(False)
+
+
     def set_buttons_for_starting(self):
         """
         set_buttons_for_starting(): description
@@ -1541,11 +1555,19 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             sorted_dev_lst.append(dev_dct[s_d])
         return sorted_dev_lst
 
-    def on_main_tab_changed(self, tab_idx):
+    def on_main_tab_changed(self, index):
         w = self.mainTabWidget.currentWidget()
         w_ch = w.children()
         for ch in w_ch:
             self.walk_children_for_on_focus_event(ch)
+
+        # only allow a user to click scan if they are on the scan tab
+        current_tab_widget = self.mainTabWidget.widget(index)
+        current_tab_name = current_tab_widget.objectName()
+        if current_tab_name == "tab_scans":
+            self.enable_disable_scan_btns(True)
+        else:
+            self.enable_disable_scan_btns(False)
 
     def walk_children_for_on_focus_event(self, widg):
         w_ch = widg.children()
@@ -3066,26 +3088,17 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
     def add_line_to_plot(self, counter_to_plotter_com_dct):
         """
-        add_line_to_plot(): description
+        add_line_to_plot(): a function to take data (a full line) and add it to the configured plotters
+            Needed a flag to monitor when to start a new image
 
-        :param row: row description
-        :type row: row type
-
-        :param scan_data: scan_data description
-        :type scan_data: scan_data type
+            CNTR2PLOT_ROW = 'row'           #a y position
+            CNTR2PLOT_COL = 'col'           #an x position
+            CNTR2PLOT_VAL = 'val'           #the point or array of data
+            CNTR2PLOT_IS_POINT = 'is_pxp'   #data is from a point by point scan
+            CNTR2PLOT_IS_LINE = 'is_lxl'    #data isfrom a line by line scan
 
         :returns: None
         """
-        """ a function to take data (a full line) and add it to the configured plotters
-        Needed a flag to monitor when to start a new image
-
-        CNTR2PLOT_ROW = 'row'           #a y position
-        CNTR2PLOT_COL = 'col'           #an x position
-        CNTR2PLOT_VAL = 'val'           #the point or array of data
-        CNTR2PLOT_IS_POINT = 'is_pxp'   #data is from a point by point scan
-        CNTR2PLOT_IS_LINE = 'is_lxl'    #data isfrom a line by line scan
-        """
-
         # print(f'add_line_to_plot: {counter_to_plotter_com_dct}')
         # return
         # det_id = counter_to_plotter_com_dct[CNTR2PLOT_DETID]
@@ -3113,10 +3126,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                         self.do_roi_update(det_name, prog_dct)
 
                     if is_tiled:
-                        # print(f"add_line_to_plot: add_vertical_line_at_row_col({det_name}, {row}, {col}, {data}, True)")
+                        # print(f"add_line_to_plot: is_tiled: add_vertical_line_at_row_col({det_name}, row={row}, col={col}, {data}, True)")
                         self.lineByLineImageDataWidget.add_vertical_line_at_row_col(det_name, row, col, data, True)
                     else:
-                        # print(f"add_line_to_plot: add_vertical_line({det_name}, {col}, {data}, True)")
+                        # print(f"add_line_to_plot: add_vertical_line({det_name}, col={col}, {data}, True)")
                         self.lineByLineImageDataWidget.add_vertical_line(det_name, col, data, True)
 
 
@@ -3910,21 +3923,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 _scan_plotter = self.spectraWidget
             else:
                 _scan_plotter = self.lineByLineImageDataWidget
-
-                # if scan_sub_type is scan_sub_types.POINT_BY_POINT:
-                #     # FEB 22 2023 self.point_det.set_scan_type(scan_type)
-                #     if scan_class.e712_enabled:
-                #         # PxP controlled by triggers from E712, triggers an entire line of points hence add_line_to_plot()
-                #         scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_line_to_plot, dets)
-                #     else:
-                #         # PxP controlled by software
-                #         scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_point_to_plot, dets)
-                #
-                # else:
-                #     # line
-                #     scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_line_to_plot, dets)
-                plotting_func = None
-
                 if hasattr(self.executingScan, 'data_plot_type'):
                     # added to support for other labs scans like SLS det scan is line by line
                     if self.executingScan.data_plot_type == 'line':
@@ -4480,18 +4478,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.spectraWidget.clear_plot()
         det_curve_nms = self.spectraWidget.create_curves(det_lst, sp_ids)
 
-        # #sp_ids = list(self.cur_sp_rois.keys())
-        #
-        # if len(sp_ids) == 1:
-        #     use_dflt = True
-        # else:
-        #     use_dflt = False
-        #
-        # for sp_id in sp_ids:
-        #     # self.spectraWidget.create_curve('point_spectra_%d' % i,curve_style='Lines')
-        #     clr = get_next_color(use_dflt=use_dflt)
-        #     style = get_basic_line_style(clr, marker="Star1")
-        #     self.spectraWidget.create_curve("sp_id_%d" % sp_id, curve_style=style)
 
     def is_add_line_to_plot_type(self, scan_type, scan_sub_type, use_hdw_accel):
         """

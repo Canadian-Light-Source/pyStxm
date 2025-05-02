@@ -500,6 +500,11 @@ class ScanClass(object):
         else:
             dct['data_size'] = dct['data_shape'][1]
 
+        # if self.is_line_spec_scan(self.scan_req):
+        #     dct['row'] = dct['tile_num']
+        # else:
+        #     dct['row'] = offset[0] + chunk_start[0]
+
         dct['row'] = offset[0] + chunk_start[0]
 
         if self.is_point_spec_scan(self.scan_req) or self.is_line_spec_scan(self.scan_req):
@@ -514,7 +519,7 @@ class ScanClass(object):
         #     cstart = dct['img_idx']
         # dct['col'] = offset[1] + cstart
         # print(f"[{self.scan_seq}] scan_data[row={row}, col={col}] = length={len(chunk_values)} {chunk_values}")
-        # print(f"row={row} col={col}")
+        # print(f"handle_scanLineData: row={row} col={col}")
         self.tile_shapes[indices[2]][2:] = np.maximum(self.tile_shapes[indices[2]][2:], chunk_start + chunk_shape)
         return dct
 

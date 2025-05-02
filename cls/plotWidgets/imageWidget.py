@@ -4595,11 +4595,13 @@ class ImageWidgetPlot(PlotDialog):
                 col = cols - 1
 
             line_len = len(line)
+            # print(f"add_vertical_line_at_row_col: item.name={item.title().text()} item.data.shape = {item.data.shape}")
             # the first pixel in teh nan array has been set to 0.0 in init_items
             # if its left as nan the contrast tool throws an exception, maybe addressed in plotpy in future
             if item.data[0][col] == 0.0:
                 index = 0
             else:
+                # look for the next NAN value in the column
                 index = np.where(np.isnan(item.data[:, col]))[0][0]
             # print(f"addVerticalLineAtRowCol: row={row}, col={col}, index={index}")
             item.data[index:index + line_len, col] = line #line[0:rows]

@@ -148,11 +148,12 @@ class ZMQCounter(ZMQBaseDevice):
             sp_id, self.col = self.seq_map[dct['col']]
             # det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
             det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix='spid-')
-        elif self.is_line_spec_scan and not self.return_all_spec:
-            # use the X axis from sequence map so that it plots in units
-            sp_id, not_used = self.seq_map[dct['row']]
-            #det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
-            det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix='spid-')
+        # elif self.is_line_spec_scan and not self.return_all_spec:
+        #     # use the X axis from sequence map so that it plots in units
+        #     sp_id, not_used = self.seq_map[dct['row']]
+        #     #det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
+        #     det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix='spid-')
+
 
         else:
             det_name = app_devname # dct['det_name']

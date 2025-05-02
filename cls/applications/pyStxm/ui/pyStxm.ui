@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1950</width>
-    <height>1568</height>
+    <width>1954</width>
+    <height>881</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -96,11 +96,14 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
                <height>100</height>
               </size>
              </property>
+             <property name="autoFillBackground">
+              <bool>true</bool>
+             </property>
              <property name="tabPosition">
               <enum>QTabWidget::North</enum>
              </property>
              <property name="currentIndex">
-              <number>0</number>
+              <number>2</number>
              </property>
              <widget class="QWidget" name="imageTab">
               <attribute name="title">
@@ -363,7 +366,139 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
                </item>
               </layout>
              </widget>
-             <widget class="QWidget" name="tab3">
+             <widget class="QWidget" name="chartmodeTab">
+              <attribute name="title">
+               <string>Charting</string>
+              </attribute>
+              <layout class="QVBoxLayout" name="verticalLayout_11">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QFrame" name="chartPlotFrame">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="palette">
+                  <palette>
+                   <active>
+                    <colorrole role="Button">
+                     <brush brushstyle="SolidPattern">
+                      <color alpha="255">
+                       <red>223</red>
+                       <green>223</green>
+                       <blue>224</blue>
+                      </color>
+                     </brush>
+                    </colorrole>
+                    <colorrole role="Base">
+                     <brush brushstyle="SolidPattern">
+                      <color alpha="255">
+                       <red>223</red>
+                       <green>223</green>
+                       <blue>224</blue>
+                      </color>
+                     </brush>
+                    </colorrole>
+                    <colorrole role="Window">
+                     <brush brushstyle="SolidPattern">
+                      <color alpha="255">
+                       <red>223</red>
+                       <green>223</green>
+                       <blue>224</blue>
+                      </color>
+                     </brush>
+                    </colorrole>
+                   </active>
+                   <inactive>
+                    <colorrole role="Button">
+                     <brush brushstyle="SolidPattern">
+                      <color alpha="255">
+                       <red>223</red>
+                       <green>223</green>
+                       <blue>224</blue>
+                      </color>
+                     </brush>
+                    </colorrole>
+                    <colorrole role="Base">
+                     <brush brushstyle="SolidPattern">
+                      <color alpha="255">
+                       <red>223</red>
+                       <green>223</green>
+                       <blue>224</blue>
+                      </color>
+                     </brush>
+                    </colorrole>
+                    <colorrole role="Window">
+                     <brush brushstyle="SolidPattern">
+                      <color alpha="255">
+                       <red>223</red>
+                       <green>223</green>
+                       <blue>224</blue>
+                      </color>
+                     </brush>
+                    </colorrole>
+                   </inactive>
+                   <disabled>
+                    <colorrole role="Button">
+                     <brush brushstyle="SolidPattern">
+                      <color alpha="255">
+                       <red>223</red>
+                       <green>223</green>
+                       <blue>224</blue>
+                      </color>
+                     </brush>
+                    </colorrole>
+                    <colorrole role="Base">
+                     <brush brushstyle="SolidPattern">
+                      <color alpha="255">
+                       <red>223</red>
+                       <green>223</green>
+                       <blue>224</blue>
+                      </color>
+                     </brush>
+                    </colorrole>
+                    <colorrole role="Window">
+                     <brush brushstyle="SolidPattern">
+                      <color alpha="255">
+                       <red>223</red>
+                       <green>223</green>
+                       <blue>224</blue>
+                      </color>
+                     </brush>
+                    </colorrole>
+                   </disabled>
+                  </palette>
+                 </property>
+                 <property name="autoFillBackground">
+                  <bool>false</bool>
+                 </property>
+                 <property name="frameShape">
+                  <enum>QFrame::StyledPanel</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Raised</enum>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="calibCamTab">
               <attribute name="title">
                <string>Calibration Camera</string>
               </attribute>
@@ -414,8 +549,8 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1950</width>
-     <height>31</height>
+     <width>1954</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -822,11 +957,11 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
          <string notr="true"/>
         </property>
         <attribute name="title">
-         <string> IOC Application Status </string>
+         <string>Select Detectors</string>
         </attribute>
         <layout class="QVBoxLayout" name="verticalLayout_21">
          <item>
-          <widget class="QGroupBox" name="IOCSwStatusGrpBx">
+          <widget class="QGroupBox" name="selectDetectorsGrpBx">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -840,7 +975,7 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
             </font>
            </property>
            <property name="title">
-            <string> IOC Software Status </string>
+            <string> Select Detectors </string>
            </property>
           </widget>
          </item>
@@ -1701,7 +1836,7 @@ background-color:rgb(177, 177, 177)
    </property>
    <property name="minimumSize">
     <size>
-     <width>845</width>
+     <width>850</width>
      <height>135</height>
     </size>
    </property>
@@ -2013,6 +2148,15 @@ background-color:rgb(177, 177, 177)
                      </color>
                     </brush>
                    </colorrole>
+                   <colorrole role="PlaceholderText">
+                    <brush brushstyle="NoBrush">
+                     <color alpha="128">
+                      <red>0</red>
+                      <green>0</green>
+                      <blue>255</blue>
+                     </color>
+                    </brush>
+                   </colorrole>
                   </active>
                   <inactive>
                    <colorrole role="Button">
@@ -2051,6 +2195,15 @@ background-color:rgb(177, 177, 177)
                      </color>
                     </brush>
                    </colorrole>
+                   <colorrole role="PlaceholderText">
+                    <brush brushstyle="NoBrush">
+                     <color alpha="128">
+                      <red>0</red>
+                      <green>0</green>
+                      <blue>255</blue>
+                     </color>
+                    </brush>
+                   </colorrole>
                   </inactive>
                   <disabled>
                    <colorrole role="Button">
@@ -2086,6 +2239,15 @@ background-color:rgb(177, 177, 177)
                       <red>223</red>
                       <green>223</green>
                       <blue>224</blue>
+                     </color>
+                    </brush>
+                   </colorrole>
+                   <colorrole role="PlaceholderText">
+                    <brush brushstyle="NoBrush">
+                     <color alpha="128">
+                      <red>0</red>
+                      <green>0</green>
+                      <blue>255</blue>
                      </color>
                     </brush>
                    </colorrole>
@@ -2182,6 +2344,15 @@ background-color:rgb(177, 177, 177)
                      </color>
                     </brush>
                    </colorrole>
+                   <colorrole role="PlaceholderText">
+                    <brush brushstyle="NoBrush">
+                     <color alpha="128">
+                      <red>0</red>
+                      <green>0</green>
+                      <blue>255</blue>
+                     </color>
+                    </brush>
+                   </colorrole>
                   </active>
                   <inactive>
                    <colorrole role="Button">
@@ -2220,6 +2391,15 @@ background-color:rgb(177, 177, 177)
                      </color>
                     </brush>
                    </colorrole>
+                   <colorrole role="PlaceholderText">
+                    <brush brushstyle="NoBrush">
+                     <color alpha="128">
+                      <red>0</red>
+                      <green>0</green>
+                      <blue>255</blue>
+                     </color>
+                    </brush>
+                   </colorrole>
                   </inactive>
                   <disabled>
                    <colorrole role="Button">
@@ -2255,6 +2435,15 @@ background-color:rgb(177, 177, 177)
                       <red>223</red>
                       <green>223</green>
                       <blue>224</blue>
+                     </color>
+                    </brush>
+                   </colorrole>
+                   <colorrole role="PlaceholderText">
+                    <brush brushstyle="NoBrush">
+                     <color alpha="128">
+                      <red>0</red>
+                      <green>0</green>
+                      <blue>255</blue>
                      </color>
                     </brush>
                    </colorrole>

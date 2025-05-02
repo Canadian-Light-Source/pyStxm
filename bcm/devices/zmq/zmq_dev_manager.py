@@ -397,6 +397,12 @@ class ZMQDevManager(QWidget):
         """
         self.dcs_server_api.set_osa_definitions(osa_defs)
 
+    def set_ocilloscope_definition(self, osc_def: dict):
+        """
+        a function to send the osa definition dictionary to the DCS server
+        """
+        self.dcs_server_api.set_ocilloscope_definition(osc_def)
+
     def abort_scan(self):
         """
         This function makes the call to the dcs server to abort the current scan
@@ -424,3 +430,26 @@ class ZMQDevManager(QWidget):
 
         """
         self.dcs_server_api.resume_scan()
+
+    def get_selected_detector_names(self) -> list:
+        """
+        This function returns the list of detectors that are curently selected to send their data out of the DCS server
+        """
+        return self.dcs_server_api.get_selected_detector_names()
+
+    def select_detectors(self, det_nm_lst: [list]):
+        """
+        This function accepts a list of detector names and sets the selected detectors to this list
+        """
+        assert isinstance(det_nm_lst, list), f"select_detectors: det_nm_lst must be a list, not {type(det_nm_lst)}"
+        self.selected_detectors = det_nm_lst
+        self.dcs_server_api.select_detectors(det_nm_lst)
+
+    def set_oscilloscope_definition(self, osc_def: dict):
+        """
+        This function accepts a list of detector names and sets the selected detectors to this list
+        """
+        assert isinstance(osc_def, dict), f"set_oscilloscope_definition: osc_def must be a dict, not {type(osc_def)}"
+        self.dcs_server_api.set_oscilloscope_definition(osc_def)
+
+

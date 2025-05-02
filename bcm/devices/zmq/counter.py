@@ -11,8 +11,8 @@ class ZMQCounter(ZMQBaseDevice):
     Simple counter device that can emit new_plot_data
     """
     new_plot_data = QtCore.pyqtSignal(object)
-    def __init__(self, base_signal_name=None, **kwargs):
-        super().__init__(base_signal_name, name=base_signal_name, **kwargs)
+    def __init__(self, base_signal_name, name=None, **kwargs):
+        super().__init__(base_signal_name, name=name, **kwargs)
         self.is_staged = True
         self.is_pxp_scan = True
         self.is_point_spec_scan = False
@@ -126,6 +126,7 @@ class ZMQCounter(ZMQBaseDevice):
         self.col = dct['col']
         img_idx = dct['img_idx']
         tile_num = dct['tile_num']
+        app_devname = dct["app_devname"]
         #print(f"process_data: shape={shape}")
         #print(f"process_data: data={data}")
         self.is_pxp_scan = True
@@ -138,23 +139,28 @@ class ZMQCounter(ZMQBaseDevice):
         if self.return_all_spec:
             # use the X axis from sequence map so that it plots in units
             sp_id, self.col = self.seq_map[dct['row']]
-            det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
+            # det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
+            det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix='spid-')
             # assign all of x_data to col so that the plotter can use it for the x axis
             self.col = self.x_data
         elif self.is_point_spec_scan and not self.return_all_spec:
             # use the X axis from sequence map so that it plots in units
             sp_id, self.col = self.seq_map[dct['col']]
-            det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
-        elif self.is_line_spec_scan and not self.return_all_spec:
-            # use the X axis from sequence map so that it plots in units
-            sp_id, not_used = self.seq_map[dct['row']]
-            det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
+            # det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
+            det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix='spid-')
+        # elif self.is_line_spec_scan and not self.return_all_spec:
+        #     # use the X axis from sequence map so that it plots in units
+        #     sp_id, not_used = self.seq_map[dct['row']]
+        #     #det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
+        #     det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix='spid-')
+
 
         else:
-            det_name = dct['det_name']
+            det_name = app_devname # dct['det_name']
         # the chan_dct makes it conform to the base detector used at CLS SIS3820 which returns a dict of channel data
         chan_dct = {}
         chan_dct[det_name] = data
+
         if self.enable_progress_emit:
             #plot_dct = make_counter_to_plotter_com_dct(self.row, self.col, data, is_point=self.is_pxp_scan, prog_dct={}, det_name=det_name,is_tiled=dct['is_tiled'])
             set_prog_dict(self._prog_dct, sp_id=0, percent=dct['prog'], cur_img_idx=dct['img_idx'], ev_idx=dct['ev_idx'],
@@ -166,6 +172,9 @@ class ZMQCounter(ZMQBaseDevice):
                                                        prog_dct={})
         # print(f"process_data emitting: {plot_dct}")
         self.new_plot_data.emit(plot_dct)
+
+    def get_name(self):
+        return self.name
 
     def get_position(self):
         return self.get("VAL")
@@ -182,3 +191,6 @@ class ZMQCounter(ZMQBaseDevice):
         # restrict value to 0 thru 7
         val = val % 7
         return obj.set(val)
+
+    def is_chan_enabled(self, chan_name=None):
+        return True

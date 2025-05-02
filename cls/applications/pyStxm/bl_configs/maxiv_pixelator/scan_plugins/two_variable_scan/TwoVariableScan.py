@@ -45,9 +45,9 @@ class TwoVariableScanClass(BaseTwoVariableScanClass):
         :return:
         """
         if len(det_lst) > 0 and hasattr(det_lst[0], 'name'):
-            d = det_lst[0]
-            if hasattr(d, 'reset'):
-                d.reset()
-            d.new_plot_data.connect(func)
-            self._det_subscription = d
+            for d in det_lst:
+                if hasattr(d, 'reset'):
+                    d.reset()
+                d.new_plot_data.connect(func)
+                self._det_subscriptions.append(d)
 

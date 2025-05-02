@@ -1,7 +1,7 @@
 """
-Created on Nov 14, 2016
+Created on May 1, 2025
 
-@author: bergr 
+@author: bergr
 """
 import os
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -266,8 +266,9 @@ class DetectorItem(QtWidgets.QWidget):
 
 
 class DetectorsPanel(BasePreference):
-    def __init__(self, name="DetectorsPanel", parent=None):
+    def __init__(self, name="DetectorsPanel", parent=None, sel_changed_cb=None):
         super(DetectorsPanel, self).__init__(name, parent)
+        self.sel_changed_cb = sel_changed_cb
         vbox = QtWidgets.QVBoxLayout()
         self.setLayout(vbox)
         grpBox = QtWidgets.QGroupBox(" Detectors ")
@@ -337,28 +338,34 @@ class DetectorsPanel(BasePreference):
                     )
 
     def on_update_setting(self, dct):
-        det_name = list(dct.keys())[0]
-        self.set_section(
-            "%s.ENABLED" % (det_name), dct_get(dct, "%s.ENABLED" % det_name)
-        )
+        """
+        a handler called when ta DetectorItem has changed
+        """
+        # if the parent has passed a callback to call when some selection has changed then call it will a list of the
+        # selected detectors
+        if self.sel_changed_cb:
+            lst = []
+            sig_names_lst = self.get_selected_detectors(app_devnames_only=True)
+            self.sel_changed_cb(sig_names_lst)
 
-    def get_selected_detectors(self, scan_class=None):
+    def get_selected_detectors(self, app_devnames_only=False):
         """
         walk all of the detectors and record which ones are checked
         """
-        #get the scan classes ddefault detector and make sure that it shows as selected
-        dflt_det = scan_class.default_detector_nm
         lst = []
+        app_devnames = []
         for d_item in self.widgetList:
-            if d_item.get_name() == dflt_det:
-                d_item.set_checked(True)
             if d_item.get_checked():
                 dct = {}
                 dct["name"] = d_item.get_name()
                 dct["dcs_name"] = d_item.get_dcs_name()
                 lst.append(dct)
+                app_devnames.append(d_item.get_name())
 
-        return lst
+        if app_devnames_only:
+            return app_devnames
+        else:
+            return lst
 
     def update_pref_dct(self):
         """

@@ -49,21 +49,19 @@ class PointSpecScanClass(BasePointSpecScanClass):
         :return:
         """
         seq_map = self.gen_spid_seq_map(self._master_sp_id_list, self.ev_setpoints)
-        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!! for now connect only the first detector, in the future though this needs to setup an emitter for each selected detector
-        # so that the detectors data can be stored and plottable items can be created and built as the scan progresses
         if len(det_lst) > 0 and hasattr(det_lst[0], 'name'):
-            d = det_lst[0]
-            d.new_plot_data.connect(func)
-            if hasattr(d, 'reset'):
-                d.reset()
-            if hasattr(d, 'set_spec_scan'):
-                d.set_spec_scan()
-            if hasattr(d, 'set_seq_map'):
-                d.set_seq_map(seq_map)
-            if hasattr(d, 'set_return_all_spec_at_once'):
-                d.set_return_all_spec_at_once(False)
+            for d in det_lst:
+                d.new_plot_data.connect(func)
+                if hasattr(d, 'reset'):
+                    d.reset()
+                if hasattr(d, 'set_spec_scan'):
+                    d.set_spec_scan()
+                if hasattr(d, 'set_seq_map'):
+                    d.set_seq_map(seq_map)
+                if hasattr(d, 'set_return_all_spec_at_once'):
+                    d.set_return_all_spec_at_once(False)
 
-            self._det_subscription = d
+                self._det_subscriptions.append(d)
 
     def go_to_scan_start(self):
         return True

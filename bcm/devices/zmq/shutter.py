@@ -27,8 +27,8 @@ shutter_modes = Enum("Manual", "Auto")
 class DCSShutter(ZMQBaseDevice):
     """class for shutter that are accessed as daqmx device digital output bits"""
 
-    def __init__(self, signal_name, openval=1, closeval=0):
-        super(DCSShutter, self).__init__(signal_name, write_pv=signal_name, backend=BACKEND)
+    def __init__(self, signal_name, name, openval=1, closeval=0):
+        super(DCSShutter, self).__init__(signal_name, name=name, write_pv=signal_name, backend=BACKEND)
         self.ready = True
         self.reset_to_default = False
         self._open_val = int(openval)

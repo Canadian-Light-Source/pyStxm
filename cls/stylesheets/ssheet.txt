@@ -876,6 +876,25 @@ QTabWidget	.QTextEdit{
     background-color: rgb(115,115,115);
 }
 
+#plotTabWidget,#chartPlotFrame{
+    background-color: rgb(115,115,115);
+}
+
+QWidget #chartPlotFrame{
+    background-color: rgb(115,115,115);
+}
+
+
+/* the are outside the actual plot where the axis and tick strings are */
+BaseStripToolWidget#chartspectraWidget	QFrame {
+    background-color: rgb(115,115,115);
+}
+
+BaseStripToolWidget#chartspectraWidget QFrame > QWidget{
+    color: rgb(255,255,255);
+    background-color: rgb(115,115,115);
+    font:  16px;
+ }
 
 
 /*----------------------------------------------------------------------------*/

@@ -160,6 +160,7 @@ class StripToolWidget(QtWidgets.QWidget):
         #self.signal: BaseDevice = sigHeader or sigList[0]
         self.signal: BaseDevice = energy_fbk_dev
         self.counts_signal: BaseDevice = sigList[0]
+        self.scanplot.setToolTip(self.counts_signal.name)
         #         #f = QtGui.QFont( "BankGothic lt BT", 10, QtGui.QFont.Bold)
         f = QtGui.QFont("ISOCTUER", 14)  # , QtGui.QFont.Bold)
         if is_style_light:
@@ -345,15 +346,8 @@ class StripToolWidget(QtWidgets.QWidget):
             name = sig.get_name()
             self.scanplot.create_curve(name, curve_style=style)
             self.bpmsigs[name] = {"sig": sig, "val": 0}
-            # _pv.changed.connect(self.on_bpmpv_changed)
-            # pv.add_callback(self.on_sig_changed, with_ctrlvars=False)
-
             # make sure the changed signal returns entire dict because we need the pv name that the value belongs to
             sig.set_return_val_only(False)
-            # if BACKEND.find('zmq') > -1:
-            #     sig.changed.connect(self.on_zmq_sig_changed)
-            # else:
-            #     sig.changed.connect(self.on_sig_changed)
             sig.changed.connect(self.on_sig_changed)
 
 
@@ -365,13 +359,6 @@ class StripToolWidget(QtWidgets.QWidget):
             self.on_bpmpv_changed(val, signame=signame)
             # print('stripTool: on_sig_changed: need to emit a value here')
 
-    def on_zmq_sig_changed(self, val):
-        #print(f'stripToolWidget: on_zmq_sig_changed val=[{val}]')
-        if "value" in kwargs.keys():
-            val = val * self.scale_factor
-            signame = kwargs["obj"].name
-            self.on_bpmpv_changed(val, signame=signame)
-            # print('stripTool: on_sig_changed: need to emit a value here')
 
     def on_bpmpv_changed(self, val, signame=None):
         """

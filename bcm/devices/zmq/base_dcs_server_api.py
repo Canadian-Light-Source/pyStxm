@@ -61,6 +61,7 @@ class BaseDcsServerApi(QtCore.QObject):
         if app_devname in self.parent.devs.keys():
             #print(f"_update_device_feedback: updating [{app_devname}={value}]")
             dev = self.parent.devs[app_devname]['dev']
+            #print(f"_update_device_feedback: dev.name={dev.name} dcs_devname={dcs_devname} app_devname={app_devname} value={value}")
             dev.update_position(value, False)
 
     def _update_device_status(self, dcs_devname: str, value: Union[int, float, str], app_devname: str=None) -> None:
@@ -97,6 +98,7 @@ class BaseDcsServerApi(QtCore.QObject):
         value = dct['value']
 
         app_devname = self.parent.dcs_to_appname_map[dcs_devname]
+        dct["app_devname"] = app_devname
         if app_devname in self.parent.devs.keys():
             dev = self.parent.devs[app_devname]['dev']
             #dev.update_position(value, False)
@@ -146,6 +148,19 @@ class BaseDcsServerApi(QtCore.QObject):
 
         """
         print("BaseDcsServerApi: set_detector_names: has not been implemented")
+
+    def get_selected_detector_names(self) -> [str]:
+        """
+        To be implemented by inheriting class
+        Parameters
+        ----------
+        self
+
+        Returns: list of strings
+        -------
+
+        """
+        print("BaseDcsServerApi: get_selected_detector_names: has not been implemented")
 
     def start_scan(self, scan_def: dict) -> bool:
         """
@@ -258,6 +273,21 @@ class BaseDcsServerApi(QtCore.QObject):
 
         """
         print("BaseDcsServerApi: set_osa_definitions: has not been implemented")
+        return False
+
+    def set_oscilloscope_definition(self, osc_def: dict) -> bool:
+        """
+        To be implemented by inheriting class
+        Parameters
+        ----------
+        name: of the osa
+        zp_def: dict of osa details
+
+        Returns: bool True for success False for failed
+        -------
+
+        """
+        print("BaseDcsServerApi: set_oscilloscope_definition: has not been implemented")
         return False
 
     def on_new_data(self, data: dict) -> None:
@@ -387,6 +417,13 @@ class BaseDcsServerApi(QtCore.QObject):
         # to be implemented by inheriting class
         print("BaseDcsServerApi: set_osa_definitions: has not been implemented")
         return False
+
+    def select_detectors(self, det_nm_lst):
+        """
+        send the message to the DCS server to select the detectors by name
+        """
+        # to be implemented by inheriting class
+        print("BaseDcsServerApi: select_detectors: has not been implemented")
 
 
 

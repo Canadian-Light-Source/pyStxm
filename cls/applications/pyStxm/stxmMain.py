@@ -61,6 +61,7 @@ from cls.utils.sig_utils import reconnect_signal, disconnect_signal
 
 from cls.plotWidgets.imageWidget import ImageWidgetPlot
 from cls.plotWidgets.striptool.stripToolWidget import StripToolWidget
+from cls.plotWidgets.striptool.chartWidget import ChartingWidget
 from cls.plotWidgets.curveWidget import (
     CurveViewerWidget,
 )
@@ -94,6 +95,7 @@ from cls.devWidgets.ophydLabelWidget import (
 from cls.appWidgets.user_account.login import loginWidget
 
 from cls.applications.pyStxm.widgets.contact_sheet import ContactSheet
+from cls.applications.pyStxm.widgets.select_detectors_panel import DetectorsPanel
 from cls.appWidgets.dialogs import excepthook, notify as dialog_notify, warn as dialog_warn
 
 # from cls.appWidgets.spyder_console import ShellWidget#, ShellDock
@@ -439,6 +441,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.setup_main_gui()
         self.setup_image_plot()
         self.setup_spectra_plot()
+        self.setup_chartmode_plot()
         self.setup_stack_rois_plot()
 
         # In most cases, when (un)docking multiple widgets from the same area, they may take up an annoying
@@ -899,9 +902,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         self.scan_in_progress = True
         self.startBtn.setEnabled(False)
-        # self.stopBtn.setEnabled(True)
         self.pauseBtn.setEnabled(True)
-        self.scansFrame.setEnabled(False)
+        self.mainTabWidget.setEnabled(False)
 
         # self.contact_sheet.set_drag_enabled(False)
 
@@ -910,6 +912,20 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             self.lineByLineImageDataWidget.set_enable_drop_events(False)
             # do not allow user to delete currently acquiring image
             self.lineByLineImageDataWidget.enable_menu_action("Clear Plot", False)
+
+    def enable_disable_scan_btns(self, enable=False):
+        """
+        disable the buttons if the user is not on the scans_tab
+        """
+        if enable:
+            self.startBtn.setEnabled(True)
+            self.pauseBtn.setEnabled(True)
+            self.stopBtn.setEnabled(True)
+        else:
+            self.startBtn.setEnabled(False)
+            self.pauseBtn.setEnabled(False)
+            self.stopBtn.setEnabled(False)
+
 
     def set_buttons_for_starting(self):
         """
@@ -920,11 +936,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.scan_elapsed_timer.stop()
         self.scan_in_progress = False
         self.startBtn.setEnabled(True)
-        # self.stopBtn.setEnabled(False)
         self.pauseBtn.setEnabled(False)
         self.pauseBtn.setChecked(False)
-        self.scansFrame.setEnabled(True)
-        # self.scan_tbox_widgets[self.scan_panel_idx].set_editable()
+        self.mainTabWidget.setEnabled(True)
+
         if hasattr(self, "contact_sheet"):
             self.contact_sheet.set_drag_enabled(True)
         if hasattr(self, "lineByLineImageDataWidget"):
@@ -1498,7 +1513,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         #self.init_ptycho_data_viewer()
 
         # load the app status panel
-        self.setup_ioc_software_status()
+        self.setup_select_detectors_frame()
 
         # load the sscan status panel
         # self.setup_sscan_status()
@@ -1540,11 +1555,19 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             sorted_dev_lst.append(dev_dct[s_d])
         return sorted_dev_lst
 
-    def on_main_tab_changed(self, tab_idx):
+    def on_main_tab_changed(self, index):
         w = self.mainTabWidget.currentWidget()
         w_ch = w.children()
         for ch in w_ch:
             self.walk_children_for_on_focus_event(ch)
+
+        # only allow a user to click scan if they are on the scan tab
+        current_tab_widget = self.mainTabWidget.widget(index)
+        current_tab_name = current_tab_widget.objectName()
+        if current_tab_name == "tab_scans":
+            self.enable_disable_scan_btns(True)
+        else:
+            self.enable_disable_scan_btns(False)
 
     def walk_children_for_on_focus_event(self, widg):
         w_ch = widg.children()
@@ -1554,26 +1577,30 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 break
             self.walk_children_for_on_focus_event(ch)
 
-    def setup_ioc_software_status(self):
+    def setup_select_detectors_frame(self):
         """
-        add a list of IOC application heart beat pv's to the 'Status' tab of the main application. The status
-        of each heart beat will update based on wether the app is running or not
+        add all of the current selected detectors to the panel
         :return:
         """
-        ioc_apps_wdg = IOCAppsPanel(MAIN_OBJ)
-        ioc_apps_wdg.setProperty("alertField", True)
-        ioc_apps_wdg.alert.connect(self.on_panel_alert)
+        self.sel_detectors_panel = DetectorsPanel(sel_changed_cb=self.on_selected_detectors_changed)
+
+        # ioc_apps_wdg = IOCAppsPanel(MAIN_OBJ)
+        # ioc_apps_wdg.setProperty("alertField", True)
+        # ioc_apps_wdg.alert.connect(self.on_panel_alert)
         vlayout = QtWidgets.QVBoxLayout()
-        vlayout.addWidget(ioc_apps_wdg)
+        vlayout.addWidget(self.sel_detectors_panel)
 
         spacer = QtWidgets.QSpacerItem(
             20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding
         )
         vlayout.addItem(spacer)
-
-        self.IOCSwStatusGrpBx.setLayout(vlayout)
+        self.selectDetectorsGrpBx.setLayout(vlayout)
         # tb = self.mainTabWidget.tabBar()
         # tb.paintEvent = self.ioc_apps_paintEvent
+
+    def on_selected_detectors_changed(self, sel_det_lst):
+        # print(f"stxmMain: on_selected_detectors_changed: {sel_dct}")
+        MAIN_OBJ.set_selected_detectors(sel_det_lst)
 
     def on_panel_alert(self, alert_dct):
         from cls.appWidgets.base_content_panel import alert_lvls
@@ -2378,6 +2405,50 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         vbox.addWidget(self.spectraWidget)
         self.spectraPlotFrame.setLayout(vbox)
 
+    def setup_chartmode_plot(self):
+
+        """
+        setup_chartmode_plot(): description
+
+        :returns: None
+        """
+        selected_det_dct = MAIN_OBJ.get_detectors()
+        MAIN_OBJ.seldets_changed.connect(self.update_chart_selected_detectors)
+        vbox = QtWidgets.QVBoxLayout()
+        self.chartspectraWidget = ChartingWidget(5.0, signals_dct=selected_det_dct,
+                                                 parent=self,
+                                                 scale_factor=1.0,
+                                                 select_cb=self.update_oscilloscope_definition)
+        self.chartspectraWidget.setObjectName("chartspectraWidget")
+
+
+        plot = self.chartspectraWidget.scanplot.get_plot()
+        pcan = plot.canvas()
+        pcan.setObjectName("chartspectraWidgetCanvasBgrnd")
+
+        # detector_devs = MAIN_OBJ.get_devices_in_category("DETECTORS")
+        # # det_nms = list(detector_devs.keys())
+
+
+        vbox.addWidget(self.chartspectraWidget)
+        self.chartPlotFrame.setLayout(vbox)
+
+    def update_chart_selected_detectors(self, sel_det_lst: list):
+        """
+        update the chart when the user selects different detectors
+        """
+        self.chartspectraWidget.update_signal_list(sel_det_lst)
+
+
+    def update_oscilloscope_definition(self, osc_def):
+        """
+
+        based on the selection of the detectors in the chart mode panel signal tool send the command to the
+        DCS server
+        """
+        # print(f"chart_mode_select_detectors: {det_lst}")
+        MAIN_OBJ.set_oscilloscope_definition(osc_def)
+
     def setup_stack_rois_plot(self):
 
         """
@@ -3017,26 +3088,17 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
     def add_line_to_plot(self, counter_to_plotter_com_dct):
         """
-        add_line_to_plot(): description
+        add_line_to_plot(): a function to take data (a full line) and add it to the configured plotters
+            Needed a flag to monitor when to start a new image
 
-        :param row: row description
-        :type row: row type
-
-        :param scan_data: scan_data description
-        :type scan_data: scan_data type
+            CNTR2PLOT_ROW = 'row'           #a y position
+            CNTR2PLOT_COL = 'col'           #an x position
+            CNTR2PLOT_VAL = 'val'           #the point or array of data
+            CNTR2PLOT_IS_POINT = 'is_pxp'   #data is from a point by point scan
+            CNTR2PLOT_IS_LINE = 'is_lxl'    #data isfrom a line by line scan
 
         :returns: None
         """
-        """ a function to take data (a full line) and add it to the configured plotters
-        Needed a flag to monitor when to start a new image
-
-        CNTR2PLOT_ROW = 'row'           #a y position
-        CNTR2PLOT_COL = 'col'           #an x position
-        CNTR2PLOT_VAL = 'val'           #the point or array of data
-        CNTR2PLOT_IS_POINT = 'is_pxp'   #data is from a point by point scan
-        CNTR2PLOT_IS_LINE = 'is_lxl'    #data isfrom a line by line scan
-        """
-
         # print(f'add_line_to_plot: {counter_to_plotter_com_dct}')
         # return
         # det_id = counter_to_plotter_com_dct[CNTR2PLOT_DETID]
@@ -3050,6 +3112,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         emit_do_integrations = False
         if self.executingScan.scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
+            # print(f'add_line_to_plot: {counter_to_plotter_com_dct}')
             if row > 0:
                 self.executingScan.image_started = False
 
@@ -3063,10 +3126,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                         self.do_roi_update(det_name, prog_dct)
 
                     if is_tiled:
-                        # print(f"add_line_to_plot: add_vertical_line_at_row_col({det_name}, {row}, {col}, {data}, True)")
+                        # print(f"add_line_to_plot: is_tiled: add_vertical_line_at_row_col({det_name}, row={row}, col={col}, {data}, True)")
                         self.lineByLineImageDataWidget.add_vertical_line_at_row_col(det_name, row, col, data, True)
                     else:
-                        # print(f"add_line_to_plot: add_vertical_line({det_name}, {col}, {data}, True)")
+                        # print(f"add_line_to_plot: add_vertical_line({det_name}, col={col}, {data}, True)")
                         self.lineByLineImageDataWidget.add_vertical_line(det_name, col, data, True)
 
 
@@ -3264,6 +3327,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         :returns: None
         """
         """ a function to take data (a full line) and add it to the configured plotters """
+        # print(f"add_point_to_spectra: {counter_to_plotter_com_dct}")
         # det_id = counter_to_plotter_com_dct[CNTR2PLOT_DETID]
         # row = counter_to_plotter_com_dct[CNTR2PLOT_ROW]
         col = counter_to_plotter_com_dct[CNTR2PLOT_COL]
@@ -3272,7 +3336,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         prog_dct = counter_to_plotter_com_dct[CNTR2PLOT_PROG_DCT]
         # is_tiled = counter_to_plotter_com_dct[CNTR2PLOT_IS_TILED]
         # is_partial = counter_to_plotter_com_dct[CNTR2PLOT_IS_PARTIAL]
-        # print(f"add_point_to_spectra: {counter_to_plotter_com_dct}")
+
 
         if type(val) == dict:
             det_names = list(val.keys())
@@ -3490,8 +3554,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         """
 
         # here get the counters that the user has selected and populate the counter dict
-        dets_pnl = self.get_pref_panel("DetectorsPanel")
-        sel_dets_lst = dets_pnl.get_selected_detectors(scan_class)
+        sel_dets_lst = self.sel_detectors_panel.get_selected_detectors()
         dets = []
         for d in sel_dets_lst:
             if d["name"].find("SIS3820") > -1:
@@ -3860,21 +3923,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 _scan_plotter = self.spectraWidget
             else:
                 _scan_plotter = self.lineByLineImageDataWidget
-
-                # if scan_sub_type is scan_sub_types.POINT_BY_POINT:
-                #     # FEB 22 2023 self.point_det.set_scan_type(scan_type)
-                #     if scan_class.e712_enabled:
-                #         # PxP controlled by triggers from E712, triggers an entire line of points hence add_line_to_plot()
-                #         scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_line_to_plot, dets)
-                #     else:
-                #         # PxP controlled by software
-                #         scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_point_to_plot, dets)
-                #
-                # else:
-                #     # line
-                #     scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_line_to_plot, dets)
-                plotting_func = None
-
                 if hasattr(self.executingScan, 'data_plot_type'):
                     # added to support for other labs scans like SLS det scan is line by line
                     if self.executingScan.data_plot_type == 'line':
@@ -4074,6 +4122,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         # set the visual_signals_obj plot min and maxs
         self.visual_signals_obj.set_plot_boundaries(rect[0], rect[1], rect[2], rect[3])
+        if len(final_det_nms) < 1:
+            _logger.error("No detectors are selected, the scan cannot be executed")
+            self.set_buttons_for_starting()
+            return
 
         _scan_plotter.set_selected_detectors(final_det_nms)
         self.roiSpectraWidget.set_selected_detectors(final_det_nms)
@@ -4426,18 +4478,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.spectraWidget.clear_plot()
         det_curve_nms = self.spectraWidget.create_curves(det_lst, sp_ids)
 
-        # #sp_ids = list(self.cur_sp_rois.keys())
-        #
-        # if len(sp_ids) == 1:
-        #     use_dflt = True
-        # else:
-        #     use_dflt = False
-        #
-        # for sp_id in sp_ids:
-        #     # self.spectraWidget.create_curve('point_spectra_%d' % i,curve_style='Lines')
-        #     clr = get_next_color(use_dflt=use_dflt)
-        #     style = get_basic_line_style(clr, marker="Star1")
-        #     self.spectraWidget.create_curve("sp_id_%d" % sp_id, curve_style=style)
 
     def is_add_line_to_plot_type(self, scan_type, scan_sub_type, use_hdw_accel):
         """

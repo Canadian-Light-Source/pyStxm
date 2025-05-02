@@ -189,7 +189,7 @@ class BaseScan(QtCore.QObject):
         self._consecutive_scan_cntr = 0
 
         # this is used for non Ophyd detectors to have their own subscriptions to plotting functions
-        self._det_subscription = None
+        self._det_subscriptions = []
 
         # set config status code
         self.config_error = scan_cfg_status_codes.NORMAL
@@ -540,7 +540,7 @@ class BaseScan(QtCore.QObject):
         :return:
         """
         # make the first selected detector in the list the "default"
-        if dets is not None:
+        if dets is not None and len(dets) > 0:
             #ok this is not very elegant so likely a better solution will be implemented in the future
             #if the first selected detector is the SIS3820 then grab the name of the first enabled channel and use it as the default
             #as this is the name that will be first in the data file
@@ -711,14 +711,9 @@ class BaseScan(QtCore.QObject):
             ew.unsubscribe_cb(self._emitter_sub)
         self._emitter_cb = None
 
-        if hasattr(self, "_det_subscription"):
-            # clear the subscription
-            if self._det_subscription:
-                try:
-                    self._det_subscription.new_plot_data.disconnect()
-                    self._det_subscription = None
-                except:
-                    pass
+        if hasattr(self, "_det_subscriptions"):
+            if self._det_subscriptions is not None:
+                self.clear_detector_subscriptions()
 
     def init_subscriptions(self, ew, func, det_lst):
         """
@@ -1169,14 +1164,20 @@ class BaseScan(QtCore.QObject):
                 _logger.debug("BaseScan: on_scan_done: ELSE: sigs were not connected")
             # if(done):
             # self.disconnect_signals()
+        if hasattr(self, "_det_subscriptions"):
+            if self._det_subscriptions is not None:
+                self.clear_detector_subscriptions()
 
-        if self._det_subscription is not None:
-            # clear the subscription
-            try:
-                self._det_subscription.new_plot_data.disconnect()
-                self._det_subscription = None
-            except:
-                pass
+    def clear_detector_subscriptions(self):
+        """
+        remove all subscriptions from detectors
+        """
+        try:
+            for d in self._det_subscriptions:
+                d.new_plot_data.disconnect()
+            self._det_subscriptions = []
+        except:
+            pass
 
     def fine_scan_go_to_scan_start(self):
         """
@@ -1240,15 +1241,9 @@ class BaseScan(QtCore.QObject):
         mtr_x.set_piezo_power_on()
         mtr_y.set_piezo_power_on()
 
-
-        if hasattr(self, "_det_subscription"):
-            # clear the subscription
-            if self._det_subscription:
-                try:
-                    self._det_subscription.new_plot_data.disconnect()
-                    self._det_subscription = None
-                except:
-                    pass
+        if hasattr(self, "_det_subscriptions"):
+            if self._det_subscriptions is not None:
+                self.clear_detector_subscriptions()
 
     def start(self):
         """

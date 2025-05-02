@@ -19,10 +19,6 @@ from cls.utils.sig_utils import disconnect_signal
 from cls.plotWidgets.tools.utils import get_parent_who_has_attr, get_widget_with_objectname
 
 def update_sigselect_tool_status(tool, plot):
-    # from plotpy.items.annotation import ImagePlot
-    # from plotpy.items.annotation import CurvePlot
-
-    #enabled = (isinstance(plot, ImagePlot) or isinstance(plot, CurvePlot))
     enabled = (isinstance(plot, BasePlot))
     tool.action.setEnabled(enabled)
     return enabled
@@ -83,23 +79,6 @@ class clsSignalSelectTool(CommandTool):
         """Activate tool"""
         pass
 
-    # def get_plot_items(self, plot):
-    #     """
-    #     get all of the plot items from the plot searching for a specific type depending on the manager (parent widget)
-    #     """
-    #     i = []
-    #     items = plot.items
-    #     if str(type(self.manager)).find("CurveViewerWidget") > -1:
-    #         search_type = plotpy.items.CurveItem
-    #     elif str(type(self.manager)).find("ImageWidgetPlot") > -1:
-    #         search_type = plotpy.items.ImageItem
-    #     else:
-    #         search_type = None
-    #
-    #     for item in items:
-    #         if type(item) == search_type:
-    #             i.append(item)
-    #     return (i)
     def get_plot_items(self, plot):
         """
         get all of the plot items from the plot searching for a specific type depending on the manager (parent widget)
@@ -118,7 +97,6 @@ class clsSignalSelectTool(CommandTool):
             if type(item) == search_type:
                 i.append(item)
         return (i)
-
 
     def set_cross_section_curve_src_img(self, item, cs_plot):
         """
@@ -187,7 +165,6 @@ class clsSignalSelectTool(CommandTool):
                     self.select_items_list_listwidget_item_by_name(ilp.listwidget, signal_name, False)
                 row = row + 1
 
-
             if xcs_plot:
                 xcs_plot.items_changed(plot)
             if ycs_plot:
@@ -197,8 +174,6 @@ class clsSignalSelectTool(CommandTool):
             self.update_status(plot)
             # this call causes the contrast histogram to update to the current
             ilp.listwidget.selection_changed()
-
-
 
     def select_items_list_listwidget_item_by_name(self, lw, name, select=True):
         """
@@ -213,64 +188,12 @@ class clsSignalSelectTool(CommandTool):
                 else:
                     item.unselect()
 
-    # def get_parent_who_has_attr(self, manager, func_nm):
-    #     '''
-    #     keeping looking up the parent chain until the one that contains the desired function is found
-    #     and return it
-    #     '''
-    #     max_depth = 50
-    #     p = manager.get_active_plot()
-    #     i = 0
-    #     while i < max_depth:
-    #         if hasattr(p, func_nm):
-    #             return p
-    #         else:
-    #             p = p.parent()
-    #         i += 1
-    # def get_widget_with_objectname(self, manager, objectname):
-    #     '''
-    #     this is a hack, when guiqwt changed to plotpy the manager used to be the parent plotter like CurveViewerWidget
-    #     but after the change manager is now the PlotManager, so this function walks the parents of that PlotManager and
-    #     returns when it finds the widget with the objectName we are looking for
-    #     '''
-    #
-    #     max_depth = 50
-    #     p = manager.get_active_plot()
-    #     i = 0
-    #     while i < max_depth:
-    #         if hasattr(p, 'objectName'):
-    #             obj_nm = p.objectName()
-    #             if obj_nm == objectname:
-    #                 return True
-    #             else:
-    #                 if hasattr(p, 'parent'):
-    #                     if callable(p.parent):
-    #                         p = p.parent()
-    #                     else:
-    #                         break
-    #                 else:
-    #                     break
-    #         else:
-    #             if hasattr(p, 'parent'):
-    #                 if callable(p.parent):
-    #                     p = p.parent()
-    #                 else:
-    #                     break
-    #             else:
-    #                 break
-    #         i += 1
-    #     return False
-    
     def update_status(self, plot):
         if update_sigselect_tool_status(self, plot):
             if self.parent_obj_nm == "CurveViewerWidget":
                 item = plot.get_last_active_item(ICurveItemType)
             elif self.parent_obj_nm == "ImageWidgetPlot":
                 item = plot.get_last_active_item(IColormapImageItemType)
-            # if item:
-            #     self.action.setEnabled(True)
-            # else:
-            #     self.action.setEnabled(False)
 
             #always make it enabled regardless if something is selected
             self.action.setEnabled(True)

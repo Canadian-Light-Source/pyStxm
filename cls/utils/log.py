@@ -56,7 +56,8 @@ class QtLogHandler(BaseQtLogHandler):
             logstr = "WARNING: %s" % msg
             # log.msg(logstr)
             # orange
-            self.new_msg.emit(QtGui.QColor(253, 14, 2, 255), logstr)
+            #self.new_msg.emit(QtGui.QColor(253, 14, 2, 255), logstr)
+            self.new_msg.emit(QtGui.QColor(170, 85, 0, 255), logstr)
         elif record.levelno == logging.ERROR:
             logstr = "ERROR: %s" % msg
             # log.err(logstr)

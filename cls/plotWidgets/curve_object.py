@@ -87,8 +87,8 @@ class curve_Obj(QtCore.QObject):
         # print 'setXYData'
         # this is used to assign a complete array to a plot, like loading a file
         # newer versions of guiqwt require these points to be float64
-        self.xData = np.array(x).astype("float64")
-        self.yData = np.array(y).astype("float64")
+        self.xData = np.array(x).astype("float64").flatten()
+        self.yData = np.array(y).astype("float64").flatten()
 
         self.plotDataCntr = len(x)
         self.update_plot()

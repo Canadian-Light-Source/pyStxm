@@ -860,6 +860,20 @@ class DcsServerApi(BaseDcsServerApi):
             # self.parent.bl_component_changed.emit('OSAS', self.parent.dcs_server_config['OSAS'])
             # self.parent.bl_component_changed.emit('ZONEPLATES', self.parent.dcs_server_config['ZONEPLATES'])
 
+        elif resp[0].find("positionerDefinition") > -1:
+            # walk all positioners and set their definition dicts with set_positioner_dct
+            self.parent.positioner_definition = json.loads(resp[1])
+            for posner_dct in self.parent.positioner_definition:
+                dcs_devname = posner_dct['name']
+                if dcs_devname in dcs_to_app_devname_map.keys():
+                    app_devname = dcs_to_app_devname_map[dcs_devname]
+                    if app_devname in list(self.parent.devs.keys()):
+                        dev = self.parent.devs[app_devname]['dev']
+                        dev.set_positioner_dct(posner_dct)
+                        # print(f"process_SUB_rcv_messages: positionerDefinition: {app_devname} {posner}")
+
+
+
     def connect_to_dcs_server(self, devices_dct: dict) -> bool:
         """
         Connect to the DCS server and sort info returned from dcs server into sections in a dict
@@ -908,13 +922,17 @@ class DcsServerApi(BaseDcsServerApi):
                         dev.set_desc(positioner_dct['description'])
                         dev.set_positioner_dct(positioner_dct)
                         if hasattr(dev, 'set_low_limit'):
-                            dev.set_low_limit(positioner_dct['lowerSoftLimit'])
+                            #dev.set_low_limit(positioner_dct['lowerSoftLimit'])
+                            dev._low_limit = positioner_dct['lowerSoftLimit']
                         if hasattr(dev, 'set_high_limit'):
-                            dev.set_high_limit(positioner_dct['upperSoftLimit'])
+                            #dev.set_high_limit(positioner_dct['upperSoftLimit'])
+                            dev._high_limit = positioner_dct['upperSoftLimit']
                         if hasattr(dev, 'set_units'):
-                            dev.set_units(positioner_dct['unit'])
+                            #dev.set_units(positioner_dct['unit'])
+                            dev._units = positioner_dct['unit']
                         if hasattr(dev, 'max_velo'):
-                            dev.max_velo.set(positioner_dct['maxVelocity'])
+                            #dev.max_velo.set(positioner_dct['maxVelocity'])
+                            dev._max_velo = positioner_dct['maxVelocity']
 
                         # now record the details passed from pixelator
                         positioner_dct['dev'] = dev

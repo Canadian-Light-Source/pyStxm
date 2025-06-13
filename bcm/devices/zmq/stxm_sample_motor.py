@@ -154,10 +154,10 @@ class sample_abstract_motor(ZMQMotor):
         #synchronize the softlimits to those of the coarse motor
         llm = self._coarse_mtr.get_low_limit()
         hlm = self._coarse_mtr.get_high_limit()
-        self.set_low_limit(llm)
-        self._fine_mtr.set_low_limit(llm)
-        self.set_high_limit(hlm)
-        self._fine_mtr.set_high_limit(hlm)
+        #set the member variables without pushing values back to DCS server from which they came
+        self._low_limit = llm
+        self._fine_mtr._low_limit = llm
+        self._fine_mtr._high_limit = hlm
 
     def get_coarse_mtr(self):
         """

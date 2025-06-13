@@ -112,7 +112,7 @@ class ZMQBaseSignal(QObject):
 
     def get(self, **kwargs):
         "Get the value from the associated attribute"
-        print(f"ZMQBaseSignal: TOFIX [{self.name}]: get: getting the value [{self._readback}]")
+        # print(f"ZMQBaseSignal: TOFIX [{self.name}]: get: getting the value [{self._readback}]")
         # self.do_get.emit({'command': 'GET', 'name':self.name, 'dcs_name':self.dcs_name})
         return self._readback
 
@@ -260,9 +260,17 @@ class ZMQBaseDevice(ZMQBaseSignal):
             return self.name
 
     def set_units(self, unit):
-        self._egu = unit
+        # pyStxm should not be setting units, it should be set by the DCS server
+        #self._egu = unit
+        pass
 
     def get_egu(self):
+        if len(self._egu) == 0 or self._egu is None:
+            val = self.get_positioner_dct_value('unit')
+            if val is None:
+                self._egu = ""
+            else:
+                self._egu = val
         return self._egu
 
     def get_units(self):

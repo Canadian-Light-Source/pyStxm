@@ -59,9 +59,9 @@ class PositionerDetail(QtWidgets.QDialog):
         self.autoOnOffComboBox.currentTextChanged.connect(self.on_auto_on_off_combobox)
 
         self.changed.connect(self.update_fbk)
-        self.loadMotorConfig(self.positioner)
+        self.load_motor_config()
 
-    def loadMotorConfig(self, positioner="AbsSampleX"):
+    def load_motor_config(self):
         """
         positioner_dct = {
          'atPositionCheckInterval': 0.002,

@@ -80,6 +80,7 @@ class ZMQMotor(ZMQBaseDevice):
         self._at_low_limit_val = False
         self._at_high_limit_val = False
         self._velocity = 0
+        self._max_velo = 0.0
         self._acceleration = 0
         self.position = 0
         self._position_offset = 0
@@ -107,9 +108,10 @@ class ZMQMotor(ZMQBaseDevice):
 
         # force this for now: Todo: figure out how to set connected based on actual information about zmq socket
         self.connected = True
-        self.set_low_limit(self._low_limit)
-        self.set_high_limit(self._high_limit)
-        self.spmg_enum.set(spmg_enumerations['Go'])
+        # self.set_low_limit(self._low_limit)
+        # self._low_limit(self._low_limit
+        # self.set_high_limit(self._high_limit)
+        # self.spmg_enum.set(spmg_enumerations['Go'])
         self.scanable_range = 1000
 
         # default of 10um, note this is different than the low and high soft limits, those
@@ -196,6 +198,10 @@ class ZMQMotor(ZMQBaseDevice):
     def set_high_limit(self, val):
         self._high_limit = val
         self.high_limit_val.set(self._high_limit)
+
+    def set_max_velo(self, val):
+        self._max_velo = val
+        self.max_velo_val.set(self._max_velo)
 
     def set_position_offset(self, val):
         """

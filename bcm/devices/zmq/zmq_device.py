@@ -112,7 +112,7 @@ class ZMQBaseSignal(QObject):
 
     def get(self, **kwargs):
         "Get the value from the associated attribute"
-        print(f"ZMQBaseSignal: TOFIX [{self.name}]: get: getting the value [{self._readback}]")
+        # print(f"ZMQBaseSignal: TOFIX [{self.name}]: get: getting the value [{self._readback}]")
         # self.do_get.emit({'command': 'GET', 'name':self.name, 'dcs_name':self.dcs_name})
         return self._readback
 

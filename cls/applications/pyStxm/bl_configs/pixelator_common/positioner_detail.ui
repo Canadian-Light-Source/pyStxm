@@ -1,22 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Dialog</class>
- <widget class="QDialog" name="Dialog">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>366</width>
-    <height>335</height>
+    <width>421</width>
+    <height>343</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>421</width>
+    <height>343</height>
+   </size>
+  </property>
   <property name="windowTitle">
-   <string>Positioner Details</string>
+   <string>Positioner Parameters</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="0">
       <widget class="QLabel" name="label">
        <property name="font">
         <font>
@@ -29,10 +35,16 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="0" column="1" colspan="2">
       <widget class="QLabel" name="posnerNameLbl">
        <property name="enabled">
         <bool>true</bool>
+       </property>
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
        </property>
        <property name="frameShape">
         <enum>QFrame::Panel</enum>
@@ -48,11 +60,7 @@
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_3">
-     <item>
+     <item row="1" column="0">
       <widget class="QLabel" name="label_2">
        <property name="font">
         <font>
@@ -65,10 +73,16 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="1" column="1" colspan="2">
       <widget class="QLabel" name="statusLbl">
        <property name="enabled">
         <bool>true</bool>
+       </property>
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
        </property>
        <property name="frameShape">
         <enum>QFrame::Panel</enum>
@@ -84,11 +98,7 @@
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4">
-     <item>
+     <item row="2" column="0">
       <widget class="QLabel" name="label_3">
        <property name="font">
         <font>
@@ -101,7 +111,7 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="2" column="1">
       <widget class="QLabel" name="posFbkLbl">
        <property name="enabled">
         <bool>true</bool>
@@ -120,18 +130,14 @@
        </property>
       </widget>
      </item>
-     <item>
-      <widget class="QLabel" name="posnerUnitsLbl">
+     <item row="2" column="2">
+      <widget class="QLabel" name="posnerUnitsLbl_1">
        <property name="text">
         <string>(um)</string>
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_5">
-     <item>
+     <item row="3" column="0">
       <widget class="QLabel" name="label_4">
        <property name="font">
         <font>
@@ -144,11 +150,11 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="3" column="1">
       <widget class="QLineEdit" name="setpointFld">
        <property name="maximumSize">
         <size>
-         <width>100</width>
+         <width>150</width>
          <height>16777215</height>
         </size>
        </property>
@@ -160,18 +166,14 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="3" column="2">
       <widget class="QLabel" name="posnerUnitsLbl_2">
        <property name="text">
         <string>(um)</string>
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_6">
-     <item>
+     <item row="4" column="0">
       <widget class="QLabel" name="label_5">
        <property name="font">
         <font>
@@ -184,10 +186,16 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="4" column="1" colspan="2">
       <widget class="QLabel" name="distModeLbl">
        <property name="enabled">
         <bool>true</bool>
+       </property>
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
        </property>
        <property name="frameShape">
         <enum>QFrame::Panel</enum>
@@ -203,11 +211,7 @@
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_7">
-     <item>
+     <item row="5" column="0">
       <widget class="QLabel" name="label_6">
        <property name="font">
         <font>
@@ -220,7 +224,7 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="5" column="1" colspan="2">
       <widget class="QComboBox" name="autoOnOffComboBox">
        <item>
         <property name="text">
@@ -249,11 +253,7 @@
        </item>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_8">
-     <item>
+     <item row="6" column="0">
       <widget class="QLabel" name="label_7">
        <property name="font">
         <font>
@@ -266,11 +266,11 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="6" column="1">
       <widget class="QLineEdit" name="posOffsetFld">
        <property name="maximumSize">
         <size>
-         <width>100</width>
+         <width>150</width>
          <height>16777215</height>
         </size>
        </property>
@@ -282,18 +282,14 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="6" column="2">
       <widget class="QLabel" name="posnerUnitsLbl_3">
        <property name="text">
         <string>(um)</string>
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_9">
-     <item>
+     <item row="7" column="0">
       <widget class="QLabel" name="label_8">
        <property name="font">
         <font>
@@ -306,11 +302,11 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="7" column="1">
       <widget class="QLineEdit" name="upperSoftLimFld">
        <property name="maximumSize">
         <size>
-         <width>100</width>
+         <width>150</width>
          <height>16777215</height>
         </size>
        </property>
@@ -322,18 +318,14 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="7" column="2">
       <widget class="QLabel" name="posnerUnitsLbl_4">
        <property name="text">
         <string>(um)</string>
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_10">
-     <item>
+     <item row="8" column="0">
       <widget class="QLabel" name="label_9">
        <property name="font">
         <font>
@@ -346,11 +338,11 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="8" column="1">
       <widget class="QLineEdit" name="lowerSoftLimFld">
        <property name="maximumSize">
         <size>
-         <width>100</width>
+         <width>150</width>
          <height>16777215</height>
         </size>
        </property>
@@ -362,18 +354,14 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="8" column="2">
       <widget class="QLabel" name="posnerUnitsLbl_5">
        <property name="text">
         <string>(um)</string>
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_11">
-     <item>
+     <item row="9" column="0">
       <widget class="QLabel" name="label_10">
        <property name="font">
         <font>
@@ -386,8 +374,14 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="9" column="1">
       <widget class="QLabel" name="maxVeloLbl">
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
        <property name="frameShape">
         <enum>QFrame::Panel</enum>
        </property>
@@ -402,7 +396,7 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="9" column="2">
       <widget class="QLabel" name="posnerUnitsLbl_6">
        <property name="text">
         <string>(um)</string>

@@ -1,31 +1,7 @@
-import sys
 import os
-import time
 
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
-import queue
-import atexit
-
-# from cls.applications.pyStxm.bl10ID01 import MAIN_OBJ, POS_TYPE_BL, POS_TYPE_ES
-from cls.appWidgets.main_object import POS_TYPE_BL, POS_TYPE_ES
-from cls.stylesheets import master_colors, get_style, font_sizes
-from cls.utils.log import get_module_logger
-from cls.utils.sig_utils import disconnect_signal, reconnect_signal
-from cls.scanning.paramLineEdit import dblLineEditParamObj
-#from cls.applications.pyStxm.widgets.spfbk_small import Ui_Form as spfbk_small
-from cls.applications.pyStxm.widgets.sp_small import Ui_Form as sp_small
-from cls.applications.pyStxm.widgets.button_small_wbtn import (
-    Ui_Form as btn_small_pass_a_btn,
-)
-from cls.applications.pyStxm.widgets.combo_small import (
-    Ui_Form as combo_small_ui
-)
-
-
-# from cls.caWidgets.caPushBtn import caPushBtn, caPushBtnWithFbk
-from cls.devWidgets.ophydPushBtn import ophydPushBtn, ophydPushBtnWithFbk
-from cls.devWidgets.ophydLabelWidget import assign_aiLabelWidget
 from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
 
 iconsDir = os.path.join(
@@ -49,10 +25,12 @@ class PositionerDetail(QtWidgets.QDialog):
         self.dev_ui = dev_ui
 
         self.units = self.mtr.get_units()
-        # load the Motor.cfg file
 
+        # these motors are not present in the Pixelator at the moment so skip them
+        #if self.positioner not in ['DNM_SAMPLE_X', 'DNM_SAMPLE_Y', 'DNM_SAMPLE_Z']:
+        self.setWindowTitle(f"{self.posner_display_name} Positioner Detail")
         # connect btn handlers
-        self.setpointFld.returnPressed.connect(self.on_move_to_position)
+        # setpointFld connected in load_motor_config()
         self.posOffsetFld.returnPressed.connect(self.on_pos_offset)
         self.upperSoftLimFld.returnPressed.connect(self.on_set_upper_lim)
         self.lowerSoftLimFld.returnPressed.connect(self.on_set_lower_lim)
@@ -63,6 +41,11 @@ class PositionerDetail(QtWidgets.QDialog):
 
     def load_motor_config(self):
         """
+        Retrieves the motor configuration and sets the UI elements accordingly.
+        Some positioners like DNM_SAMPLE_X, DNM_SAMPLE_Y, and DNM_SAMPLE_Z do not
+        exist in Pixelator currently, so if the config dct returns None for values then
+        they are ignored.
+
         positioner_dct = {
          'atPositionCheckInterval': 0.002,
          'atPositionCheckTimeout': 10.0,
@@ -100,28 +83,51 @@ class PositionerDetail(QtWidgets.QDialog):
             self.distModeLbl.setText(str(distribution_mode))
             # auto on off
             auto_off_mode = self.mtr.get_positioner_dct_value('autoOffMode')
-            self.autoOnOffComboBox.setCurrentText(str(auto_off_mode))
+            if auto_off_mode is not None:
+                self.autoOnOffComboBox.setCurrentText(str(auto_off_mode))
+            else:
+                self.autoOnOffComboBox.setEnabled(False)
             # positioner offset
             pos_offset = self.mtr.get_positioner_dct_value('positionOffset')
-            self.posOffsetFld.setText(f"{pos_offset:.2f}")
+            if pos_offset is not None:
+                self.posOffsetFld.setText(f"{pos_offset:.2f}")
+            else:
+                self.posOffsetFld.setEnabled(False)
             # upper limit
             upper_soft_lim = self.mtr.get_positioner_dct_value('upperSoftLimit')
-            self.upperSoftLimFld.setText(f"{upper_soft_lim:.2f}")
+            if upper_soft_lim is not None:
+                self.upperSoftLimFld.setText(f"{upper_soft_lim:.2f}")
+            else:
+                self.upperSoftLimFld.setEnabled(False)
             # lower limit
             lower_soft_lim = self.mtr.get_positioner_dct_value('lowerSoftLimit')
-            self.lowerSoftLimFld.setText(f"{lower_soft_lim:.2f}")
+            if lower_soft_lim is not None:
+                self.lowerSoftLimFld.setText(f"{lower_soft_lim:.2f}")
+            else:
+                self.lowerSoftLimFld.setEnabled(False)
             # max velocity
             max_velo = self.mtr.get_positioner_dct_value('maxVelocity')
-            self.maxVeloLbl.setText(f"{max_velo:.2f}")
+            if max_velo is not None:
+                self.maxVeloLbl.setText(f"{max_velo:.2f}")
+            else:
+                self.maxVeloLbl.setEnabled(False)
 
             # units
-            self.posnerUnitsLbl.setText(self.units)
+            self.posnerUnitsLbl_1.setText(self.units)
             self.posnerUnitsLbl_2.setText(self.units)
             self.posnerUnitsLbl_3.setText(self.units)
             self.posnerUnitsLbl_4.setText(self.units)
             self.posnerUnitsLbl_5.setText(self.units)
             velo_units_str = self.units.replace("(", "").replace(")", "")
             self.posnerUnitsLbl_6.setText(f"({velo_units_str}/ms)")
+
+            #set validator for setpoint field
+            if lower_soft_lim is not None:
+                self.setpointFld.dpo = dblLineEditParamObj("setpointFld", lower_soft_lim, upper_soft_lim, 3,
+                                                           parent=self.setpointFld)
+                self.setpointFld.dpo.valid_returnPressed.connect(self.on_move_to_position)
+            else:
+                self.setpointFld.setEnabled(False)
 
     def on_change(self, kwargs):
         """

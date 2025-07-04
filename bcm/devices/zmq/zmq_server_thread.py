@@ -132,16 +132,6 @@ class ZMQServerThread(QThread):
         # Run the async send/receive function in the event loop and wait for it to finish
         return loop.run_until_complete(self.send_receive_async(message_dict))
 
-    # def run(self):
-    #     """
-    #     Run the ZMQ event loop (if necessary).
-    #     """
-    #     loop = asyncio.new_event_loop()
-    #     asyncio.set_event_loop(loop)
-    #     try:
-    #         loop.run_forever()
-    #     finally:
-    #         loop.close()
     def run(self):
 
         #asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())

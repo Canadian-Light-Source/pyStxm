@@ -19,7 +19,20 @@ class BaseDcsServerApi(QtCore.QObject):
         super().__init__(None)
         self.parent = parent
         self.paused = False
+        self.app_to_dcs_devname_map = {}
+        self.dcs_to_app_devname_map = {}
         self.exec_result.connect(self.on_exec_finished)
+
+
+    def set_device_name_maps(self, app_to_dcsname_map: dict, dcs_to_appname_map: dict):
+        """
+        set the device name maps for this server api
+        Args:
+            app_to_dcsname_map: map from app device names to dcs device names
+            dcs_to_appname_map: map from dcs device names to app device names
+        """
+        self.app_to_dcs_devname_map = app_to_dcsname_map
+        self.dcs_to_app_devname_map = dcs_to_appname_map
 
     def on_exec_finished(self, msg):
         """

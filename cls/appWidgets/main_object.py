@@ -101,6 +101,7 @@ class main_object_base(QtCore.QObject):
         self.zmq_dev_mgr = None
         self.win_data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.linux_data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['linux_data_dir']
+        self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
 
         if self.device_backend == 'zmq':
             # a ZMQ DCS Server is running and so mongo and nx_server are not needed
@@ -164,9 +165,10 @@ class main_object_base(QtCore.QObject):
 
     def init_zmq_engine_widget(self, devices_dct):
         """
-        the BACKEND is set to zmq so instanciate the zmq_device_manager
+        the BACKEND is set to zmq so instantiate the zmq_device_manager
         """
         self.engine_widget = ZMQEngineWidget(devices_dct)
+        self.engine_widget.set_default_detector(self.default_detector)
         result, dcs_params_dct = self.engine_widget.engine.connect_to_dcs_server(devices_dct)
         
         if not result:
@@ -193,6 +195,8 @@ class main_object_base(QtCore.QObject):
             dct_put(self.main_obj, "PRESETS.OSA_DEFS", self.beamline_cfg_dct['OSA_DEFS'])
             dct_put(self.main_obj, "PRESETS.ZP_DEFS", self.beamline_cfg_dct['ZP_DEFS'])
         return result
+
+
 
     def get_beamline_cfg_preset(self, preset_name: str =None):
         """

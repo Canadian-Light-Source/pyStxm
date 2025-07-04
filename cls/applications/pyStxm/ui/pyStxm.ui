@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1954</width>
-    <height>881</height>
+    <width>1454</width>
+    <height>858</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="maximumSize">
    <size>
@@ -103,7 +109,7 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
               <enum>QTabWidget::North</enum>
              </property>
              <property name="currentIndex">
-              <number>2</number>
+              <number>3</number>
              </property>
              <widget class="QWidget" name="imageTab">
               <attribute name="title">
@@ -549,7 +555,7 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1954</width>
+     <width>1454</width>
      <height>22</height>
     </rect>
    </property>

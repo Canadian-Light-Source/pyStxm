@@ -1182,7 +1182,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         # DNM_DFLT_PMT_DWELL is in ms
         # _pmt_dwell = 1.0 / (MAIN_OBJ.device("DNM_DFLT_PMT_DWELL").get() / 1000.0)
-        self.stripToolWidget = StripToolWidget(1, sigList=[MAIN_OBJ.device("DNM_PMT")],
+        self.stripToolWidget = StripToolWidget(1, sigList=[MAIN_OBJ.device(MAIN_OBJ.default_detector)],
                                                #energy_fbk_dev=MAIN_OBJ.device("DNM_MONO_EV_FBK"),
                                              energy_fbk_dev=MAIN_OBJ.device("DNM_ENERGY"),
                                                labelHeader="Energy:",

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1454</width>
+    <width>1954</width>
     <height>858</height>
    </rect>
   </property>
@@ -27,7 +27,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../../../../../../321/pyStxm3/cls/icons/pyc.ico</normaloff>../../../../../../321/pyStxm3/cls/icons/pyc.ico</iconset>
+    <normaloff>C:/321/pyStxm3/cls/icons/pyc.ico</normaloff>C:/321/pyStxm3/cls/icons/pyc.ico</iconset>
   </property>
   <property name="styleSheet">
    <string notr="true"/>
@@ -555,7 +555,7 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1454</width>
+     <width>1954</width>
      <height>22</height>
     </rect>
    </property>

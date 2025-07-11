@@ -12,12 +12,12 @@ import queue
 .. moduleauthor:: Russ Berg <russ.berg@lightsource.ca>
 
 """
-import os
-import time
-from importlib.machinery import SourceFileLoader
-import sys
 import atexit
+import os
+import sys
+import time
 
+from importlib.machinery import SourceFileLoader
 import logging
 import numpy as np
 import simplejson as json
@@ -1774,11 +1774,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.scanTypeComboBox.currentIndexChanged.connect(self.scanTypeStackedWidget.setCurrentIndex)
 
         # get the beamline config directory from the presets loaded at startup
-        plugin_dir = MAIN_OBJ.get_preset("bl_config_dir", "MAIN")
-        desired_plugins_dct = MAIN_OBJ.get_preset_section("SCAN_PANEL_ORDER")
-
+        bl_config_dir = MAIN_OBJ.get_preset("bl_config_dir", "MAIN")
+        plugin_dir = SourceFileLoader("plugin_dir", os.path.join(bl_config_dir,"__init__.py")).load_module().plugin_dir
+        # desired_plugins_dct = MAIN_OBJ.get_preset_section("SCAN_PANEL_ORDER")
         _dirs = os.listdir(plugin_dir)
-
         idx = 0
         pages = 0
         num_scans = 0
@@ -1791,13 +1790,9 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 if "loader.py" in _files:
                     _filepath = os.path.join(plugin_dir, dir, "loader.py")
                     if os.path.exists(_filepath):
-                        _mod = SourceFileLoader(
-                            "mod_classname", _filepath
-                        ).load_module()
+                        _mod = SourceFileLoader("mod_classname", _filepath).load_module()
                         _mod_filepath = os.path.join(plugin_dir, dir, _mod.mod_file)
-                        _cls = SourceFileLoader(
-                            "mod_classname", _mod_filepath
-                        ).load_module()
+                        _cls = SourceFileLoader("mod_classname", _mod_filepath).load_module()
                         # create an instance of the class
                         plugin = eval("_cls.%s()" % _mod.mod_classname)
                         # assign parent so that we can use in plugin if need be

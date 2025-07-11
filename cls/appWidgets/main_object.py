@@ -92,6 +92,7 @@ class main_object_base(QtCore.QObject):
         self.endstation = endstation
         self.beamline_cfg_dct = beamline_cfg_dct
         self.beamline_id = beamline_cfg_dct["BL_CFG_MAIN"]["endstation_prefix"]
+        self.beamline_plugin_dir = beamline_cfg_dct["BL_CFG_MAIN"]["plugin_dir"]
         self.main_obj = {}
         self.endstation_prefix = "uhv"  # for default
         self.devdb_path = None
@@ -514,6 +515,12 @@ class main_object_base(QtCore.QObject):
 
     def get_beamline_id(self):
         return self.beamline_id
+
+    def get_beamline_plugin_dir(self):
+        """
+        return the beamline plugin directory where all of the scan plugins are located
+        """
+        return self.beamline_plugin_dir
 
     def get_sample_positioning_mode(self):
         return self.sample_positioning_mode

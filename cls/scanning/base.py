@@ -296,8 +296,10 @@ class ScanParamWidget(QtWidgets.QFrame):
         sys.path.append(str(mod_dir.parent))
         # get the name of the beamline config directory
         bl_config_dirname = self.main_obj.get_beamline_id()
+        bl_plugin_dir = self.main_obj.get_beamline_plugin_dir()
         # construct a string with an absolute path to the module
-        _import_str = f"cls.applications.pyStxm.bl_configs.{bl_config_dirname}.scan_plugins.{mod_dir.parent.name}.{mod_nm}"
+        #_import_str = f"cls.applications.pyStxm.bl_configs.{bl_config_dirname}.scan_plugins.{mod_dir.parent.name}.{mod_nm}"
+        _import_str = f"cls.applications.pyStxm.bl_configs.{bl_plugin_dir}.scan_plugins.{mod_dir.parent.name}.{mod_nm}"
         # import the module
         scan_mod = import_module(_import_str, package=None)
         # now get a reference to the desired scan class

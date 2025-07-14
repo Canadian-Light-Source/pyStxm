@@ -334,13 +334,19 @@ class BaseOsaScanParam(ScanParamWidget):
         centX = float(str(self.centerXFld.text()))
         centY = float(str(self.centerYFld.text()))
 
-        mtrx = self.main_obj.device("DNM_OSA_X")
-        mtry = self.main_obj.device("DNM_OSA_Y")
-        mtrx.move(centX)
-        mtry.move(centY)
+        mtr_x = self.main_obj.device("DNM_OSA_X")
+        mtr_y = self.main_obj.device("DNM_OSA_Y")
+        mtr_x.move(centX)
+        mtr_y.move(centY)
 
-        mtrx.wait_for_stopped_and_zero()
-        mtry.wait_for_stopped_and_zero()
+        mtr_x.wait_for_stopped_and_zero()
+        mtr_y.wait_for_stopped_and_zero()
+
+        # support for DCS server motors that use offsets
+        if hasattr(mtr_x, 'apply_delta_to_offset'):
+            mtr_x.apply_delta_to_offset(centX)
+        if hasattr(mtr_y, 'apply_delta_to_offset'):
+            mtr_y.apply_delta_to_offset(centY)
 
         self.sp_db[SPDB_X][CENTER] = 0.0
         on_center_changed(self.sp_db[SPDB_X])

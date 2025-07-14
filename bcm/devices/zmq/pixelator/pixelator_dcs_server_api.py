@@ -1,25 +1,16 @@
 import simplejson as json
-from enum import Enum
-import numpy as np
-import math
-import pprint
 
-from bcm.devices.zmq.pixelator.app_dcs_devnames import dcs_to_app_devname_map
 from bcm.devices.zmq.base_dcs_server_api import BaseDcsServerApi
-from bcm.devices.zmq.pixelator.gen_scan_req import (gen_base_req_structure, gen_displayed_axis_dicts, gen_regions,
-                                                    make_base_energy_region, make_point_spatial_region,
-                                                    gen_point_displayed_axis_dicts)
+from bcm.devices.zmq.pixelator.gen_scan_req import GenScanRequestClass
+# (gen_base_req_structure, gen_displayed_axis_dicts, gen_regions,
+#                                                     make_base_energy_region, make_point_spatial_region,
+#                                                     gen_point_displayed_axis_dicts)
 from bcm.devices.zmq.pixelator.scan_reqs.req_substitution import do_substitutions
-from bcm.devices.zmq.pixelator.app_dcs_devnames import app_to_dcs_devname_map
-
 from cls.utils.roi_utils import *
 from cls.utils.dict_utils import dct_get
 
 from cls.utils.log import get_module_logger
 _logger = get_module_logger(__name__)
-
-DEFAULT_DETECTOR = 'Counter0'
-
 
 class ScanStatus(Enum):
     IDLE = 0
@@ -56,8 +47,9 @@ def gen_non_tiled_map_entry(sdInnerRegionIdx, arr_npoints, npoints_x):
 
 
 class ScanClass(object):
-    def __init__(self):
+    def __init__(self, *, dcs_server_api=None):
         super().__init__()
+        self.dcs_server_api = dcs_server_api
         self.x = {} # x
         self.y = {} # y
         self.z = {} # z
@@ -136,6 +128,7 @@ class ScanClass(object):
         self.cur_col_idx = None
         self.cur_tile_num = 0
         self.wdg_com = {}
+
     def map_app_polarization_to_dcs_polarization(self, pol: str) -> []:
         """
         convert a pyStxm string for polarization to stokes parameters required by Pixelator
@@ -313,9 +306,10 @@ class ScanClass(object):
         #     line_mode = "Point by Point"
         # else:
         #     line_mode = "Constant Velocity"
+        scan_req_cls = GenScanRequestClass(self.dcs_server_api.app_to_dcs_devname_map)
         line_mode = self.wdg_scan_req['scan_point_or_line_mode']
 
-        scan_request = gen_base_req_structure(self.scan_type_str)
+        scan_request = scan_req_cls.gen_base_req_structure(self.scan_type_str)
 
         # set flags to decide what sample scan it is
         self.sample_scan_type = self.determine_sample_scan_type(scan_request, app_scan_type_str)
@@ -338,28 +332,30 @@ class ScanClass(object):
             scan_request["spatialType"] = self.spatial_type
             scan_request["lineMode"] = line_mode
 
+
+
             # # set flags to decide what sample scan it is
             # self.sample_scan_type = self.determine_sample_scan_type(scan_request, app_scan_type_str)
 
             if self.sample_scan_type in [ScanType.POINT_SPEC, ScanType.LINE_SPEC]:
                 #create inner and outer regions for a point and line spec scan
                 for e_roi in self.e:
-                    scan_request["outerRegions"].append(make_base_energy_region(e_roi, app_to_dcs_devname_map))
+                    scan_request["outerRegions"].append(scan_req_cls.make_base_energy_region(e_roi, self.dcs_server_api.app_to_dcs_devname_map))
 
                 for spid, sp_dct in self.sp_roi_dct.items():
-                    scan_request["innerRegions"].append(make_point_spatial_region(sp_dct['X'], sp_dct['Y'], app_to_dcs_devname_map))
+                    scan_request["innerRegions"].append(scan_req_cls.make_point_spatial_region(sp_dct['X'], sp_dct['Y'], self.dcs_server_api.app_to_dcs_devname_map))
 
-                scan_request["displayedAxes"] = gen_point_displayed_axis_dicts(["x", "y"], [self.x, self.y],
+                scan_request["displayedAxes"] = scan_req_cls.gen_point_displayed_axis_dicts(["x", "y"], [self.x, self.y],
                                                                          [True, False])  # order matters
                 scan_request["nInnerRegions"] = len(self.sp_ids)
                 scan_request["nOuterRegions"] = len(scan_request["outerRegions"])
             else:
                 # Sample Image
-                scan_request["outerRegions"] = gen_regions(self.scan_type_str, self.dwell_ms * 0.001, self, is_outer=True)
-                scan_request["innerRegions"] = gen_regions(self.scan_type_str, self.dwell_ms * 0.001, self, is_outer=False)
+                scan_request["outerRegions"] = scan_req_cls.gen_regions(self.scan_type_str, self.dwell_ms * 0.001, self, is_outer=True)
+                scan_request["innerRegions"] = scan_req_cls.gen_regions(self.scan_type_str, self.dwell_ms * 0.001, self, is_outer=False)
 
                 #the following is scan dependant I would think so this will need modification
-                scan_request["displayedAxes"] = gen_displayed_axis_dicts(["y", "x"], [self.y, self.x],
+                scan_request["displayedAxes"] = scan_req_cls.gen_displayed_axis_dicts(["y", "x"], [self.y, self.x],
                                                                      [True, True])  # order matters
                 scan_request["nInnerRegions"] = len(self.sp_ids)
                 scan_request["nOuterRegions"] = len(self.ev_rois)
@@ -385,43 +381,6 @@ class ScanClass(object):
             scan_request["polarization"] = pol
 
         return scan_request
-
-
-    # def calculate_progress(self, total_time: str, elapsed_time: str, remaining_time: str) -> float:
-    #     """
-    #     Calculate the percentage progress based on total and elapsed time coming from Pixelator,
-    #     this may be used in teh future if Pixelator can give accurate timeing
-    #
-    #     Args:
-    #         total_time (str): Total time in the format '00h 18m 12s'.
-    #         elapsed_time (str): Elapsed time in the format '00h 03m 04s'.
-    #
-    #     Returns:
-    #         float: Percentage progress as a float value.
-    #     """
-    #
-    #     def time_to_seconds(time_str: str) -> int:
-    #         """Convert time string to total seconds."""
-    #         h, m, s = 0, 0, 0
-    #         if 'h' in time_str:
-    #             h = int(time_str.split('h')[0].strip())
-    #             time_str = time_str.split('h')[1]
-    #         if 'm' in time_str:
-    #             m = int(time_str.split('m')[0].strip())
-    #             time_str = time_str.split('m')[1]
-    #         if 's' in time_str:
-    #             s = int(time_str.split('s')[0].strip())
-    #         return h * 3600 + m * 60 + s
-    #
-    #     total_seconds = time_to_seconds(total_time)
-    #     elapsed_seconds = time_to_seconds(elapsed_time)
-    #     remaining_seconds = time_to_seconds(remaining_time)
-    #
-    #     if total_seconds == 0:  # Avoid division by zero
-    #         return 0.0
-    #
-    #     return (elapsed_seconds / total_seconds) * 100
-
 
     def intake_scan_status(self, dct):
         """
@@ -659,13 +618,13 @@ class ScanClass(object):
         self.scan_req = self.init_scan_req()
         return self.scan_req
 
-
+#################################################################################################################
 class DcsServerApi(BaseDcsServerApi):
 
     def __init__(self, parent):
         super().__init__(parent)
         self.devices = {}
-        self.scan_class = ScanClass()
+        self.scan_class = ScanClass(dcs_server_api=self)
 
     def reset_scan_info(self):
         self.scan_class.reset()
@@ -760,12 +719,15 @@ class DcsServerApi(BaseDcsServerApi):
 
         elif resp[0].find("positionerStatus") > -1:
             # print(f"positionerStatus: resp={resp}")
-            values = json.loads(resp[1])
+            #values = json.loads(resp[1])
+            values = json.loads(resp[1].replace('NaN', 'null'))
             if len(self.parent.devices['POSITIONERS']) > 0 and (len(self.parent.devices['POSITIONERS']) == len(values)):
                 #self.parent.devices['POSITIONERS'], values)
                 i = 0
                 for app_devname in list(self.parent.devices['POSITIONERS'].keys()):
                     pos = values[i]['position']
+                    if pos is None or pos == 'null':
+                        pos = -909090.9090909
                     status = values[i]['status']
                     self._update_device_feedback(app_devname, pos, app_devname=app_devname)
                     self._update_device_status(app_devname, status, app_devname=app_devname)
@@ -865,8 +827,8 @@ class DcsServerApi(BaseDcsServerApi):
             self.parent.positioner_definition = json.loads(resp[1])
             for posner_dct in self.parent.positioner_definition:
                 dcs_devname = posner_dct['name']
-                if dcs_devname in dcs_to_app_devname_map.keys():
-                    app_devname = dcs_to_app_devname_map[dcs_devname]
+                if dcs_devname in self.dcs_to_app_devname_map.keys():
+                    app_devname = self.dcs_to_app_devname_map[dcs_devname]
                     if app_devname in list(self.parent.devs.keys()):
                         dev = self.parent.devs[app_devname]['dev']
                         dev.set_positioner_dct(posner_dct)
@@ -910,8 +872,8 @@ class DcsServerApi(BaseDcsServerApi):
 
             for positioner_dct in self.parent.positioner_definition:
                 dcs_devname = positioner_dct['name']
-                if dcs_devname in dcs_to_app_devname_map.keys():
-                    app_devname = dcs_to_app_devname_map[dcs_devname]
+                if dcs_devname in self.dcs_to_app_devname_map.keys():
+                    app_devname = self.dcs_to_app_devname_map[dcs_devname]
                     if app_devname in list(self.parent.devs.keys()):
                         dev = self.parent.devs[app_devname]['dev']
                         #set device name (the app device name like DNM_PMT etc) and the device dcs_name (Counter0)
@@ -920,13 +882,23 @@ class DcsServerApi(BaseDcsServerApi):
 
                         dev.set_connected(True)
                         dev.set_desc(positioner_dct['description'])
+
+                        #over ride the limits for the fine sample positioners to hack around naming of abstract motor for now
+                        if app_devname in ["DNM_SAMPLE_FINE_X", "DNM_SAMPLE_FINE_Y"]:
+                            positioner_dct['lowerSoftLimit'] = -7000
+                            positioner_dct['upperSoftLimit'] = 7000
+
                         dev.set_positioner_dct(positioner_dct)
+
                         if hasattr(dev, 'set_low_limit'):
                             #dev.set_low_limit(positioner_dct['lowerSoftLimit'])
                             dev._low_limit = positioner_dct['lowerSoftLimit']
                         if hasattr(dev, 'set_high_limit'):
                             #dev.set_high_limit(positioner_dct['upperSoftLimit'])
                             dev._high_limit = positioner_dct['upperSoftLimit']
+
+
+
                         if hasattr(dev, 'set_units'):
                             #dev.set_units(positioner_dct['unit'])
                             dev._units = positioner_dct['unit']
@@ -941,6 +913,9 @@ class DcsServerApi(BaseDcsServerApi):
                         positioner_dct['position'] = 99
                         self.parent.devices['POSITIONERS'][app_devname] = positioner_dct
                         self.devices[app_devname] = positioner_dct
+                else:
+                    print(
+                        f"** Pixelator configuration contains device [{dcs_devname}] that does not exist in devs.py file **")
                 
             # add DNM_A0 as a device so that its feedback can be updated when Pixelator  sets the ○
             self.devices['DNM_A0'] = {}
@@ -953,7 +928,11 @@ class DcsServerApi(BaseDcsServerApi):
             for det_dct in self.parent.detector_definition:
                 #det_name = det_dct['name']
                 dcs_det_name = det_dct['name']
-                det_name = dcs_to_app_devname_map[dcs_det_name]
+                if dcs_det_name not in self.dcs_to_app_devname_map.keys():
+                    print(f"** Pixelator configuration contains detector [{dcs_det_name}] that does not exist in devs.py file **")
+                    _logger.warn(f"Pixelator configuration contains detector [{dcs_det_name}] that does not exist in devs.py file")
+                    continue
+                det_name = self.dcs_to_app_devname_map[dcs_det_name]
                 selected = False
                 # if det_name.find(DEFAULT_DETECTOR) > -1:
                 #     reply = self.parent.zmq_dev_server_thread.send_receive(['recordedChannels', json.dumps([det_name])])
@@ -1012,11 +991,11 @@ class DcsServerApi(BaseDcsServerApi):
 
         #only try to put to a pixelator device if it exists on Pixelator
 
-        if dcs_devname not in dcs_to_app_devname_map.keys():
+        if dcs_devname not in self.dcs_to_app_devname_map.keys():
             return
 
         else:
-            app_devname = dcs_to_app_devname_map[dcs_devname]
+            app_devname = self.dcs_to_app_devname_map[dcs_devname]
             if app_devname not in list(self.parent.devs.keys()):
                 return
             dev = self.parent.devs[app_devname]['dev']
@@ -1160,13 +1139,24 @@ class DcsServerApi(BaseDcsServerApi):
         else:
             print(f"send_scan_request: send scanRequest failed, reply={reply}")
 
+    def set_default_detector(self, det_name):
+        """
+        Set the default detector to be used by Pixelator for scans.
+        Name comes from beamline configuration file and is teh DCS detector name, e.g. 'Counter1', 'Counter1', etc.
+        """
+
+        self.default_detector = self.app_to_dcs_devname_map.get(det_name, None)
+        if self.default_detector is None:
+            print(f"set_default_detector: ERROR: could not find DCS detector name for app detector [{det_name}]")
+            _logger.error(f"set_default_detector: ERROR: could not find DCS detector name for app detector [{det_name}]")
+            return
 
     def send_default_detector_select(self):
-        reply = self.parent.zmq_dev_server_thread.send_receive(['recordedChannels', json.dumps([DEFAULT_DETECTOR])])
+        reply = self.parent.zmq_dev_server_thread.send_receive(['recordedChannels', json.dumps([self.default_detector])])
         if reply[0]['status'] == 'ok':
-            print(f'send_default_detector_select: success: selected DEFAULT_DETECTOR[{DEFAULT_DETECTOR}]')
+            print(f'send_default_detector_select: success: selected DEFAULT_DETECTOR[{self.default_detector}]')
         else:
-            print(f'send_default_detector_select: FAILED: selected DEFAULT_DETECTOR[{DEFAULT_DETECTOR}]')
+            print(f'send_default_detector_select: FAILED: selected DEFAULT_DETECTOR[{self.default_detector}]')
 
     def abort_scan(self):
 
@@ -1499,7 +1489,7 @@ class DcsServerApi(BaseDcsServerApi):
             if dcs_det_name[0:4] == "DNM_":
                 app_det_names.append(dcs_det_name)
             else:
-                app_det_names.append(dcs_to_app_devname_map[dcs_det_name])
+                app_det_names.append(self.dcs_to_app_devname_map[dcs_det_name])
 
         return app_det_names
 
@@ -1520,7 +1510,7 @@ class DcsServerApi(BaseDcsServerApi):
         ret_lst = []
         for nm in det_nm_lst:
             if nm.find('DNM_') > -1:
-                ret_lst.append(app_to_dcs_devname_map[nm])
+                ret_lst.append(self.app_to_dcs_devname_map[nm])
             else:
                 ret_lst.append(nm)
         return ret_lst

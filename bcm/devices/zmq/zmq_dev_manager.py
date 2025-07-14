@@ -34,10 +34,7 @@ if is_port_forwarded(DCS_SUB_PORT):
         #                 )
         HOST_IS_LOCAL = False
 
-#if dcs_server_name.find('pixelator') > -1:
 if dcs_server_name.find(DCS_HOST_PROC_NAME.lower()) > -1:
-    from bcm.devices.zmq.pixelator.pixelator_commands import cmd_func_map_dct
-    from bcm.devices.zmq.pixelator.app_dcs_devnames import dcs_to_app_devname_map
     from bcm.devices.zmq.pixelator.pixelator_dcs_server_api import DcsServerApi
 else:
     # not supported
@@ -87,8 +84,8 @@ class ZMQDevManager(QWidget):
         # self.publish_thread = ZMQServerThread("PUB_TO_ZMQ", self.socket, read_only=False)
         self.zmq_dev_server_thread = ZMQServerThread("ZMQServerThread", self.sub_socket, self.req_socket, read_only=False)
         self.zmq_dev_server_thread.message_received.connect(self.add_to_SUB_rcv_queue)
-        # self.publish_thread.start()
-        self.zmq_dev_server_thread.start()
+        # # self.publish_thread.start()
+        # self.zmq_dev_server_thread.start()
 
         self.rcv_queue = queue.Queue()
         self.updateTimer = QTimer()
@@ -128,11 +125,13 @@ class ZMQDevManager(QWidget):
         self.devices_dct = devices_dct
         self.devs = {}
         self.dcs_to_appname_map = {}
+        self.app_to_dcsname_map = {}
         device_types = list(devices_dct.keys())
         for dev_type in device_types:
             for app_devname, dev in devices_dct[dev_type].items():
                 dcs_name = dev.dcs_name
                 self.devs[app_devname] = {'dev': dev, 'dcs_name': dcs_name}
+                self.app_to_dcsname_map[app_devname] = dcs_name
                 self.dcs_to_appname_map[dcs_name] = app_devname
 
                 #connect device signals
@@ -148,7 +147,20 @@ class ZMQDevManager(QWidget):
                 dev.do_get.connect(self.on_dev_get)
                 dev.on_connect.connect(self.on_dev_connect)
 
+        # must set the device name maps after all devices have been added
+        self.dcs_server_api.set_device_name_maps(self.app_to_dcsname_map, self.dcs_to_appname_map)
+        # self.publish_thread.start()
+        self.zmq_dev_server_thread.start()
         self.start_feedback()
+
+    def set_default_detector(self, det_name):
+        """
+        This function sets the default detector to be used by the DCS server
+        """
+        if det_name in self.devs.keys():
+            self.dcs_server_api.set_default_detector(det_name)
+        else:
+            print(f"ZMQDevManager: set_default_detector: {det_name} not found in devices")
 
     def is_dcs_server_local(self):
         """
@@ -207,7 +219,7 @@ class ZMQDevManager(QWidget):
         """
         send 'initialize' to pixelator
         """
-        print("connect_to_dcs_server")
+        print(f"connect_to_dcs_server: \n\tDCS_HOST={DCS_HOST} \n\tDCS_HOST_PROC_NAME={DCS_HOST_PROC_NAME} \n\tDCS_SUB_PORT={DCS_SUB_PORT} \n\tDCS_REQ_PORT={DCS_REQ_PORT}")
         result = self.dcs_server_api.connect_to_dcs_server(devices_dct)
 
         #return lists of supported OSAS and ZONEPLATES

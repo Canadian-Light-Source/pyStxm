@@ -69,9 +69,17 @@ class BaseFocusScanParam(ScanParamWidget):
             title_color="white",
             var_clr="black",
         )
+        # self.zpzFbkLbl = assign_aiLabelWidget(
+        #     self.zpzFbkLbl,
+        #     self.main_obj.device("DNM_ZPZ_RBV"),
+        #     hdrText="Zoneplate Z",
+        #     egu="um",
+        #     title_color="white",
+        #     var_clr="black",
+        # )
         self.zpzFbkLbl = assign_aiLabelWidget(
             self.zpzFbkLbl,
-            self.main_obj.device("DNM_ZPZ_RBV"),
+            self.main_obj.device("DNM_ZONEPLATE_Z"),
             hdrText="Zoneplate Z",
             egu="um",
             title_color="white",

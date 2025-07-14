@@ -473,6 +473,13 @@ class ZMQEngineWidget(QWidget):
         self.db = None # Broker.named(mongo_db_nm)#"pystxm_amb_bl10ID1")
         self.engine.exec_result.connect(self.on_exec_result)
 
+    def set_default_detector(self, det_name):
+        """
+        set the default detector for the ZMQDevManager
+        :param det_name: name of the detector to set as default
+        """
+        self.engine.set_default_detector(det_name)
+
     def is_dcs_server_local(self):
         return self.engine.is_dcs_server_local()
 

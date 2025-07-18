@@ -733,8 +733,8 @@ class PrintSTXMThumbnailWidget(QDialog):
         painter.setFont(arialFontSmall)
         painter.drawText(x + int(grey_pm.width() / 2), y - 25, "%s" % xaxis_nm)
         painter.setFont(serifFont)
-        painter.end()
         painter.restore()
+        painter.end()
 
         html = self.create_html_for_pmap(prev_pmap)
         document = QTextDocument()

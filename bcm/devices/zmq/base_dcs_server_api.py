@@ -15,14 +15,57 @@ class BaseDcsServerApi(QtCore.QObject):
     msg_to_app = QtCore.pyqtSignal(object) # a singal used to send message to the app from the DCS server,
                                            # ex: filename to tell app what teh filename and data dir are before scan
                                            # execution
+
     def __init__(self, parent):
         super().__init__(None)
         self.parent = parent
         self.paused = False
         self.app_to_dcs_devname_map = {}
         self.dcs_to_app_devname_map = {}
+        self._loadfile_timer = QtCore.QTimer()
+        self._loadfile_timer.setSingleShot(True)
+        self._loadfile_timer.timeout.connect(self.load_file)
+        # args used by load_file
+        self._loadfile_directory = None
+        self._loadfile_file_name = None
+
         self.exec_result.connect(self.on_exec_finished)
 
+    def load_file(self, directory: str="/tmp/2025-07-04", filename: str="SampleData.hdf5"):
+        """
+        load a file from the DCS server, to be implemented by inheriting class
+        Args:
+            directory: the directory to load the file from
+            filename: the name of the file to load
+
+        """
+        _logger.warning("BaseDcsServerApi.load_file: This method should be implemented by the inheriting class.")
+        #
+
+    def get_base_data_dir(self):
+        """
+        return value from DCS server
+        to be implemented by the inheriting class
+        """
+        pass
+
+    def get_data_file_extension(self):
+        """
+        return value from DCS server
+        to be implemented by the inheriting class
+        """
+        pass
+
+
+    def load_file(self, directory: str="/tmp/2025-07-04", filename: str="SampleData.hdf5"):
+        """
+        load a file from the DCS server, to be implemented by inheriting class
+        Args:
+            directory: the directory to load the file from
+            filename: the name of the file to load
+
+        """
+        pass
 
     def set_device_name_maps(self, app_to_dcsname_map: dict, dcs_to_appname_map: dict):
         """

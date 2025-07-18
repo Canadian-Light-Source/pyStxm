@@ -1,4 +1,8 @@
+import time
+from queue import Queue
+
 import simplejson as json
+from PyQt5.QtCore import QTimer
 
 from bcm.devices.zmq.base_dcs_server_api import BaseDcsServerApi
 from bcm.devices.zmq.pixelator.gen_scan_req import GenScanRequestClass
@@ -6,8 +10,14 @@ from bcm.devices.zmq.pixelator.gen_scan_req import GenScanRequestClass
 #                                                     make_base_energy_region, make_point_spatial_region,
 #                                                     gen_point_displayed_axis_dicts)
 from bcm.devices.zmq.pixelator.scan_reqs.req_substitution import do_substitutions
+from bcm.devices.zmq.pixelator.loadfile_reponse import LoadFileResponseClass
 from cls.utils.roi_utils import *
 from cls.utils.dict_utils import dct_get
+from cls.utils.fileUtils import get_file_path_as_parts
+from cls.types.stxmTypes import (
+    scan_types,
+)
+
 
 from cls.utils.log import get_module_logger
 _logger = get_module_logger(__name__)
@@ -618,6 +628,8 @@ class ScanClass(object):
         self.scan_req = self.init_scan_req()
         return self.scan_req
 
+
+
 #################################################################################################################
 class DcsServerApi(BaseDcsServerApi):
 
@@ -625,6 +637,28 @@ class DcsServerApi(BaseDcsServerApi):
         super().__init__(parent)
         self.devices = {}
         self.scan_class = ScanClass(dcs_server_api=self)
+
+        self.load_file_q = Queue()
+        self.load_file_q_poller = QTimer()
+        self.load_file_q_poller.timeout.connect(self.process_load_file_queue)
+        self.load_file_q_poller.start(750)
+
+        self.busy = False
+
+
+    def get_base_data_dir(self):
+        """
+        return value from remoteFileSystem dict that we received from Pix controller
+        """
+        # {'bookmarks': [], 'directory': '/tmp', 'fileExtension': '.hdf5', 'showHidden': 0}
+        return self.parent.remote_file_system_info['directory']
+
+    def get_data_file_extension(self):
+        """
+        return value from remoteFileSystem dict that we received from Pix controller
+        """
+        # {'bookmarks': [], 'directory': '/tmp', 'fileExtension': '.hdf5', 'showHidden': 0}
+        return self.parent.remote_file_system_info['fileExtension']
 
     def reset_scan_info(self):
         self.scan_class.reset()
@@ -777,6 +811,8 @@ class DcsServerApi(BaseDcsServerApi):
             self.scan_status.emit(ScanStatus.IDLE)
             self.on_exec_finished(json.loads(resp[1]))
 
+
+
         elif resp[0].find("userStatus") > -1:
             print(f"process_SUB_rcv_messages: {resp}")
 
@@ -834,8 +870,57 @@ class DcsServerApi(BaseDcsServerApi):
                         dev.set_positioner_dct(posner_dct)
                         # print(f"process_SUB_rcv_messages: positionerDefinition: {app_devname} {posner}")
 
+        elif resp[0].find("scanFileContent") > -1:
+            lfr = LoadFileResponseClass(resp[1])
+            # Try to clean the string before parsing
+            cleaned_json = lfr.pystxm_load.strip()
+            if not cleaned_json:
+                print("Error: pystxm_load string is empty")
+                return
 
+            parsed_data_dct = json.loads(cleaned_json)
+            ekey = parsed_data_dct['default']
+            sp_db_dct = parsed_data_dct[ekey]['sp_db_dct']
+            self.parent.new_data.emit(parsed_data_dct)
 
+    def get_pystxm_standard_scan_type_from_load_file_response_type(self, scan_type_str):
+        """
+        returns the correct scan_type from enumerated types
+           the scan type was read from the stxm_scan_type dataset from the NXdata group of the data file
+            and we want to convert it to using the stxm scan_types
+        """
+        # scan_type_str = get_stxm_scan_type(file_dct)
+        if scan_type_str == "Detector":
+            return scan_types.DETECTOR_IMAGE
+        if scan_type_str == "osa image":
+            return scan_types.OSA_IMAGE
+        if scan_type_str == "osa focus":
+            return scan_types.OSA_FOCUS
+        if scan_type_str == "sample focus":
+            return scan_types.SAMPLE_FOCUS
+        if scan_type_str == "sample point spectrum":
+            return scan_types.SAMPLE_POINT_SPECTRUM
+        if scan_type_str == "sample line spectrum":
+            return scan_types.SAMPLE_LINE_SPECTRUM
+        if scan_type_str == "sample image":
+            return scan_types.SAMPLE_IMAGE
+        if scan_type_str == "sample image stack":
+            return scan_types.SAMPLE_IMAGE_STACK
+        if scan_type_str == "generic scan":
+            return scan_types.GENERIC_SCAN
+        if scan_type_str == "coarse image":
+            return scan_types.COARSE_IMAGE
+        if scan_type_str == "coarse goni":
+            return scan_types.COARSE_GONI
+        if scan_type_str == "tomography":
+            return scan_types.TOMOGRAPHY
+        if scan_type_str == "pattern gen":
+            return scan_types.PATTERN_GEN
+        if scan_type_str == "ptychography":
+            return scan_types.PTYCHOGRAPHY
+        if scan_type_str == "two variable image":
+            return scan_types.TWO_VARIABLE_IMAGE
+    
     def connect_to_dcs_server(self, devices_dct: dict) -> bool:
         """
         Connect to the DCS server and sort info returned from dcs server into sections in a dict
@@ -860,8 +945,7 @@ class DcsServerApi(BaseDcsServerApi):
             self.parent.detector_definition = reply[2]
             self.parent.oscilloscope_definition = reply[3]
             self.parent.zone_plate_definition = reply[4]
-            #self.parent.dcs_server_config['ZONEPLATES'] = reply[4]
-            #self.parent.dcs_server_config['REMOTE_FILE_SYSTEM'] = reply[5]
+            self.parent.remote_file_system_info = reply[5]
 
             self.parent.print_all_devs("positionerDefinition", reply[1])
             self.parent.print_all_devs("detectorDefinition", reply[2])
@@ -959,6 +1043,8 @@ class DcsServerApi(BaseDcsServerApi):
                     dev.update_position(val, False)
 
         return True
+
+
     def put(self, put_dct):
         """
         A device setpoint has changed on pyStxm and the put function has been called on the ZMQDevice or ZMQSignal so
@@ -1108,6 +1194,54 @@ class DcsServerApi(BaseDcsServerApi):
             reply = self.parent.zmq_dev_server_thread.send_receive(
                 ['modified positioner definition', json.dumps({"name": dcs_devname, "autoOffMode": value})])
 
+        elif attr.find('loadFile directory') > -1:
+            # arg is {"directory":"/tmp/2025-07-14","showHidden":1, "fileExtension":".hdf5"}
+            reply = self.parent.zmq_dev_server_thread.send_receive(['loadFile directory', json.dumps(
+                {'directory': value, 'showHidden': 1, 'fileExtension': '.hdf5'}
+            )])
+            # need to emite the reply so that subscribers can use it
+            #dev.update_position(value, False)
+
+        elif attr.find('loadFile file') > -1:
+            dct = {
+                "directory": "/tmp/2025-07-04"
+                , "file": "/tmp/2025-07-04/Sample_Image_2025-07-04_001.hdf5"
+                , "showHidden": 0
+                , "fileExtension": ".hdf5"
+                , "directories": [
+                    ".."
+                    , "discard"
+                ]
+                , "files": [
+                    "Sample_Image_2025-07-04_001.hdf5"
+                ]
+                , "pluginNumber": 0
+            }
+            #
+            # readMode = 'binary' or 'text'
+            # {"filePath": "/tmp/2025-07-14/OSA_2025-07-14_006.hdf5", "readMode": "binary"}
+            reply = self.parent.zmq_dev_server_thread.send_receive(['loadFile file', json.dumps(
+                dct
+            )])
+
+            lfr = LoadFileResponseClass(response_text)
+            # Try to clean the string before parsing
+            cleaned_json = lfr.pystxm_load.strip()
+            if not cleaned_json:
+                print("Error: pystxm_load string is empty")
+                return
+
+            # Try parsing with error details
+            try:
+                parsed_data_dct = json.loads(cleaned_json)
+                # print(f"Successfully parsed JSON data:")
+                # pprint.pprint(parsed_data)
+                self.new_data.emit(parsed_data_dct)
+                # need to emite the reply so that subscribers can use it
+                #dev.update_position(value, False)
+            except Exception as e:
+                print(f"General error: {str(e)}")
+
         else:
 
                 reply = self.parent.zmq_dev_server_thread.send_receive(
@@ -1116,6 +1250,27 @@ class DcsServerApi(BaseDcsServerApi):
         if reply[0]['status'] == 'ok':
             selected = True
 
+
+    def load_file(self, directory, filename):
+        """
+        This function calls the DCS server to load a file and then emits the result
+        """
+        dct = {
+            "directory": f"{directory}",
+            "file": f"{filename}",
+            "showHidden": 0,
+            "fileExtension": ".hdf5",
+            "directories": ["..", "discard"],
+            "files": [f"{filename}"],
+             "pluginNumber": 0,
+        }
+        reply = self.parent.zmq_dev_server_thread.send_receive(['loadFile file', json.dumps(dct)])
+
+        if reply[0]['status'] == 'ok':
+            print(f"pixelator_dcs_server_api:load_file: success: loaded file [{filename}] from directory [{directory}]")
+        else:
+            print(f"pixelator_dcs_server_api:load_file: FAILED: could not load file [{filename}] from directory [{directory}]")
+        return
 
 
     def send_scan_request(self, wdg_com={}):
@@ -1455,13 +1610,45 @@ class DcsServerApi(BaseDcsServerApi):
 
         """
         dct = self.make_scan_finished_dct()
-        dct['file_name'] = msg_dct['filename']
+        fname = msg_dct['filename']
+        if fname.find('Detector_') == -1:
+            # fix a bug in PixelatorController
+            # this is a detector file, so we need to replace the Detector_ with Sample_Image_
+            fname = fname.replace('/discard', '')
+        dct['file_name'] = fname
         dct['local_base_dir'] = msg_dct['neXusLocalBaseDirectory']
         dct['dcs_server_base_dir'] = msg_dct['neXusBaseDirectory']
         dct['flags'] = msg_dct['flag']
         dct['run_uids'] = [0]
         self.paused = False
         self.parent.exec_result.emit(dct)
+        self.load_file_q.put_nowait(dct)
+
+    def process_load_file_queue(self):
+        """
+        Process all items in the load_file_q, calling load_file for each one
+        """
+        if not self.busy:
+            self.busy = True
+            while not self.load_file_q.empty():
+
+                try:
+                    dct = self.load_file_q.get_nowait()
+                    # Extract directory and filename from the full path
+                    file_path = dct.get('file_name', '')
+
+                    if file_path:
+                        data_dir, fprefix, fsuffix = get_file_path_as_parts(file_path)
+                        # Call load_file
+                        self.load_file(data_dir, file_path)
+
+                except Queue.empty:
+                    # Queue is empty, we're done
+                    break
+                except Exception as e:
+                    _logger.error(f"Error processing load_file_q item: {e}")
+                    continue
+            self.busy = False
 
     def on_msg_to_app(self, msg: dict) -> None:
         """

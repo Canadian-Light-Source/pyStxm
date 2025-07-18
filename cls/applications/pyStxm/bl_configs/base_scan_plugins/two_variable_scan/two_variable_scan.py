@@ -594,6 +594,7 @@ class BaseTwoVariableScanParam(ScanParamWidget):
         """
         wdg_com = self.update_single_spatial_wdg_com(positioner=self.prim_positioner)
         self.sub_type = scan_sub_types.POINT_BY_POINT
+        dct_put(wdg_com, SPDB_SCAN_PLUGIN_TYPE, self.type)
         dct_put(wdg_com, SPDB_SCAN_PLUGIN_SUBTYPE, self.sub_type)  # default
         self.update_est_time()
         self.update_last_settings()

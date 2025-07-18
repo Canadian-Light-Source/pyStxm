@@ -26,7 +26,7 @@ from cls.scan_engine.bluesky.qt_run_engine import EngineWidget, ZMQEngineWidget
 from bcm.devices import BACKEND
 
 if BACKEND == 'zmq':
-    from bcm.devices.zmq.zmq_dev_manager import ZMQDevManager
+    from bcm.devices.zmq.zmq_dev_manager import ZMQRunEngine
 # from bcm.devices.device_names import *
 
 # POS_TYPE_BL = 'BL'
@@ -83,6 +83,7 @@ class main_object_base(QtCore.QObject):
     changed = QtCore.pyqtSignal()
     export_msg = QtCore.pyqtSignal(object)
     seldets_changed = QtCore.pyqtSignal(list) #when the user selects different detectors emit this signal with list of app_devnames
+    new_data = QtCore.pyqtSignal(object)  # when new data is received from the zmq server emit this signal with the data
 
     def __init__(self, name, endstation, beamline_cfg_dct=None, splash=None, main_cfg=None):
 
@@ -162,6 +163,8 @@ class main_object_base(QtCore.QObject):
         else:
             self.engine_widget = EngineWidget(mongo_db_nm=self.mongo_db_nm)
             self.nx_server_is_running = self.check_nx_server_running()
+            # when the engine widget receives new data it will emit this signal
+            self.new_data = self.engine_widget.new_data
 
 
     def init_zmq_engine_widget(self, devices_dct):
@@ -171,6 +174,8 @@ class main_object_base(QtCore.QObject):
         self.engine_widget = ZMQEngineWidget(devices_dct)
         self.engine_widget.set_default_detector(self.default_detector)
         result, dcs_params_dct = self.engine_widget.engine.connect_to_dcs_server(devices_dct)
+        # when the engine widget receives new data it will emit this signal
+        self.new_data = self.engine_widget.new_data
         
         if not result:
             _logger.error(f"Failed to connect to DCS server")

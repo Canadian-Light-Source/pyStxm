@@ -237,18 +237,6 @@ dev_dct["DIO"] = [
 ]
 
 dev_dct["DETECTORS"] = [
-    # {
-    #     "name": "DNM_SIS3820",
-    #     #"class": "SIS3820ScalarDevice",
-    #     "class": "make_basedevice",
-    #     "dcs_nm": "PIXELATOR_SIS3820",
-    #     "con_chk_nm": "mcs:startScan",
-    # },
-    # {
-    #     "name": "DNM_PMT",
-    #     "class": "Counter",
-    #     "dcs_nm": "Counter1",
-    # },
     {
         "name": "DNM_COUNTER1",
         "class": "Counter",
@@ -322,57 +310,10 @@ dev_dct["PVS"] = [
         "dcs_nm": "PIXELATOR_CALCD_ZPZ",
     },
     {
-        "name": "DNM_RESET_INTERFERS",
-        "class": "Bo",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_RESET_INTERFERS",
-    },
-    # {
-    #     "name": "DNM_SFX_AUTOZERO",
-    #     "class": "Bo",
-    #     "cat": "PVS",
-    #     "dcs_nm": "PIXELATOR_SFX_AUTOZERO",
-    # },
-    # {
-    #     "name": "DNM_SFY_AUTOZERO",
-    #     "class": "Bo",
-    #     "cat": "PVS",
-    #     "dcs_nm": "PIXELATOR_SFY_AUTOZERO",
-    # },
-    {
         "name": "DNM_ZPZ_ADJUST",
         "class": "make_basedevice",
         "cat": "PVS",
         "dcs_nm": "PIXELATOR_ZPZ_ADJUST",
-    },
-    # {
-    #     "name": "DNM_ZONEPLATE_SCAN_MODE",
-    #     "class": "Mbbo",
-    #     "dcs_nm": "PIXELATOR_ZONEPLATE_SCAN_MODE",
-    # },
-    # {
-    #     "name": "DNM_ZONEPLATE_SCAN_MODE_RBV",
-    #     "class": "Mbbo",
-    #     "dcs_nm": "PIXELATOR_ZONEPLATE_SCAN_MODE_RBV",
-    # },
-    # used to control which value gets sent to Zpz, fl or fl - A0
-    # {'name': 'DNM_ZONEPLATE_INOUT', 'class': 'Bo', 'dcs_nm': 'BL1610-I12:zp_inout'},
-    # {'name': 'DNM_ZONEPLATE_INOUT_FBK', 'class': 'Mbbi', 'dcs_nm': 'ASTXM1610:bl_api:zp_inout:fbk'},
-    # used to convieniently move zp z in and out
-    {
-        "name": "DNM_ZONEPLATE_INOUT",
-        "class": "Bo",
-        "dcs_nm": "PIXELATOR_ZONEPLATE_INOUT",
-    },
-    {
-        "name": "DNM_OSA_INOUT",
-        "class": "Bo",
-        "dcs_nm": "PIXELATOR_OSA_INOUT",
-    },
-    {
-        "name": "DNM_SAMPLE_OUT",
-        "class": "Bo",
-        "dcs_nm": "PIXELATOR_SAMPLE_OUT",
     },
     {
         "name": "DNM_DELTA_A0",
@@ -424,25 +365,6 @@ dev_dct["PVS"] = [
         "cat": "PVS",
         "dcs_nm": "PIXELATOR_ZPZ_POS",
     },
-    # {
-    #     "name": "DNM_ENERGY_ENABLE",
-    #     "class": "Bo",
-    #     "dcs_nm": "ASTXM1610:bl_api:enabled"
-    # },
-    # {
-    #     "name": "DNM_ENERGY_RBV",
-    #     "class": "make_basedevice",
-    #     "cat": "PVS",
-    #     "dcs_nm": "Energy" if SIM else "Energy",
-    #     "units": "um",
-    # },
-    # {
-    #     "name": "DNM_ZPZ_RBV",
-    #     "class": "make_basedevice",
-    #     "cat": "PVS",
-    #     "dcs_nm": "Zoneplate",
-    #     "units": "um",
-    # },
     {
         "name": "DNM_ZP_DEF_A",
         "class": "make_basedevice",
@@ -461,74 +383,13 @@ dev_dct["PVS"] = [
         "cat": "PVS",
         "dcs_nm": "PIXELATOR_OSA_DEF",
     },
-    # {
-    #     "name": "DNM_SYSTEM_MODE_FBK",
-    #     "class": "make_basedevice",
-    #     "cat": "PVS",
-    #     "dcs_nm": "PIXELATOR_SYSTEM_MODE_FBK",
-    # },
     {
         "name": "DNM_SRSTATUS_SHUTTERS",
         "class": "make_basedevice",
         "cat": "PVS",
         "dcs_nm": "PIXELATOR_SRSTATUS_SHUTTERS",
     },
-    # {'name': 'DNM_EPU_POL_FBK',  'class': 'Mbbo', 'dcs_nm': 'BL1610-I12UND1410-01:polarization'},
-    # {'name': 'DNM_EPU_POL_ANGLE',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'BL1610-I12:UND1410-01:polarAngle', 'units': 'udeg'},
-    # {'name': 'DNM_EPU_GAP_FBK',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'BL1610-I12:UND1410-01:gap:mm:fbk', 'units': 'mm'},
-    # {'name': 'DNM_EPU_GAP_OFFSET',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'BL1610-I12:UND1410-01:gap:offset', 'units': 'mm'},
-    # {'name': 'DNM_EPU_HARMONIC_PV',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'BL1610-I12:UND1410-01:harmonic'},
-    # {'name': 'DNM_SYSTEM_MODE_FBK',  'class': 'Mbbi', 'dcs_nm': 'BL1610-I12SYSTEM:mode:fbk'},
-    # {'name': 'DNM_EPU_POL_FBK',  'class': 'make_basedevice', 'dcs_nm': 'SIM_VBL1610-I12:epuPolarization.RBV', 'rd_only': True},
-    # {'name': 'DNM_EPU_POL_ANGLE',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'BLUND1410-01:polarAngle', 'units': 'udeg'},
-    # {'name': 'DNM_EPU_GAP_FBK',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'SIM_VBL1610-I12:epuGap', 'units': 'mm', 'rd_only': True},
-    # {'name': 'DNM_EPU_GAP_OFFSET',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'SIM_VBL1610-I12:epuOffset', 'units': 'mm'},
-    # {'name': 'DNM_EPU_HARMONIC_PV',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'SIM_VBL1610-I12:epuHarmonic'},
-    #    {'name': 'DNM_SYSTEM_MODE_FBK',  'class': 'Mbbi', 'dcs_nm': 'BL1610-I12SYSTEM:mode:fbk'},
-    # {
-    #     "name": "DNM_MONO_EV_FBK",
-    #     "class": "make_basedevice",
-    #     "cat": "PVS",
-    #     # "dcs_nm": "SIM_SM01PGM01:ENERGY_MON",
-    #     "dcs_nm": "Energy",
-    #     "units": "eV",
-    #     "rd_only": True,
-    # },
-    # {
-    #     "name": "DNM_BEAM_DEFOCUS",
-    #     "class": "make_basedevice",
-    #     "cat": "PVS",
-    #     "dcs_nm": "PIXELATOR_BEAM_DEFOCUS",
-    #     "units": "um",
-    # },
-    # {
-    #     "name": "DNM_AX1_INTERFER_VOLTS",
-    #     "class": "make_basedevice",
-    #     "cat": "PVS",
-    #     "dcs_nm": "PIXELATOR_AX1_INTERFER_VOLTS",
-    #     "rd_only": True,
-    # },
-    # {
-    #     "name": "DNM_SFX_PIEZO_VOLTS",
-    #     "class": "make_basedevice",
-    #     "cat": "PVS",
-    #     "dcs_nm": "PIXELATOR_SFX_PIEZO_VOLTS",
-    #     "rd_only": True,
-    # },
-    # {
-    #     "name": "DNM_SFY_PIEZO_VOLTS",
-    #     "class": "make_basedevice",
-    #     "cat": "PVS",
-    #     "dcs_nm": "PIXELATOR_SFY_PIEZO_VOLTS",
-    #     "rd_only": True,
-    # },
-    # {
-    #     "name": "DNM_AX2_INTERFER_VOLTS",
-    #     "class": "make_basedevice",
-    #     "cat": "PVS",
-    #     "dcs_nm": "PIXELATOR_AX2_INTERFER_VOLTS",
-    #     "rd_only": True,
-    # },
+
     # {
     #     "name": "DNM_RING_CURRENT",
     #     "class": "make_basedevice",
@@ -589,6 +450,43 @@ dev_dct["PVS"] = [
 
 
     # _pv: BaseDevice('BL1610-I12:MONO1610-I10-01:grating:select:fbk'}, _pv.get_position: _pv.get_enum_str_as_int[{'name': 'Mono_grating_fbk',  'class': _pv
+]
+
+dev_dct['COMMANDS'] = [
+    {
+        "name": "DNM_RESET_INTERFERS",
+        "class": "Bo",
+        "cat": "PVS",
+        "dcs_nm": "PIXELATOR_RESET_INTERFERS",
+    },
+    # used to convieniently move zp z in and out
+    {
+        "name": "DNM_ZONEPLATE_INOUT",
+        "class": "Command",
+        "dcs_nm": "PIXELATOR_ZONEPLATE_INOUT",
+    },
+    {
+        "name": "DNM_OSA_INOUT",
+        "class": "Command",
+        "dcs_nm": "PIXELATOR_OSA_INOUT",
+    },
+    {
+        "name": "DNM_SAMPLE_OUT",
+        "class": "Command",
+        "dcs_nm": "PIXELATOR_SAMPLE_OUT",
+    },
+    {
+        "name": "DNM_LOAD_DIRECTORY",
+        "class": "Command",
+        "dcs_nm": "loadFile directory",
+        "arg_keywords": ["directory","showHidden","fileExtension"]
+    },
+    {
+        "name": "DNM_LOAD_FILE",
+        "class": "Command",
+        "dcs_nm": "loadFile file",
+        "arg_keywords": ["filePath","readMode"]
+    },
 ]
 
 dev_dct["PVS_DONT_RECORD"] = [

@@ -14,7 +14,7 @@ import sys
 
 import time
 
-from cls.utils.hdf_to_dict import get_sp_db_from_entry_dict, hdf5_to_dict # read_hdf5_nxstxm_file_with_attributes
+from cls.utils.hdf_to_dict import get_sp_db_dct_from_file_dict, hdf5_to_dict # read_hdf5_nxstxm_file_with_attributes
 
 # import nxs
 import numpy as np
@@ -40,7 +40,7 @@ from cls.utils.time_utils import msec_to_sec
 from cls.utils.roi_dict_defs import *
 from cls.utils.roi_utils import get_base_energy_roi, get_base_roi,make_spatial_db_dict
 from cls.utils.roi_utils import get_ado_obj_from_wdg_com, make_base_wdg_com
-from cls.utils.hdf_to_dict import get_sp_db_from_entry_dict
+from cls.utils.hdf_to_dict import get_sp_db_dct_from_file_dict
 from cls.utils.json_utils import pickle_deepcopy
 
 _logger = get_module_logger(__name__)
@@ -4648,6 +4648,9 @@ def create_ev_region_data_from_1D_array(data):
     regions, split the array into diff energy region setpoints
     """
     ev_datas = split_by_difference(data)
+    if len(ev_datas) == 0:
+        # if no data then return an empty list
+        return [data]
     return ev_datas
 
 def create_spdb_wdgcom_from_file_dct(file_dct):
@@ -4687,9 +4690,10 @@ def create_spdb_wdgcom_from_file_dct(file_dct):
         wdg_dct = make_base_wdg_com()
         #read all of the data from the file into a dict
         #start_time = time.time()
-        sp_db_dct = get_sp_db_from_entry_dict(file_dct)
+        sp_db_dct = get_sp_db_dct_from_file_dict(file_dct)
 
         #set plot_shape_type
+        # dont like this hard coding
         if sp_db_dct['pystxm_enum_scan_type'] in [0, 1, 2, 3, 5, 6, 7, 9, 10, 11, 12, 13, 14]:
             plot_shape_type = spatial_type_prefix.ROI
         elif sp_db_dct['pystxm_enum_scan_type'] in [4]:
@@ -4701,6 +4705,7 @@ def create_spdb_wdgcom_from_file_dct(file_dct):
 
         sp_id = 0
         e_roi = None
+        # or this
         if sp_db_dct['pystxm_enum_scan_type'] in [0,1,2,3,4,5,6,7,9,10,11,12,13,14]:
 
             for ax_nm in sp_db_dct['axis_names']:
@@ -4729,7 +4734,7 @@ def create_spdb_wdgcom_from_file_dct(file_dct):
                 # need to make sure data contains ALL ev_regions
                 # need to make sure data contains ALL ev_regions
                 ev_setpoint_region_arr = create_ev_region_data_from_1D_array(sp_db_dct['energy'].astype(float))
-                if isinstance(ev_setpoint_region_arr[0], list or np.ndarray):
+                if isinstance(ev_setpoint_region_arr[0], list) or isinstance(ev_setpoint_region_arr[0] ,np.ndarray):
                     ev_setpoint_region_arr = ev_setpoint_region_arr[0]
                 ax_nm = get_pystxm_positioner_name_from_list('ENERGY', list(sp_db_dct.keys()))
                 if ax_nm:
@@ -4776,7 +4781,8 @@ def create_spdb_wdgcom_from_file_dct(file_dct):
         # dct['default_nxdata_nm'] = def_counter_nm
         # dct['default_nxsignal_nm'] = sp_db_dct['nxsignal_nm']
 
-        dct[def_entry_nm] = {"WDG_COM": wdg_dct, nxkd.NXD_DATA: sp_db_dct['nxdata'], 'default': def_counter_nm}
+        dct[def_entry_nm] = {"WDG_COM": wdg_dct, nxkd.NXD_DATA: sp_db_dct['nxdata'], 'default': def_counter_nm,
+                             'sp_db_dct': sp_db_dct}
 
         return dct
 
@@ -5703,24 +5709,17 @@ def load_NXstxm_file(filename, only_roi_and_data=False):
         dct_put(dct, ADO_CFG_DATA_FILE_NAME, None)     #the data file name WITHOUT the extension, that is determined by the
         dct_put(dct, ADO_CFG_UNIQUEID, None)
     """
-    #print(f"load_NXstxm_file: reading [{filename}]" )
     # create a standard active object, then load h5 file and populate the active object dict
     active_data_obj = ActiveDataObj()
     active_data_obj.reset_data_dct()
     try:
+        # print(f"load_NXstxm_file: calling hdf5_to_dict for file {filename}")
         file_dct = hdf5_to_dict(filename)
         file_dct = ensure_default_attrs_exist(file_dct)
-        # start_time = time.time()
         sp_db = create_spdb_wdgcom_from_file_dct(file_dct)
-        # end_time = time.time()  # Get the timestamp after execution
-        # elapsed_time = end_time - start_time
-        #print(f"Took: Elapsed Time: {elapsed_time:.6f} seconds to run create_spdb_wdgcom_from_file_dct [{filename}]")
-        # print(f"\tsp_db = {sys.getsizeof(sp_db)} bytes")
         return sp_db
 
     except Exception as e:
-        # if nf is not None:
-        #     nf.close()
         print(f'load_NXstxm_file: opening file failed [{filename}]: exception = {e}')
         _logger.info("load_NXstxm_file: opening file failed [%s]" % filename)
         return None

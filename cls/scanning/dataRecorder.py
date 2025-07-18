@@ -303,6 +303,7 @@ class NexusDataIo(QObject):
 
         # rough in support for other nexus definitions
         if nx_def == "nxstxm":
+            # print(f"NexusDataIo: Using nexus definition [{nx_def}]")
             self.load_nexus_file = load_NXstxm_file
             self.create_nexus_file = create_NXstxm_file
             self.add_nexus_entry = create_entry_in_NXstxm_file

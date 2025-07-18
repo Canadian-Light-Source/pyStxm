@@ -6,7 +6,7 @@ import asyncio
 import pprint
 import simplejson as json
 
-from PyQt5.QtCore import QTimer, pyqtSignal
+from PyQt5.QtCore import QTimer, pyqtSignal, QObject
 from PyQt5.QtWidgets import QWidget
 
 from bcm.devices.zmq.zmq_server_thread import ZMQServerThread
@@ -42,7 +42,7 @@ else:
     exit(1)
 
 
-class ZMQDevManager(QWidget):
+class ZMQRunEngine(QObject):
     """
     the main ZMQ device manager that creates the ZMQ context and socket,
     it processes the commands received in the queue, it also keeps a dict of devices so that it can pass the command to
@@ -58,6 +58,7 @@ class ZMQDevManager(QWidget):
     exec_result = pyqtSignal(object)
     prog_changed = pyqtSignal(object)
     msg_to_app = pyqtSignal(object)
+    new_data = pyqtSignal(object)  # this is used to update the data in the widgets
     # bl_component_changed = pyqtSignal(str, object) #component name, val or dict
 
     def __init__(self, devices_dct, parent=None):
@@ -69,6 +70,7 @@ class ZMQDevManager(QWidget):
         self.dcs_server_api.scan_status.connect(self.on_scan_status)
         self.dcs_server_api.progress.connect(self.on_scan_progress)
         self.dcs_server_is_local = HOST_IS_LOCAL
+        self.new_data = self.dcs_server_api.new_data  # connect to the new_data signal from the DCS server API
 
         # SUB socket: Subscribing to the publisher
         self.sub_socket = self.context.socket(zmq.SUB)
@@ -96,8 +98,8 @@ class ZMQDevManager(QWidget):
         self.oscilloscope_definition = {}
         self.osa_definition = {}
         self.zone_plate_definition = {}
-        #self.zonePlateDefinition = reply[4]
         self.remote_file_system_info = {}
+
 
         self.devices = {}
         self.devices['POSITIONERS'] = {}

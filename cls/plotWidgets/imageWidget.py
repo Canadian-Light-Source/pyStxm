@@ -6308,6 +6308,8 @@ class ImageWidgetPlot(PlotDialog):
         plot.setFocus()
         if wdg_com is not None:
             sp_db = get_first_sp_db_from_wdg_com(wdg_com)
+            if sp_db == {}:
+                sp_db = wdg_com
             # only display first energy [0]
             data = data.astype(np.float64)
 

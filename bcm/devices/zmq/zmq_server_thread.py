@@ -44,6 +44,7 @@ class ZMQServerThread(QThread):
         if len(command) == 0:  # nothing to send
             print("send_receive_async: WARNING >> send_receive_async called without data")
             return {}
+        print(f"send_receive_async: Sending command [{command}]")
 
         # print(f"send_receive_async: command={command}")
         # send all but last part
@@ -54,7 +55,7 @@ class ZMQServerThread(QThread):
 
         # Receive the multipart response
         reply_parts = await self.req_socket.recv_multipart()
-        # print(f"send_receive_async: Received multipart reply: {reply_parts}")
+        print(f"send_receive_async: Received multipart reply: {reply_parts}")
 
         # Assuming the server sends back a JSON-encoded response in one of the parts
         # We'll deserialize the first part into a Python dictionary
@@ -130,6 +131,7 @@ class ZMQServerThread(QThread):
         loop = asyncio.get_event_loop()
 
         # Run the async send/receive function in the event loop and wait for it to finish
+        print(f"zmq_server_thread: send_receive called with message_dict={message_dict}")
         return loop.run_until_complete(self.send_receive_async(message_dict))
 
     def run(self):

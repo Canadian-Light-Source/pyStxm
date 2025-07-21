@@ -344,11 +344,9 @@ class ContactSheet(QtWidgets.QWidget):
             (
                 dataStream
                 << QtCore.QByteArray(bytearray(obj.info_jstr.encode()))
+                << QtCore.QByteArray(obj.data.tobytes())
                 << (event.pos() - obj.rect().topLeft())
             )
-
-            # dataStream << QtCore.QByteArray(obj.data.tobytes()) << QtCore.QByteArray(obj.info_str) << (event.pos() - obj.rect().topLeft())
-
             mimeData = QtCore.QMimeData()
             mimeData.setData("application/x-stxmscan", itemData)
             mimeData.setText(obj.info_jstr)

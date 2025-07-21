@@ -16,7 +16,7 @@ from PyQt5 import uic
 
 import copy
 import qwt as Qwt
-
+import simplejson as json
 import numpy as np
 
 from cls.types.stxmTypes import SPEC_ROI_PREFIX
@@ -749,7 +749,24 @@ class ImageWidgetPlot(PlotDialog):
         if self.drop_enabled:
             # import simplejson as json
             mimeData = event.mimeData()
-            if mimeData.hasImage():
+
+            if mimeData.hasFormat("application/x-stxmscan"):
+                itemData = mimeData.data("application/x-stxmscan")
+                # --- Test: serialize and immediately deserialize to check correctness ---
+                test_stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
+                test_info_jstr = QtCore.QByteArray()
+                test_data_bytes = QtCore.QByteArray()
+                test_pos = QtCore.QPointF()
+                test_stream >> test_info_jstr >> test_data_bytes >> test_pos
+                import numpy as np
+                test_info_str = bytes(test_info_jstr).decode()
+                info_dct = json.loads(test_info_str)
+                data_shape = info_dct['npoints']
+                test_data_arr = np.frombuffer(bytes(test_data_bytes), dtype=np.float64).reshape(data_shape)
+                print("Test info_jstr:", test_info_str)
+                print("Test data shape:", test_data_arr.shape, "dtype:", test_data_arr.dtype)
+
+            elif mimeData.hasImage():
                 # self.setPixmap(QtGui.QPixmap(mimeData.imageData()))
                 # print 'dropEvent: mime data has an IMAGE'
                 pass
@@ -809,7 +826,24 @@ class ImageWidgetPlot(PlotDialog):
                 elif format == "text/uri-list":
                     text = " ".join([url.toString() for url in mimeData.urls()])
                 elif format == 'application/x-stxmscan':
+                    itemData = mimeData.data("application/x-stxmscan")
                     text = mimeData.text()
+                    test_stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
+                    test_info_jstr = QtCore.QByteArray()
+                    test_data_bytes = QtCore.QByteArray()
+                    test_pos = QtCore.QPointF()
+                    test_stream >> test_info_jstr >> test_data_bytes >> test_pos
+                    # import numpy as np
+                    test_info_str = bytes(test_info_jstr).decode()
+                    info_dct = json.loads(test_info_str)
+                    shape = info_dct['npoints']
+                    data = np.frombuffer(bytes(test_data_bytes), dtype=np.float64).reshape(shape)
+                    # print("Test info_jstr:", test_info_str)
+                    # print("Test data shape:", data.shape, "dtype:", data.dtype)
+                    # self.load_dropped_data(info_dct, test_data_arr)
+                    img_idx = f"_dropped_{info_dct['file']}"
+                    self.load_file_data(info_dct['file'], data, img_idx=img_idx)
+                    # def load_file_data(self, fileName, data, img_idx)
                 else:
                     # text = " ".join(["%02X" % ord(datum)
                     #                 for datum in mimeData.data(format)])
@@ -4187,6 +4221,7 @@ class ImageWidgetPlot(PlotDialog):
             #     rect = parms["RECT"]
             #     self.set_image_parameters(det_nm, rect[0], rect[1], rect[2], rect[3])
 
+
     def get_image_item(self, item_name=''):
         '''
         based on the name of the image item search list of current plot items and return it if it exists
@@ -4622,7 +4657,7 @@ class ImageWidgetPlot(PlotDialog):
         """
         return(list(self.data.keys()))
 
-    def load_file_data(self, fileName, data, img_idx):
+    def load_file_data(self, filename, data, img_idx):
         """
         load_file_data(): description
 
@@ -4631,16 +4666,26 @@ class ImageWidgetPlot(PlotDialog):
 
         :param data: data description
         :type data: data type
-
+{"file": "/tmp/2025-07-21/discard/Sample_Image_2025-07-21_004.hdf5", "scan_type_num": 6, "scan_type": "sample_image Point_by_Point", "stxm_scan_type": "sample image", "energy": [650.0], "estart": 650.0, "estop": 650.0, "e_npnts": 1, "polarization": "CircLeft", "offset": 0.0, "angle": 0.0, "dwell": 1000.0, "npoints": [150, 150], "date": "2025-07-21", "start_time": "09:43:29-06:00", "end_time": "09:44:50-06:00", "center": [0.0, 0.0], "range": [49.666666666666664, 49.666666666666664], "step": [0.33333333333333215, 0.33333333333333215], "start": [-24.833333333333332, -24.833333333333332], "stop": [24.833333333333332, 24.833333333333332], "xpositioner": "DNM_SAMPLE_X", "ypositioner": "DNM_SAMPLE_Y"}
         :returns: None
         """
-        self.fileName = fileName
-        self.data[img_idx] = data
+        self.filename = filename
+        rows, columns = data.shape
+        if img_idx not in list(self.data.keys()):
+            image_type = 0
+            #self.initData(filename, image_type, rows, columns)
+            self.init_image_items([img_idx], image_type, rows, columns)
+            item = self.get_image_item(img_idx)
+            item.data = data
+        else:
+            self.data[img_idx] = data
         # self.show_data(self.data)
         if self.filtVal > 0:
             self.apply_filter(self.filtVal)
         else:
             self.show_data(img_idx)
+
+        self.apply_auto_contrast(img_idx)
 
     def set_data(self, item_name, data):
         """
@@ -5901,8 +5946,7 @@ class ImageWidgetPlot(PlotDialog):
         """
         a function for opening/loading files
         fnames = lisdt of file names including full path
-        scan_type=None,
-        addimages= allow the addition of other images to plot
+        addimages= allodropw the addition of other images to plot
         rotatable=False,
         flipud= boolean to flip the data up and down
         dropped=boolean to indicate the is a dropped file
@@ -6304,6 +6348,157 @@ class ImageWidgetPlot(PlotDialog):
             _logger.error("Problem with file [%s]" % fname)
             return
 
+        plot = self.get_plot()
+        plot.setFocus()
+        if wdg_com is not None:
+            sp_db = get_first_sp_db_from_wdg_com(wdg_com)
+            if sp_db == {}:
+                sp_db = wdg_com
+            # only display first energy [0]
+            data = data.astype(np.float64)
+
+            #data[data == 0.0] = np.nan
+            # If a value == INIT values then set them to be nan so that they are not legit data
+            data[data == DEFAULT_IMG_INIT_VAL] = np.nan
+
+            self.data[img_idx] = data
+            if self.data[img_idx].ndim == 3:
+                self.data[img_idx] = self.data[img_idx][0]
+            if flipud:
+                _data = np.flipud(self.data[img_idx])
+            else:
+                _data = self.data[img_idx]
+
+            self.data[img_idx] = _data
+            _logger.info(
+                "[%s] scan loaded" % dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
+            )
+
+        self.image_type = dct_get(sp_db, SPDB_PLOT_IMAGE_TYPE)
+        # if it == a focus image I dont want any of the tools screweing up the
+        # scan params so disable them
+        # if the image was dropped do NOT do anything with the tools
+        if not dropped:
+            if self.image_type in [types.image_types.FOCUS, types.image_types.OSAFOCUS]:
+                self.enable_tools_by_spatial_type(None)
+            else:
+                self.enable_tools_by_spatial_type(dct_get(sp_db, SPDB_PLOT_SHAPE_TYPE))
+
+        dct_put(sp_db, SPDB_PLOT_IMAGE_TYPE, self.image_type)
+        if name_lbl:
+            _title = str(fname)
+            self.setWindowTitle(_title)
+            plot.set_title("%s%s" % (fprefix, fsuffix))
+        else:
+            _title = str(img_idx)
+
+        self.htSc = 1
+        self.widthSc = 1
+
+        if len(self.data) > 0:
+            shape = self.data[img_idx].shape
+            if len(shape) == 3:
+                e, self.dataHeight, self.dataWidth = self.data[img_idx].shape
+                self.data[img_idx] = self.data[img_idx][0]
+            elif len(shape) == 2:
+                self.dataHeight, self.dataWidth = self.data[img_idx].shape
+            else:
+                _logger.error("Not sure what kind of shape this is")
+                return
+
+            self.wPtr = 0
+            self.hPtr = 0
+            # if((not addimages) or (self.items[img_idx] == None)):
+            #if (not addimages) or (img_idx not in self.items.keys()): # this breaks dropping a new image onto a viewer
+            if not addimages:
+                self.delImagePlotItems()
+                self.items[img_idx] = make.image(
+                    self.data[img_idx],
+                    interpolation="nearest",
+                    colormap="gist_gray",
+                    title=_title,
+                )
+                plot = self.get_plot()
+                plot.add_item(self.items[img_idx], z=0)
+
+            elif img_idx not in self.items:
+                self.items[img_idx] = make.image(
+                    self.data[img_idx],
+                    interpolation="nearest",
+                    colormap="gist_gray",
+                    title=_title,
+                )
+                items = self.plot.get_items(item_type=ICSImageItemType)
+                plot.add_item(self.items[img_idx], z=len(items) + 1 if item_z is None else item_z)
+
+            (x1, y1, x2, y2) = dct_get(sp_db, SPDB_RECT)
+            # self.set_image_parameters(img_idx, self.items, x1, y1, x2, y2)
+            self.set_image_parameters(img_idx, x1, y1, x2, y2)
+
+            if show:
+                self.show_data(img_idx, True)
+                self.set_autoscale()
+
+            dct_put(sp_db, SPDB_PLOT_KEY_PRESSED, self.inputState.keyisPressed)
+
+            # wdg_com = dct_get(sp_db, ADO_CFG_WDG_COM)
+            wdg_com[WDGCOM_CMND] = widget_com_cmnd_types.LOAD_SCAN
+            sp_db[WDGCOM_CMND] = widget_com_cmnd_types.LOAD_SCAN
+
+            if (
+                dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE)
+                != types.scan_types.SAMPLE_POINT_SPECTRUM
+            ):
+                # self.on_set_aspect_ratio(True)
+                pass
+
+            if dropped:
+                # enable signal emission earlier such that we
+                # can update the scan param widgets.
+                self.blockSignals(False)
+
+            self.scan_loaded.emit(wdg_com)
+
+            if self.show_image_params:
+                self.display_image_params(fprefix, sp_db)
+            else:
+                self.report_image_params(fprefix, sp_db, img_idx=img_idx)
+
+    def load_dropped_data(
+        self,
+        fname,
+        data,
+        addimages=False,
+        flipud=False,
+        name_lbl=True,
+        item_z=None,
+        show=True,
+        dropped=True,
+        stack_index=0,
+    ):
+        """
+        load_dropped_data(): This function is used to load data that has been dropped onto the plot widget. It was
+        added to support data being remotely located on the DCS server, so no physical file access is available
+
+        :param fname: fname description
+        :type fname: fname type
+
+        :param addimages=False: addimages=False description
+        :type addimages=False: addimages=False type
+
+        :returns: None
+        """
+        # # default to img_idx = 0
+        # #img_idx = 0
+        # fname = str(fname)
+        # data_dir, fprefix, fsuffix = get_file_path_as_parts(fname)
+        # # img_idx needs to be unique if user is going to load multiple images.
+        # # append the stack number to avoid overwriting.
+        # img_idx = f"{fprefix}_{stack_index}"
+        # if data_dir is None:
+        #     _logger.error("Problem with file [%s]" % fname)
+        #     return
+        #
         plot = self.get_plot()
         plot.setFocus()
         if wdg_com is not None:

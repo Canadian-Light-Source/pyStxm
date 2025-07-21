@@ -29,7 +29,7 @@ from cls.applications.pyStxm.widgets.print_stxm_thumbnail import (
 from cls.utils.log import get_module_logger, log_to_qt
 
 import cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils as utils
-from cls.applications.pyStxm.widgets.dict_based_contact_sheet.build_tooltip_info import my_build_image_params
+from cls.applications.pyStxm.widgets.dict_based_contact_sheet.build_tooltip_info import dict_based_build_image_params
 
 _logger = get_module_logger(__name__)
 
@@ -421,7 +421,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             print("get_generic_scan_pic: x_axis_name not in self.sp_db_dct.keys()")
             return
         xdata = self.sp_db_dct[x_axis_name]
-        ydatas = self.counter_data
+        ydatas = self.counter_data.flatten()
 
         if len(xdata) <= 1:
             pmap = QtGui.QPixmap()
@@ -440,8 +440,6 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
                 pmap = qt_mpl.get_pixmap(as_grayscale=True, as_thumbnail=True)
             else:
                 # return a higher res pixmap for eventual printing
-                # qt_mpl = OneD_MPLCanvas(xdata, ydatas, width=2, height=1.65, dpi=2000, axes_bgrnd_color='#FFFFFF')
-                # qt_mpl = OneD_MPLCanvas(xdata, ydatas, width=1.5, height=0.68, dpi=1000, axes_bgrnd_color='#FFFFFF')
                 qt_mpl = OneD_MPLCanvas(
                     xdata,
                     ydatas,

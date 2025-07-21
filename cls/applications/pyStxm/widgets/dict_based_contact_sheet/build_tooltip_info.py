@@ -10,7 +10,7 @@ from cls.types.stxmTypes import scan_types, scan_sub_types, image_type_scans, sp
 from cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils import get_first_sp_db_from_entry, format_info_text, extract_date_time_from_nx_time
 
 
-def my_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol_idx=0,stack_idx=None):
+def dict_based_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol_idx=0, stack_idx=None):
     """
     Generate an HTML tooltip string from sp_db_dict data
 
@@ -125,22 +125,7 @@ def my_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol_idx=0,s
         dct["offset"] = sp_db[EV_ROIS][ev_idx][POL_ROIS][pol_idx][OFF]
         dct["angle"] = sp_db[EV_ROIS][ev_idx][POL_ROIS][pol_idx][ANGLE]
         dct["dwell"] = sp_db[EV_ROIS][ev_idx][DWELL] * 1000.0
-        # dct['npoints'] = (width, height)
-        dct["npoints"] = (
-            dct_get(sp_db, SPDB_XNPOINTS),
-            dct_get(sp_db, SPDB_YNPOINTS),
-        )
-        # if width != dct_get(sp_db, SPDB_XNPOINTS):
-        #     print(
-        #         "[%s] The data doesnt match the scan params for X npoints" % fpath
-        #     )
-        #     width = dct_get(sp_db, SPDB_XNPOINTS)
-        #
-        # if height != dct_get(sp_db, SPDB_YNPOINTS):
-        #     print(
-        #         "[%s] The data doesnt match the scan params for Y npoints" % fpath
-        #     )
-        #     height = dct_get(sp_db, SPDB_YNPOINTS)
+        dct['npoints'] = (width, height)
 
         start_date_str = sp_db[SPDB_ACTIVE_DATA_OBJECT][ADO_START_TIME]
         if isinstance(start_date_str, bytes):
@@ -189,6 +174,8 @@ def my_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol_idx=0,s
             dct["ypositioner"] = zzposner
 
             dct["xpositioner"] = dct_get(sp_db, SPDB_XPOSITIONER)
+
+            dct["e_step"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STEP]
         else:
             dct["center"] = (
                 dct_get(sp_db, SPDB_XCENTER),
@@ -199,6 +186,7 @@ def my_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol_idx=0,s
                 dct_get(sp_db, SPDB_YRANGE),
             )
             dct["step"] = (dct_get(sp_db, SPDB_XSTEP), dct_get(sp_db, SPDB_YSTEP))
+            dct["e_step"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STEP]
             dct["start"] = (
                 dct_get(sp_db, SPDB_XSTART),
                 dct_get(sp_db, SPDB_YSTART),
@@ -244,13 +232,14 @@ def my_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol_idx=0,s
             # s += '%s' % format_info_text('Num Energy Points:', '%d' % dct['e_npnts'])
             # s += '%s' % format_info_text('Energy:', '[%.2f ---> %.2f] eV   %s' % (dct['estart'], dct['estop'],
             #                                    format_info_text('Num Energy Points:', '%d' % dct['e_npnts'])))
-            s += "%s %s" % (
+            s += "%s %s %s" % (
                 format_info_text(
                     "Energy:",
                     "[%.2f ---> %.2f] eV \t" % (dct["estart"], dct["estop"]),
                     newline=False,
                 ),
-                format_info_text("Num Energy Points:", "%d" % dct["e_npnts"]),
+                format_info_text("#eV Points:", "%d" % dct["e_npnts"], newline=False),
+                format_info_text("step:", "%.2f" % dct["e_step"]),
             )
         else:
             s += "%s" % format_info_text("Energy:", "%.2f eV" % (e_pnt))

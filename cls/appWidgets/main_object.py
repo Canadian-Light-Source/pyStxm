@@ -1,3 +1,4 @@
+
 import os.path
 import sys
 from PyQt5 import QtCore, QtWidgets
@@ -101,7 +102,7 @@ class main_object_base(QtCore.QObject):
         self.default_ptycho_cam_nm = None
         self.device_backend = BACKEND #default
         self.zmq_dev_mgr = None
-        self.win_data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
+        self.win_data_dir = self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.linux_data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['linux_data_dir']
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
 
@@ -200,8 +201,12 @@ class main_object_base(QtCore.QObject):
             #now updates teh PRESETS sections
             dct_put(self.main_obj, "PRESETS.OSA_DEFS", self.beamline_cfg_dct['OSA_DEFS'])
             dct_put(self.main_obj, "PRESETS.ZP_DEFS", self.beamline_cfg_dct['ZP_DEFS'])
-        return result
 
+        # request that the DCS sends back the current contents of the data directory
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        self.engine_widget.engine.load_data_directory(data_dir=f'{os.path.join(self.data_dir,current_date)}')
+
+        return result
 
 
     def get_beamline_cfg_preset(self, preset_name: str =None):

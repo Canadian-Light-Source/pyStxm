@@ -1,14 +1,12 @@
 import time
-from queue import Queue
-
-import simplejson as json
 from PyQt5.QtCore import QTimer
+from queue import Queue
+import re
+import simplejson as json
+
 
 from bcm.devices.zmq.base_dcs_server_api import BaseDcsServerApi
 from bcm.devices.zmq.pixelator.gen_scan_req import GenScanRequestClass
-# (gen_base_req_structure, gen_displayed_axis_dicts, gen_regions,
-#                                                     make_base_energy_region, make_point_spatial_region,
-#                                                     gen_point_displayed_axis_dicts)
 from bcm.devices.zmq.pixelator.scan_reqs.req_substitution import do_substitutions
 from bcm.devices.zmq.pixelator.loadfile_reponse import LoadFileResponseClass
 from cls.utils.roi_utils import *
@@ -54,6 +52,35 @@ def gen_non_tiled_map_entry(sdInnerRegionIdx, arr_npoints, npoints_x):
     pixel_row = (starting_pixel_index + 0) // npoints_x
     pixel_col = (starting_pixel_index + 0) % npoints_x
     return {'row': pixel_row, 'col': pixel_col}
+
+
+
+RE_DATA_DIR_PATTERN = r'^\d{4}-\d{2}-\d{2}$'
+
+def gen_loadfile_directory_msg(directory: str, extension: str='.hdf5') -> dict:
+    dct = {"directory":f"{directory}",
+           "showHidden":1,
+           "fileExtension":f"{extension}"
+,   }
+    return dct
+
+
+def gen_loadfile_msg(directory: str, filename: str) -> dict:
+    dct = {
+        "directory": f"{directory}"
+        , "file": os.path.join(directory, filename)
+        , "showHidden": 0
+        , "fileExtension": ".hdf5"
+        , "directories": [
+            ".."
+            , "discard"
+        ]
+        , "files": [
+            filename
+        ]
+        , "pluginNumber": 0
+    }
+    return dct
 
 
 class ScanClass(object):
@@ -883,6 +910,11 @@ class DcsServerApi(BaseDcsServerApi):
             sp_db_dct = parsed_data_dct[ekey]['sp_db_dct']
             self.parent.new_data.emit(parsed_data_dct)
 
+        elif resp[0].find('loadFile directory') > -1:
+            # reply is the contents of the directory
+            dct = json.loads(resp[1])
+            print(f"process_SUB_rcv_messages: loadFile directory: {dct}")
+
     def get_pystxm_standard_scan_type_from_load_file_response_type(self, scan_type_str):
         """
         returns the correct scan_type from enumerated types
@@ -1271,6 +1303,25 @@ class DcsServerApi(BaseDcsServerApi):
         else:
             print(f"pixelator_dcs_server_api:load_file: FAILED: could not load file [{filename}] from directory [{directory}]")
         return
+
+
+    def load_directory(self, directory, extension: str='.hdf5'):
+        """
+        This function calls the DCS server to load a file and then emits the result
+        """
+        dct = gen_loadfile_directory_msg(directory, extension=extension)
+        reply = self.parent.zmq_dev_server_thread.send_receive(['loadFile directory', json.dumps(dct)])
+
+        if reply[0]['status'] == 'ok':
+            # filter out the directories that do not match the date pattern
+            strings = reply[1]['directories']
+            date_strings = [s for s in strings if re.match(RE_DATA_DIR_PATTERN, s)]
+            reply[1]['directories'] = date_strings
+            print(f"pixelator_dcs_server_api:load_directory: success: loaded files from directory [{directory}]")
+        else:
+            print(f"pixelator_dcs_server_api:load_directory: FAILED: could not load files from directory [{directory}]")
+        # only return the list of filenames
+        return reply[1]['files']
 
 
     def send_scan_request(self, wdg_com={}):

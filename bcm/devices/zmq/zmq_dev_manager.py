@@ -232,6 +232,20 @@ class ZMQRunEngine(QObject):
 
         return result, dct
 
+    def load_data_directory(self, data_dir: str=None, *, extension: str='.hdf5') -> None:
+        """
+        This function loads the data directory from the DCS server and updates the remote file system info.
+        It is used to load the data directory from the DCS server.
+        """
+        if data_dir is None:
+            remote_file_system_info = self.remote_file_system_info
+            data_dir = remote_file_system_info['directory']
+        file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+        if isinstance(file_lst, list):
+            for filename in file_lst:
+                fname = os.path.join(data_dir, filename)
+                self.dcs_server_api.load_file(data_dir, fname)
+
     def print_all_devs(self, title: str, devlist: [str]) -> None:
         print(f"{title}:")
         if type(devlist) == list:

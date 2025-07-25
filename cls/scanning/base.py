@@ -236,6 +236,12 @@ class ScanParamWidget(QtWidgets.QFrame):
         self.test_sp_db = None
         self.test_mod = None
         self._selection_is_oversized = False
+        # this is a dctionary that is used to store the last time (epoch delta) the function (name is the dict key)
+        # was called, if the delta is great enough the function will be allowed to execute, this was implemented to
+        # throttle the calls to estimate scan time which could be quite frequent as the call was attached to the scan
+        # fields that are changed by updating plot slection shapes
+        self._last_called_func_dict = {}
+        self.register_function_to_limit_execution_frequency('update_est_time')
 
         self._help_html_fpath = "place path to plugin help html link here"
         self._help_ttip = "[PLACE SCAN NAME HERE] Scan documentation and instructions"
@@ -278,6 +284,15 @@ class ScanParamWidget(QtWidgets.QFrame):
         # self.installEventFilter(_filter)
         self.ensure_defaults_section()
         self.init_plugin()
+
+    def register_function_to_limit_execution_frequency(self, function_name: str):
+        """
+        this is a dctionary that is used to store the last time (epoch delta) the function (name is the dict key)
+        was called, if the delta is great enough the function will be allowed to execute, this was implemented to
+        throttle the calls to estimate scan time which could be quite frequent as the call was attached to the scan
+        fields that are changed by updating plot slection shapes
+        """
+        self._last_called_func_dict[function_name] = 0
 
     def instanciate_scan_class(self, fpath, mod_nm, cls_nm):
         """
@@ -340,6 +355,16 @@ class ScanParamWidget(QtWidgets.QFrame):
 
         to be overridden by inheriting class if need be (doesn't have standard param fields)
         """
+        if 'update_est_time' in self._last_called_func_dict:
+            # check if the function was called recently, if so then return
+            last_called = self._last_called_func_dict['update_est_time']
+            now = time.time()
+            if now - last_called < 0.5:
+                return
+            else:
+                # update the last called time
+                self._last_called_func_dict['update_est_time'] = now
+
         is_multi_region_widget = False
         npoints_ev = 1
         npoints_pol = 1
@@ -370,10 +395,8 @@ class ScanParamWidget(QtWidgets.QFrame):
             npoints_pol = dct['npoints_pol']
             is_multi_region_widget = True
 
-        # ttl_sec = ny * time_per_line
-        #def estimate_scan_time(npoints_x, npoints_y, dwell, npoints_ev=1, npoints_pol=1, is_multi_region_widget=False ):
         self.estimate_scan_time(npoints_x, npoints_y, dwell, npoints_ev, npoints_pol, is_multi_region_widget)
-        # self.new_est_scan_time.emit(ttl_sec)
+
 
     def update_scantime_estimate(self, elapsed_time):
         """
@@ -425,6 +448,7 @@ class ScanParamWidget(QtWidgets.QFrame):
         emits the new_est_scan_time signal with the estimated total number of seconds
 
         """
+        # print("estimate_scan_time")
         scan_name = str(scan_types[self.type])
         # only attempt an estimation if the model has been fitted
         estimated_time_sec = self.scan_time_estimator.estimate_scan_time(scan_name, npoints_x=npoints_x,
@@ -2675,21 +2699,26 @@ class ScanParamWidget(QtWidgets.QFrame):
         gt_roi = dct_get(self.sp_db, SPDB_GT)
         zz_roi = dct_get(self.sp_db, SPDB_ZZ)
 
-        if x_roi[CENTER] is None:
+        #if x_roi[CENTER] is None:
+        if dct_get(x_roi, CENTER) is None:
             if hasattr(self, "centerXFld"):
                 x_roi[CENTER] = float(str(self.centerXFld.text()))
                 on_center_changed(x_roi)
-        if y_roi[CENTER] is None:
+
+        #if y_roi[CENTER] is None:
+        if dct_get(y_roi, CENTER) is None:
             if hasattr(self, "centerYFld"):
                 y_roi[CENTER] = float(str(self.centerYFld.text()))
                 on_center_changed(y_roi)
 
-        if z_roi[CENTER] is None:
+        #if z_roi[CENTER] is None:
+        if dct_get(z_roi, CENTER) is None:
             if hasattr(self, "centerZFld"):
                 z_roi[CENTER] = float(str(self.centerZFld.text()))
                 on_center_changed(z_roi)
 
-        if zz_roi[CENTER] is None:
+        #if zz_roi[CENTER] is None:
+        if dct_get(zz_roi, CENTER) is None:
             if hasattr(self, "centerZPFld"):
                 zz_roi[CENTER] = float(str(self.centerZPFld.text()))
                 on_center_changed(zz_roi)

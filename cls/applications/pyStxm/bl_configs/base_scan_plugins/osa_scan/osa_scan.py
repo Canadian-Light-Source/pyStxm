@@ -46,7 +46,6 @@ from cls.plotWidgets.color_def import (
 from cls.utils.dict_utils import dct_get, dct_put
 from cls.utils.roi_dict_defs import *
 from cls.utils.log import get_module_logger
-
 # from cls.applications.pyStxm.bl_configs.basic.scan_plugins.osa_scan.osa_scan_tester import test_sp_db
 
 _logger = get_module_logger(__name__)

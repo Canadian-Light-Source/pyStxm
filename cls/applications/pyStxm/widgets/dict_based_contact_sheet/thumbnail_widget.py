@@ -185,6 +185,104 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         elif selectedAction == saveTiffAction:
             self.save_tif(self)
 
+    def get_generic_scan_launch_viewer_dct(self):
+        ekey = utils.get_first_entry_key(self.data_dct)
+        entry_dct = self.data_dct[ekey]
+        sp_db = utils.get_first_sp_db_from_entry(entry_dct)
+        xdata = utils.get_axis_setpoints_from_sp_db(sp_db, axis="X")
+        ydatas = utils.get_generic_scan_data_from_entry(entry_dct, counter=None)
+        dct = {}
+        # because the data in the StxmImageWidget is displayed with 0Y at the btm
+        # and maxY at the top I must flip it before sending it
+        # dct['data'] = np.flipud(data)
+        dct["data"] = None
+        dct["xdata"] = xdata
+        dct["ydatas"] = ydatas
+        dct["path"] = self.filename
+        dct["sp_db"] = sp_db
+        dct["scan_type"] = self.scan_type
+        dct['scan_type_str'] = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
+        dct["xlabel"] = dct_get(sp_db, SPDB_XPOSITIONER)
+        dct["ylabel"] = dct_get(sp_db, SPDB_YPOSITIONER)
+        dct["title"] = None
+        if sp_db is not None:
+            dct["title"] = self.filename
+        return dct
+
+    def get_sample_point_spectrum_launch_viewer_dct(self):
+        ydatas = []
+        # it matters that the data is in sequential entry order
+        # ekeys = sorted(self.data_dct['entries'].keys())
+        ekeys = sorted(
+            [k for k, v in self.data_dct.items() if k.find("entry") > -1]
+        )
+        for ekey in ekeys:
+            entry_dct = self.data_dct[ekey]
+            sp_db = utils.get_first_sp_db_from_entry(entry_dct)
+            # ydatas.append(utils.get_point_spec_data_from_entry(entry_dct))
+            _data = np.array(utils.get_point_spec_data_from_entry(entry_dct))
+            ydatas.append(_data.flatten())
+
+        # ekey = utils.get_first_entry_key(self.data_dct)
+        # entry_dct = self.data_dct[ekey]
+        xdata = utils.get_point_spec_energy_data_setpoints_from_entry(entry_dct)
+
+        dct = {}
+        dct["data"] = None
+        dct["xdata"] = xdata
+        dct["ydatas"] = ydatas
+        dct["path"] = self.filepath
+        dct["sp_db"] = sp_db
+        dct["scan_type"] = self.scan_type
+        dct['scan_type_str'] = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
+        dct["xlabel"] = dct_get(sp_db, SPDB_XPOSITIONER)
+        dct["ylabel"] = dct_get(sp_db, SPDB_YPOSITIONER)
+        dct["title"] = None
+        if sp_db is not None:
+            dct["title"] = self.filename
+        return dct
+
+    def get_standard_image_launch_viewer_dct(self):
+        """
+             #SPDB_SCAN_PLUGIN_SECTION_ID = entry_dct['sp_db_dct']['stxm_scan_type']
+        """
+        ekey = utils.get_first_entry_key(self.data_dct)
+        entry_dct = self.data_dct[ekey]
+        sp_db = utils.get_first_sp_db_from_entry(entry_dct)
+        data = self.data
+        stack_index = None
+
+        if self.data.ndim == 2:
+            title = self.filename
+            num_underscores = title.count('_')
+            if "." in title:
+                title = title.split(".")[0]
+
+            if "_" in title and (num_underscores == 1):
+                # found a '_' character indicating its a stack image
+                i = int(title.split("_")[1])
+                stack_index = i
+            else:
+                # its a single image
+                stack_index = 0
+
+        dct = {}
+        # because the data in the StxmImageWidget is displayed with 0Y at the btm
+        # and maxY at the top I must flip it before sending it
+        # dct['data'] = np.flipud(data)
+        dct["data"] = data
+        dct["stack_index"] = stack_index
+        dct["path"] = self.filepath
+        dct["sp_db"] = sp_db
+        dct['scan_type_str'] = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
+        dct["scan_type"] = self.scan_type
+        dct["xlabel"] = dct_get(sp_db, SPDB_XPOSITIONER)
+        dct["ylabel"] = dct_get(sp_db, SPDB_YPOSITIONER)
+        dct["title"] = None
+        if sp_db is not None:
+            dct["title"] = self.filename
+        return dct
+
     def launch_vwr(self, sender):
         """
         launch_vwr(): description
@@ -196,99 +294,15 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         self = sender
         info_dct = json.loads(self.info_jstr)
         if self.scan_type is scan_types.GENERIC_SCAN:
-            ekey = utils.get_first_entry_key(self.data_dct)
-            entry_dct = self.data_dct[ekey]
-            sp_db = utils.get_first_sp_db_from_entry(entry_dct)
-            xdata = utils.get_axis_setpoints_from_sp_db(sp_db, axis="X")
-            ydatas = utils.get_generic_scan_data_from_entry(entry_dct, counter=None)
-            dct = {}
-            # because the data in the StxmImageWidget is displayed with 0Y at the btm
-            # and maxY at the top I must flip it before sending it
-            # dct['data'] = np.flipud(data)
-            dct["data"] = None
-            dct["xdata"] = xdata
-            dct["ydatas"] = ydatas
-            dct["path"] = self.filename
-            dct["sp_db"] = sp_db
-            dct["scan_type"] = self.scan_type
-            dct["xlabel"] = dct_get(sp_db, SPDB_XPOSITIONER)
-            dct["ylabel"] = dct_get(sp_db, SPDB_YPOSITIONER)
-            dct["title"] = None
-            if sp_db is not None:
-                dct["title"] = self.filename
+            dct = self.get_generic_scan_launch_viewer_dct()
             self.launch_viewer.emit(dct)
 
         elif self.scan_type is scan_types.SAMPLE_POINT_SPECTRUM:
-            # ekey = utils.get_first_entry_key(self.data_dct)
-            # entry_dct = self.data_dct[ekey]
-            # xdata = utils.get_point_spec_energy_data_setpoints_from_entry(entry_dct)
-
-            ydatas = []
-            # it matters that the data is in sequential entry order
-            # ekeys = sorted(self.data_dct['entries'].keys())
-            ekeys = sorted(
-                [k for k, v in self.data_dct.items() if k.find("entry") > -1]
-            )
-            for ekey in ekeys:
-                entry_dct = self.data_dct[ekey]
-                sp_db = utils.get_first_sp_db_from_entry(entry_dct)
-                # ydatas.append(utils.get_point_spec_data_from_entry(entry_dct))
-                _data = np.array(utils.get_point_spec_data_from_entry(entry_dct))
-                ydatas.append(_data.flatten())
-
-            # ekey = utils.get_first_entry_key(self.data_dct)
-            # entry_dct = self.data_dct[ekey]
-            xdata = utils.get_point_spec_energy_data_setpoints_from_entry(entry_dct)
-
-            dct = {}
-            dct["data"] = None
-            dct["xdata"] = xdata
-            dct["ydatas"] = ydatas
-            dct["path"] = self.filepath
-            dct["sp_db"] = sp_db
-            dct["scan_type"] = self.scan_type
-            dct["xlabel"] = dct_get(sp_db, SPDB_XPOSITIONER)
-            dct["ylabel"] = dct_get(sp_db, SPDB_YPOSITIONER)
-            dct["title"] = None
-            if sp_db is not None:
-                dct["title"] = self.filename
+            dct = self.get_sample_point_spectrum_launch_viewer_dct()
             self.launch_viewer.emit(dct)
 
         else:
-            ekey = utils.get_first_entry_key(self.data_dct)
-            entry_dct = self.data_dct[ekey]
-            sp_db = utils.get_first_sp_db_from_entry(entry_dct)
-            data = self.data
-            stack_index = None
-
-            if self.data.ndim == 2:
-                title = self.filename
-                num_underscores = title.count('_')
-                if "." in title:
-                    title = title.split(".")[0]
-
-                if "_" in title and (num_underscores == 1):
-                    # found a '_' character indicating its a stack image
-                    i = int(title.split("_")[1])
-                    stack_index = i
-                else:
-                    # its a single image
-                    stack_index = 0
-
-            dct = {}
-            # because the data in the StxmImageWidget is displayed with 0Y at the btm
-            # and maxY at the top I must flip it before sending it
-            # dct['data'] = np.flipud(data)
-            dct["data"] = data
-            dct["stack_index"] = stack_index
-            dct["path"] = self.filepath
-            dct["sp_db"] = sp_db
-            dct["scan_type"] = self.scan_type
-            dct["xlabel"] = dct_get(sp_db, SPDB_XPOSITIONER)
-            dct["ylabel"] = dct_get(sp_db, SPDB_YPOSITIONER)
-            dct["title"] = None
-            if sp_db is not None:
-                dct["title"] = self.filename
+            dct = self.get_standard_image_launch_viewer_dct()
             self.launch_viewer.emit(dct)
 
     def print_it(self, sender):
@@ -457,68 +471,6 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             )
         self.pixmap = pmap
         return pmap
-
-
-    # def get_2dimage_pic(self, scale_it=True):
-    #     """Create a pixmap from the counter data"""
-    #     if self.counter_data.size > 0:
-    #         # Normalize data to 0-255
-    #         data_min = self.counter_data.min()
-    #         data_max = self.counter_data.max()
-    #         if data_max > data_min:
-    #             normalized = ((self.counter_data - data_min) / (data_max - data_min) * 255).astype(np.uint8)
-    #         else:
-    #             normalized = np.zeros_like(self.counter_data, dtype=np.uint8)
-    #
-    #         # Create QImage
-    #         height, width = normalized.shape
-    #         image = QtGui.QImage(normalized.data, width, height, width, QtGui.QImage.Format_Indexed8)
-    #         image.setColorTable(utils.COLORTABLE)
-    #
-    #         # Convert to pixmap and scale to fill most of the widget
-    #         # Minimal space for text: 2px margins + 12px per text line + spacing
-    #         text_height = 12
-    #         spacing = 2
-    #         # total_text_space = (spacing * 3) + (text_height * 2)  # ~30px total
-    #         total_text_space = (spacing * 3) + (text_height)  # ~30px total
-    #
-    #         pixmap_width = utils.THUMB_WIDTH - 4  # 2px margins on each side
-    #         pixmap_height = utils.THUMB_HEIGHT - total_text_space
-    #
-    #         pmap = QtGui.QPixmap.fromImage(image)
-    #
-    #         if scale_it:
-    #             # pmap = pmap.scaled(QtCore.QSize(QtCore.QSize(THMB_SIZE, THMB_SIZE)),  QtCore.Qt.KeepAspectRatio)
-    #             # pmap = pmap.scaled(
-    #             #     QtCore.QSize(QtCore.QSize(THMB_SIZE, THMB_SIZE)),
-    #             #     QtCore.Qt.IgnoreAspectRatio,
-    #             # )
-    #             pmap = pmap.scaled(
-    #                 int(pixmap_width),
-    #                 int(pixmap_height),
-    #                 QtCore.Qt.KeepAspectRatio,
-    #                 QtCore.Qt.FastTransformation
-    #             )
-    #         else:
-    #             ht, wd = self.data.shape
-    #             # pmap.scaled(QtCore.QSize(QtCore.QSize(wd, ht)), QtCore.Qt.KeepAspectRatio)
-    #             pmap.scaled(QtCore.QSize(QtCore.QSize(wd, ht)), QtCore.Qt.IgnoreAspectRatio)
-    #
-    #
-    #
-    #
-    #     else:
-    #         # Create empty pixmap that fills most of the widget
-    #         text_height = 12
-    #         spacing = 2
-    #         total_text_space = (spacing * 3) + (text_height * 2)
-    #
-    #         pixmap_width = utils.THUMB_WIDTH
-    #         pixmap_height = utils.THUMB_HEIGHT - total_text_space
-    #         pmap = QtGui.QPixmap(pixmap_width, pixmap_height)
-    #         pmap.fill(QtCore.Qt.lightGray)
-    #     self.pixmap = pmap
-    #     return pmap
 
     def get_2dimage_pic(self, scale_it=True, as_thumbnail=True):
         """

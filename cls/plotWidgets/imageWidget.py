@@ -19,7 +19,8 @@ import qwt as Qwt
 import simplejson as json
 import numpy as np
 
-from cls.types.stxmTypes import SPEC_ROI_PREFIX
+from cls.utils.roi_utils import make_base_wdg_com, widget_com_cmnd_types
+from cls.types.stxmTypes import SPEC_ROI_PREFIX, scan_types
 from plotpy.plot import PlotOptions
 from plotpy.mathutils.colormap import get_cmap, register_extra_colormap
 from plotpy.plot import  PlotDialog
@@ -568,7 +569,6 @@ class ImageWidgetPlot(PlotDialog):
         self.plot.SIG_PLOT_AXIS_CHANGED.connect(self.on_sig_plot_axis_changed)
         self.plot.SIG_AXES_CHANGED.connect(self.on_sig_axes_changed)
 
-        self.dropped.connect(self.on_drop)
         # force the plot axis to make vertical 0 at the bottom instead of the
         # default of top
         self.plot.set_axis_direction("left", False)
@@ -751,20 +751,76 @@ class ImageWidgetPlot(PlotDialog):
             mimeData = event.mimeData()
 
             if mimeData.hasFormat("application/x-stxmscan"):
-                itemData = mimeData.data("application/x-stxmscan")
-                # --- Test: serialize and immediately deserialize to check correctness ---
-                test_stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
-                test_info_jstr = QtCore.QByteArray()
-                test_data_bytes = QtCore.QByteArray()
-                test_pos = QtCore.QPointF()
-                test_stream >> test_info_jstr >> test_data_bytes >> test_pos
-                import numpy as np
-                test_info_str = bytes(test_info_jstr).decode()
-                info_dct = json.loads(test_info_str)
-                data_shape = info_dct['npoints']
-                test_data_arr = np.frombuffer(bytes(test_data_bytes), dtype=np.float64).reshape(data_shape)
-                print("Test info_jstr:", test_info_str)
-                print("Test data shape:", test_data_arr.shape, "dtype:", test_data_arr.dtype)
+                if mimeData == None:
+                    return
+
+                for format in mimeData.formats():
+                    formatItem = QtWidgets.QTableWidgetItem(format)
+                    formatItem.setFlags(QtCore.Qt.ItemIsEnabled)
+                    formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+
+                    if format == "text/plain":
+                        text = mimeData.text()  # .strip()
+                    elif format == "text/html":
+                        text = mimeData.html()  # .strip()
+                    elif format == "text/uri-list":
+                        text = " ".join([url.toString() for url in mimeData.urls()])
+                    elif format == 'application/x-stxmscan':
+                        itemData = mimeData.data("application/x-stxmscan")
+                        # text = mimeData.text()
+                        _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
+                        _info_jstr = QtCore.QByteArray()
+                        _data_bytes = QtCore.QByteArray()
+                        _pos = QtCore.QPointF()
+                        _stream >> _info_jstr >> _data_bytes >> _pos
+                        _info_str = bytes(_info_jstr).decode()
+                        dct = json.loads(_info_str)
+
+                        fname = dct["path"]
+                        data = np.array(dct["data"])
+                        sp_db = dct["sp_db"]
+                        title = dct["title"]
+                        xlabel = dct.get("xlabel") or "X"
+                        ylabel = dct.get("ylabel") or "Y"
+
+                        wdg_com = make_base_wdg_com()
+                        dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+                        dct_put(wdg_com, SPDB_SPATIAL_ROIS, {sp_db[ID_VAL]: sp_db})
+
+                        if dct["scan_type"] is scan_types.SAMPLE_LINE_SPECTRUM:
+                            # sample line spec data may have different ev region resolutions so its special
+                            # wdg_com = make_base_wdg_com()
+                            # # wdg_com = sp_db
+                            # dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+                            # dct_put(wdg_com, SPDB_SPATIAL_ROIS, {sp_db[ID_VAL]: sp_db})
+                            # self.do_load_linespec_file(
+                            #     fname, wdg_com, data, dropped=False
+                            # )
+                            self.setPlotAxisStrs(ylabel, xlabel)
+                            # self.show()
+                            self.set_autoscale(fill_plot_window=True)
+                            # self.raise_()
+                            if title is not None:
+                                self.plot.set_title(title)
+                            else:
+                                self.plot.set_title(f"{fprefix}{fsuffix}")
+
+                        else:
+                            data_dir, fprefix, fsuffix = get_file_path_as_parts(fname)
+                            rect = dct_get(sp_db, SPDB_RECT)
+                            self.load_image_data(
+                                fname,
+                                wdg_com,
+                                data,
+                                addimages=False,
+                                flipud=False,
+                                name_lbl=True,
+                                item_z=None,
+                                show=True,
+                                dropped=True,
+                                stack_index=0)
+
+                            self.setPlotAxisStrs(ylabel, xlabel)
 
             elif mimeData.hasImage():
                 # self.setPixmap(QtGui.QPixmap(mimeData.imageData()))
@@ -805,67 +861,6 @@ class ImageWidgetPlot(PlotDialog):
     def dragLeaveEvent(self, event):
         if self.drop_enabled:
             event.accept()
-
-    @exception
-    def on_drop(self, mimeData=None):
-        # self.formatsTable.setRowCount(0)
-
-        if self.drop_enabled:
-            if mimeData == None:
-                return
-
-            for format in mimeData.formats():
-                formatItem = QtWidgets.QTableWidgetItem(format)
-                formatItem.setFlags(QtCore.Qt.ItemIsEnabled)
-                formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
-
-                if format == "text/plain":
-                    text = mimeData.text()  # .strip()
-                elif format == "text/html":
-                    text = mimeData.html()  # .strip()
-                elif format == "text/uri-list":
-                    text = " ".join([url.toString() for url in mimeData.urls()])
-                elif format == 'application/x-stxmscan':
-                    itemData = mimeData.data("application/x-stxmscan")
-                    text = mimeData.text()
-                    test_stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
-                    test_info_jstr = QtCore.QByteArray()
-                    test_data_bytes = QtCore.QByteArray()
-                    test_pos = QtCore.QPointF()
-                    test_stream >> test_info_jstr >> test_data_bytes >> test_pos
-                    # import numpy as np
-                    test_info_str = bytes(test_info_jstr).decode()
-                    info_dct = json.loads(test_info_str)
-                    shape = info_dct['npoints']
-                    data = np.frombuffer(bytes(test_data_bytes), dtype=np.float64).reshape(shape)
-                    # print("Test info_jstr:", test_info_str)
-                    # print("Test data shape:", data.shape, "dtype:", data.dtype)
-                    # self.load_dropped_data(info_dct, test_data_arr)
-                    img_idx = f"_dropped_{info_dct['file']}"
-                    self.load_file_data(info_dct['file'], data, img_idx=img_idx)
-                    # def load_file_data(self, fileName, data, img_idx)
-                else:
-                    # text = " ".join(["%02X" % ord(datum)
-                    #                 for datum in mimeData.data(format)])
-                    # text = " ".join(["%02X" % ord(datum) for datum in str(mimeData.data(format))])
-                    if str(mimeData.data(format)).find("8f") > -1:
-                        text = " ".join(
-                            [
-                                "%02X" % ord(datum)
-                                for datum in str(mimeData.data(format))
-                            ]
-                        )
-                    else:
-                        text = " ".join(
-                            [
-                                "%02X" % ord(datum)
-                                for datum in str(
-                                    mimeData.data(format), encoding="cp1252"
-                                )
-                            ])
-
-                    # print(" ".join(["%02X" % ord(datum) for datum in str(mimeData.data(format), encoding='cp1252')]))
-                    # text = " ".join(["%02X" % ord(datum) for datum in str(mimeData.data(format), encoding='cp1252')])
 
     def on_sig_axes_changed(self, obj):
         """
@@ -4657,7 +4652,7 @@ class ImageWidgetPlot(PlotDialog):
         """
         return(list(self.data.keys()))
 
-    def load_file_data(self, filename, data, img_idx):
+    def load_file_data(self, info_dct, data, img_idx):
         """
         load_file_data(): description
 
@@ -4666,10 +4661,9 @@ class ImageWidgetPlot(PlotDialog):
 
         :param data: data description
         :type data: data type
-{"file": "/tmp/2025-07-21/discard/Sample_Image_2025-07-21_004.hdf5", "scan_type_num": 6, "scan_type": "sample_image Point_by_Point", "stxm_scan_type": "sample image", "energy": [650.0], "estart": 650.0, "estop": 650.0, "e_npnts": 1, "polarization": "CircLeft", "offset": 0.0, "angle": 0.0, "dwell": 1000.0, "npoints": [150, 150], "date": "2025-07-21", "start_time": "09:43:29-06:00", "end_time": "09:44:50-06:00", "center": [0.0, 0.0], "range": [49.666666666666664, 49.666666666666664], "step": [0.33333333333333215, 0.33333333333333215], "start": [-24.833333333333332, -24.833333333333332], "stop": [24.833333333333332, 24.833333333333332], "xpositioner": "DNM_SAMPLE_X", "ypositioner": "DNM_SAMPLE_Y"}
         :returns: None
         """
-        self.filename = filename
+        self.filename = info_dct['file']
         rows, columns = data.shape
         if img_idx not in list(self.data.keys()):
             image_type = 0
@@ -4685,7 +4679,23 @@ class ImageWidgetPlot(PlotDialog):
         else:
             self.show_data(img_idx)
 
+        if info_dct['scan_type_num'] in [scan_types.SAMPLE_LINE_SPECTRUM, scan_types.SAMPLE_POINT_SPECTRUM]:
+            # this == a spectra scan so set the image parameters
+            xmin = info_dct['estart']
+            xmax = info_dct['estop']
+            ymin = info_dct['start'][1]
+            ymax = info_dct['stop'][1]
+
+        else:
+            # this == a spectra scan so set the image parameters
+            xmin = info_dct['start'][0]
+            ymin = info_dct['start'][1]
+            xmax = info_dct['stop'][0]
+            ymax = info_dct['stop'][1]
+
+        self.set_image_parameters(img_idx, xmin, ymin, xmax, ymax)
         self.apply_auto_contrast(img_idx)
+        self.set_autoscale()
 
     def set_data(self, item_name, data):
         """

@@ -1,9 +1,11 @@
 from PyQt5 import QtCore, QtWidgets
+import simplejson as json
 
 from cls.types.stxmTypes import spectra_type_scans, scan_types
 from cls.utils.log import get_module_logger
 from cls.utils.fileUtils import get_file_path_as_parts
 from cls.utils.dict_utils import dct_get, dct_put
+from cls.utils.json_threadsave import NumpyAwareJSONEncoder
 from cls.utils.roi_dict_defs import *
 from cls.stylesheets import master_colors
 from cls.utils.roi_utils import make_base_wdg_com, widget_com_cmnd_types
@@ -29,6 +31,8 @@ from cls.data_io.nxstxm_h5_to_dict import load_h5_file_to_dict
 _logger = get_module_logger(__name__)
 
 class ContactSheet(QtWidgets.QWidget):
+    reload_dir = QtCore.pyqtSignal(str)
+
     def __init__(self, data_dir=None, data_io=None, parent=None):
         super(ContactSheet, self).__init__(parent)
 
@@ -166,12 +170,10 @@ class ContactSheet(QtWidgets.QWidget):
         """
         signal handler for when the refresh button is clicked.
         """
-        data_dir = '/tmp/2025-07-17'
-        files = os.listdir(data_dir)
-        fpaths = []
-        for fname in files:
-            fpaths.append(os.path.join(data_dir, fname))
-        self.create_thumbnails_from_filelist(fpaths)
+        # Clear the images scene
+        self.images_scene.clear()
+        self.spectra_scene.clear()
+        self.reload_dir.emit(self.data_dir) #zmq_reload_data_directory(self, data_dir:
 
 
     def create_thumbnails_from_filelist(self, files: [str]) -> None:
@@ -338,12 +340,22 @@ class ContactSheet(QtWidgets.QWidget):
         event.accept()
 
         if self.get_drag_enabled():
+            if obj.scan_type is scan_types.GENERIC_SCAN:
+                dct = obj.get_generic_scan_launch_viewer_dct()
+            elif obj.scan_type is scan_types.SAMPLE_POINT_SPECTRUM:
+                dct = obj.get_sample_point_spectrum_launch_viewer_dct()
+            else:
+                dct = obj.get_standard_image_launch_viewer_dct()
+
+
+            jstr = json.dumps(dct, cls=NumpyAwareJSONEncoder)
+
             itemData = QtCore.QByteArray()
             dataStream = QtCore.QDataStream(itemData, QtCore.QIODevice.WriteOnly)
             # dataStream << QtCore.QByteArray(obj.info_jstr) << (event.pos() - obj.rect().topLeft())
             (
                 dataStream
-                << QtCore.QByteArray(bytearray(obj.info_jstr.encode()))
+                << QtCore.QByteArray(bytearray(jstr.encode()))
                 << QtCore.QByteArray(obj.data.tobytes())
                 << (event.pos() - obj.rect().topLeft())
             )

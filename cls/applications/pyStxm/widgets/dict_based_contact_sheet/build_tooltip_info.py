@@ -175,7 +175,7 @@ def dict_based_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol
 
             dct["xpositioner"] = dct_get(sp_db, SPDB_XPOSITIONER)
 
-            dct["e_step"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STEP]
+            dct["estop"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STOP]
         else:
             dct["center"] = (
                 dct_get(sp_db, SPDB_XCENTER),
@@ -186,7 +186,7 @@ def dict_based_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol
                 dct_get(sp_db, SPDB_YRANGE),
             )
             dct["step"] = (dct_get(sp_db, SPDB_XSTEP), dct_get(sp_db, SPDB_YSTEP))
-            dct["e_step"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STEP]
+            dct["estop"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STOP]
             dct["start"] = (
                 dct_get(sp_db, SPDB_XSTART),
                 dct_get(sp_db, SPDB_YSTART),
@@ -239,7 +239,7 @@ def dict_based_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol
                     newline=False,
                 ),
                 format_info_text("#eV Points:", "%d" % dct["e_npnts"], newline=False),
-                format_info_text("step:", "%.2f" % dct["e_step"]),
+                format_info_text("step:", "%.2f" % dct["estop"]),
             )
         else:
             s += "%s" % format_info_text("Energy:", "%.2f eV" % (e_pnt))

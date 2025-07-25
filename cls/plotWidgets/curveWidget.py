@@ -31,28 +31,10 @@ wireCurveWidget provides <WHAT DOES THIS PROVIDE?>, classes for <WHAT?>.
 # put builtin imports here
 import os
 import sys
-
-__author__ = "bergr"
-__copyright__ = "Copyright 2011, The Canadian Lightsource"
-__credits__ = ["bergr", "?"]
-__license__ = "GPL"
-__version__ = "1.0.0"
-__maintainer__ = "bergr"
-__email__ = "russ.berg@lightsource.ca"
-__status__ = "Development"
-
-# put 3rd party imports here
-# -*- coding:utf-8 -*-
-"""
-Created on 2011-03-09
-
-@author: bergr
-This widget is used to either import .dat files created by the data acquisition
-library or to simply connect the plot to a PV and plot the changing value, the
-test() function shows how to use the widget
-"""
 import numpy as np
 import qwt as Qwt
+import simplejson as json
+
 from plotpy.builder import make
 from plotpy.config import _
 from plotpy.items.curve import CurveItem
@@ -508,7 +490,7 @@ class CurveViewerWidget(PlotDialog):
 
         self.plot.SIG_ITEMS_CHANGED.connect(self.items_changed)
         # self.connect(self.plot, SIG_RANGE_CHANGED, self.range_changed)
-        self.dropped.connect(self.updateFormatsTable)
+        self.dropped.connect(self.on_drop)
 
         self.curve_objs = {}
 
@@ -563,47 +545,48 @@ class CurveViewerWidget(PlotDialog):
         if self.drop_enabled:
             event.acceptProposedAction()
 
-    def dropEvent(self, event):
-        if self.drop_enabled:
-            # import simplejson as json
-            mimeData = event.mimeData()
-            if mimeData.hasImage():
-                # self.setPixmap(QtGui.QPixmap(mimeData.imageData()))
-                # print 'dropEvent: mime data has an IMAGE'
-                pass
-            elif mimeData.hasHtml():
-                # self.setText(mimeData.html())
-                # self.setTextFormat(QtCore.Qt.RichText)
-                # print 'dropEvent: mime data has HTML'
-                pass
-            elif mimeData.hasText():
-                # self.setText(mimeData.text())
-                # self.setTextFormat(QtCore.Qt.PlainText)
-                # print 'dropEvent: mime data has an TEXT = \n[%s]' %
-                # mimeData.text()
-                dct = mime_to_dct(mimeData)
-                # print 'dropped file is : %s' % dct['file']
-                self.blockSignals(True)
-
-                self.openfile(dct["file"], scan_type=dct["scan_type_num"])
-                self.blockSignals(False)
-            elif mimeData.hasUrls():
-                # self.setText("\n".join([url.path() for url in mimeData.urls()])){"polarity": "CircLeft", "angle": 0.0, "center": [-419.172, 5624.301], "energy": 1029.0, "step": [110.86591666666668, 114.90791666666667], "scan_type": "coarse_image Line_Unidir", "range": [2660.782, 2757.79], "file": "S:\\STXM-data\\Cryo-STXM\\2017\\guest\\1207\\C171207014.hdf5", "offset": 0.0, "npoints": [25, 25], "dwell": 30.408937142857148, "scan_panel_idx": 8}
-                # print 'dropEvent: mime data has URLs'
-                pass
-            else:
-                # self.setText("Cannot display data")
-                # print 'dropEvent: mime data Cannot display data'
-                pass
-
-            # self.setBackgroundRole(QtGui.QPalette.Dark)
-            event.acceptProposedAction()
+    # def dropEvent(self, event):
+    #     if self.drop_enabled:
+    #         # import simplejson as json
+    #         mimeData = event.mimeData()
+    #         if mimeData.hasImage():
+    #             # self.setPixmap(QtGui.QPixmap(mimeData.imageData()))
+    #             # print 'dropEvent: mime data has an IMAGE'
+    #             pass
+    #         elif mimeData.hasHtml():
+    #             # self.setText(mimeData.html())
+    #             # self.setTextFormat(QtCore.Qt.RichText)
+    #             # print 'dropEvent: mime data has HTML'
+    #             pass
+    #         elif mimeData.hasText():
+    #             pass
+    #             # # self.setText(mimeData.text())
+    #             # # self.setTextFormat(QtCore.Qt.PlainText)
+    #             # # print 'dropEvent: mime data has an TEXT = \n[%s]' %
+    #             # # mimeData.text()
+    #             # dct = mime_to_dct(mimeData)
+    #             # # print 'dropped file is : %s' % dct['file']
+    #             # self.blockSignals(True)
+    #             #
+    #             # self.openfile(dct["file"], scan_type=dct["scan_type_num"])
+    #             # self.blockSignals(False)
+    #         elif mimeData.hasUrls():
+    #             # self.setText("\n".join([url.path() for url in mimeData.urls()])){"polarity": "CircLeft", "angle": 0.0, "center": [-419.172, 5624.301], "energy": 1029.0, "step": [110.86591666666668, 114.90791666666667], "scan_type": "coarse_image Line_Unidir", "range": [2660.782, 2757.79], "file": "S:\\STXM-data\\Cryo-STXM\\2017\\guest\\1207\\C171207014.hdf5", "offset": 0.0, "npoints": [25, 25], "dwell": 30.408937142857148, "scan_panel_idx": 8}
+    #             # print 'dropEvent: mime data has URLs'
+    #             pass
+    #         else:
+    #             # self.setText("Cannot display data")
+    #             # print 'dropEvent: mime data Cannot display data'
+    #             pass
+    #
+    #         # self.setBackgroundRole(QtGui.QPalette.Dark)
+    #         event.acceptProposedAction()
 
     def dragLeaveEvent(self, event):
         if self.drop_enabled:
             event.accept()
 
-    def updateFormatsTable(self, mimeData=None):
+    def on_drop(self, mimeData=None):
         # self.formatsTable.setRowCount(0)
         if self.drop_enabled:
             if mimeData is None:
@@ -614,7 +597,40 @@ class CurveViewerWidget(PlotDialog):
                 formatItem.setFlags(QtCore.Qt.ItemIsEnabled)
                 formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
 
-                if format == "text/plain":
+                if format == 'application/x-stxmscan':
+                    itemData = mimeData.data("application/x-stxmscan")
+                    _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
+                    _info_jstr = QtCore.QByteArray()
+                    _data_bytes = QtCore.QByteArray()
+                    _pos = QtCore.QPointF()
+                    _stream >> _info_jstr >> _data_bytes >> _pos
+                    # import numpy as np
+                    _info_str = bytes(_info_jstr).decode()
+                    dct = json.loads(_info_str)
+
+                    fname = dct["path"]
+                    xdata = dct["xdata"]
+                    ydatas = dct["ydatas"]
+                    sp_db = dct["sp_db"]
+                    title = dct["title"]
+                    num_specs = len(ydatas)
+                    num_spec_pnts = len(xdata)
+                    data_dir, fprefix, fsuffix = get_file_path_as_parts(fname)
+
+                    self.clear_plot()
+                    for i in range(num_specs):
+                        color = get_next_color(use_dflt=False)
+                        style = get_basic_line_style(color)
+                        self.create_curve(f"point_spectra_{i}", x=xdata, y=ydatas[i], curve_style=style)
+
+                    xlabel = dct.get("xlabel")
+                    self.setPlotAxisStrs("counts", xlabel)
+
+                    self.update()
+                    self.set_autoscale()
+
+
+                elif format == "text/plain":
                     text = mimeData.text()  # .strip()
                 elif format == "text/html":
                     text = mimeData.html()  # .strip()

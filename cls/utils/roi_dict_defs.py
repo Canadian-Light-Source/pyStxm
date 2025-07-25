@@ -127,12 +127,10 @@ SPDB_SINGLE_LST_DWELLS = "SINGLE_LST.DWELL"  #  for multi region supported scans
 
 
 SPDB_SUB_SPATIAL_ROIS = "SUB_SPATIAL_ROIS"  # this is meant to be used by scans for zoneplate scanning in a tiling mode
-SPDB_SPATIAL_ROIS = (
-    "SPATIAL_ROIS"  # holds a dict of sp_roi's using the sp_id of each as the keys
-)
-SPDB_SPATIAL_ROIS_CENTER = (
-    "SPATIAL_ROIS_CENTER"  # holds the physical center of all of the spatial rois
-)
+SPDB_SPATIAL_ROIS = "SPATIAL_ROIS"  # holds a dict of sp_roi's using the sp_id of each as the keys
+
+SPDB_SPATIAL_ROIS_CENTER = "SPATIAL_ROIS_CENTER"  # holds the physical center of all of the spatial rois
+
 SPDB_EV_NPOINTS = "EV_NPOINTS"  # holds total number of EV points
 SPDB_POL_NPOINTS = "POL_NPOINTS"  # holds total number of Polarity points
 SPDB_RECT = "RECT"  # holds total number of EV points
@@ -140,9 +138,8 @@ SPDB_PLOT_ITEM_ID = "PLOT.ITEM.ID"  # the plotItem id, to be set by caller
 SPDB_PLOT_ITEM_TITLE = "PLOT.ITEM.TITLE"  # the plotItem title, to be set by caller
 SPDB_PLOT_KEY_PRESSED = "PLOT.KEY_PRESSED"  # the plotItem id, to be set by caller
 SPDB_PLOT_IMAGE_TYPE = "PLOT.IMAGE_TYPE"  # used to help determine what to plot when a scan is loaded. image_types-> Enum('focus', 'osafocus','image', 'line_plot')
-SPDB_PLOT_SHAPE_TYPE = (
-    "PLOT.SHAPE_TYPE"  # the plot shape item type: spatial_type_prefix-> ROI, SEG, PNT
-)
+SPDB_PLOT_SHAPE_TYPE = "PLOT.SHAPE_TYPE"  # the plot shape item type: spatial_type_prefix-> ROI, SEG, PNT
+
 SPDB_SCAN_PLUGIN_PANEL_IDX = "SCAN_PLUGIN.SCAN_PANEL_IDX"  # the scan panel idx: scan_panel_order = Enum('Detector_Scan','OSA_Scan','OSA_Focus_Scan','Focus_Scan','Point_Scan', 'Image_Scan', 'ZP_Image_Scan', 'Positioner_Scan', 'Line_Scan', 'Image_Scan_Mainobj')
 SPDB_SCAN_PLUGIN_TYPE = "SCAN_PLUGIN.SCAN_TYPE"  # the scan type: scan_types-> Enum('Detector_Image','OSA_Image','OSA_Focus','Sample_Focus','Sample_Point_Spectrum', 'Sample_Line_Spectrum', 'Sample_Image', 'Sample_Image_Stack', 'Generic_Scan')
 SPDB_SCAN_PLUGIN_SUBTYPE = "SCAN_PLUGIN.SCAN_SUBTYPE"  # the scan sub type: scan_sub_types = Enum('Point_by_Point', 'Line_Unidir')

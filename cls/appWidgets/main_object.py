@@ -204,10 +204,24 @@ class main_object_base(QtCore.QObject):
 
         # request that the DCS sends back the current contents of the data directory
         current_date = datetime.now().strftime('%Y-%m-%d')
-        self.engine_widget.engine.load_data_directory(data_dir=f'{os.path.join(self.data_dir,current_date)}')
-
+        self.zmq_reload_data_directory(os.path.join(self.data_dir, current_date))
         return result
 
+    def zmq_reload_data_directory(self, data_dir: str=None):
+        """
+        reload the data directory in the zmq engine widget
+        """
+        if self.get_device_backend() == 'zmq':
+            if data_dir is None:
+                _data_dir = self.data_dir
+                current_date = datetime.now().strftime('%Y-%m-%d')
+                self.engine_widget.engine.load_data_directory(data_dir=f'{os.path.join(_data_dir,current_date)}')
+            else:
+                self.engine_widget.engine.load_data_directory(data_dir=data_dir)
+            return True
+        else:
+            _logger.error(f"zmq_reload_data_directory: not implemented for this backend ->[{self.get_device_backend()}] ")
+            return False
 
     def get_beamline_cfg_preset(self, preset_name: str =None):
         """

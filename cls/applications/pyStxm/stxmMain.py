@@ -94,7 +94,8 @@ from cls.devWidgets.ophydLabelWidget import (
 )
 from cls.appWidgets.user_account.login import loginWidget
 
-from cls.applications.pyStxm.widgets.contact_sheet import ContactSheet
+# from cls.applications.pyStxm.widgets.dict_based_contact_sheet import ContactSheet
+from cls.applications.pyStxm.widgets.dict_based_contact_sheet.contact_sheet import ContactSheet
 from cls.applications.pyStxm.widgets.select_detectors_panel import DetectorsPanel
 from cls.appWidgets.dialogs import excepthook, notify as dialog_notify, warn as dialog_warn
 
@@ -498,6 +499,12 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         # MAIN_OBJ.engine_widget.state_changed.connect(self.status_label.on_state_change)
         MAIN_OBJ.engine_widget.msg_to_app.connect(self.on_dcs_msg_to_app)
         self.status_label.connect_to_engine(MAIN_OBJ.engine_widget.engine)
+
+        if MAIN_OBJ.get_device_backend().find("zmq") > -1:
+            # if zmq backend, connect to zmq server data
+            # this signal handler will receive a scanFinished message that contains the name of the datafile
+            # it will then emit the data so that the contactsheet can update its data
+            MAIN_OBJ.engine_widget.new_data.connect(self.on_new_dcs_server_data)
 
         # self.status_label.changed.connect(self.on_status_changed)
         # self.status_label.connect(MAIN_OBJ.engine_widget.engine)
@@ -905,7 +912,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.pauseBtn.setEnabled(True)
         self.mainTabWidget.setEnabled(False)
 
-        # self.contact_sheet.set_drag_enabled(False)
+        # self.dict_based_contact_sheet.set_drag_enabled(False)
 
         if hasattr(self, "lineByLineImageDataWidget"):
             # self.scan_tbox_widgets[self.scan_panel_idx].set_read_only()
@@ -940,7 +947,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.pauseBtn.setChecked(False)
         self.mainTabWidget.setEnabled(True)
 
-        if hasattr(self, "contact_sheet"):
+        if hasattr(self, "dict_based_contact_sheet"):
             self.contact_sheet.set_drag_enabled(True)
         if hasattr(self, "lineByLineImageDataWidget"):
             self.lineByLineImageDataWidget.set_enable_drop_events(True)
@@ -1672,11 +1679,19 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.contact_sheet = ContactSheet(
             self.active_user.get_data_dir(), STXMDataIo, parent=self
         )
-
+        self.contact_sheet.reload_dir.connect(self.on_contact_sheet_reload_dir) #
         vbox = QtWidgets.QVBoxLayout()
         vbox.setContentsMargins(0, 0, 0, 0)
         vbox.addWidget(self.contact_sheet)
         self.imagesFrame.setLayout(vbox)
+
+    def on_contact_sheet_reload_dir(self, data_dir):
+        """
+        on_contact_sheet_reload_dir(): reload the contact sheet with the new data directory
+        :param data_dir: the new data directory to load
+        :type data_dir: str
+        """
+        MAIN_OBJ.zmq_reload_data_directory()
 
     def init_ptycho_data_viewer(self):
         ptycho_dev = MAIN_OBJ.device(PTYCHO_CAMERA, do_warn=False)
@@ -2031,7 +2046,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         scan_name = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
         self.scan_panel_idx = MAIN_OBJ.get_scan_panel_id_from_scan_name(scan_name)
-        # if(self.scan_panel_idx > 100):
+        # if(self.scan_panel_idx > 100):{"file": "/tmp/2025-07-22/discard/Detector_2025-07-22_001.hdf5", "scan_type_num": 0, "scan_type": "detector_image Point_by_Point", "stxm_scan_type": "detector image", "energy": [700.0], "estart": 700.0, "estop": 700.0, "e_npnts": 1, "polarization": "CircLeft", "offset": 0.0, "angle": 0.0, "dwell": 1000.0, "npoints": [75, 30], "date": "2025-07-22", "start_time": "10:22:06-06:00", "end_time": "10:22:18-06:00", "center": [0.0, 0.0], "range": [19.733333333333334, 19.333333333333332], "step": [0.2666666666666675, 0.6666666666666661], "start": [-9.866666666666667, -9.666666666666666], "stop": [9.866666666666667, 9.666666666666666], "xpositioner": "DNM_DETECTOR_X", "ypositioner": "DNM_DETECTOR_Y"}
         #    self.scan_panel_idx = scan_panel_order.IMAGE_SCAN
 
         self.scanTypeStackedWidget.setCurrentIndex(self.scan_panel_idx)
@@ -4317,6 +4332,14 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         if msg_key == 'filename':
             self.scan_progress_table.override_filenames(msg['filename']['name'])
 
+    def on_new_dcs_server_data(self, data_dct: dict) -> None:
+        """
+        Thi handler receives a default dictonary from the DCS server, it is the default data dictionary required by
+        the ContactSheet widget
+        """
+        # add the data to contact sheet
+        self.contact_sheet.create_thumbnail_from_data_dct(data_dct)
+
     def on_run_engine_progress(self, re_prog_dct):
         """
         accepts a progress dictionarey from the run engine
@@ -4365,11 +4388,9 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 )  # Any other args, kwargs are passed to the run function
                 # # Execute
                 self._threadpool.start(worker)
-            # worker = Worker(
-            #         self.do_data_export, run_uids, "datadir", False
-            #     )  # Any other args, kwargs are passed to the run function
-            # # # Execute
-            # self._threadpool.start(worker)
+
+            # else:
+            #     # using DCS server so
 
             #only if the scan was not aborted do we save the execution time
             if not self.stopping:

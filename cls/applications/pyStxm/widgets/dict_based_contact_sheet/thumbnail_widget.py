@@ -43,11 +43,11 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
     update_view = QtCore.pyqtSignal()
     select = QtCore.pyqtSignal(object)
 
-    def __init__(self, data_dct, filename, is_folder=False, parent=None):
+    def __init__(self, h5_file_dct, filename, is_folder=False, parent=None):
         super().__init__(parent)
-        self.data_dct = data_dct
+        self.h5_file_dct = h5_file_dct
         self.filename = filename
-        self.sp_db_dct = utils.get_sp_db_dct_from_data_dct(data_dct)
+        self.sp_db_dct = utils.get_sp_db_dct_from_h5_file_dct(h5_file_dct)
         if self.sp_db_dct is None:
             self.filepath = filename
             self.directory = filename
@@ -67,11 +67,11 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
 
         if not is_folder:
             # Extract data using 'default' key
-            default_entry = utils.get_first_entry_key(data_dct)
-            self.entry_dct = data_dct.get(default_entry, {})
+            default_entry = utils.get_first_entry_key(h5_file_dct)
+            self.entry_dct = h5_file_dct.get(default_entry, {})
 
             # Get counter data
-            data_section = self.entry_dct.get('data', {})
+            data_section = self.entry_dct['sp_db_dct'].get('nxdata', {})
             default_counter = data_section.get('default', 'counter1')
             self.counter_data = np.array(data_section.get(default_counter, [[0]]))
             self.data = self.counter_data
@@ -186,8 +186,8 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             self.save_tif(self)
 
     def get_generic_scan_launch_viewer_dct(self):
-        ekey = utils.get_first_entry_key(self.data_dct)
-        entry_dct = self.data_dct[ekey]
+        ekey = utils.get_first_entry_key(self.h5_file_dct)
+        entry_dct = self.h5_file_dct[ekey]
         sp_db = utils.get_first_sp_db_from_entry(entry_dct)
         xdata = utils.get_axis_setpoints_from_sp_db(sp_db, axis="X")
         ydatas = utils.get_generic_scan_data_from_entry(entry_dct, counter=None)
@@ -200,6 +200,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         dct["ydatas"] = ydatas
         dct["path"] = self.filename
         dct["sp_db"] = sp_db
+        dct["h5_file_dct"] = self.h5_file_dct
         dct["scan_type"] = self.scan_type
         dct['scan_type_str'] = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
         dct["xlabel"] = dct_get(sp_db, SPDB_XPOSITIONER)
@@ -214,10 +215,10 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         # it matters that the data is in sequential entry order
         # ekeys = sorted(self.data_dct['entries'].keys())
         ekeys = sorted(
-            [k for k, v in self.data_dct.items() if k.find("entry") > -1]
+            [k for k, v in self.h5_file_dct.items() if k.find("entry") > -1]
         )
         for ekey in ekeys:
-            entry_dct = self.data_dct[ekey]
+            entry_dct = self.h5_file_dct[ekey]
             sp_db = utils.get_first_sp_db_from_entry(entry_dct)
             # ydatas.append(utils.get_point_spec_data_from_entry(entry_dct))
             _data = np.array(utils.get_point_spec_data_from_entry(entry_dct))
@@ -233,6 +234,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         dct["ydatas"] = ydatas
         dct["path"] = self.filepath
         dct["sp_db"] = sp_db
+        dct["h5_file_dct"] = self.h5_file_dct
         dct["scan_type"] = self.scan_type
         dct['scan_type_str'] = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
         dct["xlabel"] = dct_get(sp_db, SPDB_XPOSITIONER)
@@ -246,8 +248,8 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         """
              #SPDB_SCAN_PLUGIN_SECTION_ID = entry_dct['sp_db_dct']['stxm_scan_type']
         """
-        ekey = utils.get_first_entry_key(self.data_dct)
-        entry_dct = self.data_dct[ekey]
+        ekey = utils.get_first_entry_key(self.h5_file_dct)
+        entry_dct = self.h5_file_dct[ekey]
         sp_db = utils.get_first_sp_db_from_entry(entry_dct)
         data = self.data
         stack_index = None
@@ -274,6 +276,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         dct["stack_index"] = stack_index
         dct["path"] = self.filepath
         dct["sp_db"] = sp_db
+        dct["h5_file_dct"] = self.h5_file_dct
         dct['scan_type_str'] = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
         dct["scan_type"] = self.scan_type
         dct["xlabel"] = dct_get(sp_db, SPDB_XPOSITIONER)

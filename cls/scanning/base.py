@@ -1282,14 +1282,8 @@ class ScanParamWidget(QtWidgets.QFrame):
         from cls.types.stxmTypes import scan_type_to_panel_dct
 
         dct = mime_to_dct(event.mimeData())
-        #idx = dct['scan_panel_idx']
         idx = self.get_scan_panel_id_from_scan_name(dct['stxm_scan_type'])
-        #self.main_obj.scan_type_to_module_name(dct["scan_type"].split(" ")[0])
-        # idx = scan_type_to_panel_dct[dct['scan_type'].split(' ')[0]]
-        _logger.debug("dragEnterEvent: [%d]" % idx)
-        # self.main_obj.get_scan_panel_order(fname)
         event.acceptProposedAction()
-        # self.dropped.emit(event.mimeData()){"file": "C:/controls/stxm-data/single\\C191212195.hdf5", "scan_type_num": 6, "scan_type": "sample_image Line_Unidir", "scan_panel_idx": 5, "energy": 693.9, "estart": 693.9, "estop": 693.9, "e_npnts": 1, "polarization": "CircLeft", "offset": 0.0, "angle": 0.0, "dwell": 1.0, "npoints": [100, 100], "date": "2019-12-12", "end_time": "22:39:30", "center": [-163.51892127843303, -503.91446634377246], "range": [59.999999999999886, 59.999999999999545], "step": [0.606060606060605, 0.6060606060606014], "start": [-193.51892127843297, -533.9144663437722], "stop": [-133.51892127843308, -473.9144663437727], "xpositioner": "GoniX", "ypositioner": "GoniY", "goni_z_cntr": 0.0, "goni_theta_cntr": 0.0}
         self.selected.emit(idx)
 
     def dragMoveEvent(self, event):
@@ -1298,7 +1292,41 @@ class ScanParamWidget(QtWidgets.QFrame):
     @exception
     def dropEvent(self, event):
         mimeData = event.mimeData()
-        if mimeData.hasImage():
+
+        if mimeData.hasFormat("application/dict-based-stxmscan"):
+            for format in mimeData.formats():
+                formatItem = QtWidgets.QTableWidgetItem(format)
+                formatItem.setFlags(QtCore.Qt.ItemIsEnabled)
+                formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+
+                if format == 'application/dict-based-stxmscan':
+                    itemData = mimeData.data("application/dict-based-stxmscan")
+                    # text = mimeData.text()
+                    _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
+                    _info_jstr = QtCore.QByteArray()
+                    _data_bytes = QtCore.QByteArray()
+                    _pos = QtCore.QPointF()
+                    _stream >> _info_jstr >> _data_bytes >> _pos
+                    _info_str = bytes(_info_jstr).decode()
+                    drop_dct = json.loads(_info_str)
+
+                    # fname = drop_dct["path"]
+                    #convert to array
+                    data = np.array(drop_dct["data"])
+                    drop_dct["data"] = data
+                    sp_db = drop_dct["sp_db"]
+                    # title = drop_dct["title"]
+                    # xlabel = drop_dct.get("xlabel") or "X"
+                    # ylabel = drop_dct.get("ylabel") or "Y"
+
+                    wdg_com = make_base_wdg_com()
+                    dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+                    dct_put(wdg_com, SPDB_SPATIAL_ROIS, {sp_db[ID_VAL]: sp_db})
+                    drop_dct['wdg_com'] = wdg_com
+
+                    self.load_dict_based_data(drop_dct)
+
+        elif mimeData.hasImage():
             # self.setPixmap(QtGui.QPixmap(mimeData.imageData()))
             print("dropEvent: mime data has an IMAGE")
         elif mimeData.hasHtml():
@@ -2048,7 +2076,7 @@ class ScanParamWidget(QtWidgets.QFrame):
             i += 1
 
             if not ev_only:
-                # THIS CALL IS VERY IMPORTANT IN ORDER TO KEEP TEHPLOT AND TABLES IN SYNC
+                # THIS CALL IS VERY IMPORTANT IN ORDER TO KEEP THE PLOT AND TABLES IN SYNC
                 add_to_unique_roi_id_list(sp_db[SPDB_ID_VAL])
 
             if not load_image_data:
@@ -2075,6 +2103,133 @@ class ScanParamWidget(QtWidgets.QFrame):
                     % (fname, image_data.ndim, valid_data_dim))
                 print("Data in file [%s] is of wrong dimension, is [%d] should be [%d]"
                     % (fname, image_data.ndim, valid_data_dim))
+                return
+
+            # signal the main GUI that there is data to plot but only if is is a single image, ignore stack or point spectra scans
+            if image_data is not None:
+                self.plot_data.emit((fname, wdg_com, image_data))
+                _logger.debug("[%s] scan loaded" % self.section_id)
+            else:
+                _logger.error("unable to load scan, data is None")
+        else:
+            _logger.error("unable to load scan, wrong scan type")
+
+    def get_first_entry_key(self, h5_file_dct: dict) -> str:
+        """
+        use the default attribute to return the default entry name to use
+        :param entries_dct:
+        :return:
+        """
+        # support for older nexus files
+        if "default" in h5_file_dct:
+            return h5_file_dct["default"]
+        return None
+
+    @exception
+    def load_dict_based_data(self, dropped_data_dct: dict=None, ev_only: bool=False, sp_only: bool=False):
+        """
+        check_for_cur_scan_tab: this call was originally used by the load_scan buttons on each scan pluggin
+        tab which would only load a scan that matched the scan pluggin you were loading from, but to
+        support drag and drop operations we will allow the skipping of this check so that the main app
+        can automatically make the dropped scan the curent scan pluggin tab
+        """
+
+        # group the section id's of scans to allow when loading in teh tomography scan
+        allow_load_in_tomo_type = ["SAMPLE_LXL", "SAMPLE_PXP", "TOMO"]
+
+        if dropped_data_dct is None:
+            return
+        if not ev_only:
+            self.clear_params()
+            # tell the parent to clear the slate (plotteer)
+            self.clear_all_sig.emit()
+            reset_unique_roi_id()
+
+        data_dir, fprefix, fsuffix = get_file_path_as_parts(dropped_data_dct['path'])
+        fname = f"{fprefix}{fsuffix}"
+
+        load_image_data = True
+        image_data = None
+        if fsuffix.find(".json") > -1:
+            options = {"standard": "json", "def": "nxstxm"}
+            load_image_data = False
+        else:
+            options = {"standard": "nexus", "def": "nxstxm"}
+            if sp_only or ev_only:
+                load_image_data = False
+
+        # data_io = self.data_io_class(data_dir, fprefix, options)
+        # entry_dct = data_io.load()
+        ekey = self.get_first_entry_key(dropped_data_dct["h5_file_dct"])
+        entry_dct = dropped_data_dct["h5_file_dct"][ekey]
+
+        if entry_dct is None:
+            return
+        # use this counter to control if to append or not when loading entries
+        i = 0
+        # ekey = data_io.get_default_entry_key_from_entry(entry_dct)
+
+        if load_image_data:
+            # nx_datas = data_io.get_NXdatas_from_entry(entry_dct, ekey)
+            # # currently only support 1 counter
+            # counter_name = data_io.get_default_detector_from_entry(entry_dct)
+            # image_data = data_io.get_signal_data_from_NXdata(nx_datas, counter_name)
+            image_data = dropped_data_dct['data']
+
+            if image_data is None:
+                _logger.warn(f"there apparently was no data in the file [{fname}]")
+
+        # wdg_com = data_io.get_wdg_com_from_entry(entry_dct, ekey)
+        wdg_com = dropped_data_dct['wdg_com']
+        sp_db = get_first_sp_db_from_wdg_com(wdg_com)
+
+        loaded_scan_type = self.get_scan_panel_id_from_scan_name(dct_get(sp_db, SPDB_SCAN_PLUGIN_STXM_SCAN_TYPE))
+
+        # loaded_scan_type = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
+        # if ev_only or loaded_scan_type == self.section_id or (self.section_id == "TOMO" and loaded_scan_type in allow_load_in_tomo_type):
+        if ev_only or loaded_scan_type == self.idx or (
+                self.section_id == "TOMO" and loaded_scan_type in allow_load_in_tomo_type):
+
+            dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+            dct_put(sp_db, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+            if i == 0:
+                self.load_roi(
+                    wdg_com, append=False, ev_only=ev_only, sp_only=sp_only
+                )
+            else:
+                self.load_roi(
+                    wdg_com, append=True, ev_only=ev_only, sp_only=sp_only
+                )
+            i += 1
+
+            if not ev_only:
+                # THIS CALL IS VERY IMPORTANT IN ORDER TO KEEP TEHPLOT AND TABLES IN SYNC
+                add_to_unique_roi_id_list(sp_db[SPDB_ID_VAL])
+
+            if not load_image_data:
+                return
+
+            if (dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_POINT_SPECTRUM):
+                valid_data_dim = 1
+
+            # elif dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_IMAGE:
+            elif dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) in acceptable_2dimages_list:
+                valid_data_dim = 2
+
+            elif (dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_IMAGE_STACK):
+                # valid_data_dim = 3
+                valid_data_dim = 2
+            else:
+                valid_data_dim = 2
+
+            if image_data.ndim == 3:
+                image_data = image_data[0]
+
+            if image_data.ndim is not valid_data_dim:
+                _logger.error("Data in file [%s] is of wrong dimension, is [%d] should be [%d]"
+                              % (fname, image_data.ndim, valid_data_dim))
+                print("Data in file [%s] is of wrong dimension, is [%d] should be [%d]"
+                      % (fname, image_data.ndim, valid_data_dim))
                 return
 
             # signal the main GUI that there is data to plot but only if is is a single image, ignore stack or point spectra scans

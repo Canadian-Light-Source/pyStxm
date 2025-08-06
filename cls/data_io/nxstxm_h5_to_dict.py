@@ -25,7 +25,7 @@ def convert_numpy_to_python(obj):
         return float(obj)
     return obj
 
-def load_h5_file_to_dict(filename, ret_as_dict=False):
+def load_nxstxm_file_to_h5_file_dct(filename, *, ret_as_dict=False):
     """
     Load an HDF5 file and convert it to a dictionary.
 
@@ -43,21 +43,26 @@ def load_h5_file_to_dict(filename, ret_as_dict=False):
     # print(f"load_h5_file_to_dict called with filename={filename}")
     data_dir, fprefix, fsuffix = get_file_path_as_parts(filename)
     data_io = STXMDataIo(data_dir, fprefix)
-    entry_dct = data_io.load()
+    h5_file_dct = data_io.load()
 
     if ret_as_dict:
         # If ret_as_dict is True, return the dictionary
-        return entry_dct
+        return h5_file_dct
     else:
         # Convert numpy arrays to Python lists before JSON serialization
-        python_dict = convert_numpy_to_python(entry_dct)
+        python_dict = convert_numpy_to_python(h5_file_dct)
         jstr = json.dumps(python_dict, indent=4)
-        # by printing it it becaomes the output of the function when called from PixelatorController
+        # by printing it it becomes the output of the function when called from PixelatorController
         # print(jstr)
         sys.stdout.write(jstr)
 
 
 
 if __name__ == '__main__':
-    load_h5_file_to_dict(sys.argv[1])
+    #import pprint
+    load_nxstxm_file_to_h5_file_dct(sys.argv[1])
+    #dct = load_nxstxm_file_to_h5_file_dct('/tmp/2025-08-06/Motor_2025-08-06_021.hdf5', ret_as_dict=True)
+    #pprint.pprint(dct)
+
+
 

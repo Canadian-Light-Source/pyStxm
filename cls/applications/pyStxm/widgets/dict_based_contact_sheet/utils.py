@@ -58,33 +58,33 @@ def make_thumb_widg_dct(data_dir: str, fname: str, entry_dct: dict, counter: Opt
     return dct
 
 
-def get_first_entry_key(entries_dct: dict) -> str:
+def get_first_entry_key(h5_file_dct: dict) -> str:
     """
     use the default attribute to return the default entry name to use
     :param entries_dct:
     :return:
     """
     # support for older nexus files
-    if "default" in entries_dct:
-        return entries_dct["default"]
+    if "default" in h5_file_dct:
+        return h5_file_dct["default"]
     return None
 
-def get_sp_db_dct_from_data_dct(data_dct: dict) -> dict:
+def get_sp_db_dct_from_h5_file_dct(h5_file_dct: dict) -> dict:
     """
     Extract the sp_db_dct from the data_dct.
-    :param data_dct: Dictionary containing the data structure.
+    :param h5_file_dct: Dictionary containing the data structure.
     :return: The sp_db_dct.
     """
-    ekey = get_first_entry_key(data_dct)
+    ekey = get_first_entry_key(h5_file_dct)
     if ekey is None:
         return None
-    entry_dct = data_dct[ekey]
+    entry_dct = h5_file_dct[ekey]
     if "sp_db_dct" in entry_dct:
         return entry_dct["sp_db_dct"]
     elif "entry1" in entry_dct and "sp_db_dct" in entry_dct["entry1"]:
         return entry_dct["entry1"]["sp_db_dct"]
     else:
-        raise KeyError("No 'sp_db_dct' found in the provided data dictionary.")
+        raise KeyError("No 'sp_db_dct' found in the provided entry_dct dictionary.")
 
 def get_first_sp_db_from_entry(entry_dct: dict) -> dict:
     return get_first_sp_db_from_wdg_com(entry_dct["WDG_COM"])

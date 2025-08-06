@@ -56,8 +56,8 @@ def dict_based_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol
     data = None
     entry_key = data_dct['default']
     entry_dct = data_dct[entry_key]
-    data = np.array(entry_dct['data'][counter])
     sp_db_dct = entry_dct['sp_db_dct']
+    data = np.array(sp_db_dct['nxdata'][counter])
     fpath = sp_db_dct['file_path']# .replace("/", "\\")
 
     if data is None:

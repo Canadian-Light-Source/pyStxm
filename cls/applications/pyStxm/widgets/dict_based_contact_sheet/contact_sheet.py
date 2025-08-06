@@ -25,13 +25,13 @@ from cls.applications.pyStxm.widgets.dict_based_contact_sheet.thumbnail_create i
 from cls.applications.pyStxm.widgets.dict_based_contact_sheet.thumbnail_widget import ThumbnailWidget
 from cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils import *
 
-from cls.data_io.nxstxm_h5_to_dict import load_h5_file_to_dict
+from cls.data_io.nxstxm_h5_to_dict import load_nxstxm_file_to_h5_file_dct
 
 
 _logger = get_module_logger(__name__)
 
 class ContactSheet(QtWidgets.QWidget):
-    reload_dir = QtCore.pyqtSignal(str)
+    sig_reload_dir = QtCore.pyqtSignal(str)
 
     def __init__(self, data_dir=None, data_io=None, parent=None):
         super(ContactSheet, self).__init__(parent)
@@ -173,7 +173,7 @@ class ContactSheet(QtWidgets.QWidget):
         # Clear the images scene
         self.images_scene.clear()
         self.spectra_scene.clear()
-        self.reload_dir.emit(self.data_dir) #zmq_reload_data_directory(self, data_dir:
+        self.sig_reload_dir.emit(self.data_dir) #zmq_reload_data_directory(self, data_dir:
 
 
     def create_thumbnails_from_filelist(self, files: [str]) -> None:
@@ -190,7 +190,7 @@ class ContactSheet(QtWidgets.QWidget):
                 if fname.find('discard') > -1:
                     continue
 
-                data_dict = load_h5_file_to_dict(fname, ret_as_dict=True)
+                data_dict = load_nxstxm_file_to_h5_file_dct(fname, ret_as_dict=True)
                 self.create_thumbnail_from_data_dct(data_dict)
 
             except Exception as e:
@@ -209,13 +209,13 @@ class ContactSheet(QtWidgets.QWidget):
         self.update_scene_layout()
 
 
-    def create_thumbnail_from_data_dct(self, data_dict: dict) -> None:
+    def create_thumbnail_from_h5_file_dct(self, h5_file_dct: dict) -> None:
         """
         take a data_dct and create a thumbnail widget from it.
         """
 
         # Create thumbnail widget
-        thumbnail = create_thumbnail(data_dict)
+        thumbnail = create_thumbnail(h5_file_dct)
 
         if thumbnail.is_valid():
            # thumb_widget.update_view.connect(self.update_view)
@@ -228,7 +228,7 @@ class ContactSheet(QtWidgets.QWidget):
                 thumbnail.drag.connect(self.on_drag)
 
         # if spec type then add to spectra scene
-        _scan_type = data_dict[data_dict['default']]['sp_db_dct']['pystxm_enum_scan_type']
+        _scan_type = h5_file_dct[h5_file_dct['default']]['sp_db_dct']['pystxm_enum_scan_type']
         if _scan_type in spectra_type_scans:
             self.spectra_scene.addItem(thumbnail)
             self.spectra_thumbs.append(thumbnail)
@@ -360,7 +360,7 @@ class ContactSheet(QtWidgets.QWidget):
                 << (event.pos() - obj.rect().topLeft())
             )
             mimeData = QtCore.QMimeData()
-            mimeData.setData("application/x-stxmscan", itemData)
+            mimeData.setData("application/dict-based-stxmscan", itemData)
             mimeData.setText(obj.info_jstr)
 
             drag = QtGui.QDrag(self)

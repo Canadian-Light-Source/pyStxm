@@ -43,8 +43,8 @@ commands = {
     'Sample OUT': None,
     'topupMode': None,
     'beamShutterMode': None,
-    'loadFile directory': '{"directory":"/tmp/2025-07-17","showHidden":1, "fileExtension":".hdf5"}',
-    'loadFile file': '{ "directory": "/tmp/2025-07-17", "file": "/tmp/2025-07-14/OSA_2025-07-14_006.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["OSA_2025-07-14_006.hdf5"], "pluginNumber": 0 }',
+    'loadFile directory': '{"directory":"/tmp/2025-08-05","showHidden":1, "fileExtension":".hdf5"}',
+    'loadFile file': '{ "directory": "/tmp/2025-08-05", "file": "/tmp/2025-08-05/OSA_2025-08-05_010.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["OSA_2025-08-05_010.hdf5"], "pluginNumber": 0 }',
     'loadDefinition': None,
     'change user': None,
     'script info': None,
@@ -189,7 +189,7 @@ class ZMQApp(QMainWindow):
         Handle the loadFile file response.
         """
         data_dct = self.process_loadfile_changed(response_text)
-        self.contact_sheet.create_thumbnail_from_data_dct(data_dct)
+        self.contact_sheet.create_thumbnail_from_h5_file_dct(data_dct)
 
 
     def on_scan_finished(self, response_text: str) -> dict:

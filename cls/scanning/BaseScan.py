@@ -809,7 +809,7 @@ class BaseScan(QtCore.QObject):
         else:
             notify("Warning: unable to check scan velocity", "The motor does not have the get_max_velo() method", "Ok")
             ret = False
-        return(ret)
+        return ret
 
 
     def generate_scan_plan(self, detectors, md=None, bi_dir=False):

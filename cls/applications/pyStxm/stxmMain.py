@@ -3,17 +3,10 @@ Created on 2014-06-23
 
 @author: bergr
 """
-import queue
 
-"""
-.. module:: septScanMainWindow
-    :platform: Windows
-    :synopsis: The main module for pySTXM
-.. moduleauthor:: Russ Berg <russ.berg@lightsource.ca>
-
-"""
 import atexit
 import os
+import queue
 import sys
 import time
 
@@ -94,7 +87,6 @@ from cls.devWidgets.ophydLabelWidget import (
 )
 from cls.appWidgets.user_account.login import loginWidget
 
-# from cls.applications.pyStxm.widgets.dict_based_contact_sheet import ContactSheet
 from cls.applications.pyStxm.widgets.dict_based_contact_sheet.contact_sheet import ContactSheet
 from cls.applications.pyStxm.widgets.select_detectors_panel import DetectorsPanel
 from cls.appWidgets.dialogs import excepthook, notify as dialog_notify, warn as dialog_warn
@@ -500,6 +492,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         MAIN_OBJ.engine_widget.msg_to_app.connect(self.on_dcs_msg_to_app)
         self.status_label.connect_to_engine(MAIN_OBJ.engine_widget.engine)
 
+        # TODO: in the future all data will be received from a server so this block will likely need to NOT be determined by
+        # the value of the device backend as it is below
         if MAIN_OBJ.get_device_backend().find("zmq") > -1:
             # if zmq backend, connect to zmq server data
             # this signal handler will receive a scanFinished message that contains the name of the datafile
@@ -1679,7 +1673,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.contact_sheet = ContactSheet(
             self.active_user.get_data_dir(), STXMDataIo, parent=self
         )
-        self.contact_sheet.reload_dir.connect(self.on_contact_sheet_reload_dir) #
+        if hasattr(self.contact_sheet, "sig_reload_dir"):
+            self.contact_sheet.sig_reload_dir.connect(self.on_contact_sheet_reload_dir) #
         vbox = QtWidgets.QVBoxLayout()
         vbox.setContentsMargins(0, 0, 0, 0)
         vbox.addWidget(self.contact_sheet)
@@ -4332,13 +4327,17 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         if msg_key == 'filename':
             self.scan_progress_table.override_filenames(msg['filename']['name'])
 
-    def on_new_dcs_server_data(self, data_dct: dict) -> None:
+    def on_new_dcs_server_data(self, h5_file_dct: dict) -> None:
         """
         Thi handler receives a default dictonary from the DCS server, it is the default data dictionary required by
         the ContactSheet widget
         """
-        # add the data to contact sheet
-        self.contact_sheet.create_thumbnail_from_data_dct(data_dct)
+
+        # TODO: in the future all data wil be received from a server so this check before calling is an interum during
+        #  refactor
+        if hasattr(self.contact_sheet, "create_thumbnail_from_h5_file_dct"):
+            # add the data to contact sheet
+            self.contact_sheet.create_thumbnail_from_h5_file_dct(h5_file_dct)
 
     def on_run_engine_progress(self, re_prog_dct):
         """

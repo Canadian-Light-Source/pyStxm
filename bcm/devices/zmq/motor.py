@@ -323,6 +323,8 @@ class ZMQMotor(ZMQBaseDevice):
         """
         vmax = self.max_velo.get()
         if vmax == 0.0:
+            vmax = self._max_velo
+        if vmax == 0.0:
             vmax = self.velocity.get()
         return vmax
 

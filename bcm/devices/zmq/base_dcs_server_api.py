@@ -27,6 +27,16 @@ class BaseDcsServerApi(QtCore.QObject):
         self._loadfile_timer.timeout.connect(self.load_file)
         self.exec_result.connect(self.on_exec_finished)
 
+    def get_server_version_id(self) -> str:
+        """
+        return the server version id, to be implemented by the inheriting class
+        Returns: str
+        -------
+
+        """
+        _logger.warning("BaseDcsServerApi.get_server_version_id: This method must be implemented by the inheriting class.")
+
+
     def load_file(self, directory: str="/tmp/2025-07-04", filename: str="SampleData.hdf5"):
         """
         load a file from the DCS server, to be implemented by inheriting class

@@ -672,6 +672,14 @@ class DcsServerApi(BaseDcsServerApi):
 
         self.busy = False
 
+    def get_server_version_id(self) -> str:
+        """
+        return the server version id, to be implemented by the inheriting class
+        Returns: str
+        -------
+
+        """
+        return self.parent.server_version
 
     def get_base_data_dir(self):
         """
@@ -905,10 +913,10 @@ class DcsServerApi(BaseDcsServerApi):
                 print("Error: pystxm_load string is empty")
                 return
 
-            parsed_data_dct = json.loads(cleaned_json)
-            ekey = parsed_data_dct['default']
-            sp_db_dct = parsed_data_dct[ekey]['sp_db_dct']
-            self.parent.new_data.emit(parsed_data_dct)
+            h5_file_dct = json.loads(cleaned_json)
+            # ekey = entry_dct['default']
+            # sp_db_dct = entry_dct[ekey]['sp_db_dct']
+            self.parent.new_data.emit(h5_file_dct)
 
         elif resp[0].find('loadFile directory') > -1:
             # reply is the contents of the directory
@@ -978,6 +986,7 @@ class DcsServerApi(BaseDcsServerApi):
             self.parent.oscilloscope_definition = reply[3]
             self.parent.zone_plate_definition = reply[4]
             self.parent.remote_file_system_info = reply[5]
+            self.parent.server_version = reply[6]
 
             self.parent.print_all_devs("positionerDefinition", reply[1])
             self.parent.print_all_devs("detectorDefinition", reply[2])

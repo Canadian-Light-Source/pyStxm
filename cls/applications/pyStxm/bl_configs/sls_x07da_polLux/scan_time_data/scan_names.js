@@ -1,1 +1,1 @@
-["sample_image", "coarse_image", "detector_image", "osa_image", "sample_focus", "generic_scan", "osa_focus", "sample_image_stack", "point_scan"]
+["sample_image", "coarse_image", "detector_image", "osa_image", "sample_focus", "generic_scan", "osa_focus", "sample_image_stack", "point_scan","two_variable_image"]

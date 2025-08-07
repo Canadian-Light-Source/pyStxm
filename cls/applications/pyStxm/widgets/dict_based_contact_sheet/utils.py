@@ -26,6 +26,23 @@ icoDir = os.path.join(
 )
 
 
+def crop_qimage(image, left, top, right, bottom):
+    """
+    Crops a QImage by the specified number of pixels from each side.
+
+    Args:
+        image (QtGui.QImage): The source image.
+        left (int): Number of pixels to crop from the left.
+        top (int): Number of pixels to crop from the top.
+        right (int): Number of pixels to crop from the right.
+        bottom (int): Number of pixels to crop from the bottom.
+
+    Returns:
+        QtGui.QImage: The cropped image.
+    """
+    width = image.width() - left - right
+    height = image.height() - top - bottom
+    return image.copy(left, top, width, height)
 
 def get_max_thumb_columns(view_width):
     """Calculate maximum number of thumbnail columns that can fit in the given width"""

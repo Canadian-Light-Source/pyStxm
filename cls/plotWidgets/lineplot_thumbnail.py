@@ -23,6 +23,7 @@ from matplotlib.figure import Figure
 
 from cls.data_io.stxm_data_io import STXMDataIo
 from cls.utils.arrays import resize_1d_array
+from cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils import crop_qimage
 
 progname = os.path.basename(sys.argv[0])
 progversion = "0.1"
@@ -60,7 +61,7 @@ class MplCanvas(FigureCanvas):
 
 
 class OneD_MPLCanvas(MplCanvas):
-    """Simple canvas with a sine plot."""
+    """Simple canvas ."""
 
     def __init__(
         self,
@@ -70,11 +71,13 @@ class OneD_MPLCanvas(MplCanvas):
         height=4,
         dpi=100,
         axes_bgrnd_color=AXES_BACKGROUND_COLOR,
+        fullsize_plot=False,
     ):
         super(OneD_MPLCanvas, self).__init__(width=width, height=height, dpi=dpi)
         self.xdata = np.array(xdata)
         self.ydatas = np.array(ydatas)
         self.axes_bgrnd_color = axes_bgrnd_color
+        self.fullsize_plot = fullsize_plot
         self.gen_figure()
 
     def gen_figure(self):
@@ -101,13 +104,22 @@ class OneD_MPLCanvas(MplCanvas):
         width, height = size.width(), size.height()
         # in order for the call to : self.figure.canvas.buffer_rgba() to work 'draw() ' must be called FIRST
         self.figure.canvas.draw()
-        # im = QtGui.QImage(self.figure.canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32)
-        im = QtGui.QImage(
-            self.figure.canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32
-        )
-        if not as_thumbnail:
-            # im = im.scaled(SPEC_THMB_WD,SPEC_THMB_HT,Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            # im = im.scaled(400, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        if self.fullsize_plot:
+            im = QtGui.QImage(
+                self.figure.canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32
+            )
+            im = im.scaled(
+                SPEC_THMB_WD + 15,
+                SPEC_THMB_HT,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation,
+            )
+            # only want the plot in so crop out the axis tick area
+            im = crop_qimage(im, 24, 16, 15, 13)
+        else:
+            im = QtGui.QImage(
+                self.figure.canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32
+            )
             im = im.scaled(
                 SPEC_THMB_WD + 15,
                 SPEC_THMB_HT,

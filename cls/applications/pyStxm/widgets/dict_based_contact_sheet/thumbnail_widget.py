@@ -20,7 +20,6 @@ from cls.applications.pyStxm.widgets.print_stxm_thumbnail import (
 )
 
 from cls.utils.log import get_module_logger
-
 import cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils as utils
 
 _logger = get_module_logger(__name__)
@@ -187,9 +186,6 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         ydata_lst = [self.counter_data.flatten()]
 
         dct = {}
-        # because the data in the StxmImageWidget is displayed with 0Y at the btm
-        # and maxY at the top I must flip it before sending it
-        # dct['data'] = np.flipud(data)
         dct["data"] = None
         dct["xdata"] = xdata
         dct["ydatas"] = ydata_lst
@@ -265,9 +261,6 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
                 stack_index = 0
 
         dct = {}
-        # because the data in the StxmImageWidget is displayed with 0Y at the btm
-        # and maxY at the top I must flip it before sending it
-        # dct['data'] = np.flipud(data)
         dct["data"] = data
         dct["stack_index"] = stack_index
         dct["path"] = self.filepath
@@ -317,8 +310,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         dct = {}
         dct["fpath"] = self.filepath
         dct["fname"] = self.filename
-        # dct['data_pmap'] = self.getpic(scale_it=False, as_thumbnail=False)
-        dct["data_pmap"] = self.getpic(scale_it=True, as_thumbnail=False)
+        dct["data_pmap"] = self.getpic(as_thumbnail=False)
         dct["contrast_pmap"] = None
         dct["xstart"] = info_dct["start"][0]
         dct["ystart"] = info_dct["start"][1]
@@ -394,56 +386,6 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         )  # Image.ANTIALIAS)  # resizes to 256x512 exactly
         im.save(self.filepath.replace(".hdf5", ".tif"))
 
-    def get_specplot_pic(self, scale_it=True, as_thumbnail=True):
-        """
-
-        :param scale_it:
-        :return:
-        """
-        axis_names = self.sp_db_dct['axis_names']
-        x_axis_name = 'energy'
-        for axis_name in axis_names:
-            if 'energy' in axis_name.lower():
-                x_axis_name = axis_name
-        if x_axis_name not in self.sp_db_dct.keys():
-            print("get_generic_scan_pic: x_axis_name not in self.sp_db_dct.keys()")
-            return
-        xdata = self.sp_db_dct[x_axis_name]
-        ydatas = self.counter_data.flatten()
-
-        if len(xdata) <= 1:
-            pmap = QtGui.QPixmap()
-        else:
-            if as_thumbnail:
-                # return a lower res pmap for use as a thumbnail image
-                # use a white background
-                qt_mpl = OneD_MPLCanvas(
-                    xdata,
-                    ydatas,
-                    width=2,
-                    height=1.65,
-                    dpi=50,
-                    axes_bgrnd_color="#FFFFFF",
-                )
-                pmap = qt_mpl.get_pixmap(as_grayscale=True, as_thumbnail=True)
-            else:
-                # return a higher res pixmap for eventual printing
-                qt_mpl = OneD_MPLCanvas(
-                    xdata,
-                    ydatas,
-                    width=6.2,
-                    height=5.5,
-                    dpi=1500,
-                    axes_bgrnd_color="#FFFFFF",
-                )
-                pmap = qt_mpl.get_pixmap(as_grayscale=False, as_thumbnail=False)
-
-        if as_thumbnail:
-            pmap = pmap.scaled(
-                QtCore.QSize(QtCore.QSize(utils.THMB_SIZE, utils.THMB_SIZE)),
-                QtCore.Qt.KeepAspectRatio,
-            )
-        return pmap
 
     def get_2dimage_pic(self, scale_it=True, as_thumbnail=True):
         """
@@ -462,10 +404,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
                     data = np.flipud(self.data).copy()
 
             elif len(self.data.shape) == 3:
-                img_seq, ht, wd = self.data.shape
-                # data = flip_data_upsdown(self.data[0])
                 data = np.flipud(self.data[0]).copy()
-
             else:
                 # _logger.error('unsupported data shape')
                 return None
@@ -491,57 +430,81 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
 
         return pmap
 
-    def get_generic_scan_pic(self, scale_it=True, as_thumbnail=True):
+    def get_specplot_pic(self, as_thumbnail=True):
         """
 
         :param scale_it:
         :return:
         """
-        axis_names = self.entry_dct['sp_db_dct']['axis_names']
-        x_axis_name = 'sample_x'
+        axis_names = self.sp_db_dct['axis_names']
+        x_axis_name = 'energy'
         for axis_name in axis_names:
-            if '_x' in axis_name.lower():
+            if 'energy' in axis_name.lower():
                 x_axis_name = axis_name
+        if x_axis_name not in self.sp_db_dct.keys():
+            print("get_generic_scan_pic: x_axis_name not in self.sp_db_dct.keys()")
+            return
+        xdata = self.sp_db_dct[x_axis_name]
+        ydatas = self.counter_data.flatten()
+        pmap = self._get_spec_pixmap(xdata, ydatas, as_thumbnail)
+        return pmap
+
+    def get_generic_scan_pic(self, as_thumbnail=True):
+        """
+
+        :param scale_it:
+        :return:
+        """
+        x_axis_name = self.entry_dct['sp_db_dct']['axis_names'][0]
         if x_axis_name not in self.entry_dct['sp_db_dct'].keys():
-            print("get_generic_scan_pic: x_axis_name not in entry_dct['sp_db_dct'].keys()")
+            e_str = f"ERROR: get_generic_scan_pic: x_axis_name [{x_axis_name}] not in entry_dct['sp_db_dct'].keys()"
+            print(e_str)
+            _logger.error(e_str)
             return
         xdata = self.entry_dct['sp_db_dct'][x_axis_name]
         #ydatas = utils.get_generic_scan_data_from_entry(entry_dct, counter=counter)
         ydatas = self.counter_data.flatten()
+        pmap = self._get_spec_pixmap(xdata, ydatas, as_thumbnail)
+        return pmap
 
+    def _get_spec_pixmap(self, xdata, ydatas, as_thumbnail=True):
+        """
+        return a spectrum matplotlib pixmap from the data
+        """
         if len(xdata) <= 1:
             pmap = QtGui.QPixmap()
-
-        elif len(xdata) != len(ydatas):
-            # data in file is not valid for plotting
-            return None
-
-        elif as_thumbnail:
-            # return a lower res pmap for use as a thumbnail image
-            qt_mpl = OneD_MPLCanvas(
-                xdata,
-                ydatas,
-                width=2,
-                height=1.65,
-                dpi=200,
-                axes_bgrnd_color="#FFFFFF",
-            )
-            pmap = qt_mpl.get_pixmap(as_grayscale=True, as_thumbnail=True)
         else:
-            # return a higher res pixmap for eventual printing
-            qt_mpl = OneD_MPLCanvas(xdata, ydatas, width=2, height=1.65, dpi=2000)
-            pmap = qt_mpl.get_pixmap(as_grayscale=False, as_thumbnail=False)
-            pmap = pmap.scaled(
-                QtCore.QSize(QtCore.QSize(SPEC_THMB_WD, SPEC_THMB_HT)),
-                QtCore.Qt.KeepAspectRatio,
-            )
+            if as_thumbnail:
+                # return a lower res pmap for use as a thumbnail image
+                # use a white background
+                qt_mpl = OneD_MPLCanvas(
+                    xdata,
+                    ydatas,
+                    width=2,
+                    height=1.65,
+                    dpi=50,
+                    axes_bgrnd_color="#FFFFFF",
+                    fullsize_plot=True
+                )
+                pmap = qt_mpl.get_pixmap(as_grayscale=True, as_thumbnail=True)
+            else:
+                # return a higher res pixmap for eventual printing
+                qt_mpl = OneD_MPLCanvas(
+                    xdata,
+                    ydatas,
+                    width=6.2,
+                    height=5.5,
+                    dpi=1500,
+                    axes_bgrnd_color="#FFFFFF",
+                    fullsize_plot=False
+                )
+                pmap = qt_mpl.get_pixmap(as_grayscale=False, as_thumbnail=False)
 
         if as_thumbnail:
             pmap = pmap.scaled(
                 QtCore.QSize(QtCore.QSize(utils.THMB_SIZE, utils.THMB_SIZE)),
                 QtCore.Qt.KeepAspectRatio,
             )
-
         return pmap
 
     def get_folder_pic(self, scale_it=True, as_thumbnail=True):
@@ -625,6 +588,11 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         spacing = 2  # Small spacing between elements
 
         # Draw data image with minimal margins
+        if self.pixmap is None:
+            e_str = "self.pixmap is None in paint()"
+            print(e_str)
+            _logger.error(e_str)
+            return
         img_x = int((utils.THUMB_WIDTH - self.pixmap.width()) / 2)
         img_y = spacing  # Very small top margin
         painter.drawPixmap(img_x, img_y, self.pixmap)

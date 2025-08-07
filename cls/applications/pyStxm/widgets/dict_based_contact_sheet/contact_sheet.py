@@ -448,14 +448,13 @@ class ContactSheet(QtWidgets.QWidget):
             self.launch_image_viewer(dct)
 
     def launch_spectra_viewer(self, dct: dict):
-        fname = dct["path"]
+        """
+        Launch the spectra viewer with the provided data dictionary.
+        """
         xdata = dct["xdata"]
+        xlabel = dct["xlabel"]
         ydatas = dct["ydatas"]
-        sp_db = dct["sp_db"]
-        title = dct["title"]
         num_specs = len(ydatas)
-        num_spec_pnts = len(xdata)
-        data_dir, fprefix, fsuffix = get_file_path_as_parts(fname)
 
         self.spec_win.clear_plot()
         for i in range(num_specs):
@@ -463,9 +462,7 @@ class ContactSheet(QtWidgets.QWidget):
             style = get_basic_line_style(color)
             self.spec_win.create_curve(f"point_spectra_{i}", x=xdata, y=ydatas[i], curve_style=style)
 
-        xlabel = dct.get("xlabel")
         self.spec_win.setPlotAxisStrs("counts", xlabel)
-
         self.spec_win.update()
         self.spec_win.set_autoscale()
         self.spec_win.show()

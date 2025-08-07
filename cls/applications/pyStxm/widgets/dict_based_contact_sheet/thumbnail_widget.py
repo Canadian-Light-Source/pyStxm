@@ -1,7 +1,4 @@
 
-
-import sys
-import json
 import os
 import numpy as np
 import simplejson as json
@@ -9,27 +6,22 @@ import simplejson as json
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PIL import Image
 
-from bcm.devices.epu import convert_wrapper_epu_to_str
-
 from cls.utils.dict_utils import dct_get
-from cls.utils.roi_dict_defs import *
+from cls.utils import roi_dict_defs as roi_defs
 from cls.utils.pixmap_utils import get_pixmap
-from cls.utils.hdf_to_dict import (get_pystxm_scan_type_from_file_dct, get_first_sp_db_from_file_dct,
-                                   get_default_data_from_hdf5_file)
 from cls.utils.arrays import flip_data_upsdown
 from cls.utils.images import array_to_gray_qpixmap, array_to_image
 
-from cls.types.stxmTypes import scan_types, scan_sub_types, image_type_scans, spectra_type_scans, focus_scans
+from cls.types.stxmTypes import scan_types, spectra_type_scans, focus_scans
 from cls.plotWidgets.lineplot_thumbnail import OneD_MPLCanvas
 from cls.applications.pyStxm.widgets.print_stxm_thumbnail import (
     SPEC_THMB_WD,
     SPEC_THMB_HT,
 )
 
-from cls.utils.log import get_module_logger, log_to_qt
+from cls.utils.log import get_module_logger
 
 import cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils as utils
-from cls.applications.pyStxm.widgets.dict_based_contact_sheet.build_tooltip_info import dict_based_build_image_params
 
 _logger = get_module_logger(__name__)
 
@@ -60,6 +52,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         self.is_selected = False
         self.draggable = True
         self.info_jstr = None
+        self.pixmap = None
 
         self.setPreferredSize(utils.THUMB_WIDTH, utils.THUMB_HEIGHT)
         # Enable context menu for this graphics item
@@ -84,7 +77,6 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             if self.scan_type in focus_scans:
                 self.draggable = False
 
-
         if is_folder:
             self.getpic = self.get_folder_pic
 
@@ -96,9 +88,9 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         else:
             self.getpic = self.get_2dimage_pic
 
-        self.pic = self.getpic()
+        self.pixmap = self.getpic()
 
-        if self.pic:
+        if self.pixmap:
             self.valid_file = True
             self.setAcceptHoverEvents(True)
         else:
@@ -151,13 +143,13 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         self.select.emit(self)
         border_size = 1
         labelheight = 20
-        if self.pic != None:
+        if self.pixmap is not None:
             self.update(
                 QtCore.QRectF(
                     0.0,
                     0.0,
-                    self.pic.rect().width() + border_size,
-                    self.pic.rect().height() + labelheight + border_size,
+                    self.pixmap.rect().width() + border_size,
+                    self.pixmap.rect().height() + labelheight + border_size,
                 )
             )
         QtWidgets.QGraphicsItem.mousePressEvent(self, event)
@@ -173,7 +165,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         menu = QtWidgets.QMenu()
         launchAction = menu.addAction("Send to Viewer")
         prevAction = menu.addAction("Print Preview")
-        saveTiffAction = menu.addAction("Save as Tiff file")
+        # saveTiffAction = menu.addAction("Save as Tiff file")
 
         # For QGraphicsSceneContextMenuEvent, use screenPos()
         selectedAction = menu.exec_(event.screenPos())
@@ -182,63 +174,62 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             self.launch_vwr(self)
         elif selectedAction == prevAction:
             self.preview_it(self)
-        elif selectedAction == saveTiffAction:
-            self.save_tif(self)
+        # elif selectedAction == saveTiffAction:
+        #     self.save_tif(self)
 
     def get_generic_scan_launch_viewer_dct(self):
         ekey = utils.get_first_entry_key(self.h5_file_dct)
         entry_dct = self.h5_file_dct[ekey]
         sp_db = utils.get_first_sp_db_from_entry(entry_dct)
         xdata = utils.get_axis_setpoints_from_sp_db(sp_db, axis="X")
-        ydatas = utils.get_generic_scan_data_from_entry(entry_dct, counter=None)
+        # ydatas = utils.get_generic_scan_data_from_entry(entry_dct, counter=None)
+        ydata_lst = [self.counter_data.flatten()]
+
         dct = {}
         # because the data in the StxmImageWidget is displayed with 0Y at the btm
         # and maxY at the top I must flip it before sending it
         # dct['data'] = np.flipud(data)
         dct["data"] = None
         dct["xdata"] = xdata
-        dct["ydatas"] = ydatas
+        dct["ydatas"] = ydata_lst
         dct["path"] = self.filename
         dct["sp_db"] = sp_db
         dct["h5_file_dct"] = self.h5_file_dct
         dct["scan_type"] = self.scan_type
-        dct['scan_type_str'] = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
-        dct["xlabel"] = dct_get(sp_db, SPDB_XPOSITIONER)
-        dct["ylabel"] = dct_get(sp_db, SPDB_YPOSITIONER)
+        dct['scan_type_str'] = dct_get(sp_db, roi_defs.SPDB_SCAN_PLUGIN_SECTION_ID)
+        dct["xlabel"] = dct_get(sp_db, roi_defs.SPDB_XPOSITIONER)
+        dct["ylabel"] = dct_get(sp_db, roi_defs.SPDB_YPOSITIONER)
         dct["title"] = None
         if sp_db is not None:
             dct["title"] = self.filename
         return dct
 
     def get_sample_point_spectrum_launch_viewer_dct(self):
-        ydatas = []
-        # it matters that the data is in sequential entry order
-        # ekeys = sorted(self.data_dct['entries'].keys())
-        ekeys = sorted(
-            [k for k, v in self.h5_file_dct.items() if k.find("entry") > -1]
-        )
-        for ekey in ekeys:
-            entry_dct = self.h5_file_dct[ekey]
-            sp_db = utils.get_first_sp_db_from_entry(entry_dct)
-            # ydatas.append(utils.get_point_spec_data_from_entry(entry_dct))
-            _data = np.array(utils.get_point_spec_data_from_entry(entry_dct))
-            ydatas.append(_data.flatten())
+        """
+        create a dictionary for the sample point spectrum viewer, this is also used for print preview
+        needs to support multiple counters for an entry
 
-        # ekey = utils.get_first_entry_key(self.data_dct)
-        # entry_dct = self.data_dct[ekey]
+        curently this only supports the default counter in the default entry
+        """
+
+        ydata_lst = []
+        ekey = utils.get_first_entry_key(self.h5_file_dct)
+        entry_dct = self.h5_file_dct[ekey]
+        sp_db = utils.get_first_sp_db_from_entry(entry_dct)
+        ydata_lst.append(self.counter_data.flatten())
         xdata = utils.get_point_spec_energy_data_setpoints_from_entry(entry_dct)
 
         dct = {}
         dct["data"] = None
         dct["xdata"] = xdata
-        dct["ydatas"] = ydatas
+        dct["ydatas"] = ydata_lst
         dct["path"] = self.filepath
         dct["sp_db"] = sp_db
         dct["h5_file_dct"] = self.h5_file_dct
         dct["scan_type"] = self.scan_type
-        dct['scan_type_str'] = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
-        dct["xlabel"] = dct_get(sp_db, SPDB_XPOSITIONER)
-        dct["ylabel"] = dct_get(sp_db, SPDB_YPOSITIONER)
+        dct['scan_type_str'] = dct_get(sp_db, roi_defs.SPDB_SCAN_PLUGIN_SECTION_ID)
+        dct["xlabel"] = dct_get(sp_db, roi_defs.SPDB_XPOSITIONER)
+        dct["ylabel"] = dct_get(sp_db, roi_defs.SPDB_YPOSITIONER)
         dct["title"] = None
         if sp_db is not None:
             dct["title"] = self.filename
@@ -246,15 +237,19 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
 
     def get_standard_image_launch_viewer_dct(self):
         """
-             #SPDB_SCAN_PLUGIN_SECTION_ID = entry_dct['sp_db_dct']['stxm_scan_type']
+             #roi_defs.SPDB_SCAN_PLUGIN_SECTION_ID = entry_dct['sp_db_dct']['stxm_scan_type']
         """
         ekey = utils.get_first_entry_key(self.h5_file_dct)
         entry_dct = self.h5_file_dct[ekey]
         sp_db = utils.get_first_sp_db_from_entry(entry_dct)
-        data = self.data
+        # data = self.data
+        if self.scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
+            data = np.transpose(self.data).copy()
+        else:
+            data = np.flipud(self.data).copy()
         stack_index = None
 
-        if self.data.ndim == 2:
+        if data.ndim == 2:
             title = self.filename
             num_underscores = title.count('_')
             if "." in title:
@@ -277,10 +272,10 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         dct["path"] = self.filepath
         dct["sp_db"] = sp_db
         dct["h5_file_dct"] = self.h5_file_dct
-        dct['scan_type_str'] = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
+        dct['scan_type_str'] = dct_get(sp_db, roi_defs.SPDB_SCAN_PLUGIN_SECTION_ID)
         dct["scan_type"] = self.scan_type
-        dct["xlabel"] = dct_get(sp_db, SPDB_XPOSITIONER)
-        dct["ylabel"] = dct_get(sp_db, SPDB_YPOSITIONER)
+        dct["xlabel"] = dct_get(sp_db, roi_defs.SPDB_XPOSITIONER)
+        dct["ylabel"] = dct_get(sp_db, roi_defs.SPDB_YPOSITIONER)
         dct["title"] = None
         if sp_db is not None:
             dct["title"] = self.filename
@@ -295,7 +290,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         """
         # print 'launch_viewer %s.hdf5' % self.hdf5_path
         self = sender
-        info_dct = json.loads(self.info_jstr)
+        json.loads(self.info_jstr)
         if self.scan_type is scan_types.GENERIC_SCAN:
             dct = self.get_generic_scan_launch_viewer_dct()
             self.launch_viewer.emit(dct)
@@ -422,7 +417,6 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         )  # Image.ANTIALIAS)  # resizes to 256x512 exactly
         im.save(self.filepath.replace(".hdf5", ".tif"))
 
-
     def get_specplot_pic(self, scale_it=True, as_thumbnail=True):
         """
 
@@ -472,7 +466,6 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
                 QtCore.QSize(QtCore.QSize(utils.THMB_SIZE, utils.THMB_SIZE)),
                 QtCore.Qt.KeepAspectRatio,
             )
-        self.pixmap = pmap
         return pmap
 
     def get_2dimage_pic(self, scale_it=True, as_thumbnail=True):
@@ -483,18 +476,18 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         """
         if self.data is not None:
             if len(self.data.shape) == 2:
-                wd, ht = self.data.shape
-                # data = np.flipud(self.data)
-                # data = self.data
-                data = flip_data_upsdown(self.data)
-                shape = data.shape
+                ht, wd = self.data.shape
+                # data = flip_data_upsdown(self.data)
+                if self.scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
+                    data = np.transpose(self.data).copy()
+                    data = np.flipud(data).copy()
+                else:
+                    data = np.flipud(self.data).copy()
 
             elif len(self.data.shape) == 3:
-                img_seq, wd, ht = self.data.shape
-                # data = np.flipud(self.data[0])
-                # data = self.data[0]
-                data = flip_data_upsdown(self.data[0])
-                shape = data.shape
+                img_seq, ht, wd = self.data.shape
+                # data = flip_data_upsdown(self.data[0])
+                data = np.flipud(self.data[0]).copy()
 
             else:
                 # _logger.error('unsupported data shape')
@@ -519,7 +512,6 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             # pmap.scaled(QtCore.QSize(QtCore.QSize(wd, ht)), QtCore.Qt.KeepAspectRatio)
             pmap.scaled(QtCore.QSize(QtCore.QSize(wd, ht)), QtCore.Qt.IgnoreAspectRatio)
 
-        self.pixmap = pmap
         return pmap
 
     def get_generic_scan_pic(self, scale_it=True, as_thumbnail=True):
@@ -538,7 +530,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             return
         xdata = self.entry_dct['sp_db_dct'][x_axis_name]
         #ydatas = utils.get_generic_scan_data_from_entry(entry_dct, counter=counter)
-        ydatas = list(self.counter_data.flatten())
+        ydatas = self.counter_data.flatten()
 
         if len(xdata) <= 1:
             pmap = QtGui.QPixmap()
@@ -572,7 +564,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
                 QtCore.QSize(QtCore.QSize(utils.THMB_SIZE, utils.THMB_SIZE)),
                 QtCore.Qt.KeepAspectRatio,
             )
-        self.pixmap = pmap
+
         return pmap
 
     def get_folder_pic(self, scale_it=True, as_thumbnail=True):
@@ -621,7 +613,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
                 QtCore.Qt.KeepAspectRatio,
                 QtCore.Qt.SmoothTransformation,
             )
-        self.pixmap = pmap
+
         return pmap
 
     def boundingRect(self):

@@ -51,3 +51,14 @@ class TwoVariableScanClass(BaseTwoVariableScanClass):
                 d.new_plot_data.connect(func)
                 self._det_subscriptions.append(d)
 
+    def make_pxp_scan_plan(self, dets, md=None, bi_dir=False):
+        """
+        just return a blank generator, this is to allow the base class to not have
+        """
+
+        def blank_generator():
+            if False:
+                yield
+
+        return (yield from blank_generator())
+

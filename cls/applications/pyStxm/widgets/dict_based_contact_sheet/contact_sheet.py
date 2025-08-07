@@ -367,8 +367,8 @@ class ContactSheet(QtWidgets.QWidget):
             drag.setMimeData(mimeData)
             pos = event.pos() - obj.rect().topLeft()
             drag.setHotSpot(QtCore.QPoint(int(pos.x()), int(pos.y())))
-            if obj.pic is not None:
-                drag.setPixmap(obj.pic)
+            if obj.pixmap is not None:
+                drag.setPixmap(obj.pixmap)
 
             if (
                 drag.exec_(

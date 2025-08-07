@@ -1,20 +1,11 @@
 import sys
+import numpy as np
 import os
-import random
 
-from PyQt5 import QtCore, QtWidgets, QtGui
-from PyQt5.QtPrintSupport import QPrinter, QPrintDialog, QPrintPreviewDialog
+from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import (
-    QDate,
-    QRectF,
     Qt,
     QSize,
-    QRect,
-    QPoint,
-    pyqtSignal,
-    QByteArray,
-    QBuffer,
-    QIODevice,
 )
 
 import matplotlib
@@ -81,8 +72,8 @@ class OneD_MPLCanvas(MyMplCanvas):
         axes_bgrnd_color=AXES_BACKGROUND_COLOR,
     ):
         super(OneD_MPLCanvas, self).__init__(width=width, height=height, dpi=dpi)
-        self.xdata = xdata
-        self.ydatas = ydatas
+        self.xdata = np.array(xdata)
+        self.ydatas = np.array(ydatas)
         self.axes_bgrnd_color = axes_bgrnd_color
         self.gen_figure()
 
@@ -98,11 +89,11 @@ class OneD_MPLCanvas(MyMplCanvas):
                     ydata = resize_1d_array(ydata, self.xdata)
 
                 self.axes.set_facecolor(self.axes_bgrnd_color)
-                self.axes.plot(self.xdata, ydata, linewidth=1)
+                self.axes.plot(self.xdata, ydata, color="black", linewidth=1)
         else:
             if len(self.xdata) == len(self.ydatas):
                 self.axes.set_facecolor(self.axes_bgrnd_color)
-                self.axes.plot(self.xdata, self.ydatas, linewidth=1)
+                self.axes.plot(self.xdata, self.ydatas, color="black", linewidth=1)
 
     def get_pixmap(self, as_grayscale=False, as_thumbnail=False):
         # can call self.show() here if I want to see the plot from matplotlib

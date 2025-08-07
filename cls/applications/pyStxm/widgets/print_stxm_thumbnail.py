@@ -118,33 +118,6 @@ class PrintSTXMThumbnailWidget(QDialog):
         self.dct = copy.copy(dct)
         self.do_preview.emit(dct)
 
-    def getHtmlDoc(self, fname=None):
-        fname = "C170928046.hdf5"
-        pnts = "150x150"
-        scan_type = "Image Scan"
-        ev = "319.998 eV"
-        dwell = "1 ms Dwell"
-        pol = "Polariz = -1.0"
-        xaxis_nm = "Sample X (um)"
-        yaxis_nm = "PMT"
-
-        html = ""
-        html += "<p align=left>%s</p>" % fname
-        html += "<p align=left>%s %s %s</p>" % (pnts, scan_type, ev)
-        html += "<p align=left>%s %s</p>" % (dwell, pol)
-        html += '<p align=left><img src="data.png" width = 50% height = 50%></p>'
-        html += '<p align=right><img src="hist.png" width = 50% height = 50%></p>'
-        html += "<p align=left> %s </p>" % xaxis_nm
-        document = QTextDocument()
-        document.setHtml(html)
-        return document
-
-    def printViaHtml(self):
-        document = self.getHtmlDoc()
-        dialog = QPrintDialog(self.printer, self)
-        if dialog.exec_():
-            document.print_(self.printer)
-
     def printViaQPainter(self, dct):
         """
         this appars to paint right to the printer
@@ -248,122 +221,6 @@ class PrintSTXMThumbnailWidget(QDialog):
         painter.end()
         painter.restore()
 
-    def printViaQPainterPreview(self, dct):
-        """
-        this appars to paint right to the printer
-        as self.printer is the parent of the QPointer instance
-        dct = {'self.info_jstr': '{"polarization": "CircLeft", "angle": 0.0, "center": [-1380.3554196143814, -119.63448659429068], "energy": 714.9979576566445, "step": [0.06733267796298362, 0.0680900257534698], "scan_type": "sample_image_stack Line_Unidir", "range": [10.032569016484558, 10.145413837267], "file": "S:\\\\STXM-data\\\\Cryo-STXM\\\\2017\\\\guest\\\\0817\\\\C170817057.hdf5", "offset": 0.0, "npoints": [150, 150], "dwell": 1.0, "scan_panel_idx": 5}', 'fname': 'S:\\STXM-data\\Cryo-STXM\\2017\\guest\\0817\\C170817057.hdf5'}
-        """
-
-        # dialog = QPrintDialog(self.printer, self)
-        # if not dialog.exec_():
-        #    return
-        preview = QPrintPreviewDialog(self.printer, self)
-
-        LeftMargin = LEFT_MARGIN
-        sansFont = QFont("Arial", 8)
-        sansLineHeight = QFontMetrics(sansFont).height()
-        serifFont = QFont("Times", 11)
-        serifLineHeight = QFontMetrics(sansFont).height()
-        fm = QFontMetrics(serifFont)
-
-        fname = dct["fname"]
-        pnts = "%dx%d" % (dct["info_dct"]["npoints"][0], dct["info_dct"]["npoints"][1])
-        scan_type = dct["info_dct"]["scan_type"]
-        ev = "%.3f eV" % dct["info_dct"]["energy"]
-        dwell = "%.2f ms Dwell" % dct["info_dct"]["dwell"]
-        pol = "Polariz = %s" % dct["info_dct"]["polarization"]
-        data_pm = dct["data_pmap"]
-        xaxis_nm = "Sample X (um)"
-        yaxis_nm = "counter0"
-
-        # serifLineHeight = fm.height()
-        # data_pm = QPixmap("data.png")
-        data_pm = data_pm.scaled(QSize(THMB_SIZE, THMB_SIZE))
-        hist_pm = QPixmap("hist.png")
-        hist_pm = hist_pm.scaled(QSize(THMB_SIZE // 5, THMB_SIZE))
-        prev_pmap = QPixmap()
-        # painter = QPainter(preview)
-        painter = QPainter()
-        painter.begin(prev_pmap)
-        painter.setRenderHints(
-            painter.renderHints()
-            | QPainter.Antialiasing
-            | QPainter.SmoothPixmapTransform
-            | QPainter.HighQualityAntialiasing
-        )
-
-        pageRect = self.printer.pageRect()
-        page = 1
-
-        painter.save()
-        y = 0
-        # x = pageRect.width() - data_pm.width() - LeftMargin
-        x = LeftMargin
-
-        painter.setFont(serifFont)
-
-        y += sansLineHeight
-        y += sansLineHeight
-        painter.drawText(x, y, "   %s" % fname)
-        y += serifLineHeight
-        painter.setFont(sansFont)
-        painter.drawText(x, y, "%s " % (scan_type))
-        y += sansLineHeight
-        painter.drawText(x, y, "%s      %s " % (pnts, ev))
-        y += sansLineHeight
-        painter.drawText(x, y, "%s      %s " % (dwell, pol))
-        y += sansLineHeight
-        painter.drawPixmap(x, y, data_pm)
-        # y += data_pm.height() + sansLineHeight
-
-        ##############contrast gradient
-        width = 20
-        # QRectF(x,y,width, ht) Constructs a rectangle with (x, y) as its top-left corner and the given width and height.
-        contrast_bounds = QRectF(x + data_pm.width() + 20, y, width, data_pm.height())
-        # g = QLinearGradient(0.0, 0.0, 0.0, data_pm.height())
-        g = QLinearGradient()
-        g.setColorAt(0, Qt.white)
-        g.setColorAt(1, Qt.black)
-
-        g.setStart(contrast_bounds.topLeft())
-        g.setFinalStop(contrast_bounds.bottomRight())
-        # #top left
-        # g.setStart(x + data_pm.width() + 10, data_pm.height())
-        # #btm right
-        # g.setFinalStop(width, y)
-        # painter.fillRect(x + data_pm.width() + 10, y, width, data_pm.height(), QBrush(g))
-        painter.fillRect(contrast_bounds, QBrush(g))
-        painter.translate(x + data_pm.width(), y + 0.35 * THMB_SIZE)
-        # rotate to place name of counter
-        painter.rotate(90.0)
-        painter.drawText(5, 0, " %s " % (yaxis_nm))
-        painter.rotate(-90.0)
-        painter.translate(-1.0 * (x + data_pm.width()), -1.0 * (y + 0.35 * THMB_SIZE))
-
-        #########################en
-        # painter.drawPixmap(x + data_pm.width() + 10, y, hist_pm)
-        y += data_pm.height() + sansLineHeight
-        painter.drawText(x + int(0.25 * data_pm.width()), y, "%s" % xaxis_nm)
-        y += sansLineHeight
-        painter.setFont(serifFont)
-        x = LeftMargin
-
-        # page += 1
-        # if page <= len(self.statements):
-        #     self.printer.newPage()
-        painter.end()
-        painter.restore()
-
-        html = ""
-        document = QTextDocument()
-        document.setHtml(html)
-        cursor = QTextCursor(document)
-        img = prev_pmap.toImage()
-        cursor.insertImage(img)
-        document.print_(preview)
-        preview.exec_()
-
     def getQPainterDoc(self):
         r"""Paints right to the printer, as self.printer is the parent of the QPointer instance"""
         self.prev_pmap = None
@@ -396,7 +253,7 @@ class PrintSTXMThumbnailWidget(QDialog):
         ypositioner = str(dct["ypositioner"])
         xaxis_nm = str(dct.get("xaxis_nm", xpositioner))
         yaxis_nm = str(dct.get("yaxis_nm", ypositioner))
-        counter_nm = "counter0"
+        counter_nm = dct['counter_nm']
 
         x_center = dct["xcenter"]
         x_range = dct["xrange"]
@@ -606,13 +463,7 @@ class PrintSTXMThumbnailWidget(QDialog):
         """
         this appars to paint right to the printer
         as self.printer is the parent of the QPointer instance
-        dct = {'self.info_jstr': '{"polarization": "CircLeft", "angle": 0.0, "center": [-1380.3554196143814, -119.63448659429068], "energy": 714.9979576566445, "step": [0.06733267796298362, 0.0680900257534698], "scan_type": "sample_image_stack Line_Unidir", "range": [10.032569016484558, 10.145413837267], "file": "S:\\\\STXM-data\\\\Cryo-STXM\\\\2017\\\\guest\\\\0817\\\\C170817057.hdf5", "offset": 0.0, "npoints": [150, 150], "dwell": 1.0, "scan_panel_idx": 5}', 'fname': 'S:\\STXM-data\\Cryo-STXM\\2017\\guest\\0817\\C170817057.hdf5'}
         """
-
-        # dialog = QPrintDialog(self.printer, self)
-        # if not dialog.exec_():
-        #    return
-
         self.prev_pmap = None
 
         LeftMargin = LEFT_MARGIN
@@ -711,15 +562,8 @@ class PrintSTXMThumbnailWidget(QDialog):
             # data_pm = data_pm.scaled(QSize(SPEC_THMB_WD, SPEC_THMB_HT))
             painter.drawPixmap(_x, y, data_pm)
 
-        #####################################
-
-        # painter.drawPixmap(_x, y, data_pm)
-        # y += data_pm.height() + sansLineHeight
-
-        ###########################################
-        # rotate to place name of counter
-        # painter.translate(_x + grey_pm.width(), y + 0.25 * SPEC_THMB_HT)
         painter.translate(_x + grey_pm.width() - 10, y + 0.25 * SPEC_THMB_HT)
+        # rotate to place name of counter
         painter.rotate(90.0)
         painter.drawText(0, -5, " %s " % (yaxis_nm))
         # UNDO TRANSFORM

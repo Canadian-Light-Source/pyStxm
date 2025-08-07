@@ -34,7 +34,7 @@ SPEC_THMB_WD = 200
 SPEC_THMB_HT = 160
 
 
-class MyMplCanvas(FigureCanvas):
+class MplCanvas(FigureCanvas):
     """Ultimately, this == a QWidget (as well as a FigureCanvasAgg, etc.).
     width and height are in inches, dpi == dots per inch
     """
@@ -44,8 +44,8 @@ class MyMplCanvas(FigureCanvas):
         self.axes = fig.add_subplot(111)
         self.compute_initial_figure()
         # We change the fontsize of minor ticks label
-        self.axes.tick_params(axis="both", which="major", labelsize=3)
-        self.axes.tick_params(axis="both", which="minor", labelsize=3)
+        self.axes.tick_params(axis="both", which="major", labelsize=22)
+        self.axes.tick_params(axis="both", which="minor", labelsize=22)
 
         FigureCanvas.__init__(self, fig)
         self.setParent(parent)
@@ -59,7 +59,7 @@ class MyMplCanvas(FigureCanvas):
         pass
 
 
-class OneD_MPLCanvas(MyMplCanvas):
+class OneD_MPLCanvas(MplCanvas):
     """Simple canvas with a sine plot."""
 
     def __init__(

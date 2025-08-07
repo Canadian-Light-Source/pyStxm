@@ -53,6 +53,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         self.draggable = True
         self.info_jstr = None
         self.pixmap = None
+        self.default_counter = None
 
         self.setPreferredSize(utils.THUMB_WIDTH, utils.THUMB_HEIGHT)
         # Enable context menu for this graphics item
@@ -65,8 +66,8 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
 
             # Get counter data
             data_section = self.entry_dct['sp_db_dct'].get('nxdata', {})
-            default_counter = data_section.get('default', 'counter1')
-            self.counter_data = np.array(data_section.get(default_counter, [[0]]))
+            self.default_counter = data_section.get('default', 'counter1')
+            self.counter_data = np.array(data_section.get(self.default_counter, [[0]]))
             self.data = self.counter_data
 
             # Get scan info from sp_db_dct
@@ -303,39 +304,6 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             dct = self.get_standard_image_launch_viewer_dct()
             self.launch_viewer.emit(dct)
 
-    def print_it(self, sender):
-        """
-        call PrintSTXMThumbnailWidget()
-        :param sender:
-        :return:
-        """
-        self = sender
-        info_dct = json.loads(self.info_jstr)
-
-        dct = {}
-        dct["fpath"] = self.filepath
-        dct["fname"] = self.filename
-        dct["data_pmap"] = self.getpic(scale_it=False)
-        dct["contrast_pmap"] = None
-        dct["xstart"] = 0
-        dct["ystart"] = 0
-        dct["xstop"] = info_dct["range"][0]
-        dct["ystop"] = info_dct["range"][1]
-        dct["xpositioner"] = info_dct["xpositioner"]
-        dct["ypositioner"] = info_dct["ypositioner"]
-        type_tpl = info_dct["scan_type"].split()
-        dct["scan_type"] = type_tpl[0]
-        dct["scan_type_num"] = info_dct["scan_type_num"]
-        dct["scan_sub_type"] = type_tpl[1]
-        dct["data_dir"] = self.data_dir
-
-        dct["data_min"] = self.data.min()
-        dct["data_max"] = self.data.max()
-
-        dct["info_dct"] = info_dct
-
-        self.print_thumb.emit(dct)
-
     def preview_it(self, sender):
         """
         call PrintSTXMThumbnailWidget()
@@ -363,13 +331,22 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         dct["xpositioner"] = info_dct["xpositioner"]
         dct["ypositioner"] = info_dct["ypositioner"]
 
+        if self.scan_type in [scan_types.SAMPLE_POINT_SPECTRUM, scan_types.SAMPLE_LINE_SPECTRUM]:
+            # override
+            dct["xstart"] = info_dct["estart"]
+            dct["xstop"] = info_dct["estop"]
+            dct["xcenter"] = (info_dct["estart"] + info_dct["estop"]) * 0.5
+            dct["xrange"] = info_dct["estop"] - info_dct["estart"]
+            dct["xpositioner"] = "Energy (eV)"
+            dct["ypositioner"] = self.default_counter
+
         type_tpl = info_dct["scan_type"].split()
         dct["scan_type"] = type_tpl[0]
         dct["scan_type_num"] = info_dct["scan_type_num"]
         dct["scan_sub_type"] = type_tpl[1]
         dct["data_dir"] = self.directory
 
-        if dct["scan_type"] == scan_types[scan_types.SAMPLE_POINT_SPECTRUM]:
+        if dct["scan_type"] in [scan_types[scan_types.SAMPLE_POINT_SPECTRUM]]:
             dct["data_min"] = self.data.min()
             dct["data_max"] = self.data.max()
         else:
@@ -382,7 +359,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
                 return
 
         dct["info_dct"] = info_dct
-        dct["counter_nm"] = 'counter'
+        dct["counter_nm"] = self.default_counter
 
         # print 'print_it called: %s'% self.filename
 

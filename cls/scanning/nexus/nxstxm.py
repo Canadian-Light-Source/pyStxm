@@ -4036,6 +4036,8 @@ def create_h5_file_dct_from_file_dct(file_dct):
 
 
     try:
+        z_dev_names = ['DNM_SAMPLE_Z', 'DNM_OSA_Z', 'DNM_ZONEPLATE_Z', 'DNM_DETECTOR_Z', 'DNM_COARSE_Z',
+                                         'DNM_SAMPLEFINE_Z']
         dct = {}
         x_roi = y_roi = z_roi = e_roi = None
         wdg_dct = make_base_wdg_com()
@@ -4063,7 +4065,7 @@ def create_h5_file_dct_from_file_dct(file_dct):
                 # now create the model that this pluggin will use to record its params
                 if positioner_nm in ['DNM_SAMPLE_X', 'DNM_OSA_X', 'DNM_ZONEPLATE_X', 'DNM_DETECTOR_X', 'DNM_COARSE_X', 'DNM_SAMPLEFINE_X']:
                     x_roi = generate_spatial_roi_from_data(positioner_nm, sp_db_dct[ax_nm].astype(float), roi_nm)
-                elif positioner_nm in ['DNM_SAMPLE_Y', 'DNM_OSA_Y', 'DNM_ZONEPLATE_Y', 'DNM_DETECTOR_Y', 'DNM_COARSE_Y', 'DNM_SAMPLEFINE_Y']:
+                elif positioner_nm in ['DNM_SAMPLE_Y', 'DNM_OSA_Y', 'DNM_ZONEPLATE_Y', 'DNM_DETECTOR_Y', 'DNM_COARSE_Y', 'DNM_SAMPLEFINE_Y', 'DNM_ZONEPLATE_Z']:
                     y_roi = generate_spatial_roi_from_data(positioner_nm, sp_db_dct[ax_nm].astype(float), roi_nm)
                 elif positioner_nm in ['DNM_SAMPLE_Z', 'DNM_OSA_Z', 'DNM_ZONEPLATE_Z', 'DNM_DETECTOR_Z', 'DNM_COARSE_Z', 'DNM_SAMPLEFINE_Z']:
                     z_roi = generate_spatial_roi_from_data(positioner_nm, sp_db_dct[ax_nm].astype(float), roi_nm, enable=False)
@@ -4080,6 +4082,18 @@ def create_h5_file_dct_from_file_dct(file_dct):
                     else:
                         x_roi = generate_spatial_roi_from_data('DNM_SAMPLE_X', sp_db_dct[ax_nm].astype(float), SPDB_X)
                         y_roi = generate_spatial_roi_from_data('DNM_SAMPLE_Y', sp_db_dct[ax_nm].astype(float), SPDB_Y)
+
+                # this is a catch all for the Z positioners so that if the scan is a two variable scan,
+                # this will make sure that y_roi and z_roi are set
+                #
+                if y_roi is None:
+                    if positioner_nm in z_dev_names:
+                        y_roi = generate_spatial_roi_from_data(positioner_nm, sp_db_dct[ax_nm].astype(float), roi_nm)
+
+                if z_roi is None:
+                    if positioner_nm in z_dev_names:
+                        z_roi = generate_spatial_roi_from_data(positioner_nm, sp_db_dct[ax_nm].astype(float), roi_nm,
+                                                               enable=False)
             if e_roi is None:
                 # need to make sure data contains ALL ev_regions
                 # need to make sure data contains ALL ev_regions

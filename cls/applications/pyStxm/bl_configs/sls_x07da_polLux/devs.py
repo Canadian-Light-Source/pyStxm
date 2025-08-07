@@ -128,13 +128,6 @@ dev_dct["POSITIONERS"] = [
         "pos_type": "POS_TYPE_ES",
     },
     {
-        "name": "DNM_COARSE_Z",
-        "desc": "Coarse_Z",
-        "class": "MotorQt",
-        "dcs_nm": "CoarseZ",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
         "name": "DNM_DETECTOR_X",
         "desc": "Detector_X",
         "class": "MotorQt",

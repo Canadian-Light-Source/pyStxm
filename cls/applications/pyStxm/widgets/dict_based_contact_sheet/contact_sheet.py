@@ -208,37 +208,39 @@ class ContactSheet(QtWidgets.QWidget):
         # Arrange thumbnails based on current view size
         self.update_scene_layout()
 
-
     def create_thumbnail_from_h5_file_dct(self, h5_file_dct: dict) -> None:
         """
-        take a data_dct and create a thumbnail widget from it.
+        Take a data_dct and create a thumbnail widget from it, adding it to the bottom of the scene.
         """
-
-        # Create thumbnail widget
         thumbnail = create_thumbnail(h5_file_dct)
 
         if thumbnail.is_valid():
-           # thumb_widget.update_view.connect(self.update_view)
             thumbnail.select.connect(self.do_select)
             thumbnail.launch_viewer.connect(self.launch_viewer)
             thumbnail.print_thumb.connect(self.print_thumbnail)
             thumbnail.preview_thumb.connect(self.preview_thumbnail)
-
             if thumbnail.draggable:
                 thumbnail.drag.connect(self.on_drag)
 
-        # if spec type then add to spectra scene
         _scan_type = h5_file_dct[h5_file_dct['default']]['sp_db_dct']['pystxm_enum_scan_type']
         if _scan_type in spectra_type_scans:
-            self.spectra_scene.addItem(thumbnail)
+            scene = self.spectra_scene
             self.spectra_thumbs.append(thumbnail)
         else:
-            # Otherwise add to images scene
-            self.images_scene.addItem(thumbnail)
+            scene = self.images_scene
             self.image_thumbs.append(thumbnail)
 
-        self.update_scene_layout()
+        # Find the bottom-most y position
+        items = [item for item in scene.items() if isinstance(item, QtWidgets.QGraphicsWidget)]
+        items = sorted(items, key=lambda item: item.pos().y())
+        if items:
+            max_y = max(item.pos().y() + item.boundingRect().height() for item in items)
+        else:
+            max_y = 0
+        thumbnail.setPos(0, max_y + 10)  # 10 px margin
 
+        scene.addItem(thumbnail)
+        self.update_scene_layout()
 
     def update_scene_layout(self):
         """

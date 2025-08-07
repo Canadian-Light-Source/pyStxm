@@ -954,7 +954,10 @@ class CurveViewerWidget(PlotDialog):
         if y is None:
             num_points = 0
         else:
-            num_points = len(y)
+            if type(y) == list:
+                num_points = len(y)
+            else:
+                num_points = y.shape[0]
 
         if curve_style is None:
             curve_style = get_basic_line_style(

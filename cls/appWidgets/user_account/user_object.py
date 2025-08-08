@@ -111,7 +111,8 @@ class user_obj(object):
         #     return(ddir)
 
     def get_scan_defs_dir(self):
-        return os.path.join(self._base_data_dir, self._userName, "scan_defs")
+        #return os.path.join(self._base_data_dir, self._userName, "scan_defs")
+        return os.path.join(self._data_dir, "scan_defs")
 
     def create_data_dir(self):
         """

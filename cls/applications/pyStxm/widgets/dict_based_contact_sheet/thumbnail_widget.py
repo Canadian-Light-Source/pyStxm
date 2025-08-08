@@ -186,7 +186,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         ydata_lst = [self.counter_data.flatten()]
 
         dct = {}
-        dct["data"] = None
+        dct["data"] = self.counter_data.flatten()
         dct["xdata"] = xdata
         dct["ydatas"] = ydata_lst
         dct["path"] = self.filename
@@ -217,7 +217,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         xdata = utils.get_point_spec_energy_data_setpoints_from_entry(entry_dct)
 
         dct = {}
-        dct["data"] = None
+        dct["data"] = ydata_lst
         dct["xdata"] = xdata
         dct["ydatas"] = ydata_lst
         dct["path"] = self.filepath

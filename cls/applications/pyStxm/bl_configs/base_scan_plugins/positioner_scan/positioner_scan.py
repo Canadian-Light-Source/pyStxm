@@ -241,7 +241,6 @@ class BasePositionerScanParam(ScanParamWidget):
         grabs a region of interest marker in the plot and either moves or resizes it, those new center and size
         values will be delivered here and,  if required, the stepsizes will be recalculated
 
-
         :param sp_db: is a standard dict returned from the call to sm.stxm_control.stxm_utils.roi_utils.make_spatial_db_dict()
         :type sp_db: dict.
 
@@ -253,9 +252,11 @@ class BasePositionerScanParam(ScanParamWidget):
         """
         self.sp_db[SPDB_X][START] = sp_db[SPDB_X][START]
         self.sp_db[SPDB_X][STOP] = sp_db[SPDB_X][STOP]
+        self.sp_db[SPDB_X][NPOINTS] = sp_db[SPDB_X][NPOINTS]
 
         x_roi = self.sp_db[SPDB_X]
-        e_rois = self.sp_db[SPDB_EV_ROIS]
+        #e_rois = self.sp_db[SPDB_EV_ROIS]
+        e_rois = sp_db[SPDB_EV_ROIS]
 
         if do_recalc:
             on_range_changed(x_roi)
@@ -287,28 +288,12 @@ class BasePositionerScanParam(ScanParamWidget):
             if dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) != self.type:
                 return
 
+            self.sp_db = sp_db
             self.mod_roi(sp_db, do_recalc=False)
 
             idx = self.posner_dct[positioner]
             self.posnerComboBox.setCurrentIndex(idx)
 
-        # emit roi_changed so that the plotter can be signalled to create the ROI shap items
-        # self.roi_changed.emit(wdg_com)
-
-    #     def load_roi(self, wdg_com):
-    #         """
-    #         take a widget communications dict and load the plugin GUI with the spatial region, also
-    #         set the scan subtype selection pulldown for point by point or line
-    #         """
-    #
-    #         if(wdg_com[WDGCOM_CMND] == widget_com_cmnd_types.LOAD_SCAN):
-    #             sp_db = get_first_sp_db_from_wdg_com(wdg_com)
-    #             positioner = sp_db[SPDB_X][POSITIONER]
-    #             if(dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) != scan_types.GENERIC_SCAN):
-    #                 return
-    #
-    #             idx = self.posner_dct[positioner]
-    #             self.posnerComboBox.setCurrentIndex(idx)
 
     def update_last_settings(self):
         """update the 'default' settings that will be reloaded when this scan pluggin is selected again"""

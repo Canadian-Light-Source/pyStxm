@@ -47,8 +47,6 @@ class BaseTwoVariableScanParam(ScanParamWidget):
         self.var_dct = {}
         self.populate_variable_cbox()
 
-        self.loadScanBtn.clicked.connect(self.load_scan)
-
         self.prim_positioner = None
         self.sec_positioner = None
         self.prim_units = None

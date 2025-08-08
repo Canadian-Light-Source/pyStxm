@@ -17,7 +17,7 @@ CONDA_CMD=$(find_conda)
 eval "$($CONDA_CMD shell.bash hook)" &> /dev/null
 
 # Activate the conda environment
-conda activate pyStxm310 &> /dev/null
+conda activate pyStxm &> /dev/null
 
 # Activate the conda environment
 #source /home/bergr/pyStxm/miniconda/bin/activate pyStxm310 

@@ -850,33 +850,33 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.add_to_log(clr, msg)
         #self.logWindow.append(msg)
 
-    def load_dir_view(self):
-        """
-        load_dir_view(): description
+    # def load_dir_view(self):
+    #     """
+    #     load_dir_view(): description
+    #
+    #     :returns: None
+    #     """
+    #     self.dir_model = QtWidgets.QFileSystemModel()
+    #     self.dir_model.setRootPath(QtCore.QDir.currentPath())
+    #
+    #     # self.dir_model.setRootPath( QtCore.QString(MAIN_OBJ.get_session_info().get_data_dir()) )
+    #     self.dirTreeView.setModel(self.dir_model)
+    #     self.dirTreeView.clicked.connect(self.on_treeView_clicked)
 
-        :returns: None
-        """
-        self.dir_model = QtWidgets.QFileSystemModel()
-        self.dir_model.setRootPath(QtCore.QDir.currentPath())
-
-        # self.dir_model.setRootPath( QtCore.QString(MAIN_OBJ.get_session_info().get_data_dir()) )
-        self.dirTreeView.setModel(self.dir_model)
-        self.dirTreeView.clicked.connect(self.on_treeView_clicked)
-
-    @QtCore.pyqtSlot(QtCore.QModelIndex)
-    def on_treeView_clicked(self, index):
-        """
-        on_treeView_clicked(): description
-
-        :param index: index description
-        :type index: index type
-
-        :returns: None
-        """
-        indexItem = self.dir_model.index(index.row(), 0, index.parent())
-        fileName = self.dir_model.fileName(indexItem)
-        filePath = self.dir_model.filePath(indexItem)
-        print("selected [%s]" % (filePath))
+    # @QtCore.pyqtSlot(QtCore.QModelIndex)
+    # def on_treeView_clicked(self, index):
+    #     """
+    #     on_treeView_clicked(): description
+    #
+    #     :param index: index description
+    #     :type index: index type
+    #
+    #     :returns: None
+    #     """
+    #     indexItem = self.dir_model.index(index.row(), 0, index.parent())
+    #     fileName = self.dir_model.fileName(indexItem)
+    #     filePath = self.dir_model.filePath(indexItem)
+    #     print("selected [%s]" % (filePath))
 
     def on_set_scan_btns(self, do_what):
         """
@@ -1516,9 +1516,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         # load the app status panel
         self.setup_select_detectors_frame()
 
-        # load the sscan status panel
-        # self.setup_sscan_status()
-
         # self.check_if_pv_exists()
 
     def check_if_pv_exists(self):
@@ -1674,19 +1671,11 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             self.active_user.get_data_dir(), STXMDataIo, parent=self
         )
         if hasattr(self.contact_sheet, "sig_reload_dir"):
-            self.contact_sheet.sig_reload_dir.connect(self.on_contact_sheet_reload_dir) #
+            self.contact_sheet.sig_reload_dir.connect(MAIN_OBJ.zmq_reload_data_directory)
         vbox = QtWidgets.QVBoxLayout()
         vbox.setContentsMargins(0, 0, 0, 0)
         vbox.addWidget(self.contact_sheet)
         self.imagesFrame.setLayout(vbox)
-
-    def on_contact_sheet_reload_dir(self, data_dir):
-        """
-        on_contact_sheet_reload_dir(): reload the contact sheet with the new data directory
-        :param data_dir: the new data directory to load
-        :type data_dir: str
-        """
-        MAIN_OBJ.zmq_reload_data_directory()
 
     def init_ptycho_data_viewer(self):
         ptycho_dev = MAIN_OBJ.device(PTYCHO_CAMERA, do_warn=False)
@@ -1739,27 +1728,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 shutter_dev.set_to_manual()
                 shutter_dev.close()
 
-    def scanToolbox_ContextMenuEvent(self, event):
-        """
-        contextMenuEvent(): walk all scans in toolbox and create a context menu action for each
-
-        :param event: event description
-        :type event: event type
-
-        :returns: None
-        """
-        menu_dct = {}
-        menu = QtWidgets.QMenu()
-        for i in range(self.scanTypeComboBox.count()):
-            nm = self.scanTypeComboBox.itemText(i)
-            _action = QtWidgets.QAction(nm, self)
-            menu_dct[nm] = i
-            menu.addAction(_action)
-
-        selectedAction = menu.exec_(self.scanTypeStackedWidget.mapToGlobal(event.pos()))
-        if selectedAction:
-            self.scanTypeComboBox.setCurrentIndex(menu_dct[selectedAction.text()])
-
     def setup_scan_toolbox(self):
 
         """
@@ -1779,8 +1747,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.scanTypeStackedWidget = QtWidgets.QStackedWidget()
         self.scanTypeStackedWidget.layout().setContentsMargins(0, 0, 0, 0)
         self.scanTypeStackedWidget.layout().setSpacing(0)
-        self.scanTypeStackedWidget.contextMenuEvent = self.scanToolbox_ContextMenuEvent
-
         self.scanTypeComboBox.currentIndexChanged.connect(self.scanTypeStackedWidget.setCurrentIndex)
 
         # get the beamline config directory from the presets loaded at startup

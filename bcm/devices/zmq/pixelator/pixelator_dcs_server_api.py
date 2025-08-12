@@ -1,4 +1,5 @@
 import time
+import os
 from PyQt5.QtCore import QTimer
 from queue import Queue
 import re
@@ -1311,6 +1312,33 @@ class DcsServerApi(BaseDcsServerApi):
             print(f"pixelator_dcs_server_api:load_file: success: loaded file [{filename}] from directory [{directory}]")
         else:
             print(f"pixelator_dcs_server_api:load_file: FAILED: could not load file [{filename}] from directory [{directory}]")
+        return
+
+    def load_files(self, directory, filenames):
+        """
+        This function calls the DCS server to load a file and then emits the result
+        """
+
+        files = [f'{directory}{os.path.sep}{filename}' for filename in filenames]
+
+        if len(files) == 0:
+            return
+
+        dct = {
+            "directory": f"{directory}",
+            "file": f"{files[0]}",
+            "showHidden": 0,
+            "fileExtension": ".hdf5",
+            "directories": ["..", "discard"],
+            "files": files,
+             "pluginNumber": 0,
+        }
+        reply = self.parent.zmq_dev_server_thread.send_receive(['loadFile files', json.dumps(dct)])
+
+        if reply[0]['status'] == 'ok':
+            print(f"pixelator_dcs_server_api:load_files: success: loaded file [{files}] from directory [{directory}]")
+        else:
+            print(f"pixelator_dcs_server_api:load_files: FAILED: could not load file [{files}] from directory [{directory}]")
         return
 
 

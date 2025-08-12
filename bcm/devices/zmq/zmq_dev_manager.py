@@ -241,10 +241,12 @@ class ZMQRunEngine(QObject):
             remote_file_system_info = self.remote_file_system_info
             data_dir = remote_file_system_info['directory']
         file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+        # if isinstance(file_lst, list):
+        #     for filename in file_lst:
+        #         fname = os.path.join(data_dir, filename)
+        #         self.dcs_server_api.load_file(data_dir, fname)
         if isinstance(file_lst, list):
-            for filename in file_lst:
-                fname = os.path.join(data_dir, filename)
-                self.dcs_server_api.load_file(data_dir, fname)
+            self.dcs_server_api.load_files(data_dir, file_lst)
 
     def print_all_devs(self, title: str, devlist: [str]) -> None:
         print(f"{title}:")

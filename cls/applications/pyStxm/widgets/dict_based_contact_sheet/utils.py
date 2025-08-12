@@ -167,11 +167,17 @@ def get_ev_rois_from_sp_db(sp_db: dict) -> list:
     return ev_rois
 
 def get_point_spec_energy_data_setpoints_from_entry(entry_dct: dict, counter: Optional[str] = None) -> np.ndarray:
+    """
+    return all of the energy setpoints from all EV_ROIS
+    """
     wdg_com = get_wdg_com_from_entry(entry_dct)
     spatial_rois = get_spatial_rois_from_wdg_com(wdg_com)
     sp_db = get_first_sp_db_from_spatial_rois(spatial_rois)
     ev_rois = get_ev_rois_from_sp_db(sp_db)
-    data = ev_rois[0]['SETPOINTS']
+    data = []
+    for ev_roi in ev_rois:
+        data.extend(ev_roi['SETPOINTS'])
+    data = np.array(data)
     return data
 
 def get_energy_setpoints_from_entry(entry_dct: dict, counter: Optional[str] = None) -> np.ndarray:

@@ -1293,14 +1293,14 @@ class ScanParamWidget(QtWidgets.QFrame):
     def dropEvent(self, event):
         mimeData = event.mimeData()
 
-        if mimeData.hasFormat("application/dict-based-stxmscan"):
+        if mimeData.hasFormat("application/dict-based-lineplot-stxmscan") or mimeData.hasFormat("application/dict-based-imageplot-stxmscan"):
             for format in mimeData.formats():
                 formatItem = QtWidgets.QTableWidgetItem(format)
                 formatItem.setFlags(QtCore.Qt.ItemIsEnabled)
                 formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
 
-                if format == 'application/dict-based-stxmscan':
-                    itemData = mimeData.data("application/dict-based-stxmscan")
+                if (format == 'application/dict-based-lineplot-stxmscan') or (format == 'application/dict-based-imageplot-stxmscan'):
+                    itemData = mimeData.data(format)
                     # text = mimeData.text()
                     _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
                     _info_jstr = QtCore.QByteArray()

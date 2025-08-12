@@ -206,7 +206,8 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         create a dictionary for the sample point spectrum viewer, this is also used for print preview
         needs to support multiple counters for an entry
 
-        curently this only supports the default counter in the default entry
+        ToDO: currently this only supports the default counter in the default entry, wwill need to be updated to handle
+        multi spatial point spectra
         """
 
         ydata_lst = []

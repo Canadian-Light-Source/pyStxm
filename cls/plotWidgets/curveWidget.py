@@ -1,34 +1,3 @@
-# -*- coding:utf-8 -*-
-"""
- Copyright © 2011 Canadian Light Source Inc. (CLSI) All rights reserved.
-
- Permission to use, copy, modify, and distribute this software and its
- documentation for any purpose and without fee or royalty is hereby granted,
- provided that the full text of this NOTICE appears on ALL copies of the
- software and documentation or portions thereof, including modifications,
- that you make.
-
- THIS SOFTWARE IS PROVIDED BY CLSI "AS IS" AND CLSI EXPRESSLY DISCLAIMS
- LIABILITY FOR ANY AND ALL DAMAGES AND LOSSES (WHETHER DIRECT, INCIDENTAL,
-  CONSEQUENTIAL OR OTHERWISE) ARISING FROM OR IN ANY WAY RELATED TO THE
- USE OF SOFTWARE, INCLUDING, WITHOUT LIMITATION, DAMAGES TO ANY COMPUTER,
- SOFTWARE OR DATA ARISING OR RESULTING FROM USE OF THIS SOFTWARE.
- BY WAY OF EXAMPLE, BUT NOT LIMITATION, CLSI MAKE NO REPRESENTATIONS OR
- WARRANTIES OF MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR
- THAT THE USE OF THE SOFTWARE  OR DOCUMENTATION WILL NOT INFRINGE ANY THIRD
- PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS. CLSI WILL BEAR NO
- LIABILITY FOR ANY USE OF THIS SOFTWARE OR DOCUMENTATION.
-
- Title to copyright in this software and any associated documentation will
- at all times remain with CLSI. The reproduction of CLSI and its trademarks
- is strictly prohibited, except with the prior written consent of CLSI.
-
------------------------------------------------
-wireCurveWidget provides <WHAT DOES THIS PROVIDE?>, classes for <WHAT?>.
-
-<PUT A DESCRITION HERE OF WHAT THIS DOES>
-"""
-# put builtin imports here
 import os
 import sys
 import numpy as np
@@ -50,7 +19,9 @@ from cls.plotWidgets.curve_object import curve_Obj
 from cls.plotWidgets.utils import gen_complete_spec_chan_name
 from cls.stylesheets import color_str_as_hex, get_style, is_style_light, master_colors
 from cls.utils.fileUtils import get_file_path_as_parts
-from cls.utils.json_threadsave import mime_to_dct
+from cls.utils.roi_utils import make_base_wdg_com, widget_com_cmnd_types
+from cls.utils.dict_utils import dct_get, dct_put
+import cls.utils.roi_dict_defs as roi_dict_defs
 from cls.utils.log import get_module_logger
 
 # setup module logger with a default do-nothing handler
@@ -597,6 +568,7 @@ class CurveViewerWidget(PlotDialog):
                 formatItem.setFlags(QtCore.Qt.ItemIsEnabled)
                 formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
 
+                # ToDo remove this
                 if format == 'application/x-stxmscan':
                     itemData = mimeData.data("application/x-stxmscan")
                     _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
@@ -625,17 +597,55 @@ class CurveViewerWidget(PlotDialog):
 
                     xlabel = dct.get("xlabel")
                     self.setPlotAxisStrs("counts", xlabel)
+                    self.update()
+                    self.set_autoscale()
+                    break
+
+                elif format == "application/dict-based-lineplot-stxmscan":
+                    itemData = mimeData.data("application/dict-based-lineplot-stxmscan")
+                    _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
+                    _info_jstr = QtCore.QByteArray()
+                    _data_bytes = QtCore.QByteArray()
+                    _pos = QtCore.QPointF()
+                    _stream >> _info_jstr >> _data_bytes >> _pos
+                    _info_str = bytes(_info_jstr).decode()
+                    drop_dct = json.loads(_info_str)
+
+                    # fname = drop_dct["path"]
+                    # convert to array
+                    data = np.array(drop_dct["data"])
+                    drop_dct["data"] = data
+                    sp_db = drop_dct["sp_db"]
+                    title = drop_dct["title"]
+                    xlabel = drop_dct.get("xlabel") or "X"
+                    ylabel = drop_dct.get("ylabel") or "Y"
+                    xdata = drop_dct["xdata"]
+                    ydatas = drop_dct["ydatas"]
+                    sp_db = drop_dct["sp_db"]
+                    num_specs = len(ydatas)
+
+                    self.clear_plot()
+                    for i in range(num_specs):
+                        color = get_next_color(use_dflt=False)
+                        style = get_basic_line_style(color)
+                        self.create_curve(f"point_spectra_{i}", x=xdata, y=ydatas[i], curve_style=style)
+
+                    xlabel = drop_dct.get("xlabel")
+                    self.setPlotAxisStrs("counts", xlabel)
 
                     self.update()
                     self.set_autoscale()
-
+                    break
 
                 elif format == "text/plain":
                     text = mimeData.text()  # .strip()
+                    break
                 elif format == "text/html":
                     text = mimeData.html()  # .strip()
+                    break
                 elif format == "text/uri-list":
                     text = " ".join([url.toString() for url in mimeData.urls()])
+                    break
                 else:
                     # text = " ".join(["%02X" % ord(datum)
                     #                  for datum in mimeData.data(format)])
@@ -656,6 +666,7 @@ class CurveViewerWidget(PlotDialog):
                                 )
                             ]
                         )
+                    break
 
                 # row = self.formatsTable.rowCount()
                 # self.formatsTable.insertRow(row)
@@ -969,6 +980,7 @@ class CurveViewerWidget(PlotDialog):
         )
         self.curve_objs[curve_name].changed.connect(self.update_curve)
         self._addItems(self.curve_objs[curve_name].curve_item)
+        self.update_curve()
 
     def reset_curve(self, curve_name=None):
         if curve_name is None:

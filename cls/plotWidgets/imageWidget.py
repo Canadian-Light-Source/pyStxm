@@ -750,6 +750,7 @@ class ImageWidgetPlot(PlotDialog):
             # import simplejson as json
             mimeData = event.mimeData()
 
+            #ToDo: remove this: this is the old assumed local file based drag and drop this
             if mimeData.hasFormat("application/x-stxmscan"):
                 if mimeData == None:
                     return
@@ -822,6 +823,64 @@ class ImageWidgetPlot(PlotDialog):
 
                             self.setPlotAxisStrs(ylabel, xlabel)
 
+
+            elif mimeData.hasFormat("application/dict-based-imageplot-stxmscan"):
+
+                for format in mimeData.formats():
+                    formatItem = QtWidgets.QTableWidgetItem(format)
+                    formatItem.setFlags(QtCore.Qt.ItemIsEnabled)
+                    formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+
+                    if format == "application/dict-based-imageplot-stxmscan":
+                            itemData = mimeData.data(format)
+                            # text = mimeData.text()
+                            _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
+                            _info_jstr = QtCore.QByteArray()
+                            _data_bytes = QtCore.QByteArray()
+                            _pos = QtCore.QPointF()
+                            _stream >> _info_jstr >> _data_bytes >> _pos
+                            _info_str = bytes(_info_jstr).decode()
+                            drop_dct = json.loads(_info_str)
+
+                            # fname = drop_dct["path"]
+                            # convert to array
+                            data = np.array(drop_dct["data"])
+                            sp_db = drop_dct["sp_db"]
+                            title = drop_dct['title']
+                            xlabel = drop_dct.get("xlabel") or "X"
+                            ylabel = drop_dct.get("ylabel") or "Y"
+
+                            wdg_com = make_base_wdg_com()
+                            dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+                            dct_put(wdg_com, SPDB_SPATIAL_ROIS, {sp_db[ID_VAL]: sp_db})
+                            drop_dct['wdg_com'] = wdg_com
+                            data_dir, fprefix, fsuffix = get_file_path_as_parts(drop_dct['path'])
+                            rect = dct_get(sp_db, SPDB_RECT)
+                            self.load_image_data(
+                                drop_dct['path'],
+                                wdg_com,
+                                data,
+                                addimages=False,
+                                flipud=False,
+                                name_lbl=True,
+                                item_z=None,
+                                show=True,
+                                dropped=True,
+                                stack_index=0)
+
+                            if drop_dct["scan_type"] is scan_types.SAMPLE_LINE_SPECTRUM:
+                                self.setPlotAxisStrs(ylabel, xlabel)
+                                # self.show()
+                                self.set_autoscale(fill_plot_window=True)
+                                # self.raise_()
+                                if title is not None:
+                                    self.plot.set_title(title)
+                                else:
+                                    self.plot.set_title(f"{fprefix}{fsuffix}")
+                            else:
+                                self.setPlotAxisStrs(ylabel, xlabel)
+
+
             elif mimeData.hasImage():
                 # self.setPixmap(QtGui.QPixmap(mimeData.imageData()))
                 # print 'dropEvent: mime data has an IMAGE'
@@ -836,17 +895,18 @@ class ImageWidgetPlot(PlotDialog):
                 # self.setTextFormat(QtCore.Qt.PlainText)
                 # print 'dropEvent: mime data has an TEXT = \n[%s]' %
                 # mimeData.text()
-                dct = mime_to_dct(mimeData)
-                # print 'dropped file == : %s' % dct['file']
-                self.blockSignals(True)
-                self.openfile(
-                    [dct["file"]],
-                    scan_type=dct["scan_type_num"],
-                    addimages=True,
-                    dropped=True,
-                    stack_index=dct.get("stack_index"),
-                )
-                self.blockSignals(False)
+                # dct = mime_to_dct(mimeData)
+                # # print 'dropped file == : %s' % dct['file']
+                # self.blockSignals(True)
+                # self.openfile(
+                #     [dct["file"]],
+                #     scan_type=dct["scan_type_num"],
+                #     addimages=True,
+                #     dropped=True,
+                #     stack_index=dct.get("stack_index"),
+                # )
+                # self.blockSignals(False)
+                pass
             elif mimeData.hasUrls():
                 # print 'dropEvent: mime data has URLs'
                 pass
@@ -5722,7 +5782,7 @@ class ImageWidgetPlot(PlotDialog):
             self.data = {}
         self.plot.replot()
 
-    def delShapePlotItems(self, exclude_rois=True):
+    def delShapePlotItems(self, exclude_rois=False):
         """
         delShapePlotItems(): description
 
@@ -5730,7 +5790,7 @@ class ImageWidgetPlot(PlotDialog):
         """
         items = self.plot.get_items(item_type=IShapeItemType)
         for item in items:
-            if exclude_rois:
+            if not exclude_rois:
                 if hasattr(item, "title"):
                     if item.title().text().find(SPEC_ROI_PREFIX) == -1:
                         self.delShapePlotItem(item, replot=False)
@@ -6422,6 +6482,7 @@ class ImageWidgetPlot(PlotDialog):
             #if (not addimages) or (img_idx not in self.items.keys()): # this breaks dropping a new image onto a viewer
             if not addimages:
                 self.delImagePlotItems()
+                self.delShapePlotItems(exclude_rois=False)
                 self.items[img_idx] = make.image(
                     self.data[img_idx],
                     interpolation="nearest",

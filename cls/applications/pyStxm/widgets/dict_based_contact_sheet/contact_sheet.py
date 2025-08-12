@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtWidgets
 import simplejson as json
 
+from cls.appWidgets.dialogs import setExistingDirectory
 from cls.types.stxmTypes import spectra_type_scans, scan_types
 from cls.utils.log import get_module_logger
 from cls.utils.fileUtils import get_file_path_as_parts
@@ -343,10 +344,13 @@ class ContactSheet(QtWidgets.QWidget):
 
         if self.get_drag_enabled():
             if obj.scan_type is scan_types.GENERIC_SCAN:
+                format = "application/dict-based-lineplot-stxmscan"
                 dct = obj.get_generic_scan_launch_viewer_dct()
             elif obj.scan_type is scan_types.SAMPLE_POINT_SPECTRUM:
+                format = "application/dict-based-lineplot-stxmscan"
                 dct = obj.get_sample_point_spectrum_launch_viewer_dct()
             else:
+                format = "application/dict-based-imageplot-stxmscan"
                 dct = obj.get_standard_image_launch_viewer_dct()
 
 
@@ -354,7 +358,6 @@ class ContactSheet(QtWidgets.QWidget):
 
             itemData = QtCore.QByteArray()
             dataStream = QtCore.QDataStream(itemData, QtCore.QIODevice.WriteOnly)
-            # dataStream << QtCore.QByteArray(obj.info_jstr) << (event.pos() - obj.rect().topLeft())
             (
                 dataStream
                 << QtCore.QByteArray(bytearray(jstr.encode()))
@@ -362,7 +365,7 @@ class ContactSheet(QtWidgets.QWidget):
                 << (event.pos() - obj.rect().topLeft())
             )
             mimeData = QtCore.QMimeData()
-            mimeData.setData("application/dict-based-stxmscan", itemData)
+            mimeData.setData(format, itemData)
             mimeData.setText(obj.info_jstr)
 
             drag = QtGui.QDrag(self)
@@ -422,9 +425,12 @@ class ContactSheet(QtWidgets.QWidget):
         scene.setSceneRect(scene.itemsBoundingRect())
 
     def on_change_dir_clicked(self):
-        directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory")
+        directory = setExistingDirectory("Select Directory", init_dir=self.data_dir)
+
         if directory:
             self.set_directory_label(directory)
+            self.data_dir = directory
+            self.on_refresh_clicked()
 
     def set_directory_label(self, directory):
         self.dir_label.setText(f"Current Directory: {directory}")

@@ -45,6 +45,7 @@ commands = {
     'beamShutterMode': None,
     'loadFile directory': '{"directory":"/tmp/2025-08-05","showHidden":1, "fileExtension":".hdf5"}',
     'loadFile file': '{ "directory": "/tmp/2025-08-05", "file": "/tmp/2025-08-05/OSA_2025-08-05_010.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["OSA_2025-08-05_010.hdf5"], "pluginNumber": 0 }',
+    'loadFile files': '{ "directory": "/tmp/2025-08-08", "file": "/tmp/2025-08-08/Detector_2025-08-08_001.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["/tmp/2025-08-08/Detector_2025-08-08_001.hdf5","/tmp/2025-08-08/Detector_2025-08-08_002.hdf5","/tmp/2025-08-08/Detector_2025-08-08_007.hdf5","/tmp/2025-08-08/Focus_2025-08-08_003.hdf5","/tmp/2025-08-08/Focus_2025-08-08_004.hdf5","/tmp/2025-08-08/Motor_2025-08-08_005.hdf5","/tmp/2025-08-08/Motor_2025-08-08_008.hdf5","/tmp/2025-08-08/Sample_Image_2025-08-08_006.hdf5"], "pluginNumber": 0 }',
     'loadDefinition': None,
     'change user': None,
     'script info': None,

@@ -15,7 +15,7 @@ def create_thumbnail(h5_file_dct, is_folder=False):
     """
 
     if not is_folder:
-        file_path = h5_file_dct['entry1']['sp_db_dct']['file_path']
+        file_path = h5_file_dct[h5_file_dct['default']]['sp_db_dct']['file_path']
         data_dir, fprefix, fsuffix = get_file_path_as_parts(file_path)
         th_wdg = ThumbnailWidget(h5_file_dct, fprefix + fsuffix, is_folder=is_folder)
         #th_wdg.setToolTip(gpt_build_image_params(data_dct))

@@ -65,7 +65,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
 
             # Get counter data
             data_section = self.entry_dct['sp_db_dct'].get('nxdata', {})
-            self.default_counter = data_section.get('default', 'counter1')
+            self.default_counter = data_section.get('default', list(data_section.keys())[0])
             self.counter_data = np.array(data_section.get(self.default_counter, [[0]]))
             self.data = self.counter_data
 

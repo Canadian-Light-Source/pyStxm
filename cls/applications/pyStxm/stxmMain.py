@@ -1667,15 +1667,23 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         painter.restore()
 
     def init_images_frame(self):
-        self.contact_sheet = ContactSheet(
-            self.active_user.get_data_dir(), STXMDataIo, parent=self
+        self.contact_sheet = ContactSheet(MAIN_OBJ,
+            self.active_user.get_data_dir(), STXMDataIo, parent=self, base_data_dir=self.active_user.get_base_data_dir()
         )
-        if hasattr(self.contact_sheet, "sig_reload_dir"):
-            self.contact_sheet.sig_reload_dir.connect(MAIN_OBJ.zmq_reload_data_directory)
+
+        # if hasattr(self.contact_sheet, "sig_reload_dir"):
+        #     self.contact_sheet.sig_reload_dir.connect(MAIN_OBJ.zmq_reload_data_directory)
+        #
+        # if hasattr(self.contact_sheet, "sig_req_dir_list"):
+        #     self.contact_sheet.sig_req_dir_list.connect(self.on_contact_sheet_req_dir_list)
+
         vbox = QtWidgets.QVBoxLayout()
         vbox.setContentsMargins(0, 0, 0, 0)
         vbox.addWidget(self.contact_sheet)
         self.imagesFrame.setLayout(vbox)
+
+
+
 
     def init_ptycho_data_viewer(self):
         ptycho_dev = MAIN_OBJ.device(PTYCHO_CAMERA, do_warn=False)

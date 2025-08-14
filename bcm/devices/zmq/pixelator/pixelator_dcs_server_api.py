@@ -65,6 +65,12 @@ def gen_loadfile_directory_msg(directory: str, extension: str='.hdf5') -> dict:
 ,   }
     return dct
 
+def gen_listDirectory_msg(directory: str, extension: str='.hdf5') -> dict:
+    dct = {"directory":f"{directory}",
+           "fileExtension": f"{extension}"
+,   }
+    return dct
+
 
 def gen_loadfile_msg(directory: str, filename: str) -> dict:
     dct = {
@@ -924,6 +930,11 @@ class DcsServerApi(BaseDcsServerApi):
             dct = json.loads(resp[1])
             print(f"process_SUB_rcv_messages: loadFile directory: {dct}")
 
+        elif parts[0].find('listDirectory') > -1:
+            # Handle listDirectory message
+            msg_dct = json.loads(parts[1])
+            pprint.pprint(msg_dct)
+
     def get_pystxm_standard_scan_type_from_load_file_response_type(self, scan_type_str):
         """
         returns the correct scan_type from enumerated types
@@ -1360,6 +1371,22 @@ class DcsServerApi(BaseDcsServerApi):
         # only return the list of filenames
         return reply[1]['files']
 
+    def request_data_directory_list(self, directory: str, extension: str='.hdf5'):
+        """
+        querery the DCS server for a list of data directories in the given base directory and return teh list
+        """
+        dct = gen_listDirectory_msg(directory)
+        reply = self.parent.zmq_dev_server_thread.send_receive(['listDirectory', json.dumps(dct)])
+
+        if reply[0]['status'] == 'ok':
+            # filter out the directories that do not match the date pattern
+            msg_dct = json.loads(reply[1]['message'])
+            sub_dir_lst = msg_dct['sub_directories']
+            # only return the list of dicts [{"sub_dir": "2025-07-04", "num_h5_files": 5}, ..]
+            return sub_dir_lst
+        else:
+            print(f"pixelator_dcs_server_api:request_data_directory_list: FAILED: could not list sub directoriess from directory [{directory}]")
+            return None
 
     def send_scan_request(self, wdg_com={}):
         """

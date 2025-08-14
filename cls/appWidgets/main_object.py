@@ -223,6 +223,20 @@ class main_object_base(QtCore.QObject):
             _logger.error(f"zmq_reload_data_directory: not implemented for this backend ->[{self.get_device_backend()}] ")
             return False
 
+    def zmq_req_data_dir_list(self, base_dir: str=None):
+        """
+        request the zmq server to return a list of data directories
+        """
+        if self.get_device_backend() == 'zmq':
+            if base_dir is None:
+                _base_dir = self.data_dir
+            else:
+                _base_dir = base_dir
+            return self.engine_widget.engine.request_data_directory_list(data_dir=base_dir)
+        else:
+            _logger.error(f"zmq_req_data_dir_list: not implemented for this backend ->[{self.get_device_backend()}] ")
+            return False
+
     def get_beamline_cfg_preset(self, preset_name: str =None):
         """
         search the entire bl config dict and return the preset if it exists

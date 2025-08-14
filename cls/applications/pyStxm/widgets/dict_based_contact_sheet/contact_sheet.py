@@ -28,16 +28,22 @@ from cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils import *
 
 from cls.data_io.nxstxm_h5_to_dict import load_nxstxm_file_to_h5_file_dct
 
+from cls.applications.pyStxm.widgets.dict_based_contact_sheet.remote_file_mgr import DirectorySelectorWidget
 
 _logger = get_module_logger(__name__)
 
 class ContactSheet(QtWidgets.QWidget):
     sig_reload_dir = QtCore.pyqtSignal(str)
+    sig_req_dir_list = QtCore.pyqtSignal(str)
 
-    def __init__(self, data_dir=None, data_io=None, parent=None):
+    def __init__(self, main_obj=None, data_dir=None, data_io=None, base_data_dir='/tmp', parent=None):
         super(ContactSheet, self).__init__(parent)
-
+        self.main_obj = main_obj
+        self.dir_sel_wdg = DirectorySelectorWidget(main_obj, base_data_dir, data_dir)
+        self.dir_sel_wdg.new_data_dir.connect(self.set_directory_label)
+        self.dir_sel_wdg.clear_scenes.connect(self.on_clear_scenes)
         self.data_dir = data_dir
+        self.base_data_dir = base_data_dir
         self.data_io_class = data_io
         self.image_win = self.create_image_viewer()
         self.spec_win = self.create_spectra_viewer()
@@ -47,7 +53,7 @@ class ContactSheet(QtWidgets.QWidget):
         main_layout = QtWidgets.QVBoxLayout(self)
 
         # Directory label
-        self.dir_label = QtWidgets.QLabel("Current Directory: /")
+        self.dir_label = QtWidgets.QLabel(f"Current Directory: {self.data_dir}")
         main_layout.addWidget(self.dir_label)
 
         # Toolbar layout with buttons
@@ -174,8 +180,8 @@ class ContactSheet(QtWidgets.QWidget):
         # Clear the images scene
         self.images_scene.clear()
         self.spectra_scene.clear()
-        self.sig_reload_dir.emit(self.data_dir) #zmq_reload_data_directory(self, data_dir:
-
+        QtWidgets.QApplication.processEvents()
+        self.dir_sel_wdg.reload_directory()
 
     def create_thumbnails_from_filelist(self, files: [str]) -> None:
         """
@@ -213,6 +219,10 @@ class ContactSheet(QtWidgets.QWidget):
         """
         Take a data_dct and create a thumbnail widget from it, adding it to the bottom of the scene.
         """
+        if h5_file_dct is None:
+            _logger.warning("create_thumbnail_from_h5_file_dct: h5_file_dct cannot be None")
+            return
+
         thumbnail = create_thumbnail(h5_file_dct)
 
         if thumbnail.is_valid():
@@ -425,15 +435,20 @@ class ContactSheet(QtWidgets.QWidget):
         scene.setSceneRect(scene.itemsBoundingRect())
 
     def on_change_dir_clicked(self):
-        directory = setExistingDirectory("Select Directory", init_dir=self.data_dir)
-
-        if directory:
-            self.set_directory_label(directory)
-            self.data_dir = directory
-            self.on_refresh_clicked()
+        self.dir_sel_wdg.show()
 
     def set_directory_label(self, directory):
         self.dir_label.setText(f"Current Directory: {directory}")
+
+    def on_clear_scenes(self):
+        """
+        Clear the images and spectra scenes.
+        """
+        self.images_scene.clear()
+        self.spectra_scene.clear()
+        # self.image_thumbs.clear()
+        # self.spectra_thumbs.clear()
+        self.update_view()
 
     def print_thumbnail(self, dct):
         self.ptnw.print_file(dct)
@@ -514,7 +529,7 @@ class ContactSheet(QtWidgets.QWidget):
                     sp_db,
                     data,
                     addimages=False,
-                    flipud=False,
+                    flipud=True,
                     name_lbl=True,
                     item_z=None,
                     show=True,

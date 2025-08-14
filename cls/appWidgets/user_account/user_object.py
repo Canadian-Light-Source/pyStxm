@@ -102,6 +102,9 @@ class user_obj(object):
     def get_group(self):
         return self._group
 
+    def get_base_data_dir(self):
+        return self._base_data_dir
+
     def get_data_dir(self, pos=None):
         return self._data_dir
         # if(pos is None):
@@ -136,7 +139,7 @@ class user_obj(object):
         elif self._data_sub_dir == '_default_':
             _usrDir = os.path.join(self._base_data_dir, self._userName)
             # first see if the users directory is exists, if not make it
-            self.ensure_dir(_usrDir)
+            # self.ensure_dir(_usrDir)
             # now make actual data directory
             self._data_dir = os.path.join(_usrDir, str(t.strftime("%m%d")))
 
@@ -144,25 +147,25 @@ class user_obj(object):
             #use the explicit string from the beamline config
             _usrDir = os.path.join(self._base_data_dir, self._data_sub_dir)
             # first see if the users directory is exists, if not make it
-            self.ensure_dir(_usrDir)
+            # self.ensure_dir(_usrDir)
             # now make actual data directory
             self._data_dir = os.path.join(_usrDir, str(t.strftime("%m%d")))
 
-        self.ensure_dir(self._data_dir)
+        # self.ensure_dir(self._data_dir)
 
-    def ensure_dir(self, dir):
-        if os.path.exists(dir):
-            pass
-        else:
-            os.makedirs(dir, exist_ok=True)
-            #os.mkdir(dir)
+    # def ensure_dir(self, dir):
+    #     if os.path.exists(dir):
+    #         pass
+    #     else:
+    #         os.makedirs(dir, exist_ok=True)
+    #         #os.mkdir(dir)
 
-    def make_basedata_dir(self):
-        if os.path.exists(self._data_dir):
-            pass
-        else:
-            #os.mkdir(self._data_dir)
-            os.makedirs(self._data_dir, exist_ok=True)
+    # def make_basedata_dir(self):
+    #     if os.path.exists(self._data_dir):
+    #         pass
+    #     else:
+    #         #os.mkdir(self._data_dir)
+    #         os.makedirs(self._data_dir, exist_ok=True)
 
 
 if __name__ == "__main__":

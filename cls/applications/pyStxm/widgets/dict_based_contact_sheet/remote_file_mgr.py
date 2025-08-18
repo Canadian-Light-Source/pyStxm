@@ -40,7 +40,7 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
         self.subdir_list.itemClicked.connect(self.on_subdir_selected)
         self.layout.addWidget(self.subdir_list)
 
-        sub_dirs = self.main_obj.zmq_req_data_dir_list(base_dir=self.data_dir)
+        sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
         self.list_subdirectories(sub_dirs)
 
     def update_data_dir(self, data_dir):
@@ -63,7 +63,7 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
 
         # update the directory
         self.update_data_dir(data_dir)
-        self.main_obj.zmq_reload_data_directory(data_dir=data_dir)
+        self.main_obj.reload_data_directory(data_dir=data_dir)
 
     def req_dir_list(self):
         """
@@ -77,7 +77,7 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
         )
         if ok and directory:
             self.update_data_dir(directory)
-            sub_dirs = self.main_obj.zmq_req_data_dir_list(base_dir=directory)
+            sub_dirs = self.main_obj.request_data_dir_list(base_dir=directory)
             self.list_subdirectories(sub_dirs)
 
     def list_subdirectories(self, sub_dirs=None):
@@ -90,7 +90,7 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
         self.subdir_list.clear()
         items = ['..']
         if sub_dirs:
-            items += [f"{d['sub_dir']} ({d['num_h5_files']} h5 files)" for d in sub_dirs]
+            items += [f"{d['sub_dir']} \t({d['num_h5_files']} h5 files)" for d in sub_dirs]
         self.subdir_list.addItems(items)
 
     def on_subdir_selected(self, selected):
@@ -102,7 +102,7 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
         """
         do_hide = True
         if selected:
-            subdir_name = selected.text().split(' ')[0]
+            subdir_name = selected.text().split('\t')[0].strip()
             if subdir_name == '..':
                 if self.data_dir == self.base_data_dir:
                     # if we are at the base directory, request the subdirs from the main_obj
@@ -112,10 +112,14 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
                 new_data_dir = os.path.dirname(self.data_dir)
                 do_hide = False
                 self.subdir_list.clear()
-                sub_dirs = self.main_obj.zmq_req_data_dir_list(base_dir=new_data_dir)
+                sub_dirs = self.main_obj.request_data_dir_list(base_dir=new_data_dir)
                 self.list_subdirectories(sub_dirs)
             else:
                 new_data_dir = os.path.join(self.data_dir, subdir_name)
+
+            if do_hide:
+                # request that the image and spec graphic scenes be cleared
+                self.clear_scenes.emit()
 
             QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
             QtWidgets.QApplication.processEvents()
@@ -124,9 +128,7 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
             QtWidgets.QApplication.processEvents()
             self.update_data_dir(new_data_dir)
             if do_hide:
-                # request that the image and spec graphic scenes be cleared
-                self.clear_scenes.emit()
                 # update the current list of sub dirs
-                sub_dirs = self.main_obj.zmq_req_data_dir_list(base_dir=self.data_dir)
+                sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
                 self.list_subdirectories(sub_dirs)
                 self.hide()

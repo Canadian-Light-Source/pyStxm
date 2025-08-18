@@ -202,10 +202,168 @@ class main_object_base(QtCore.QObject):
             dct_put(self.main_obj, "PRESETS.OSA_DEFS", self.beamline_cfg_dct['OSA_DEFS'])
             dct_put(self.main_obj, "PRESETS.ZP_DEFS", self.beamline_cfg_dct['ZP_DEFS'])
 
-        # request that the DCS sends back the current contents of the data directory
-        current_date = datetime.now().strftime('%Y-%m-%d')
-        self.zmq_reload_data_directory(os.path.join(self.data_dir, current_date))
         return result
+
+    def reload_data_directory(self, data_dir: str=None):
+        """
+        send out a request to teh remote servers/services to send back teh contents of the data directory
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+            current_date = datetime.now().strftime('%Y-%m-%d')
+            data_dir = os.path.join(data_dir, current_date)
+
+        if self.get_device_backend() == 'zmq':
+            # request that the DCS sends back the current contents of the data directory
+            #current_date = datetime.now().strftime('%Y-%m-%d')
+            #self.zmq_reload_data_directory(os.path.join(self.data_dir, current_date))
+            self.zmq_reload_data_directory(data_dir)
+        else:
+            self.nx_server_reload_data_directory(data_dir)
+
+    def get_master_file_seq_names(self, data_dir: str=None,
+        thumb_ext="jpg",
+        dat_ext="hdf5",
+        stack_dir=False,
+        num_desired_datafiles=1,
+        new_stack_dir=False,
+        prefix_char=None,
+        dev_backend='epics'
+        ) -> list:
+        """
+        get a list of master file sequence names from the data directory from teh remote
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+
+        if dev_backend == 'epics':
+            cmd_args = {}
+            cmd_args['data_dir'] = data_dir
+            cmd_args['thumb_ext'] = thumb_ext
+            cmd_args['dat_ext'] = dat_ext
+            cmd_args['stack_dir'] = stack_dir
+            cmd_args['num_desired_datafiles'] = num_desired_datafiles
+            cmd_args['new_stack_dir'] = new_stack_dir
+            cmd_args['prefix_char'] = prefix_char
+            cmd_args['dev_backend'] = dev_backend
+
+            master_seq_jstr = self.send_to_nx_server(NX_SERVER_CMNDS.GET_FILE_SEQUENCE_NAMES, [], '', data_dir, nx_app_def='nxstxm',
+                                             host=self.nx_server_host, port=self.nx_server_port,
+                                             verbose=False, cmd_args=cmd_args)
+            master_seq_dct = json.loads(master_seq_jstr['seq_name_jstr'])
+            # the integer keys have been turned into strings, so we need to convert them back to integers
+            keys = master_seq_dct.keys()
+            for key in keys:
+                if key.isdigit():
+                    int_key = int(key)
+                    master_seq_dct[int_key] = master_seq_dct.pop(key)
+
+
+        else:
+            from cls.utils.file_system_tools import master_get_seq_names
+
+            master_seq_dct = master_get_seq_names(data_dir=data_dir,
+                    thumb_ext=thumb_ext,
+                    dat_ext=dat_ext,
+                    stack_dir=stack_dir,
+                    num_desired_datafiles=num_desired_datafiles,
+                    new_stack_dir=new_stack_dir,
+                    prefix_char=prefix_char,
+                    dev_backend=dev_backend)
+
+        return master_seq_dct
+
+    def nx_server_load_data_directory(self, data_dir: str=None, *, extension: str='.hdf5') -> None:
+        """
+        This function loads the data directory from the DCS server and updates the remote file system info.
+        It is used to load the data directory from the DCS server.
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+        #file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+        cmd_args = {}
+        cmd_args['directory'] = data_dir
+        cmd_args['extension'] = extension
+        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_DIRECTORY, [], '', data_dir, nx_app_def='nxstxm',
+                                     host=self.nx_server_host, port=self.nx_server_port,
+                                     verbose=False, cmd_args=cmd_args)
+        if 'directories' in res_dct.keys():
+            file_lst = res_dct['directories']['files']
+            if isinstance(file_lst, list):
+                for fname in file_lst:
+                    self.nx_server_load_file(data_dir, fname)
+
+    def nx_server_load_file(self, data_dir: str=None, fname: str=None, extension: str='.hdf5') -> None:
+        """
+        This function loads the data directory from the DCS server and updates the remote file system info.
+        It is used to load the data directory from the DCS server.
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+        #file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+        cmd_args = {}
+        cmd_args['directory'] = data_dir
+        cmd_args['extension'] = extension
+        cmd_args['file'] = os.path.join(data_dir, fname)
+        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILE, [], '', data_dir, nx_app_def='nxstxm',
+                                     host=self.nx_server_host, port=self.nx_server_port,
+                                     verbose=False, cmd_args=cmd_args)
+        #print(f"ZMQDevManager: nx_server_load_file: {h5_file_dct}")
+        h5_file_dct = json.loads(res_dct['directories'])
+        # emit the signal that new data has arrived, the contact_sheet will be called to create a data thumbnail with
+        # this dict
+        self.engine_widget.new_data.emit(h5_file_dct)
+
+    def nx_server_load_files(self, data_dir: str=None, *, file_lst: [str]) -> None:
+        """
+        This function loads the data directory from the DCS server and updates the remote file system info.
+        It is used to load the data directory from the DCS server.
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+        #file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+        cmd_args = {}
+        cmd_args['directory'] = data_dir
+        cmd_args['extension'] = extension
+        cmd_args['files'] = file_lst
+        res = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILES, [], '', data_dir, nx_app_def='nxstxm',
+                                     host=self.nx_server_host, port=self.nx_server_port,
+                                     verbose=True, cmd_args=cmd_args)
+        data_lst = json.loads(res['data_lst'])
+        print(f"ZMQDevManager: nx_server_load_files: {data_lst}")
+
+
+    def nx_server_request_data_directory_list(self, data_dir: str=None, extension: str='.hdf5') -> None:
+        """
+        This function requests the data directory list from the DCS server and updates the remote file system info.
+        It is used to request the data directory list from the DCS server.
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+        # file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+        cmd_args = {}
+        cmd_args['directory'] = data_dir
+        cmd_args['fileExtension'] = extension
+        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LIST_DIRECTORY, [], '', data_dir, nx_app_def='nxstxm',
+                                         host=self.nx_server_host, port=self.nx_server_port,
+                                         verbose=False, cmd_args=cmd_args)
+        return res_dct['sub_directories']
+
+    def nx_server_reload_data_directory(self, data_dir: str=None):
+        """
+        reload the data directory from nxserver
+        """
+        if data_dir is None:
+            _logger.error(
+                f"nx_server_reload_data_directory: data_dir passed cannot be None")
+            return False
+
+        if self.get_device_backend() == 'epics':
+            resp_dct = self.nx_server_load_data_directory(data_dir)
+            return True
+        else:
+            _logger.error(f"nx_server_reload_data_directory: not implemented for this backend ->[{self.get_device_backend()}] ")
+            return False
 
     def zmq_reload_data_directory(self, data_dir: str=None):
         """
@@ -222,6 +380,21 @@ class main_object_base(QtCore.QObject):
         else:
             _logger.error(f"zmq_reload_data_directory: not implemented for this backend ->[{self.get_device_backend()}] ")
             return False
+
+    def request_data_dir_list(self, base_dir: str=None):
+        """
+        request the zmq server to return a list of data directories
+        """
+        if self.get_device_backend() == 'zmq':
+            if base_dir is None:
+                _base_dir = self.data_dir
+            else:
+                _base_dir = base_dir
+            return self.zmq_req_data_dir_list(data_dir=_base_dir)
+        else:
+            return self.nx_server_request_data_directory_list(data_dir=base_dir, extension='.hdf5')
+            #_logger.error(f"request_data_dir_list: not implemented for this backend ->[{self.get_device_backend()}] ")
+
 
     def zmq_req_data_dir_list(self, base_dir: str=None):
         """
@@ -324,7 +497,7 @@ class main_object_base(QtCore.QObject):
         return data_dir
 
     def send_to_nx_server(self, cmnd, run_uids=[], fprefix='', data_dir='', nx_app_def=None, fpaths=[],
-                          host='localhost', port=5555, verbose=False):
+                          host='localhost', port=5555, verbose=False, cmd_args={}):
         """
         a function to send data to the nx server over a zmq pubsub socket
         run_uids: tuple of run_uids retuirned from teh RE following a scan
@@ -336,7 +509,7 @@ class main_object_base(QtCore.QObject):
         verbose=False
         """
         res = send_to_server(cmnd, run_uids, fprefix, data_dir, nx_app_def=nx_app_def, fpaths=fpaths, host=host,
-                             port=port, verbose=verbose)
+                             port=port, verbose=verbose, cmd_args=cmd_args)
         if res == -1:
             _logger.error(
                 "There was an error sending/receiving data from nx_server, check that it is running properly")
@@ -371,6 +544,10 @@ class main_object_base(QtCore.QObject):
         res = self.send_to_nx_server(NX_SERVER_CMNDS.SAVE_FILES, run_uids, fprefix, data_dir, nx_app_def=nx_app_def,
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=verbose)
+
+        # now ask nx server to load the file
+        self.nx_server_load_file(data_dir, fprefix)
+
         return res['status']
 
     def remove_ptycho_tif_files(self, data_dir: str, fpaths: list, host: str = 'localhost', port: int = 5555,
@@ -615,7 +792,12 @@ class main_object_base(QtCore.QObject):
                 continue
 
             #dct[stxm_scan_name] = {'stxm_scan_name': stxm_scan_name, 'panel_idx': int(panel_order_dct[mod_nm])}
-            dct[stxm_scan_name] = int(panel_order_dct[mod_nm])
+            if mod_nm not in panel_order_dct.keys():
+                _logger.warn(f"Module name [{mod_nm}] does not have a panel order defined in the beamline configuration")
+                print(f"Module name [{mod_nm}] does not have a panel order defined in the beamline configuration")
+                continue
+            else:
+                dct[stxm_scan_name] = int(panel_order_dct[mod_nm])
         return dct
 
     def get_scan_panel_id_from_scan_name(self, scan_name):
@@ -737,7 +919,10 @@ class main_object_base(QtCore.QObject):
             # get the devices dictionary in categories and pass it to the zmq_dev_manager
             self.init_zmq_engine_widget(self.main_obj["DEVICES"].get_devices())
 
+        self.reload_data_directory()
+
         self.changed.emit()
+
 
 
     def device(self, name, do_warn=True):

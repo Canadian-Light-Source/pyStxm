@@ -860,7 +860,7 @@ class ImageWidgetPlot(PlotDialog):
                                 drop_dct['path'],
                                 wdg_com,
                                 data,
-                                addimages=False,
+                                addimages=True,
                                 flipud=False,
                                 name_lbl=True,
                                 item_z=None,

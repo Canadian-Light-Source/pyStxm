@@ -180,8 +180,13 @@ class ContactSheet(QtWidgets.QWidget):
         # Clear the images scene
         self.images_scene.clear()
         self.spectra_scene.clear()
+
+        # Reload the directory and change the mouse cursor while reloading
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         QtWidgets.QApplication.processEvents()
         self.dir_sel_wdg.reload_directory()
+        QtWidgets.QApplication.restoreOverrideCursor()
+        QtWidgets.QApplication.processEvents()
 
     def create_thumbnails_from_filelist(self, files: [str]) -> None:
         """

@@ -1225,7 +1225,12 @@ class ScanParamWidget(QtWidgets.QFrame):
                 continue
 
             #dct[stxm_scan_name] = {'stxm_scan_name': stxm_scan_name, 'panel_idx': int(panel_order_dct[mod_nm])}
-            dct[stxm_scan_name] = int(panel_order_dct[mod_nm])
+            if mod_nm in panel_order_dct.keys():
+                dct[stxm_scan_name] = int(panel_order_dct[mod_nm])
+            else:
+                _logger.warn(f"Module name [{mod_nm}] does not have a panel order defined in the beamline config")
+                print(f"Module name [{mod_nm}] does not have a panel order defined in the beamline config")
+                #dct[stxm_scan_name] = None
         return dct
 
     def get_scan_panel_id_from_scan_name(self, scan_name):

@@ -355,15 +355,16 @@ def make_base_datafile_name_dct():
     return dct
 
 
-#####################################################
+
 def master_get_seq_names(
-    path,
-    main_obj=None,
+    data_dir,
     thumb_ext="jpg",
     dat_ext="hdf5",
     stack_dir=False,
     num_desired_datafiles=1,
     new_stack_dir=False,
+    prefix_char=None,
+    dev_backend='epics',
 ):
     """
     master_get_seq_names: call this function to get a dict of what the next set of file and directory names should be, if the path given is a stack directory destination
@@ -408,16 +409,12 @@ def master_get_seq_names(
             }
 
     """
-    if main_obj is None:
-        raise Exception(f"master_get_seq_names: MAIN_OBJ argument cannot be None")
-    prefix_char = main_obj.get_datafile_prefix()
-
-    if main_obj.get_device_backend().find("zmq") > -1:
+    if dev_backend == 'zmq':
         # if the DCS server is using zmq the data is being saved by the DCS server so it will use its own file names
         n_dct = {}
         for i in range(num_desired_datafiles):
             dct = make_base_datafile_name_dct()
-            dct["data_dir"] = path
+            dct["data_dir"] = data_dir
             #dct["prefix"] = prefix_char + str(0)
             dct["prefix"] = PLACEHOLDER_FILENAME
             dct["stack_flbl"] = "%s.%s img/%d" % (
@@ -425,7 +422,7 @@ def master_get_seq_names(
                 dat_ext,
                 1,
             )
-            dct["stack_dir"] = os.path.join(path, prefix_char + str(i))
+            dct["stack_dir"] = os.path.join(data_dir, prefix_char + str(i))
             dct["thumb_name"] = f"{dct['prefix']}_{i:03d}"
             dct["data_name"] = "%s" % dct["prefix"]
             dct["data_ext"] = dat_ext
@@ -433,19 +430,27 @@ def master_get_seq_names(
             n_dct[i] = dct
         return n_dct
 
-    if os.path.isdir(path):
+    # create data_dir if it doesnt exist
+    if not os.path.isdir(data_dir):
+        try:
+            os.makedirs(data_dir)
+        except Exception as e:
+            print(f"Could not create data directory {data_dir}, error: {e}")
+            return None
+
+    if os.path.isdir(data_dir):
         next_seq_num = get_next_seq_num(
-            path, prefix_char=prefix_char, extension=dat_ext
+            data_dir, prefix_char=prefix_char, extension=dat_ext
         )
         # if(is_stack_dir(path)):
         if stack_dir:
             # print 'it is a stack directory'
-            data_file_seq_num = get_directory_number(path, prefix_char=prefix_char)
+            data_file_seq_num = get_directory_number(data_dir, prefix_char=prefix_char)
             next_seq_num = data_file_seq_num
             # data_file_seq_num = next_seq_num
             # thumb_name = get_next_stack_thumbnail_seq_name(path + '/C' + str(data_file_seq_num), prefix_char='C', extension='jpg')
             thumb_name = get_next_stack_thumbnail_seq_name(
-                path, prefix_char=prefix_char, extension=thumb_ext
+                data_dir, prefix_char=prefix_char, extension=thumb_ext
             )
 
         else:
@@ -455,10 +460,10 @@ def master_get_seq_names(
 
         dct = make_base_datafile_name_dct()
 
-        dct["data_dir"] = path
+        dct["data_dir"] = data_dir
 
         if next_seq_num is not None:
-            dct["stack_dir"] = os.path.join(path, prefix_char + str(next_seq_num))
+            dct["stack_dir"] = os.path.join(data_dir, prefix_char + str(next_seq_num))
             dct["prefix"] = prefix_char + str(next_seq_num)
             dct["stack_flbl"] = "%s.%s img/%d" % (
                 prefix_char + str(next_seq_num),
@@ -472,21 +477,12 @@ def master_get_seq_names(
 
             dct["data_name"] = "%s.%s" % (prefix_char + str(data_file_seq_num), dat_ext)
         else:
-            print("base directory [%s] does not exist" % path)
+            print("base directory [%s] does not exist" % data_dir)
 
         dct["data_ext"] = dat_ext
         dct["thumb_ext"] = thumb_ext
         n_dct = {}
-        #         if(num_desired_datafiles == 1):
-        #             # make a new filename entry for each num_desired_datafiles
-        #             n_dct[0] = dct.copy()
-        #             next_seq_num += 1
-        #             n_dct[0]['prefix'] = prefix_char + str(next_seq_num)
-        #             n_dct[0]['thumb_name'] = prefix_char + str(next_seq_num)
-        #             n_dct[0]['data_name'] = '%s.%s' % (prefix_char + str(next_seq_num), dat_ext)
-        #             n_dct[0]['stack_flbl'] = '%s.%s img/%d' % (prefix_char + str(next_seq_num), dat_ext, 0)
-        #
-        #         el
+
         if num_desired_datafiles > 1:
             i = 0
             if stack_dir:
@@ -542,7 +538,6 @@ def master_get_seq_names(
         return n_dct
     else:
         return None
-
 
 def get_data_file_name_list(dct):
     l = []

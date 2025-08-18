@@ -454,6 +454,9 @@ def hdf5_to_dict(file_path, load_all_data=True):
     with h5py.File(file_path, 'r') as h5_file:
         hdf5_dict = traverse_h5_group(h5_file)
 
+    # make sure the file name is the final file name not the temporary file name
+    hdf5_dict['__attrs__']['file_name'] = file_path
+
     return hdf5_dict
 
 

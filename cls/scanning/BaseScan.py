@@ -4301,15 +4301,16 @@ class BaseScan(QtCore.QObject):
         self.main_obj.device("DNM_E712_X_NPTS").put(x_npnts_lst)
         self.main_obj.device("DNM_E712_Y_NPTS").put(y_npnts_lst)
 
-        self.main_obj.device("DNM_E712_X_USEDDL").put(x_useddl_flags)
-        self.main_obj.device("DNM_E712_X_USEREINIT").put(x_reinitddl_flags)
-        self.main_obj.device("DNM_E712_X_STRT_AT_END").put(x_startatend_flags)
+        # these pv's are bo records so send indiv value not list
+        self.main_obj.device("DNM_E712_X_USEDDL").put(x_useddl_flags[0])
+        self.main_obj.device("DNM_E712_X_USEREINIT").put(x_reinitddl_flags[0])
+        self.main_obj.device("DNM_E712_X_STRT_AT_END").put(x_startatend_flags[0])
 
         # 0 = OFF, 1=ON
-        self.main_obj.device("DNM_E712_Y_STRT_AT_END").put([1])
+        self.main_obj.device("DNM_E712_Y_STRT_AT_END").put(1)
 
-        self.main_obj.device("DNM_E712_X_START_MODE").put(x_start_mode)
-        self.main_obj.device("DNM_E712_Y_START_MODE").put(y_start_mode)
+        self.main_obj.device("DNM_E712_X_STRT_AT_END").put(x_start_mode[0])
+        self.main_obj.device("DNM_E712_Y_START_MODE").put(y_start_mode[0])
 
         self.main_obj.device("DNM_E712_SP_IDS").put(sp_roi_ids)
 

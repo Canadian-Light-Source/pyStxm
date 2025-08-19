@@ -46,7 +46,6 @@ from cls.utils.roi_utils import (
 )
 
 from cls.utils.file_system_tools import (
-    master_get_seq_names,
     get_thumb_file_name_list,
 )
 from cls.utils.prog_dict_utils import *
@@ -472,36 +471,12 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         )
         self.status_label = EngineLabel(self.scanActionLbl)
 
-        # if MAIN_OBJ.get_device_backend().find("zmq") > -1:
-        #
-        #     MAIN_OBJ.engine_widget.engine.exec_result.connect(self.on_execution_status_changed)
-        #     MAIN_OBJ.engine_widget.engine.prog_changed.connect(self.on_run_engine_progress)
-        #     #todo: this needs to be fixed
-        #     self.status_label.connect_to_engine(MAIN_OBJ.engine_widget.engine)
-        # else:
-        #     MAIN_OBJ.engine_widget.engine.exec_result.connect(self.on_execution_status_changed)
-        #     # MAIN_OBJ.engine_widget.engine.engine_state_changed.connect(self.on_re_state_changed)
-        #     MAIN_OBJ.engine_widget.prog_changed.connect(self.on_run_engine_progress)
-        #     # MAIN_OBJ.engine_widget.state_changed.connect(self.status_label.on_state_change)
-        #     self.status_label.connect_to_engine(MAIN_OBJ.engine_widget.engine)
-
         MAIN_OBJ.engine_widget.engine.exec_result.connect(self.on_execution_status_changed)
-        # MAIN_OBJ.engine_widget.engine.engine_state_changed.connect(self.on_re_state_changed)
         MAIN_OBJ.engine_widget.prog_changed.connect(self.on_run_engine_progress)
-        # MAIN_OBJ.engine_widget.state_changed.connect(self.status_label.on_state_change)
         MAIN_OBJ.engine_widget.msg_to_app.connect(self.on_dcs_msg_to_app)
+        MAIN_OBJ.engine_widget.new_data.connect(self.on_new_dcs_server_data)
+
         self.status_label.connect_to_engine(MAIN_OBJ.engine_widget.engine)
-
-        # TODO: in the future all data will be received from a server so this block will likely need to NOT be determined by
-        # the value of the device backend as it is below
-        if MAIN_OBJ.get_device_backend().find("zmq") > -1:
-            # if zmq backend, connect to zmq server data
-            # this signal handler will receive a scanFinished message that contains the name of the datafile
-            # it will then emit the data so that the contactsheet can update its data
-            MAIN_OBJ.engine_widget.new_data.connect(self.on_new_dcs_server_data)
-
-        # self.status_label.changed.connect(self.on_status_changed)
-        # self.status_label.connect(MAIN_OBJ.engine_widget.engine)
 
         self.rr = None
         self.rr_id = None
@@ -580,11 +555,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self._scan_type = self.scan_tbox_widgets[self.scan_panel_idx].type
         self._scan_sub_type = self.scan_tbox_widgets[self.scan_panel_idx].sub_type
 
-        # if(not self.exec_in_debugger):
-        #     # pass on this for now, this causes the exiting of the app to hang waiting for something, not sure why
-        #     self.setup_info_dock()
-        #     #pass
-
         self.set_buttons_for_starting()
 
         bright = master_colors["btn_danger_bright"]["rgb_str"]
@@ -592,15 +562,17 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.emergStopAllBtn.setStyleSheet(f"border: 4px solid {dark}; color: {bright}")
         self.emergStopAllBtn.clicked.connect(self.on_emergency_stop)
 
-        # RUSS FEB25 self.splash.show_msg('initialization done')
-        # self.splash.show_msg('initialization done')
-        self.enable_energy_change(True)
-
         # Install event filter for all child widgets for debugging
         # event_filter = MouseOverEventFilter()
         # for child_widget in self.findChildren(QtWidgets.QWidget):
         #     child_widget.installEventFilter(event_filter)
         # .children()
+        if MAIN_OBJ.get_device_backend() == 'epics':
+            # force a loading of the data
+            self.contact_sheet.on_refresh_clicked()
+
+        # self.splash.show_msg('initialization done')
+        self.enable_energy_change(True)
 
     def on_update_rois(self, dct):
         """
@@ -845,38 +817,11 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         """
         from the nx_server process
         """
-        msg = str(msg_dct['status'])
+        # msg = str(msg_dct['status'])
+        msg = str(msg_dct)
         clr = QtGui.QColor('#000000')
-        self.add_to_log(clr, msg)
-        #self.logWindow.append(msg)
-
-    # def load_dir_view(self):
-    #     """
-    #     load_dir_view(): description
-    #
-    #     :returns: None
-    #     """
-    #     self.dir_model = QtWidgets.QFileSystemModel()
-    #     self.dir_model.setRootPath(QtCore.QDir.currentPath())
-    #
-    #     # self.dir_model.setRootPath( QtCore.QString(MAIN_OBJ.get_session_info().get_data_dir()) )
-    #     self.dirTreeView.setModel(self.dir_model)
-    #     self.dirTreeView.clicked.connect(self.on_treeView_clicked)
-
-    # @QtCore.pyqtSlot(QtCore.QModelIndex)
-    # def on_treeView_clicked(self, index):
-    #     """
-    #     on_treeView_clicked(): description
-    #
-    #     :param index: index description
-    #     :type index: index type
-    #
-    #     :returns: None
-    #     """
-    #     indexItem = self.dir_model.index(index.row(), 0, index.parent())
-    #     fileName = self.dir_model.fileName(indexItem)
-    #     filePath = self.dir_model.filePath(indexItem)
-    #     print("selected [%s]" % (filePath))
+        if len(msg) < 50:
+            self.add_to_log(clr, msg)
 
     def on_set_scan_btns(self, do_what):
         """
@@ -1671,19 +1616,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             self.active_user.get_data_dir(), STXMDataIo, parent=self, base_data_dir=self.active_user.get_base_data_dir()
         )
 
-        # if hasattr(self.contact_sheet, "sig_reload_dir"):
-        #     self.contact_sheet.sig_reload_dir.connect(MAIN_OBJ.zmq_reload_data_directory)
-        #
-        # if hasattr(self.contact_sheet, "sig_req_dir_list"):
-        #     self.contact_sheet.sig_req_dir_list.connect(self.on_contact_sheet_req_dir_list)
-
         vbox = QtWidgets.QVBoxLayout()
         vbox.setContentsMargins(0, 0, 0, 0)
         vbox.addWidget(self.contact_sheet)
         self.imagesFrame.setLayout(vbox)
-
-
-
 
     def init_ptycho_data_viewer(self):
         ptycho_dev = MAIN_OBJ.device(PTYCHO_CAMERA, do_warn=False)
@@ -3755,16 +3691,16 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         if scan_type in _simple_types:
             sp_id = sp_ids[0]
             sp_db = sp_rois[sp_id]
-            master_seq_dct = master_get_seq_names(
+
+            master_seq_dct = MAIN_OBJ.get_master_file_seq_names(
                 self.active_user.get_data_dir(),
-                main_obj=MAIN_OBJ,
                 thumb_ext="jpg",
                 dat_ext="hdf5",
                 stack_dir=False,
                 num_desired_datafiles=1,
+                prefix_char=MAIN_OBJ.get_datafile_prefix(),
+                dev_backend=MAIN_OBJ.get_device_backend(),
             )
-
-
             self.assign_datafile_names_to_sp_db(sp_db, master_seq_dct[0])
             ret = scan_class.configure(self.cur_wdg_com, sp_id=sp_id, line=False)
             if not ret:
@@ -3833,14 +3769,16 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             line = True
             num_data_files = 1 if scan_type == scan_types.SAMPLE_POINT_SPECTRUM else len(sp_ids)
             #num_images_lst = self.determine_num_thumbnail_images_required(self.cur_wdg_com)
-            master_seq_dct = master_get_seq_names(
+            master_seq_dct = MAIN_OBJ.get_master_file_seq_names(
                 self.active_user.get_data_dir(),
-                main_obj=MAIN_OBJ,
                 thumb_ext="jpg",
                 dat_ext="hdf5",
                 stack_dir=False,
                 num_desired_datafiles=num_data_files,
+                prefix_char=MAIN_OBJ.get_datafile_prefix(),
+                dev_backend=MAIN_OBJ.get_device_backend(),
             )
+
             idx = 0
             for sp_id in sp_ids:
                 sp_db = sp_rois[sp_id]
@@ -3959,13 +3897,14 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 num_images = self.determine_num_thumbnail_images_required(
                     self.cur_wdg_com
                 )[idx]
-                master_seq_dct = master_get_seq_names(
+                master_seq_dct = MAIN_OBJ.get_master_file_seq_names(
                     self.active_user.get_data_dir(),
-                    main_obj=MAIN_OBJ,
                     thumb_ext="jpg",
                     dat_ext="hdf5",
                     num_desired_datafiles=num_images,
                     new_stack_dir=True,
+                    prefix_char=MAIN_OBJ.get_datafile_prefix(),
+                    dev_backend=MAIN_OBJ.get_device_backend(),
                 )
                 sp_db_seq_names.append(master_seq_dct)
                 d_keys = list(master_seq_dct.keys())
@@ -4067,13 +4006,14 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             _scan_plotter = self.lineByLineImageDataWidget
             sp_id = sp_ids[0]
             sp_db = sp_rois[sp_id]
-            master_seq_dct = master_get_seq_names(
+            master_seq_dct = MAIN_OBJ.get_master_file_seq_names(
                 self.active_user.get_data_dir(),
-                main_obj=MAIN_OBJ,
                 thumb_ext="jpg",
                 dat_ext="hdf5",
                 stack_dir=False,
                 num_desired_datafiles=1,
+                prefix_char=main_obj.get_datafile_prefix(),
+                dev_backend=MAIN_OBJ.get_device_backend(),
             )
             self.assign_datafile_names_to_sp_db(sp_db, master_seq_dct[0])
             ret = scan_class.configure(self.cur_wdg_com, sp_id=sp_id, line=False)

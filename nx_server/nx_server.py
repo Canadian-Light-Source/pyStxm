@@ -1,9 +1,10 @@
-import sys
+from databroker import Broker
+import json
 import os
 import platform
+import re
+import sys
 import zmq
-import json
-from databroker import Broker
 
 #make sure that the applications modules can be found, used to depend on PYTHONPATH environ var
 sys.path.append( os.path.join(os.path.dirname(os.path.abspath(__file__)), "..") )
@@ -14,16 +15,20 @@ from cls.utils.enum_utils import Enum
 from cls.applications.pyStxm import abs_path_to_ini_file
 from cls.utils.cfgparser import ConfigClass
 
+from cls.data_io.nxstxm_h5_to_dict import load_nxstxm_file_to_h5_file_dct
+from cls.utils.file_system_tools import master_get_seq_names
+
 appConfig = ConfigClass(abs_path_to_ini_file)
 MONGO_DB_NM = appConfig.get_value("MAIN", "mongo_db_nm")
-HOST = 'localhost'
+
 if "COMPUTERNAME" in os.environ.keys():
     HOSTNAME = os.environ["COMPUTERNAME"]
 else:
-    HOSTNAME = "NONE_SPECIFIED"
+    HOSTNAME = "localhost"
 PORT = 5555
 
-NX_SERVER_CMNDS = Enum('save_files', 'remove_files', 'test_connection', 'is_windows')
+NX_SERVER_CMNDS = Enum('save_files', 'remove_files', 'test_connection', 'is_windows', 'get_file_sequence_names',
+                       'loadfile_directory', 'loadfile_file', 'loadfile_files', 'list_directory')
 # save_files: Saves standard nxStxm files
 # remove_files: removes a list of files, used by ptycho scan to remove garbage tifs that were created during pxp line transaltions
 # test_connection: client can send a test connection msg
@@ -32,7 +37,44 @@ NX_SERVER_CMNDS = Enum('save_files', 'remove_files', 'test_connection', 'is_wind
 NX_SERVER_REPONSES = Enum('fail', 'success')
 
 
-def gen_nx_server_dict(cmnd='', run_uids=[], fprefix='FPREFIX', data_dir='', nx_app_def='nxstxm', fpaths=[])->dict:
+def get_data_subdirectories(directory, extension):
+    """
+    Returns a list of dicts for all subdirectories that contain at least one file with the given extension.
+    Each dict contains 'sub_dir' and 'num_h5_files'.
+    Handles missing directory gracefully.
+    """
+    result = []
+    try:
+        for d in os.listdir(directory):
+            subdir_path = os.path.join(directory, d)
+            if os.path.isdir(subdir_path):
+                num_files = len([
+                    f for f in os.listdir(subdir_path)
+                    if os.path.isfile(os.path.join(subdir_path, f)) and f.endswith(extension)
+                ])
+                if num_files > 0:
+                    result.append({'sub_dir': d, 'num_h5_files': num_files})
+    except FileNotFoundError:
+        pass
+    return result
+
+def get_files_with_extension(directory, extension):
+    """
+    Returns a dictionary with the directory, fileExtension, and a list of files matching the extension.
+    Handles missing directory gracefully.
+    """
+    try:
+        files = [f for f in os.listdir(directory)
+                 if os.path.isfile(os.path.join(directory, f)) and f.endswith(extension)]
+    except FileNotFoundError:
+        files = []
+    return {
+        "directory": directory,
+        "fileExtension": extension,
+        "files": files
+    }
+
+def gen_nx_server_dict(cmnd='', run_uids=[], fprefix='FPREFIX', data_dir='', nx_app_def='nxstxm', fpaths=[], cmd_args={})->dict:
     dct = {}
     dct['cmnd'] = cmnd
     dct['run_uids'] = run_uids
@@ -40,6 +82,7 @@ def gen_nx_server_dict(cmnd='', run_uids=[], fprefix='FPREFIX', data_dir='', nx_
     dct['data_dir'] = data_dir
     dct['nx_app_def'] = nx_app_def
     dct['fpaths'] = fpaths
+    dct['cmd_args'] = cmd_args
     return dct
 
 
@@ -61,11 +104,11 @@ def determine_exporter(nx_app_def):
     elif nx_app_def.lower().find("nxptycho") > -1:
         return nxptycho
     else:
-        print(f"determine_exporter: the NExus application definition string [{nx_app_def}] is not supported")
+        print(f"determine_exporter: the NeXus application definition string [{nx_app_def}] is not supported")
         return None
 
 
-def start_server(db_name, host=HOST, port=PORT, is_windows=True):
+def start_server(db_name, host=HOSTNAME, port=PORT, is_windows=True):
     """
     Note this server currently needs to run on the same machine as the mongodb service in order to access the
     """
@@ -74,13 +117,12 @@ def start_server(db_name, host=HOST, port=PORT, is_windows=True):
     socket = context.socket(zmq.REP)  # REP is for reply
     socket.bind(f"tcp://*:{port}")  # Bind to port 5555
 
-    # db = Broker.named("pystxm_amb_bl10ID1")
     db = Broker.named(db_name)
     if not db:
         print(f"[{HOSTNAME}]Unable to connect to the database [{db_name}]")
         exit(1)
 
-    print(f"NX Server is running on host [{HOST}, {HOSTNAME}] and connected to database [{db_name}] listening on port {port}...")
+    print(f"NX Server is running on host [{HOSTNAME}] and connected to database [{db_name}] listening on port {port}...")
     while True:
         # Wait for the next request from a client
         message = socket.recv()
@@ -114,6 +156,7 @@ def start_server(db_name, host=HOST, port=PORT, is_windows=True):
                     )
                 exporter.finish_export(data_dir, fprefix, first_uid)
                 ret_msg = f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"
+                ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "msg": f"NX_SERVER[{HOSTNAME}], [{PORT}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"})
 
         elif cmnd == NX_SERVER_CMNDS.REMOVE_FILES:
             # ToDo: implement removal of files
@@ -131,17 +174,78 @@ def start_server(db_name, host=HOST, port=PORT, is_windows=True):
             print(ret_msg)
 
         elif cmnd == NX_SERVER_CMNDS.TEST_CONNECTION:
-            ret_msg = NX_SERVER_REPONSES.SUCCESS
+            ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS})
 
         elif cmnd == NX_SERVER_CMNDS.IS_WINDOWS:
             if is_windows:
-                ret_msg = NX_SERVER_REPONSES.SUCCESS
+                ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS})
             else:
-                ret_msg = NX_SERVER_REPONSES.FAIL
+                ret_msg = json.dumps({"status": NX_SERVER_REPONSES.FAIL})
+
+        #DCS server support
+        elif cmnd == NX_SERVER_CMNDS.LOADFILE_DIRECTORY:
+            print(f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: loadfile_directory called with data={data}")
+            cmd_args = data['cmd_args']
+            directory_dct = get_files_with_extension(cmd_args['directory'], cmd_args['extension'])
+            ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "directories": directory_dct})
+
+        elif cmnd == NX_SERVER_CMNDS.LOADFILE_FILE:
+            print(f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: loadfile_file called with data={data}")
+            cmd_args = data['cmd_args']
+            fname = cmd_args['file']
+            jstr = load_nxstxm_file_to_h5_file_dct(fname, ret_as_jstr=True)
+            ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "directories": jstr})
+
+        elif cmnd == NX_SERVER_CMNDS.LOADFILE_FILES:
+            print(f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: loadfile_files called with data={data}")
+            cmd_args = data['cmd_args']
+            data_lst = []
+            for fname in cmd_args['files']:
+                jstr = load_nxstxm_file_to_h5_file_dct(fname, ret_as_jstr=True)
+                data_lst.append(jstr)
+
+            ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "data_lst": data_lst})
+
+        elif cmnd == NX_SERVER_CMNDS.LIST_DIRECTORY:
+            print(f"\nNX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: list_directory called with data={data}")
+            cmd_args = data['cmd_args']
+            directory = cmd_args['directory']
+            extension = cmd_args['fileExtension']
+            ## subdirs_jstr = json.dumps(get_date_subdirectories(directory))
+            # ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "sub_directories": subdirs_jstr})
+            subdirs = get_data_subdirectories(directory, extension=extension)
+            ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "sub_directories": subdirs})
+            print(f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: list_directory returning ret_msg={ret_msg}\n")
+
+        elif cmnd == NX_SERVER_CMNDS.GET_FILE_SEQUENCE_NAMES:
+            print(f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: get_file_sequence_names called with data={data}")
+            cmd_args = data['cmd_args']
+            data_dir = cmd_args['data_dir']
+            thumb_ext = cmd_args['thumb_ext']
+            dat_ext = cmd_args['dat_ext']
+            stack_dir = cmd_args['stack_dir']
+            num_desired_datafiles = cmd_args['num_desired_datafiles']
+            new_stack_dir = cmd_args['new_stack_dir']
+            prefix_char = cmd_args['prefix_char']
+            dev_backend = cmd_args['dev_backend']
+            seq_names_dct = master_get_seq_names(data_dir=data_dir,
+                                                 thumb_ext=thumb_ext,
+                                                 dat_ext=dat_ext,
+                                                 stack_dir=stack_dir,
+                                                 num_desired_datafiles=num_desired_datafiles,
+                                                 new_stack_dir=new_stack_dir,
+                                                 prefix_char=prefix_char,
+                                                 dev_backend=dev_backend,
+                                                 )
+            seq_name_jstr = json.dumps(seq_names_dct)
+            ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "seq_name_jstr": seq_name_jstr})
+
+
+
 
         # Send a reply back to the client (optional)
-        reply = json.dumps({"status": ret_msg})
-        socket.send_string(reply)
+        #reply = json.dumps({"status": ret_msg})
+        socket.send_string(ret_msg)
 
 
 if __name__ == "__main__":
@@ -150,6 +254,6 @@ if __name__ == "__main__":
     _db_name = MONGO_DB_NM
     is_windows = check_os()
 
-    start_server(_db_name, HOST, PORT, is_windows=is_windows)
+    start_server(_db_name, HOSTNAME, PORT, is_windows=is_windows)
 
 

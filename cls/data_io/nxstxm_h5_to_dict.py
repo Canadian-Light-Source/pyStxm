@@ -25,7 +25,7 @@ def convert_numpy_to_python(obj):
         return float(obj)
     return obj
 
-def load_nxstxm_file_to_h5_file_dct(filename, *, ret_as_dict=False):
+def load_nxstxm_file_to_h5_file_dct(filename, *, ret_as_dict=False, ret_as_jstr=False):
     """
     Load an HDF5 file and convert it to a dictionary.
 
@@ -48,8 +48,12 @@ def load_nxstxm_file_to_h5_file_dct(filename, *, ret_as_dict=False):
     if ret_as_dict:
         # If ret_as_dict is True, return the dictionary
         return h5_file_dct
-    else:
+    elif ret_as_jstr:
         # Convert numpy arrays to Python lists before JSON serialization
+        python_dict = convert_numpy_to_python(h5_file_dct)
+        jstr = json.dumps(python_dict, indent=4)
+        return jstr
+    else:
         python_dict = convert_numpy_to_python(h5_file_dct)
         jstr = json.dumps(python_dict, indent=4)
         # by printing it it becomes the output of the function when called from PixelatorController

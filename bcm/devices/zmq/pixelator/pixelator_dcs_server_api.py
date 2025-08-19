@@ -1355,7 +1355,7 @@ class DcsServerApi(BaseDcsServerApi):
 
     def load_directory(self, directory, extension: str='.hdf5'):
         """
-        This function calls the DCS server to load a file and then emits the result
+        This function calls the DCS server to return a list of files in the given directory
         """
         dct = gen_loadfile_directory_msg(directory, extension=extension)
         reply = self.parent.zmq_dev_server_thread.send_receive(['loadFile directory', json.dumps(dct)])
@@ -1373,7 +1373,8 @@ class DcsServerApi(BaseDcsServerApi):
 
     def request_data_directory_list(self, directory: str, extension: str='.hdf5'):
         """
-        querery the DCS server for a list of data directories in the given base directory and return teh list
+        querey the DCS server for a list of data directories in the given base directory and return the list of
+        sub directories
         """
         dct = gen_listDirectory_msg(directory)
         reply = self.parent.zmq_dev_server_thread.send_receive(['listDirectory', json.dumps(dct)])

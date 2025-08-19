@@ -250,14 +250,17 @@ class main_object_base(QtCore.QObject):
             master_seq_jstr = self.send_to_nx_server(NX_SERVER_CMNDS.GET_FILE_SEQUENCE_NAMES, [], '', data_dir, nx_app_def='nxstxm',
                                              host=self.nx_server_host, port=self.nx_server_port,
                                              verbose=False, cmd_args=cmd_args)
-            master_seq_dct = json.loads(master_seq_jstr['seq_name_jstr'])
+            dct = json.loads(master_seq_jstr['seq_name_jstr'])
             # the integer keys have been turned into strings, so we need to convert them back to integers
-            keys = master_seq_dct.keys()
+            master_seq_dct = {}
+            keys = dct.keys()
             for key in keys:
-                if key.isdigit():
-                    int_key = int(key)
-                    master_seq_dct[int_key] = master_seq_dct.pop(key)
-
+                if isinstance(key, str):
+                    if key.isdigit():
+                        int_key = int(key)
+                elif isinstance(key, int):
+                    int_key = key
+                master_seq_dct[int_key] = dct[key]
 
         else:
             from cls.utils.file_system_tools import master_get_seq_names
@@ -396,16 +399,16 @@ class main_object_base(QtCore.QObject):
             #_logger.error(f"request_data_dir_list: not implemented for this backend ->[{self.get_device_backend()}] ")
 
 
-    def zmq_req_data_dir_list(self, base_dir: str=None):
+    def zmq_req_data_dir_list(self, data_dir: str=None):
         """
         request the zmq server to return a list of data directories
         """
         if self.get_device_backend() == 'zmq':
-            if base_dir is None:
-                _base_dir = self.data_dir
+            if data_dir is None:
+                _data_dir = self.data_dir
             else:
-                _base_dir = base_dir
-            return self.engine_widget.engine.request_data_directory_list(data_dir=base_dir)
+                _data_dir = data_dir
+            return self.engine_widget.engine.request_data_directory_list(data_dir=_data_dir)
         else:
             _logger.error(f"zmq_req_data_dir_list: not implemented for this backend ->[{self.get_device_backend()}] ")
             return False

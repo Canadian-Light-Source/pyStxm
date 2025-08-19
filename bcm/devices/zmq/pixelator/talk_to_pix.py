@@ -1,3 +1,4 @@
+import pprint
 import sys
 import zmq
 import simplejson as json
@@ -8,7 +9,7 @@ from PyQt5.QtCore import QTimer, pyqtSignal
 
 from bcm.devices.zmq.pixelator.loadfile_reponse import LoadFileResponseClass
 
-from cls.applications.pyStxm.widgets.dict_based_contact_sheet.contact_sheet import ContactSheet
+# from cls.applications.pyStxm.widgets.dict_based_contact_sheet.contact_sheet import ContactSheet
 from cls.data_io.stxm_data_io import STXMDataIo
 from cls.utils.fileUtils import get_file_path_as_parts
 
@@ -43,9 +44,10 @@ commands = {
     'Sample OUT': None,
     'topupMode': None,
     'beamShutterMode': None,
-    'loadFile directory': '{"directory":"/tmp/2025-08-05","showHidden":1, "fileExtension":".hdf5"}',
-    'loadFile file': '{ "directory": "/tmp/2025-08-05", "file": "/tmp/2025-08-05/OSA_2025-08-05_010.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["OSA_2025-08-05_010.hdf5"], "pluginNumber": 0 }',
-    'loadFile files': '{ "directory": "/tmp/2025-08-08", "file": "/tmp/2025-08-08/Detector_2025-08-08_001.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["/tmp/2025-08-08/Detector_2025-08-08_001.hdf5","/tmp/2025-08-08/Detector_2025-08-08_002.hdf5","/tmp/2025-08-08/Detector_2025-08-08_007.hdf5","/tmp/2025-08-08/Focus_2025-08-08_003.hdf5","/tmp/2025-08-08/Focus_2025-08-08_004.hdf5","/tmp/2025-08-08/Motor_2025-08-08_005.hdf5","/tmp/2025-08-08/Motor_2025-08-08_008.hdf5","/tmp/2025-08-08/Sample_Image_2025-08-08_006.hdf5"], "pluginNumber": 0 }',
+    'loadFile directory': '{"directory":"/mnt/srv-unix-home/bergr/Data/2025-08-19","showHidden":1, "fileExtension":".hdf5"}',
+    'listDirectory': '{"directory":"/mnt/srv-unix-home/bergr/Data"}',
+    'loadFile file': '{ "directory": "/mnt/srv-unix-home/bergr/Data/2025-08-19", "file": "/mnt/srv-unix-home/bergr/Data/2025-08-19/OSA_2025-08-19_010.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["OSA_2025-08-19_010.hdf5"], "pluginNumber": 0 }',
+    'loadFile files': '{ "directory": "/mnt/srv-unix-home/bergr/Data/2025-08-19", "file": "/mnt/srv-unix-home/bergr/Data/2025-08-19/Detector_2025-08-19_001.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["/mnt/srv-unix-home/bergr/Data/2025-08-19/Detector_2025-08-19_001.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Detector_2025-08-19_002.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Detector_2025-08-19_007.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Focus_2025-08-19_003.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Focus_2025-08-19_004.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Motor_2025-08-19_005.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Motor_2025-08-19_008.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Sample_Image_2025-08-19_006.hdf5"], "pluginNumber": 0 }',
     'loadDefinition': None,
     'change user': None,
     'script info': None,
@@ -93,8 +95,8 @@ class ZMQApp(QMainWindow):
         self.layout = QVBoxLayout(self.main_widget)
 
         # Create and show main window
-        self.contact_sheet = ContactSheet(data_io=STXMDataIo)
-        self.contact_sheet.setMinimumSize(600, 400)
+        # self.contact_sheet = ContactSheet(data_io=STXMDataIo)
+        # self.contact_sheet.setMinimumSize(600, 400)
 
         # btn1 = QtWidgets.QPushButton("loadFile file")
         # btn1.clicked.connect(self.loadfile)
@@ -128,7 +130,7 @@ class ZMQApp(QMainWindow):
         self.received_message_txtedit = QtWidgets.QTextEdit()
         self.layout.addWidget(self.received_message_txtedit)
 
-        self.layout.addWidget(self.contact_sheet)
+        # self.layout.addWidget(self.contact_sheet)
 
         self.setCentralWidget(self.main_widget)
 
@@ -161,7 +163,7 @@ class ZMQApp(QMainWindow):
               Part 0: {"status":"ok"}
               Part 1: {"directories":["..",
             "discard"],
-            "directory":"/tmp/2025-07-14",
+            "directory":"/mnt/srv-unix-home/bergr/Data/2025-07-14",
             "fileExtension":".hdf5",
             "files":["OSA_Focus_2025-07-14_013.hdf5",
             "Motor2D_2025-07-14_017.hdf5",
@@ -171,31 +173,31 @@ class ZMQApp(QMainWindow):
             "showHidden":1}
 
         """
-        print(f"on_loadfile_directory_msg")
-        files = msg_dct.get('files', [])
-        directory = msg_dct.get('directory', '/')
-        extension = msg_dct.get('fileExtension', '.hdf5')
-        self.cmd_input_field.setCurrentText("loadFile file")
-        data_dct_lst = []
-        for fname in files:
-            cmd_arg_str = json.dumps(gen_loadfile_msg(directory, fname))
-            self.multipart_input_field.setText(cmd_arg_str)
-            resp = self.send_multipart_request()
-            data_dct_lst.append(resp)
-
-        print(f"Received {len(data_dct_lst)} files from directory {directory} with extension {extension}")
+        print(f"on_loadfile_directory_msg: {msg_dct}")
+        # files = msg_dct.get('files', [])
+        # directory = msg_dct.get('directory', '/')
+        # extension = msg_dct.get('fileExtension', '.hdf5')
+        # self.cmd_input_field.setCurrentText("loadFile file")
+        # data_dct_lst = []
+        # for fname in files:
+        #     cmd_arg_str = json.dumps(gen_loadfile_msg(directory, fname))
+        #     self.multipart_input_field.setText(cmd_arg_str)
+        #     resp = self.send_multipart_request()
+        #     data_dct_lst.append(resp)
+        #
+        # print(f"Received {len(data_dct_lst)} files from directory {directory} with extension {extension}")
 
     def on_loadfile_changed(self, response_text: str) -> dict:
         """
         Handle the loadFile file response.
         """
         data_dct = self.process_loadfile_changed(response_text)
-        self.contact_sheet.create_thumbnail_from_h5_file_dct(data_dct)
+        #self.contact_sheet.create_thumbnail_from_h5_file_dct(data_dct)
 
 
     def on_scan_finished(self, response_text: str) -> dict:
         """
-        # '{"filename":"/tmp/2025-07-17/discard/OSA_2025-07-17_005.hdf5","flag":0,"neXusBaseDirectory":"/tmp","neXusDiscardSubDirectory":"discard","neXusLocalBaseDirectory":"/tmp"}']
+        # '{"filename":"/mnt/srv-unix-home/bergr/Data/2025-07-17/discard/OSA_2025-07-17_005.hdf5","flag":0,"neXusBaseDirectory":"/mnt/srv-unix-home/bergr/Data","neXusDiscardSubDirectory":"discard","neXusLocalBaseDirectory":"/mnt/srv-unix-home/bergr/Data"}']
         """
         print(f"on_scan_finished")
         msg_dct = json.loads(response_text)
@@ -344,7 +346,11 @@ class ZMQApp(QMainWindow):
                     self.loadfile_changed.emit(parts[1])
                 elif parts[0].find("scanFinished") > -1:
                     self.scan_finished.emit(parts[1])
-                    #'{"filename":"/tmp/2025-07-17/discard/OSA_2025-07-17_005.hdf5","flag":0,"neXusBaseDirectory":"/tmp","neXusDiscardSubDirectory":"discard","neXusLocalBaseDirectory":"/tmp"}']
+                    #'{"filename":"/mnt/srv-unix-home/bergr/Data/2025-07-17/discard/OSA_2025-07-17_005.hdf5","flag":0,"neXusBaseDirectory":"/mnt/srv-unix-home/bergr/Data","neXusDiscardSubDirectory":"discard","neXusLocalBaseDirectory":"/mnt/srv-unix-home/bergr/Data"}']
+                elif parts[0].find('listDirectory') > -1:
+                    # Handle loadDirectory message
+                    msg_dct = json.loads(parts[1])
+                    pprint.pprint(msg_dct)
 
 
         except zmq.Again:
@@ -389,6 +395,9 @@ if __name__ == "__main__":
     host = os.getenv('DCS_HOST', 'vopi1610-005.clsi.ca')  # Default to 'localhost' if not set
     sub_port = os.getenv('DCS_SUB_PORT', 56561)
     req_port = os.getenv('DCS_REQ_PORT', 56562)
+    # host = 'localhost'
+    # sub_port = 55561
+    # req_port = 55562
 
     # Create the main application window
     window = ZMQApp(host, sub_port, req_port)

@@ -661,13 +661,15 @@ class PositionersPanel(QtWidgets.QWidget):
         convert zmq args to kwargs like epics uses
         """
         dct['obj'].parent = QtCore.QObject()
-        dct['obj'].parent.name = dct['obj'].get_name()
+        #dct['obj'].parent.name = dct['obj'].get_name()
+        dct["obj"].pvname = dct['obj'].get_name()
         self.update_emerg_stop(**dct)
 
     def update_emerg_stop(self, **kwargs):
         if not self.fbk_enabled:
             return
-        pvname = kwargs["obj"].parent.name
+        #pvname = kwargs["obj"].parent.name
+        pvname = kwargs["obj"].pvname.split('.')[0]
         (dev, dev_ui, widg, mtr) = self.mtr_dict[pvname]
         if mtr.is_hard_stopped():
             clr_str = _fbk_hardstopped

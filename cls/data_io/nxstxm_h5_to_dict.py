@@ -8,22 +8,9 @@ import numpy as np
 sys.path.append( os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..") )
 
 from cls.utils.fileUtils import get_file_path_as_parts
+from cls.utils.arrays import convert_numpy_to_python
 from cls.data_io.stxm_data_io import STXMDataIo
 
-
-def convert_numpy_to_python(obj):
-    """Convert numpy types to standard Python types for JSON serialization"""
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    elif isinstance(obj, dict):
-        return {k: convert_numpy_to_python(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [convert_numpy_to_python(i) for i in obj]
-    elif isinstance(obj, np.integer):
-        return int(obj)
-    elif isinstance(obj, np.floating):
-        return float(obj)
-    return obj
 
 def load_nxstxm_file_to_h5_file_dct(filename, *, ret_as_dict=False, ret_as_jstr=False):
     """

@@ -16,7 +16,7 @@ commands = {
     'is_windows': None,
     'get_file_sequence_names': None,
     'loadfile_directory': '{"cmd_args":{"directory":"/mnt/srv-unix-home/bergr/Data/2025-08-19","extension":".hdf5"}}',
-    'loadfile_file': '{"cmd_args":{"file":"/mnt/srv-unix-home/bergr/Data/2025-08-19/OSA_2025-08-19_010.hdf5"}}',
+    'loadfile_file': '{"cmd_args":{"file":"/mnt/srv-unix-home/bergr/Data/2025-08-20/A250820002/A250820002.hdf5"}}',
     'loadfile_files': '{"cmd_args":{"files":["/mnt/srv-unix-home/bergr/Data/2025-08-19/OSA_2025-08-19_002.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Detector_2025-08-19_001.hdf5"]}}',
     'list_directory': '{"cmd_args":{"directory":"/mnt/srv-unix-home/bergr/Data","fileExtension":".hdf5"}}',
 }
@@ -94,6 +94,7 @@ class NXServerApp(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    #host = 'vopi1610-005.clsi.ca'
     host = 'localhost'
     port = int(os.getenv('NX_SERVER_PORT', 5555))
     window = NXServerApp(host, port)

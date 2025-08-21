@@ -6,6 +6,7 @@ import simplejson as json
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PIL import Image
 
+from cls.utils.arrays import convert_numpy_to_python
 from cls.utils.dict_utils import dct_get
 from cls.utils import roi_dict_defs as roi_defs
 from cls.utils.pixmap_utils import get_pixmap
@@ -34,7 +35,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
     update_view = QtCore.pyqtSignal()
     select = QtCore.pyqtSignal(object)
 
-    def __init__(self, h5_file_dct, filename, is_folder=False, parent=None):
+    def __init__(self, h5_file_dct, filename, is_folder=False, data=None, energy=None, parent=None):
         super().__init__(parent)
         self.h5_file_dct = h5_file_dct
         self.filename = filename
@@ -53,29 +54,39 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         self.info_jstr = None
         self.pixmap = None
         self.default_counter = None
+        self._original_pos = None
 
         self.setPreferredSize(utils.THUMB_WIDTH, utils.THUMB_HEIGHT)
         # Enable context menu for this graphics item
         self.setAcceptedMouseButtons(QtCore.Qt.LeftButton | QtCore.Qt.RightButton)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+        self.setEnabled(True)
 
-        if not is_folder:
-            # Extract data using 'default' key
-            default_entry = utils.get_first_entry_key(h5_file_dct)
-            self.entry_dct = h5_file_dct.get(default_entry, {})
+        # Extract data using 'default' key
+        default_entry = utils.get_first_entry_key(h5_file_dct)
+        self.entry_dct = h5_file_dct.get(default_entry, {})
 
-            # Get counter data
-            data_section = self.entry_dct['sp_db_dct'].get('nxdata', {})
-            self.default_counter = data_section.get('default', list(data_section.keys())[0])
+        # Get counter data
+        data_section = self.entry_dct['sp_db_dct'].get('nxdata', {})
+        self.default_counter = data_section.get('default', list(data_section.keys())[0])
+        if data is None:
             self.counter_data = np.array(data_section.get(self.default_counter, [[0]]))
-            self.data = self.counter_data
-
-            # Get scan info from sp_db_dct
-            self.sp_db_dct = self.entry_dct.get('sp_db_dct', {})
-            self.scan_type = self.sp_db_dct.get('pystxm_enum_scan_type', 'Unknown')
             self.energy = self.sp_db_dct.get('energy', [0])[0]
+        else:
+            # use the data passed in, likely for a stack thumb
+            self.counter_data = data
+            self.energy = energy
 
-            if self.scan_type in focus_scans:
-                self.draggable = False
+        self.data = self.counter_data
+
+        # Get scan info from sp_db_dct
+        self.sp_db_dct = self.entry_dct.get('sp_db_dct', {})
+        self.scan_type = self.sp_db_dct.get('pystxm_enum_scan_type', 'Unknown')
+
+
+        if self.scan_type in focus_scans:
+            self.draggable = False
 
         if is_folder:
             self.getpic = self.get_folder_pic
@@ -106,23 +117,12 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         return self.valid_file
 
     def mouseDoubleClickEvent(self, event):
-        if self.is_folder:
-            path = self.filename
-            if self.filename.find("..") > -1:
-                # we want an updir path emittted here
-                path, folder = os.path.split(self.filename)
-                path, folder = os.path.split(path)
-                # print('DoubleClicked: [%s]' % path)
-            # if currently showing directory contents and self.filename is a file, then load the stack
-            if self.parent.current_contents_is_dir and os.path.isfile(path):
-                self.dbl_clicked.emit(path)
-            elif not self.parent.current_contents_is_dir:
-                # we are currently showing a stack file and the updir double click should just reload the current directory
-                #reload the directory
-                self.dbl_clicked.emit(self.filename.replace("..", ""))
-            else:
-                # just go up a directory
-                self.dbl_clicked.emit(path)
+        """
+        only support double click events for the left mouse button for stacks
+        """
+        if self.scan_type == scan_types.SAMPLE_IMAGE_STACK:
+            # if this is a stack, then we want to emit the signal to load the stack
+            self.dbl_clicked.emit(self)
 
     def mousePressEvent(self, event):
         """
@@ -152,10 +152,32 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
                     self.pixmap.rect().height() + labelheight + border_size,
                 )
             )
+
+        if btn == QtCore.Qt.LeftButton:
+            self._original_pos = self.pos()
+            self._drag_start_pos = event.pos()
+
         QtWidgets.QGraphicsItem.mousePressEvent(self, event)
 
-        if btn == QtCore.Qt.MouseButton.LeftButton:
-            self.drag.emit(self, event)
+
+    def mouseMoveEvent(self, event):
+        """
+        mouseMoveEvent(): check to see if the thumbwidget is being dragged before emitting drag signal
+        """
+        if event.buttons() & QtCore.Qt.LeftButton:
+            if hasattr(self, '_drag_start_pos'):
+                distance = (event.pos() - self._drag_start_pos).manhattanLength()
+                if distance >= QtWidgets.QApplication.startDragDistance():
+                    self.drag.emit(self, event)
+        QtWidgets.QGraphicsItem.mouseMoveEvent(self, event)
+
+    def mouseReleaseEvent(self, event):
+        """
+        mouseReleaseEvent(): when mouse Release make sure thumbwidget goes back to its original location
+        """
+        if hasattr(self, '_original_pos'):
+            self.setPos(self._original_pos)  # Reset to original position
+        QtWidgets.QGraphicsItem.mouseReleaseEvent(self, event)
 
     def contextMenuEvent(self, event):
         """Create the popup menu for a right click on a thumbnail"""
@@ -242,9 +264,11 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         sp_db = utils.get_first_sp_db_from_entry(entry_dct)
         # data = self.data
         if self.scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
-            data = np.transpose(self.data).copy()
+            #data = np.transpose(self.data).copy()
+            data = self.data.copy()
         else:
-            data = np.flipud(self.data).copy()
+            #data = np.flipud(self.data).copy()
+            data = self.data.copy()
         stack_index = None
 
         if data.ndim == 2:
@@ -339,14 +363,19 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         dct["scan_sub_type"] = type_tpl[1]
         dct["data_dir"] = self.directory
 
+        if self.data.ndim == 3:
+            data = self.data[0]
+        else:
+            data = self.data
+
         if dct["scan_type"] in [scan_types[scan_types.SAMPLE_POINT_SPECTRUM]]:
-            dct["data_min"] = self.data.min()
-            dct["data_max"] = self.data.max()
+            dct["data_min"] = data.min()
+            dct["data_max"] = data.max()
         else:
 
-            if self.data is not None:
-                dct["data_min"] = self.data.min()
-                dct["data_max"] = self.data.max()
+            if data is not None:
+                dct["data_min"] = data.min()
+                dct["data_max"] = data.max()
             else:
                 _logger.error("self.data cannot be None")
                 return
@@ -356,7 +385,8 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
 
         # print 'print_it called: %s'% self.filename
 
-        self.preview_thumb.emit(dct)
+        #make sure that the data is converted to a python dict, nans mainly
+        self.preview_thumb.emit(convert_numpy_to_python(dct))
 
     def save_tif(self, sender):
         """
@@ -399,10 +429,11 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
                 ht, wd = self.data.shape
                 # data = flip_data_upsdown(self.data)
                 if self.scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
-                    data = np.transpose(self.data).copy()
-                    data = np.flipud(data).copy()
+                    #data = np.transpose(self.data).copy()
+                    data = np.flipud(self.data).copy()
                 else:
                     data = np.flipud(self.data).copy()
+                    #data = self.data.copy()
 
             elif len(self.data.shape) == 3:
                 data = np.flipud(self.data[0]).copy()
@@ -522,7 +553,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         sz_x = 222
         sz_y = 164
 
-        if self.filename.find(".") > -1:
+        if self.filename.find("..") > -1:
             # image_fname = 'updir.png'
             # image_fname = 'open-folder-icon-png.png'
             image_fname = "directory_up_bw.png"
@@ -604,6 +635,13 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         painter.fillRect(text_rect, QtGui.QColor(200, 200, 200))  # Light grey
 
         # Draw filename at bottom (only text line)
+        if self.filename.find(".hdf5") > -1:
+            # its the filename
+            align_flag = QtCore.Qt.AlignLeft
+        else:
+            # its a stack energy value
+            align_flag = QtCore.Qt.AlignHCenter
+
         painter.drawText(5, utils.THUMB_HEIGHT - text_height - spacing, utils.THUMB_WIDTH - 10, text_height,
-                         QtCore.Qt.AlignLeft | QtCore.Qt.TextWordWrap,
+                         align_flag | QtCore.Qt.TextWordWrap,
                          os.path.basename(self.filename))

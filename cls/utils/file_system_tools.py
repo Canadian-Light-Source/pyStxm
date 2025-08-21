@@ -174,7 +174,11 @@ def get_next_file_num_in_seq(path, prefix_char="C", extension="hdf5"):
         seq_num_str = seq_num_str.replace(".idx", "")
         seq_num_str = seq_num_str.replace(".err", "")
         # seq_num = int(seq_num_str) + 1
-        seq_num = int(seq_num_str) + 1
+        if seq_num_str.isnumeric():
+            seq_num = int(seq_num_str) + 1
+        else:
+            #assume its last 4 characters are _###
+            seq_num = int(seq_num_str[-3:]) + 1
 
         # if(check_if_tmp_or_final_exist(path, seq_num, prefix_char=prefix_char, extension=extension)):
         #     #skip over the tmp/final file sequence number

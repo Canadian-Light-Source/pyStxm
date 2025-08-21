@@ -9,6 +9,7 @@ from cls.utils.dict_utils import dct_get, dct_put
 from cls.utils.json_threadsave import NumpyAwareJSONEncoder
 from cls.utils.roi_dict_defs import *
 from cls.stylesheets import master_colors
+from cls.utils.arrays import convert_numpy_to_python
 from cls.utils.roi_utils import make_base_wdg_com, widget_com_cmnd_types
 from cls.plotWidgets.imageWidget import make_default_stand_alone_stxm_imagewidget
 from cls.data_io.stxm_data_io import STXMDataIo
@@ -33,8 +34,8 @@ from cls.applications.pyStxm.widgets.dict_based_contact_sheet.remote_file_mgr im
 _logger = get_module_logger(__name__)
 
 class ContactSheet(QtWidgets.QWidget):
-    sig_reload_dir = QtCore.pyqtSignal(str)
-    sig_req_dir_list = QtCore.pyqtSignal(str)
+    # sig_reload_dir = QtCore.pyqtSignal(str)
+    # sig_req_dir_list = QtCore.pyqtSignal(str)
 
     def __init__(self, main_obj=None, data_dir=None, data_io=None, base_data_dir='/tmp', parent=None):
         super(ContactSheet, self).__init__(parent)
@@ -228,17 +229,24 @@ class ContactSheet(QtWidgets.QWidget):
             _logger.warning("create_thumbnail_from_h5_file_dct: h5_file_dct cannot be None")
             return
 
-        thumbnail = create_thumbnail(h5_file_dct)
+        _scan_type = h5_file_dct[h5_file_dct['default']]['sp_db_dct']['pystxm_enum_scan_type']
+        is_folder = False
+        if _scan_type == scan_types.SAMPLE_IMAGE_STACK:
+            # so that it can be identified as a stack
+            is_folder = True
+        # h5_file_dct['entry1']['sp_db_dct']['file_path']
+        thumbnail = create_thumbnail(h5_file_dct, is_folder=is_folder)
 
         if thumbnail.is_valid():
             thumbnail.select.connect(self.do_select)
             thumbnail.launch_viewer.connect(self.launch_viewer)
             thumbnail.print_thumb.connect(self.print_thumbnail)
             thumbnail.preview_thumb.connect(self.preview_thumbnail)
+            thumbnail.dbl_clicked.connect(self.on_thumbnail_dblclicked)
             if thumbnail.draggable:
                 thumbnail.drag.connect(self.on_drag)
 
-        _scan_type = h5_file_dct[h5_file_dct['default']]['sp_db_dct']['pystxm_enum_scan_type']
+
         if _scan_type in spectra_type_scans:
             scene = self.spectra_scene
             self.spectra_thumbs.append(thumbnail)
@@ -257,6 +265,67 @@ class ContactSheet(QtWidgets.QWidget):
 
         scene.addItem(thumbnail)
         self.update_scene_layout()
+
+    def create_stack_thumbnails_from_thumbwidget(self,  thumb: ThumbnailWidget) -> None:
+        """
+        Take a data_dct and create a thumbnail widget from it, adding it to the bottom of the scene.
+        """
+        if thumb is None:
+            _logger.warning("create_stack_thumbnails_from_thumbwidget: thumb cannot be None")
+            return
+
+        scene = self.images_scene
+        self.image_thumbs = []
+        energies = thumb.h5_file_dct[thumb.h5_file_dct['default']]['sp_db_dct']['energy']
+        entry_key = thumb.h5_file_dct['default']
+        entry_dct = thumb.h5_file_dct[entry_key]
+        sp_db_dct = entry_dct['sp_db_dct']
+        sp_key = list(entry_dct['WDG_COM']['SPATIAL_ROIS'].keys())[0]
+        sp_db = entry_dct['WDG_COM']['SPATIAL_ROIS'][sp_key]
+
+        num_ev_rois = len(sp_db[EV_ROIS])
+        data_idx = 0
+        for ev_idx in range(num_ev_rois):
+            for ev_pnt in range(len(sp_db[EV_ROIS][ev_idx][SETPOINTS])):
+                e_pnt = sp_db[EV_ROIS][ev_idx][SETPOINTS][ev_pnt]
+                data = thumb.data[data_idx]
+                thumbnail = create_thumbnail(thumb.h5_file_dct, data=data, energy=e_pnt, ev_idx=ev_idx, ev_pnt=ev_pnt,
+                                             pol_idx=0, stack_idx=0)
+
+                if thumbnail.is_valid():
+                    thumbnail.select.connect(self.do_select)
+                    thumbnail.launch_viewer.connect(self.launch_viewer)
+                    #thumbnail.print_thumb.connect(self.print_thumbnail)
+                    #thumbnail.preview_thumb.connect(self.preview_thumbnail)
+                    #thumbnail.dbl_clicked.connect(self.on_thumbnail_dblclicked)
+                    #if thumbnail.draggable:
+                    #    thumbnail.drag.connect(self.on_drag)
+
+                self.image_thumbs.insert(0, thumbnail)
+                data_idx += 1
+
+        for item in self.image_thumbs:
+            # Find the bottom-most y position
+            items = [item for item in scene.items() if isinstance(item, QtWidgets.QGraphicsWidget)]
+            items = sorted(items, key=lambda item: item.pos().y())
+            if items:
+                max_y = max(item.pos().y() + item.boundingRect().height() for item in items)
+            else:
+                max_y = 0
+            item.setPos(0, max_y + 10)  # 10 px margin
+            scene.addItem(item)
+
+
+        self.update_scene_layout()
+
+    def on_thumbnail_dblclicked(self, thumb: ThumbnailWidget) -> None:
+        """
+        Handle double-click on a thumbnail, if a folder then go up a directory if a stack then load the stack file,
+        """
+        if thumb.scan_type == scan_types.SAMPLE_IMAGE_STACK:
+            self.images_scene.clear()
+            QtWidgets.QApplication.processEvents()
+            self.create_stack_thumbnails_from_thumbwidget(thumb)
 
     def update_scene_layout(self):
         """
@@ -368,8 +437,7 @@ class ContactSheet(QtWidgets.QWidget):
                 format = "application/dict-based-imageplot-stxmscan"
                 dct = obj.get_standard_image_launch_viewer_dct()
 
-
-            jstr = json.dumps(dct, cls=NumpyAwareJSONEncoder)
+            jstr = json.dumps(convert_numpy_to_python(dct), cls=NumpyAwareJSONEncoder)
 
             itemData = QtCore.QByteArray()
             dataStream = QtCore.QDataStream(itemData, QtCore.QIODevice.WriteOnly)

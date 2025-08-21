@@ -1,5 +1,6 @@
 
 import os.path
+import numpy as np
 import sys
 from PyQt5 import QtCore, QtWidgets
 from datetime import datetime
@@ -9,6 +10,7 @@ from tinydb import TinyDB, Query
 import simplejson as json
 
 from nx_server.nx_server import NX_SERVER_CMNDS, NX_SERVER_REPONSES
+from cls.utils.arrays import nulls_to_nans
 from cls.utils.dict_utils import dct_put, dct_get, dct_merge, find_key_in_dict
 from cls.utils.version import get_version
 from cls.utils.process_utils import check_windows_procs_running
@@ -295,6 +297,13 @@ class main_object_base(QtCore.QObject):
             if isinstance(file_lst, list):
                 for fname in file_lst:
                     self.nx_server_load_file(data_dir, fname)
+            subdir_lst = res_dct['directories']['directories']
+            if isinstance(subdir_lst, list):
+                for subdir in subdir_lst:
+                    #self.nx_server_load_file(data_dir, fname)
+                    # cause a directory data thumbnail to be created
+                    fname = subdir + extension
+                    self.nx_server_load_file(os.path.join(data_dir, subdir), fname, extension=extension)
 
     def nx_server_load_file(self, data_dir: str=None, fname: str=None, extension: str='.hdf5') -> None:
         """
@@ -312,7 +321,9 @@ class main_object_base(QtCore.QObject):
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=False, cmd_args=cmd_args)
         #print(f"ZMQDevManager: nx_server_load_file: {h5_file_dct}")
-        h5_file_dct = json.loads(res_dct['directories'])
+
+        #h5_file_dct = json.loads(res_dct['directories'])
+        h5_file_dct = nulls_to_nans(json.loads(res_dct['directories']))
         # emit the signal that new data has arrived, the contact_sheet will be called to create a data thumbnail with
         # this dict
         self.engine_widget.new_data.emit(h5_file_dct)

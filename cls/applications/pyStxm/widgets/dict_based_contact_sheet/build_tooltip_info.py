@@ -3,6 +3,7 @@ import numpy as np
 
 from bcm.devices.epu import convert_wrapper_epu_to_str
 
+from cls.utils.arrays import convert_numpy_to_python
 from cls.utils.dict_utils import dct_get
 from cls.utils.roi_dict_defs import *
 from cls.types.stxmTypes import scan_types, scan_sub_types, image_type_scans, spectra_type_scans
@@ -10,28 +11,33 @@ from cls.types.stxmTypes import scan_types, scan_sub_types, image_type_scans, sp
 from cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils import get_first_sp_db_from_entry, format_info_text, extract_date_time_from_nx_time
 
 
-def dict_based_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol_idx=0, stack_idx=None):
+def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, pol_idx=0, stack_idx=None):
     """
     Generate an HTML tooltip string from sp_db_dict data
 
-    :param data_dct: Dictionary containing scan data
+    :param h5_file_dct: Dictionary containing scan data
     :param energy: Energy value (if None, extracted from data_dct)
     :param pol_idx: Polarization index
+    :param ev_idx: Energy vector index
+    :param ev_pnt: Energy point index
+    :param stack_idx: Stack index (if None, the tooltip will not include stack information
+
     :return: HTML formatted tooltip string
+
     """
 
     sp_db = None
     # Check if it's an entry_dct and extract sp_db
-    if 'default' in data_dct and data_dct['default'] in data_dct:
-        sp_db = get_first_sp_db_from_entry(data_dct[data_dct['default']])
+    if 'default' in h5_file_dct and h5_file_dct['default'] in h5_file_dct:
+        sp_db = get_first_sp_db_from_entry(h5_file_dct[h5_file_dct['default']])
         _scan_type = dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE)
     if sp_db is None:
         print("ERROR: No SP DB found")
         return
     # Extract counter from default keys
     counter = "counter1"  # default fallback
-    if 'default' in data_dct and data_dct['default'] in data_dct:
-        entry = data_dct[data_dct['default']]
+    if 'default' in h5_file_dct and h5_file_dct['default'] in h5_file_dct:
+        entry = h5_file_dct[h5_file_dct['default']]
         if 'default' in entry:
             counter = entry['default']
 
@@ -54,11 +60,12 @@ def dict_based_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol
         if _scan_type is None:
             return (None, None)
     data = None
-    entry_key = data_dct['default']
-    entry_dct = data_dct[entry_key]
+    entry_key = h5_file_dct['default']
+    entry_dct = h5_file_dct[entry_key]
     sp_db_dct = entry_dct['sp_db_dct']
     data = np.array(sp_db_dct['nxdata'][counter])
     fpath = sp_db_dct['file_path']# .replace("/", "\\")
+    all_ev_setpoints = sp_db_dct['energy']
 
     if data is None:
         if _scan_type is scan_types.SAMPLE_POINT_SPECTRUM:
@@ -186,7 +193,7 @@ def dict_based_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol
                 dct_get(sp_db, SPDB_YRANGE),
             )
             dct["step"] = (dct_get(sp_db, SPDB_XSTEP), dct_get(sp_db, SPDB_YSTEP))
-            dct["estop"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STOP]
+            dct["estep"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STEP]
             dct["start"] = (
                 dct_get(sp_db, SPDB_XSTART),
                 dct_get(sp_db, SPDB_YSTART),
@@ -205,7 +212,8 @@ def dict_based_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol
             if dct_get(sp_db, SPDB_GTCENTER) != None:
                 dct["goni_theta_cntr"] = dct_get(sp_db, SPDB_GTCENTER)
 
-        jstr = json.dumps(dct)
+        jstr = json.dumps(convert_numpy_to_python(dct))
+
         # construct the tooltip string using html formatting for bold etc
         s = "%s" % format_info_text("File:", dct["file"], start_preformat=True)
         s += "%s %s %s" % (
@@ -225,24 +233,18 @@ def dict_based_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol
         else:
             s += "%s" % format_info_text("Scan Type:", dct["scan_type"])
 
-        # s += '%s' % format_info_text('Scan Type:', dct['scan_type'])
-        # if (is_folder and ( (_scan_type in spectra_scans) or (_scan_type in stack_scans)) ):
         if (_scan_type in spectra_scans) or (_scan_type in stack_scans and stack_idx is None):
-            # s += '%s' % format_info_text('Energy:', '[%.2f ---> %.2f] eV' % (dct['estart'], dct['estop']))
-            # s += '%s' % format_info_text('Num Energy Points:', '%d' % dct['e_npnts'])
-            # s += '%s' % format_info_text('Energy:', '[%.2f ---> %.2f] eV   %s' % (dct['estart'], dct['estop'],
-            #                                    format_info_text('Num Energy Points:', '%d' % dct['e_npnts'])))
             s += "%s %s %s" % (
                 format_info_text(
                     "Energy:",
-                    "[%.2f ---> %.2f] eV \t" % (dct["estart"], dct["estop"]),
+                    f"[{dct['estart']:.2f} ---> {dct['estop']:.2f}] eV \t",
                     newline=False,
                 ),
-                format_info_text("#eV Points:", "%d" % dct["e_npnts"], newline=False),
-                format_info_text("step:", "%.2f" % dct["estop"]),
+                format_info_text("#eV Points:", f"{dct['e_npnts']}", newline=False),
+                format_info_text("step:", f"{dct['estep']:.2f} ev"),
             )
         else:
-            s += "%s" % format_info_text("Energy:", "%.2f eV" % (e_pnt))
+            s += "%s" % format_info_text("Energy:", "%.2f eV" % e_pnt)
 
         if (_scan_type in focus_scans):
             x_start, zpz_start = dct["start"]
@@ -273,7 +275,7 @@ def dict_based_build_image_params(data_dct, energy=None, ev_idx=0, ev_pnt=0, pol
         )
         s += "%s %s %s" % (_s1, _s2, _s3)
         s += "%s" % format_info_text(
-            "Dwell:", "%.2f ms" % (sp_db[EV_ROIS][ev_idx][DWELL] * 1000.0)
+            "Dwell:", "%.2f ms" % (sp_db[EV_ROIS][ev_idx][DWELL] )
         )
         s += "%s" % format_info_text("Points:", "%d x %d " % (width, height))
         s += "%s" % format_info_text(

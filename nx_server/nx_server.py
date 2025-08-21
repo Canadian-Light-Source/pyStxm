@@ -52,26 +52,39 @@ def get_data_subdirectories(directory, extension):
                     f for f in os.listdir(subdir_path)
                     if os.path.isfile(os.path.join(subdir_path, f)) and f.endswith(extension)
                 ])
-                if num_files > 0:
-                    result.append({'sub_dir': d, 'num_h5_files': num_files})
+
+                result.append({'sub_dir': d, 'num_h5_files': num_files})
     except FileNotFoundError:
         pass
     return result
 
-def get_files_with_extension(directory, extension):
+def get_files_with_extension_and_subdirs(directory, extension):
     """
     Returns a dictionary with the directory, fileExtension, and a list of files matching the extension.
     Handles missing directory gracefully.
     """
     try:
+        #sub_dirs = [d for d in os.listdir(directory) if os.path.isdir(os.path.join(directory, d))]
+        sub_dirs = [
+            d for d in os.listdir(directory)
+            if os.path.isdir(os.path.join(directory, d)) and any(
+                f.endswith(extension) and f.startswith(d)
+                for f in os.listdir(os.path.join(directory, d))
+                if os.path.isfile(os.path.join(directory, d, f))
+            )
+        ]
+
         files = [f for f in os.listdir(directory)
                  if os.path.isfile(os.path.join(directory, f)) and f.endswith(extension)]
     except FileNotFoundError:
         files = []
+        sub_dirs = []
     return {
+        "directories": sub_dirs,
         "directory": directory,
         "fileExtension": extension,
-        "files": files
+        "files": files,
+        "showHidden": 1
     }
 
 def gen_nx_server_dict(cmnd='', run_uids=[], fprefix='FPREFIX', data_dir='', nx_app_def='nxstxm', fpaths=[], cmd_args={})->dict:
@@ -186,7 +199,7 @@ def start_server(db_name, host=HOSTNAME, port=PORT, is_windows=True):
         elif cmnd == NX_SERVER_CMNDS.LOADFILE_DIRECTORY:
             print(f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: loadfile_directory called with data={data}")
             cmd_args = data['cmd_args']
-            directory_dct = get_files_with_extension(cmd_args['directory'], cmd_args['extension'])
+            directory_dct = get_files_with_extension_and_subdirs(cmd_args['directory'], cmd_args['extension'])
             ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "directories": directory_dct})
 
         elif cmnd == NX_SERVER_CMNDS.LOADFILE_FILE:

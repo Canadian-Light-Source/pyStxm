@@ -40,6 +40,9 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
         self.subdir_list.itemClicked.connect(self.on_subdir_selected)
         self.layout.addWidget(self.subdir_list)
 
+        self.status_label = QtWidgets.QLabel("Click on a subdirectory to select it.\n'..' goes up one level.")
+        self.layout.addWidget(self.status_label)
+
         sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
         self.list_subdirectories(sub_dirs)
 
@@ -114,6 +117,8 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
                 self.subdir_list.clear()
                 sub_dirs = self.main_obj.request_data_dir_list(base_dir=new_data_dir)
                 self.list_subdirectories(sub_dirs)
+                self.update_data_dir(new_data_dir)
+
             else:
                 new_data_dir = os.path.join(self.data_dir, subdir_name)
 
@@ -121,13 +126,16 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
                 # request that the image and spec graphic scenes be cleared
                 self.clear_scenes.emit()
 
-            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-            QtWidgets.QApplication.processEvents()
-            self.reload_directory(new_data_dir)
-            QtWidgets.QApplication.restoreOverrideCursor()
-            QtWidgets.QApplication.processEvents()
-            self.update_data_dir(new_data_dir)
-            if do_hide:
+                QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+                self.status_label.setText("Loading selection, please wait...")
+                QtWidgets.QApplication.processEvents()
+                QtWidgets.QApplication.processEvents()
+                self.reload_directory(new_data_dir)
+                QtWidgets.QApplication.restoreOverrideCursor()
+                self.status_label.setText("Loading selection completed")
+                QtWidgets.QApplication.processEvents()
+                self.update_data_dir(new_data_dir)
+
                 # update the current list of sub dirs
                 sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
                 self.list_subdirectories(sub_dirs)

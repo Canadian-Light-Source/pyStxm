@@ -39,21 +39,29 @@ NX_SERVER_REPONSES = Enum('fail', 'success')
 
 def get_data_subdirectories(directory, extension):
     """
-    Returns a list of dicts for all subdirectories that contain at least one file with the given extension.
+    Returns a list of dicts for all subdirectories that contain at least one file with the given extension,
+    ordered from most recent to least recent by modification time.
     Each dict contains 'sub_dir' and 'num_h5_files'.
     Handles missing directory gracefully.
     """
     result = []
     try:
-        for d in os.listdir(directory):
+        subdirs = [
+            d for d in os.listdir(directory)
+            if os.path.isdir(os.path.join(directory, d))
+        ]
+        # Sort subdirs by modification time (most recent first)
+        subdirs.sort(
+            key=lambda d: os.path.getmtime(os.path.join(directory, d)),
+            reverse=True
+        )
+        for d in subdirs:
             subdir_path = os.path.join(directory, d)
-            if os.path.isdir(subdir_path):
-                num_files = len([
-                    f for f in os.listdir(subdir_path)
-                    if os.path.isfile(os.path.join(subdir_path, f)) and f.endswith(extension)
-                ])
-
-                result.append({'sub_dir': d, 'num_h5_files': num_files})
+            num_files = len([
+                f for f in os.listdir(subdir_path)
+                if os.path.isfile(os.path.join(subdir_path, f)) and f.endswith(extension)
+            ])
+            result.append({'sub_dir': d, 'num_h5_files': num_files})
     except FileNotFoundError:
         pass
     return result

@@ -8,7 +8,7 @@ import numpy as np
 sys.path.append( os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..") )
 
 from cls.utils.fileUtils import get_file_path_as_parts
-from cls.utils.arrays import convert_numpy_to_python
+from cls.utils.arrays import convert_numpy_to_python, clean_nans
 from cls.data_io.stxm_data_io import STXMDataIo
 
 
@@ -38,10 +38,12 @@ def load_nxstxm_file_to_h5_file_dct(filename, *, ret_as_dict=False, ret_as_jstr=
     elif ret_as_jstr:
         # Convert numpy arrays to Python lists before JSON serialization
         python_dict = convert_numpy_to_python(h5_file_dct)
+        python_dict = clean_nans(python_dict)
         jstr = json.dumps(python_dict, indent=4)
         return jstr
     else:
         python_dict = convert_numpy_to_python(h5_file_dct)
+        python_dict = clean_nans(python_dict)
         jstr = json.dumps(python_dict, indent=4)
         # by printing it it becomes the output of the function when called from PixelatorController
         # print(jstr)

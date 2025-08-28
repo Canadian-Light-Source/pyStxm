@@ -235,6 +235,13 @@ class ZMQRunEngine(QObject):
 
         return result, dct
 
+    def get_settings(self):
+        """
+        return the current settings from the DCS server
+        """
+        settings = self.dcs_server_api.get_settings()
+        return settings
+
     def load_data_directory(self, data_dir: str=None, *, extension: str='.hdf5') -> None:
         """
         This function loads the data directory from the DCS server and updates the remote file system info.

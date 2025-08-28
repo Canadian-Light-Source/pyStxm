@@ -61,6 +61,7 @@ if sub_port == '56561':
         'loadDefinition': None,
         'change user': None,
         'script info': None,
+        'getSettings': None,
     }
     filenames =  ["Detector_2025-08-08_001.hdf5",
               "Detector_2025-08-08_002.hdf5",
@@ -385,6 +386,8 @@ class ZMQApp(QMainWindow):
         """Send a multipart message via the REQ socket with a command as the first part."""
         command = self.cmd_input_field.currentText()  # Part 0 (command)
         multipart_message = self.multipart_input_field.text()  # Parts 1, 2, ...
+        if len(multipart_message) == 0:
+            multipart_message = '{}'
         command_dct = json.loads(multipart_message)
         response = None
         if command and multipart_message:

@@ -1097,6 +1097,20 @@ class DcsServerApi(BaseDcsServerApi):
 
         return True
 
+    def get_settings(self):
+        """
+        return a dict of settings that will be saved in the user settings file
+        Returns
+        -------
+
+        """
+        reply = self.parent.zmq_dev_server_thread.send_receive(['getSettings'])
+        if reply[0]['status'] == 'ok':
+            dct = reply[1]
+        else:
+            _logger.warn(f"get_settings: failed to get settings from Pixelator")
+            dct = {}
+        return dct
 
     def put(self, put_dct):
         """

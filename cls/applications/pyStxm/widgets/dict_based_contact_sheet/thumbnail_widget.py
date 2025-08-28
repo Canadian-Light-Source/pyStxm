@@ -175,7 +175,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         """
         mouseReleaseEvent(): when mouse Release make sure thumbwidget goes back to its original location
         """
-        if hasattr(self, '_original_pos'):
+        if hasattr(self, '_original_pos') and self._original_pos is not None:
             self.setPos(self._original_pos)  # Reset to original position
         QtWidgets.QGraphicsItem.mouseReleaseEvent(self, event)
 

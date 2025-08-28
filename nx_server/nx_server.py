@@ -1,8 +1,11 @@
+
 from databroker import Broker
 import json
 import os
 import platform
 import re
+import threading
+import time
 import sys
 import zmq
 
@@ -25,7 +28,8 @@ if "COMPUTERNAME" in os.environ.keys():
     HOSTNAME = os.environ["COMPUTERNAME"]
 else:
     HOSTNAME = "localhost"
-PORT = 5555
+REP_PORT = 5555
+PUB_PORT = 56566
 
 NX_SERVER_CMNDS = Enum('save_files', 'remove_files', 'test_connection', 'is_windows', 'get_file_sequence_names',
                        'loadfile_directory', 'loadfile_file', 'loadfile_files', 'list_directory')
@@ -129,21 +133,40 @@ def determine_exporter(nx_app_def):
         return None
 
 
-def start_server(db_name, host=HOSTNAME, port=PORT, is_windows=True):
+
+def process_and_publish_files(pub_socket, files):
+    data_lst = []
+    # for fname in files:
+    #     jstr = load_nxstxm_file_to_h5_file_dct(fname, ret_as_jstr=True)
+    #     data_lst.append(jstr)
+    #     ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "load_file_data": jstr})
+    #     pub_socket.send_string(ret_msg)  # Publish each jstr
+    #     print(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published load_file_data for [{fname}]")
+    #     time.sleep(0.1)
+
+    print(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published [{len(data_lst)}] files")
+    return data_lst
+
+def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, is_windows=True):
     """
     Note this server currently needs to run on the same machine as the mongodb service in order to access the
     """
     # Prepare the ZeroMQ context and socket
     context = zmq.Context()
     socket = context.socket(zmq.REP)  # REP is for reply
-    socket.bind(f"tcp://*:{port}")  # Bind to port 5555
+    socket.bind(f"tcp://*:{rep_port}")  # Bind to port 5555
+
+    pub_socket = context.socket(zmq.PUB)
+    pub_socket.bind(f"tcp://*:{pub_port}")
 
     db = Broker.named(db_name)
     if not db:
         print(f"[{HOSTNAME}]Unable to connect to the database [{db_name}]")
         exit(1)
 
-    print(f"NX Server is running on host [{HOSTNAME}] and connected to database [{db_name}] listening on port {port}...")
+    print(f"NX Server is running on host [{HOSTNAME}] and connected to database [{db_name}] listening on port {rep_port}...")
+    print(f"PUB socket bound to port [{pub_port}.")
+
     while True:
         # Wait for the next request from a client
         message = socket.recv()
@@ -151,7 +174,7 @@ def start_server(db_name, host=HOSTNAME, port=PORT, is_windows=True):
 
         # Deserialize the JSON message to a Python dictionary
         data = json.loads(message)
-        print(f"\t[{HOSTNAME}, {PORT}]Deserialized data:", data)
+        print(f"\t[{HOSTNAME}, {rep_port}]Deserialized data:", data)
 
         # Do something with the data (here we  just print it)
         cmnd = data['cmnd']
@@ -176,8 +199,8 @@ def start_server(db_name, host=HOSTNAME, port=PORT, is_windows=True):
                         primary_docs, data_dir, file_prefix=fprefix, first_uid=first_uid, last_uid=last_uid, aborted=False
                     )
                 exporter.finish_export(data_dir, fprefix, first_uid)
-                ret_msg = f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"
-                ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "msg": f"NX_SERVER[{HOSTNAME}], [{PORT}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"})
+                ret_msg = f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"
+                ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "msg": f"NX_SERVER[{HOSTNAME}], [{rep_port}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"})
 
         elif cmnd == NX_SERVER_CMNDS.REMOVE_FILES:
             # ToDo: implement removal of files
@@ -190,8 +213,8 @@ def start_server(db_name, host=HOSTNAME, port=PORT, is_windows=True):
                 if os.path.exists(fpath):
                     rm_files.append(fpath)
                     os.remove(fpath)
-                    print(f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: Removed the following file [{fpath}]")
-            ret_msg = f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: Removed {len(rm_files)} files"
+                    print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: Removed the following file [{fpath}]")
+            ret_msg = f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: Removed {len(rm_files)} files"
             print(ret_msg)
 
         elif cmnd == NX_SERVER_CMNDS.TEST_CONNECTION:
@@ -205,30 +228,45 @@ def start_server(db_name, host=HOSTNAME, port=PORT, is_windows=True):
 
         #DCS server support
         elif cmnd == NX_SERVER_CMNDS.LOADFILE_DIRECTORY:
-            print(f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: loadfile_directory called with data={data}")
+            print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: loadfile_directory called with data={data}")
             cmd_args = data['cmd_args']
             directory_dct = get_files_with_extension_and_subdirs(cmd_args['directory'], cmd_args['extension'])
             ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "directories": directory_dct})
 
         elif cmnd == NX_SERVER_CMNDS.LOADFILE_FILE:
-            print(f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: loadfile_file called with data={data}")
+            print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: loadfile_file called with data={data}")
             cmd_args = data['cmd_args']
             fname = cmd_args['file']
-            jstr = load_nxstxm_file_to_h5_file_dct(fname, ret_as_jstr=True)
-            ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "directories": jstr})
+            # jstr = load_nxstxm_file_to_h5_file_dct(fname, ret_as_jstr=True)
+            # ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "directories": jstr})
+            #
+            def worker():
+                data_lst = process_and_publish_files(pub_socket, [fname])
+
+            threading.Thread(target=worker).start()
+
+            ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS})
 
         elif cmnd == NX_SERVER_CMNDS.LOADFILE_FILES:
-            print(f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: loadfile_files called with data={data}")
+            print(f"\n\nNX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: loadfile_files called: data={data}")
             cmd_args = data['cmd_args']
-            data_lst = []
-            for fname in cmd_args['files']:
-                jstr = load_nxstxm_file_to_h5_file_dct(fname, ret_as_jstr=True)
-                data_lst.append(jstr)
+            def worker():
+                complete_msg = json.dumps({"load_files_status": "in_progress"})
+                pub_socket.send_string(complete_msg)
+                files = json.loads(cmd_args['files'])
+                data_lst = process_and_publish_files(pub_socket, files)
+                # Publish completion message
+                #complete_msg = json.dumps({"status": "data_loading_complete"})
+                print(f"\n\n load_files_status: Published all files, sending complete message")
+                complete_msg = json.dumps({"load_files_status": "complete"})
+                pub_socket.send_string(complete_msg)
 
-            ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "data_lst": data_lst})
+            threading.Thread(target=worker).start()
+
+            ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS})
 
         elif cmnd == NX_SERVER_CMNDS.LIST_DIRECTORY:
-            print(f"\nNX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: list_directory called with data={data}")
+            print(f"\nNX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: list_directory called with data={data}")
             cmd_args = data['cmd_args']
             directory = cmd_args['directory']
             extension = cmd_args['fileExtension']
@@ -236,10 +274,10 @@ def start_server(db_name, host=HOSTNAME, port=PORT, is_windows=True):
             # ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "sub_directories": subdirs_jstr})
             subdirs = get_data_subdirectories(directory, extension=extension)
             ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "sub_directories": subdirs})
-            print(f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: list_directory returning ret_msg={ret_msg}\n")
+            print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: list_directory returning ret_msg={ret_msg}\n")
 
         elif cmnd == NX_SERVER_CMNDS.GET_FILE_SEQUENCE_NAMES:
-            print(f"NX_SERVER[{HOSTNAME}, {PORT}]:nxstxm: get_file_sequence_names called with data={data}")
+            print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: get_file_sequence_names called with data={data}")
             cmd_args = data['cmd_args']
             data_dir = cmd_args['data_dir']
             thumb_ext = cmd_args['thumb_ext']
@@ -275,6 +313,6 @@ if __name__ == "__main__":
     _db_name = MONGO_DB_NM
     is_windows = check_os()
 
-    start_server(_db_name, HOSTNAME, PORT, is_windows=is_windows)
+    start_server(_db_name, HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, is_windows=is_windows)
 
 

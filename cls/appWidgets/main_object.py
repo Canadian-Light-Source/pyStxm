@@ -2,6 +2,8 @@
 import os.path
 import numpy as np
 import sys
+import zmq
+import zmq.asyncio
 from PyQt5 import QtCore, QtWidgets
 from datetime import datetime
 import pathlib
@@ -19,6 +21,7 @@ from cls.utils.roi_dict_defs import *
 from cls.utils.log import get_module_logger
 from cls.utils.fileUtils import get_module_name
 from cls.utils.json_utils import json_to_dict
+from cls.utils.environment import get_environ_var
 from cls.types.stxmTypes import (
     sample_fine_positioning_modes,
     sample_positioning_modes,
@@ -41,6 +44,10 @@ USE_ZMQ = False
 
 devq = Query()
 
+NX_SERVER_DATA_SUB_PORT = os.getenv('NX_SERVER_DATA_SUB_PORT', 56566)
+PIX_DATA_SUB_PORT = os.getenv('PIX_DATA_SUB_PORT', 55563)
+DATA_SERVER_HOST = os.getenv('DATA_SERVER_HOST', 'vopi1610-005.clsi.ca')
+
 _logger = get_module_logger(__name__)
 
 
@@ -59,6 +66,25 @@ def gen_session_obj():
     )  # unique ID for the 6 position sample holder, maybe from a barcode?
     dct_put(ses_obj, "SAMPLE_POS", 1)  # current sample position (1 - 6)
     return ses_obj
+
+class DataSubListenerThread(QtCore.QThread):
+    message_received = QtCore.pyqtSignal(object)
+
+    def __init__(self, sub_socket):
+        super().__init__()
+        self.sub_socket = sub_socket
+        self._running = True
+
+    def run(self):
+        self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
+        while self._running:
+            msg = self.sub_socket.recv_string()
+            self.message_received.emit(msg)
+
+    def stop(self):
+        self._running = False
+        self.quit()
+        self.wait()
 
 
 class main_object_base(QtCore.QObject):
@@ -87,6 +113,8 @@ class main_object_base(QtCore.QObject):
     export_msg = QtCore.pyqtSignal(object)
     seldets_changed = QtCore.pyqtSignal(list) #when the user selects different detectors emit this signal with list of app_devnames
     new_data = QtCore.pyqtSignal(object)  # when new data is received from the zmq server emit this signal with the data
+    data_sub_message_received = QtCore.pyqtSignal(str)
+    load_files_status = QtCore.pyqtSignal(bool)
 
     def __init__(self, name, endstation, beamline_cfg_dct=None, splash=None, main_cfg=None):
 
@@ -107,6 +135,8 @@ class main_object_base(QtCore.QObject):
         self.win_data_dir = self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.linux_data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['linux_data_dir']
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
+        self.data_sub_context = zmq.Context()
+
 
         if self.device_backend == 'zmq':
             # a ZMQ DCS Server is running and so mongo and nx_server are not needed
@@ -114,7 +144,19 @@ class main_object_base(QtCore.QObject):
             self.nx_server_host = None
             self.nx_server_port = None
             self.nx_server_is_windows = None
+            # SUB socket: Subscribing to the publisher
+            print(f"Connecting to data server at tcp://{DATA_SERVER_HOST}:{PIX_DATA_SUB_PORT}")
+            self.data_sub_socket = self.data_sub_context.socket(zmq.SUB)
+            self.data_sub_socket.connect(f"tcp://{DATA_SERVER_HOST}:{PIX_DATA_SUB_PORT}")  # Connect to the PUB socket
+            self.data_sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
+
         else:
+            # SUB socket: Subscribing to the publisher
+            self.data_sub_socket = self.data_sub_context.socket(zmq.SUB)
+            print(f"Connecting to data server at tcp://{DATA_SERVER_HOST}:{NX_SERVER_DATA_SUB_PORT}")
+            self.data_sub_socket.connect(f"tcp://{DATA_SERVER_HOST}:{NX_SERVER_DATA_SUB_PORT}")  # Connect to the PUB socket
+            self.data_sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
+
             if main_cfg:
                 self.mongo_db_nm = main_cfg.get_value("MAIN", "mongo_db_nm")
                 self.nx_server_host = main_cfg.get_value("MAIN", "nx_server_host")
@@ -168,6 +210,41 @@ class main_object_base(QtCore.QObject):
             self.nx_server_is_running = self.check_nx_server_running()
             # when the engine widget receives new data it will emit this signal
             self.new_data = self.engine_widget.new_data
+            self.load_files_status = self.engine_widget.load_files_status
+
+        self.data_sub_message_received.connect(self.on_data_sub_message_received)
+        self.start_sub_listener_thread()
+
+    def start_sub_listener_thread(self):
+        """
+        start a thread to listen for messages from the data server
+        """
+        self.data_sub_listener_thread = DataSubListenerThread(self.data_sub_socket)
+        self.data_sub_listener_thread.message_received.connect(self.on_data_sub_message_received)
+        self.data_sub_listener_thread.start()
+
+    def on_data_sub_message_received(self, msg):
+        """
+        The data server sends hf_file_dct's so convert jstrs to dicts and emit the new_data signal
+        """
+        if isinstance(msg, str):
+            if len(msg) < 5:
+                return
+            # print(f"MAIN_OBJ:on_data_sub_message_received: DATA SUB MSG: {msg[:100]}")
+            msg_dct = json.loads(msg)
+            if 'load_file_data' in msg_dct.keys():
+                if len(msg_dct['load_file_data']) < 5:
+                    return
+                h5_file_dct = json.loads(msg_dct['load_file_data'])
+                self.engine_widget.new_data.emit(h5_file_dct)
+
+            elif 'load_files_status' in msg_dct.keys():
+                done = False
+                status_str = msg_dct['load_files_status']
+                if status_str.find('complete') >= 0:
+                    done = True
+                self.engine_widget.load_files_status.emit(done)
+
 
 
     def init_zmq_engine_widget(self, devices_dct):
@@ -179,6 +256,7 @@ class main_object_base(QtCore.QObject):
         result, dcs_params_dct = self.engine_widget.engine.connect_to_dcs_server(devices_dct)
         # when the engine widget receives new data it will emit this signal
         self.new_data = self.engine_widget.new_data
+        self.load_files_status = self.engine_widget.load_files_status
         
         if not result:
             _logger.error(f"Failed to connect to DCS server")
@@ -295,8 +373,8 @@ class main_object_base(QtCore.QObject):
         if 'directories' in res_dct.keys():
             file_lst = res_dct['directories']['files']
             if isinstance(file_lst, list):
-                for fname in file_lst:
-                    self.nx_server_load_file(data_dir, fname)
+                self.nx_server_load_files(data_dir, file_lst=file_lst)
+
             subdir_lst = res_dct['directories']['directories']
             if isinstance(subdir_lst, list):
                 for subdir in subdir_lst:
@@ -320,15 +398,15 @@ class main_object_base(QtCore.QObject):
         res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILE, [], '', data_dir, nx_app_def='nxstxm',
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=False, cmd_args=cmd_args)
-        #print(f"ZMQDevManager: nx_server_load_file: {h5_file_dct}")
+        # #print(f"ZMQDevManager: nx_server_load_file: {h5_file_dct}")
+        #
+        # #h5_file_dct = json.loads(res_dct['directories'])
+        # h5_file_dct = nulls_to_nans(json.loads(res_dct['directories']))
+        # # emit the signal that new data has arrived, the contact_sheet will be called to create a data thumbnail with
+        # # this dict
+        # self.engine_widget.new_data.emit(h5_file_dct)
 
-        #h5_file_dct = json.loads(res_dct['directories'])
-        h5_file_dct = nulls_to_nans(json.loads(res_dct['directories']))
-        # emit the signal that new data has arrived, the contact_sheet will be called to create a data thumbnail with
-        # this dict
-        self.engine_widget.new_data.emit(h5_file_dct)
-
-    def nx_server_load_files(self, data_dir: str=None, *, file_lst: [str]) -> None:
+    def nx_server_load_files(self, data_dir: str=None, *, file_lst: [str], extension='.hdf5') -> None:
         """
         This function loads the data directory from the DCS server and updates the remote file system info.
         It is used to load the data directory from the DCS server.
@@ -339,12 +417,13 @@ class main_object_base(QtCore.QObject):
         cmd_args = {}
         cmd_args['directory'] = data_dir
         cmd_args['extension'] = extension
-        cmd_args['files'] = file_lst
+        fpaths_lst = [os.path.join(data_dir, f) for f in file_lst]
+        cmd_args['files'] = json.dumps(fpaths_lst)
         res = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILES, [], '', data_dir, nx_app_def='nxstxm',
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=True, cmd_args=cmd_args)
-        data_lst = json.loads(res['data_lst'])
-        print(f"ZMQDevManager: nx_server_load_files: {data_lst}")
+        # data_lst = json.loads(res['data_lst'])
+        print(f"ZMQDevManager: nx_server_load_files: {file_lst}")
 
 
     def nx_server_request_data_directory_list(self, data_dir: str=None, extension: str='.hdf5') -> None:

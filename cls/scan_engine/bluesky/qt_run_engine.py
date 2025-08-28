@@ -359,6 +359,7 @@ class EngineWidget(QWidget):
     prog_changed = pyqtSignal(object)
     msg_to_app = pyqtSignal(object)
     new_data = pyqtSignal(object)  # when the DCS server sends new data to the app
+    load_files_status = pyqtSignal(bool)
 
     def __init__(self, engine=None, plan_creator=None, mongo_db_nm="mongo_databroker",parent=None):
         # Instantiate widget information and layout
@@ -460,6 +461,9 @@ class ZMQEngineWidget(QWidget):
     prog_changed = pyqtSignal(object)
     msg_to_app =  pyqtSignal(object)
     new_data = pyqtSignal(object) #when the DCS server sends new data to the app
+    load_files_status = pyqtSignal(object)  # a signal to be emitted when loading files from the DCS server is
+
+    # complete
 
     def __init__(self, devices_dct={}, parent=None):
         # Instantiate widget information and layout
@@ -473,6 +477,7 @@ class ZMQEngineWidget(QWidget):
         self.prog_changed = self.engine.prog_changed
         self.msg_to_app = self.engine.msg_to_app
         self.new_data = self.engine.new_data
+        self.load_files_status = self.engine.load_files_status
 
         #skip connecting a broker
         self.db = None # Broker.named(mongo_db_nm)#"pystxm_amb_bl10ID1")

@@ -2,14 +2,17 @@
 from PyQt5 import QtWidgets, QtCore
 import os
 
-class DirectorySelectorWidget(QtWidgets.QWidget):
+class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
     """
     Widget to select a target directory and display its subdirectories.
     Allows the user to enter a directory path, requests subdirectory list from main_obj,
     and displays them in a QListWidget.
     """
+    #new_data_dir = QtCore.pyqtSignal(str)  # Signal to emit the new data directory path
+    create_scenes = QtCore.pyqtSignal(str)
+    loading_data = QtCore.pyqtSignal(bool)
     new_data_dir = QtCore.pyqtSignal(str)  # Signal to emit the new data directory path
-    clear_scenes = QtCore.pyqtSignal()
+
     def __init__(self, main_obj, base_data_dir, data_dir):
         """
         Initialize the DirectorySelectorWidget.
@@ -22,7 +25,6 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
         super().__init__(parent=None)  # No parent widget by default
         self.main_obj = main_obj
         self.data_dir = data_dir
-        self.main_obj = main_obj
         self.base_data_dir = base_data_dir
         self.data_dir = data_dir
         self.setWindowTitle("Select data directory")
@@ -32,19 +34,13 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
         self.dir_label = QtWidgets.QLabel(data_dir)
         self.layout.addWidget(self.dir_label)
 
-        # self.select_base_dir_btn = QtWidgets.QPushButton("Choose directory")
-        # self.select_base_dir_btn.clicked.connect(self.req_dir_list)
-        # self.layout.addWidget(self.select_base_dir_btn)
-
         self.subdir_list = QtWidgets.QListWidget()
         self.subdir_list.itemClicked.connect(self.on_subdir_selected)
         self.layout.addWidget(self.subdir_list)
 
-        self.status_label = QtWidgets.QLabel("Click on a subdirectory to select it.\n'..' goes up one level.")
-        self.layout.addWidget(self.status_label)
-
-        sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
-        self.list_subdirectories(sub_dirs)
+        if self.main_obj:
+            sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
+            self.list_subdirectories(sub_dirs)
 
     def update_data_dir(self, data_dir):
         """
@@ -124,16 +120,9 @@ class DirectorySelectorWidget(QtWidgets.QWidget):
 
             if do_hide:
                 # request that the image and spec graphic scenes be cleared
-                self.clear_scenes.emit()
+                self.create_scenes.emit(new_data_dir)
 
-                QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-                self.status_label.setText("Loading selection, please wait...")
-                QtWidgets.QApplication.processEvents()
-                QtWidgets.QApplication.processEvents()
                 self.reload_directory(new_data_dir)
-                QtWidgets.QApplication.restoreOverrideCursor()
-                self.status_label.setText("Loading selection completed")
-                QtWidgets.QApplication.processEvents()
                 self.update_data_dir(new_data_dir)
 
                 # update the current list of sub dirs

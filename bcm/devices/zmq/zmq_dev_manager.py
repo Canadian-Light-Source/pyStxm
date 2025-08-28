@@ -60,6 +60,8 @@ class ZMQRunEngine(QObject):
     msg_to_app = pyqtSignal(object)
     new_data = pyqtSignal(object)  # this is used to update the data in the widgets
     # bl_component_changed = pyqtSignal(str, object) #component name, val or dict
+    load_files_status = pyqtSignal(object)  # a signal to be emitted when loading files from the DCS server is
+                                           # complete
 
     def __init__(self, devices_dct, parent=None):
         super().__init__(parent)
@@ -71,6 +73,7 @@ class ZMQRunEngine(QObject):
         self.dcs_server_api.progress.connect(self.on_scan_progress)
         self.dcs_server_is_local = HOST_IS_LOCAL
         self.new_data = self.dcs_server_api.new_data  # connect to the new_data signal from the DCS server API
+        self.load_files_status = self.dcs_server_api.load_files_status
 
         # SUB socket: Subscribing to the publisher
         self.sub_socket = self.context.socket(zmq.SUB)

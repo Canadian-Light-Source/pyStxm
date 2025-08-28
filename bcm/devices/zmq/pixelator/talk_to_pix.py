@@ -1,57 +1,126 @@
 import pprint
+import os
 import sys
 import zmq
 import simplejson as json
 
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QLineEdit, QPushButton, QLabel
-from PyQt5.QtCore import QTimer, pyqtSignal
+from PyQt5.QtCore import QTimer, pyqtSignal, QThread
 
+from cls.applications.pyStxm.widgets.dict_based_contact_sheet.contact_sheet import ContactSheet
 from bcm.devices.zmq.pixelator.loadfile_reponse import LoadFileResponseClass
 
 # from cls.applications.pyStxm.widgets.dict_based_contact_sheet.contact_sheet import ContactSheet
 from cls.data_io.stxm_data_io import STXMDataIo
 from cls.utils.fileUtils import get_file_path_as_parts
 
-commands = {
-    'initialize': None,
-    'recordedChannels': None,
-    'detectorSettings': None,
-    'updateDetectorSettings': None,
-    'estimatedTime': None,
-    'scanRequest': None,
-    'abortScan': None,
-    'pauseScan': None,
-    'resumeScan': None,
-    'scanStatus': None,
-    'moveRequest': None,
-    'moveStatus': None,
-    'homeRequest': None,
-    'positionerStatus': None,
-    'modified positioner definition': None,
-    'modified zonePlate definition': None,
-    'zonePlateFocus': None,
-    'oscilloscopeDefinition': None,
-    'focusType': None,
-    'scanTypeArchive': None,
-    'localFileScanTypeArchive': None,
-    'allMotorsOff': None,
-    'resetInterferometer': None,
-    'OSA_IN': None,
-    'OSA_OUT': None,
-    'ZonePlate IN': None,
-    'ZonePlate OUT': None,
-    'Sample OUT': None,
-    'topupMode': None,
-    'beamShutterMode': None,
-    'loadFile directory': '{"directory":"/mnt/srv-unix-home/bergr/Data/2025-08-19","showHidden":1, "fileExtension":".hdf5"}',
-    'listDirectory': '{"directory":"/mnt/srv-unix-home/bergr/Data"}',
-    'loadFile file': '{ "directory": "/mnt/srv-unix-home/bergr/Data/2025-08-19", "file": "/mnt/srv-unix-home/bergr/Data/2025-08-19/OSA_2025-08-19_010.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["OSA_2025-08-19_010.hdf5"], "pluginNumber": 0 }',
-    'loadFile files': '{ "directory": "/mnt/srv-unix-home/bergr/Data/2025-08-19", "file": "/mnt/srv-unix-home/bergr/Data/2025-08-19/Detector_2025-08-19_001.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["/mnt/srv-unix-home/bergr/Data/2025-08-19/Detector_2025-08-19_001.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Detector_2025-08-19_002.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Detector_2025-08-19_007.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Focus_2025-08-19_003.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Focus_2025-08-19_004.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Motor_2025-08-19_005.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Motor_2025-08-19_008.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Sample_Image_2025-08-19_006.hdf5"], "pluginNumber": 0 }',
-    'loadDefinition': None,
-    'change user': None,
-    'script info': None,
-}
+
+host = os.getenv('DCS_HOST', 'localhost')
+sub_port = os.getenv('DCS_SUB_PORT', 56561)
+req_port = os.getenv('DCS_REQ_PORT', 56562)
+data_sub_port = os.getenv('DATA_SUB_PORT', 56563)
+
+if sub_port == '56561':
+    # vopi1610-005
+    commands = {
+        'initialize': None,
+        'recordedChannels': None,
+        'detectorSettings': None,
+        'updateDetectorSettings': None,
+        'estimatedTime': None,
+        'scanRequest': None,
+        'abortScan': None,
+        'pauseScan': None,
+        'resumeScan': None,
+        'scanStatus': None,
+        'moveRequest': None,
+        'moveStatus': None,
+        'homeRequest': None,
+        'positionerStatus': None,
+        'modified positioner definition': None,
+        'modified zonePlate definition': None,
+        'zonePlateFocus': None,
+        'oscilloscopeDefinition': None,
+        'focusType': None,
+        'scanTypeArchive': None,
+        'localFileScanTypeArchive': None,
+        'allMotorsOff': None,
+        'resetInterferometer': None,
+        'OSA_IN': None,
+        'OSA_OUT': None,
+        'ZonePlate IN': None,
+        'ZonePlate OUT': None,
+        'Sample OUT': None,
+        'topupMode': None,
+        'beamShutterMode': None,
+        'loadFile directory': '{"directory":"/home/bergr/srv-unix-home/Data/2025-08-08","showHidden":1, "fileExtension":".hdf5"}',
+        'listDirectory': '{"directory":"/home/bergr/srv-unix-home/Data"}',
+        'loadFile file': '{ "directory": "/home/bergr/srv-unix-home/Data/2025-08-08", "file": "/home/bergr/srv-unix-home/Data/2025-08-08/Detector_2025-08-08_001.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["OSA_2025-08-19_010.hdf5"], "pluginNumber": 0 }',
+        'loadFile files': '{"cmd_args":{"files":[]}}',
+        'loadDefinition': None,
+        'change user': None,
+        'script info': None,
+    }
+    filenames =  ["Detector_2025-08-08_001.hdf5",
+              "Detector_2025-08-08_002.hdf5",
+              "Focus_2025-08-08_003.hdf5",
+              "Focus_2025-08-08_004.hdf5",
+              "Motor_2025-08-08_005.hdf5",
+              "Sample_Image_2025-08-08_006.hdf5",
+              "Detector_2025-08-08_007.hdf5",
+              "Motor_2025-08-08_008.hdf5"]
+
+else:
+    # SLS
+    commands = {
+        'initialize': None,
+        'recordedChannels': None,
+        'detectorSettings': None,
+        'updateDetectorSettings': None,
+        'estimatedTime': None,
+        'scanRequest': None,
+        'abortScan': None,
+        'pauseScan': None,
+        'resumeScan': None,
+        'scanStatus': None,
+        'moveRequest': None,
+        'moveStatus': None,
+        'homeRequest': None,
+        'positionerStatus': None,
+        'modified positioner definition': None,
+        'modified zonePlate definition': None,
+        'zonePlateFocus': None,
+        'oscilloscopeDefinition': None,
+        'focusType': None,
+        'scanTypeArchive': None,
+        'localFileScanTypeArchive': None,
+        'allMotorsOff': None,
+        'resetInterferometer': None,
+        'OSA_IN': None,
+        'OSA_OUT': None,
+        'ZonePlate IN': None,
+        'ZonePlate OUT': None,
+        'Sample OUT': None,
+        'topupMode': None,
+        'beamShutterMode': None,
+        'loadFile directory': '{"directory":"/home/control/LocalData/Data1/Data/2025-08-19","showHidden":1, "fileExtension":".hdf5"}',
+        'listDirectory': '{"directory":"/home/control/LocalData/Data1"}',
+        'loadFile file': '{ "directory": "/home/control/LocalData/Data1/2025-05-21", "file": "/home/control/LocalData/Data1/2025-05-21/OSA_2025-08-19_010.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["OSA_2025-08-19_010.hdf5"], "pluginNumber": 0 }',
+        'loadFile files': '{ "directory": "/home/control/LocalData/Data1/2025-05-21", "file": "/home/control/LocalData/Data1/2025-05-21/Sample_Image_2025-05-21_002.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": [], "pluginNumber": 0 }',
+        #'loadFile files': '{"directory": "/home/control/LocalData/Data1/2025-05-21", "cmd_args":{"files":[]}}',
+        'loadDefinition': None,
+        'change user': None,
+        'script info': None,
+    }
+    filenames = ["Sample_Image_2025-05-21_002.hdf5", "Sample_Image_2025-05-21_004.hdf5",
+                     "Sample_Image_2025-05-21_006.hdf5",
+                     "Sample_Image_2025-05-21_001.hdf5", "Sample_Image_2025-05-21_003.hdf5",
+                     "Sample_Image_2025-05-21_005.hdf5", "Sample_Image_2025-05-21_007.hdf5"]
+
+
+def get_filenames(data_dir="/mnt/srv-unix-home/bergr/Data/2025-08-13"):
+    return [os.path.join(data_dir, f) for f in filenames]
 
 def gen_loadfile_directory_msg(directory: str, extension: str='.hdf5') -> dict:
     dct = {"directory":f"{directory}",
@@ -78,12 +147,34 @@ def gen_loadfile_msg(directory: str, filename: str) -> dict:
     }
     return dct
 
+class SubListenerThread(QThread):
+    message_received = pyqtSignal(list)
+
+    def __init__(self, sub_socket):
+        super().__init__()
+        self.sub_socket = sub_socket
+        self._running = True
+
+    def run(self):
+        self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
+        while self._running:
+            msg_parts = self.sub_socket.recv_multipart()
+            # Convert bytes to strings
+            str_parts = [part.decode('utf-8') if isinstance(part, bytes) else str(part) for part in msg_parts]
+            self.message_received.emit(str_parts)
+
+    def stop(self):
+        self._running = False
+        self.quit()
+        self.wait()
 
 class ZMQApp(QMainWindow):
     loadfile_changed = pyqtSignal(object)
     load_directory = pyqtSignal(object)
     scan_finished = pyqtSignal(object)
-    def __init__(self, host, sub_port, req_port):
+    sub_message_received = pyqtSignal(str)
+
+    def __init__(self, host, sub_port, req_port, scan_content_sub_port=56566):
         super().__init__()
 
         self.HOST = host  # Set the HOST dynamically
@@ -94,13 +185,8 @@ class ZMQApp(QMainWindow):
         self.main_widget = QWidget(self)
         self.layout = QVBoxLayout(self.main_widget)
 
-        # Create and show main window
-        # self.contact_sheet = ContactSheet(data_io=STXMDataIo)
-        # self.contact_sheet.setMinimumSize(600, 400)
-
-        # btn1 = QtWidgets.QPushButton("loadFile file")
-        # btn1.clicked.connect(self.loadfile)
-
+        self.contact_sheet = ContactSheet()
+        self.contact_sheet.setMinimumSize(600, 400)
 
         # Label for command part
         self.cmd_label = QLabel("Select command (First Part of Multipart):", self)
@@ -125,24 +211,32 @@ class ZMQApp(QMainWindow):
         self.send_multipart_button = QPushButton("Send Multipart Request", self)
         self.layout.addWidget(self.send_multipart_button)
         self.send_multipart_button.clicked.connect(self.send_multipart_request)
+        # self.send_multipart_button.clicked.connect(self.send_request)
 
         # Label to display the received message
         self.received_message_txtedit = QtWidgets.QTextEdit()
         self.layout.addWidget(self.received_message_txtedit)
 
-        # self.layout.addWidget(self.contact_sheet)
+        self.layout.addWidget(self.contact_sheet)
 
         self.setCentralWidget(self.main_widget)
 
         # Set up ZMQ context and sockets
         self.zmq_context = zmq.Context()
 
-        print(f"Connecting to ZMQ on {self.HOST} with SUB port {sub_port} and REQ port {req_port}")
+        print(f"Connecting to ZMQ on {self.HOST} with SUB port {sub_port} and REQ port {req_port}, "
+              f"scan data SUB port {scan_content_sub_port}")
 
         # SUB socket (connects to PUB on port 56561)
         self.sub_socket = self.zmq_context.socket(zmq.SUB)
         self.sub_socket.connect(f"tcp://{self.HOST}:{sub_port}")
         self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, '')  # Subscribe to all topics
+
+        self.scan_content_sub_sock = self.zmq_context.socket(zmq.SUB)
+        self.scan_content_sub_sock.connect(f"tcp://{self.HOST}:{scan_content_sub_port}")
+        self.scan_content_sub_sock.setsockopt_string(zmq.SUBSCRIBE, '')  # Subscribe to all topics
+        self.sub_message_received.connect(self.on_sub_message_received)
+        self.start_scan_content_sub_listener_thread()
 
         # REQ socket (connects to REP on port 56562)
         self.req_socket = self.zmq_context.socket(zmq.REQ)
@@ -157,6 +251,20 @@ class ZMQApp(QMainWindow):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.receive_sub_message)
         self.timer.start(100)  # Poll every 100 milliseconds
+
+
+    def start_scan_content_sub_listener_thread(self):
+        self.sub_listener_thread = SubListenerThread(self.scan_content_sub_sock)
+        self.sub_listener_thread.message_received.connect(self.on_sub_message_received)
+        self.sub_listener_thread.start()
+
+    def on_sub_message_received(self, msg_lst):
+        if msg_lst[0] == 'scanFileContent':
+            # print(f"on_sub_message_received: {msg_lst}")  # Print only the first 100 characters for brevity
+            msg_dct = json.loads(msg_lst[1])
+            h5_file_dct = json.loads(msg_dct['pystxm_load'])
+            self.contact_sheet.create_thumbnail_from_h5_file_dct(h5_file_dct)
+
 
     def on_loadfile_directory_msg(self, msg_dct: dict) -> None:
         """Handle the loadFile directory message received from pixelator.
@@ -243,14 +351,51 @@ class ZMQApp(QMainWindow):
             if commands[cmd] is not None:
                 self.multipart_input_field.setText(commands[cmd])
 
+    def send_request(self):
+        command = self.cmd_input_field.currentText()
+        multipart_message = self.multipart_input_field.text()
+
+        if command:
+            msg_dct = {
+                "cmnd": command,
+                "run_uids": [],
+                "fprefix": "",
+                "data_dir": "",
+                "nx_app_def": "nxstxm",
+                "fpaths": [],
+                "cmd_args": {}
+            }
+            if multipart_message:
+                try:
+                    msg_dct.update(json.loads(multipart_message))
+                    if command == "loadFile files":
+                        #self.contact_sheet.on_clear_scenes()
+                        fpaths = json.dumps(get_filenames(msg_dct["directory"]))
+                        dct = {"cmd_args": {"files": fpaths}}
+                        msg_dct.update(dct)
+
+                except Exception as e:
+                    self.received_message_txtedit.append(f"Error parsing JSON: {e}")
+                    return
+            self.req_socket.send_string(json.dumps(msg_dct))
+            reply = self.req_socket.recv_string()
+            self.received_message_txtedit.append(f"Reply:\n{reply}")
+
     def send_multipart_request(self):
         """Send a multipart message via the REQ socket with a command as the first part."""
         command = self.cmd_input_field.currentText()  # Part 0 (command)
         multipart_message = self.multipart_input_field.text()  # Parts 1, 2, ...
+        command_dct = json.loads(multipart_message)
         response = None
         if command and multipart_message:
             print(f"Sending multipart request with command: {command}")
             print(f"Sending multipart message: {multipart_message}")
+            if command == "loadFile files":
+                #self.contact_sheet.on_clear_scenes()
+                fpaths = get_filenames(command_dct["directory"])
+                msg_dct = json.loads(multipart_message)
+                msg_dct.update({"files": fpaths})
+                multipart_message = json.dumps(msg_dct)
 
             # First send the command as part 0
             self.req_socket.send_string(command, zmq.SNDMORE)
@@ -358,7 +503,6 @@ class ZMQApp(QMainWindow):
             pass
 
 if __name__ == "__main__":
-    import os
     import pprint
 
     app = QApplication(sys.argv)
@@ -390,17 +534,8 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"General error: {str(e)}")
 
-    # Set the HOST variable dynamically
-    #HOST = "localhost"  # Change this value to the appropriate host as needed
-    host = os.getenv('DCS_HOST', 'vopi1610-005.clsi.ca')  # Default to 'localhost' if not set
-    sub_port = os.getenv('DCS_SUB_PORT', 56561)
-    req_port = os.getenv('DCS_REQ_PORT', 56562)
-    # host = 'localhost'
-    # sub_port = 55561
-    # req_port = 55562
-
     # Create the main application window
-    window = ZMQApp(host, sub_port, req_port)
+    window = ZMQApp(host, sub_port, req_port, data_sub_port)
     window.loadfile_changed.connect(on_loadfile_changed)
     window.show()
 

@@ -15,7 +15,8 @@ class BaseDcsServerApi(QtCore.QObject):
     msg_to_app = QtCore.pyqtSignal(object) # a signal used to send message to the app from the DCS server,
                                            # ex: filename to tell app what teh filename and data dir are before scan
                                            # execution
-
+    load_files_status = QtCore.pyqtSignal(bool) # a signal to be emitted when loading files from the DCS server is
+                                           # complete
     def __init__(self, parent):
         super().__init__(None)
         self.parent = parent

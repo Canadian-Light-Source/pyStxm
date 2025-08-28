@@ -475,6 +475,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         MAIN_OBJ.engine_widget.prog_changed.connect(self.on_run_engine_progress)
         MAIN_OBJ.engine_widget.msg_to_app.connect(self.on_dcs_msg_to_app)
         MAIN_OBJ.engine_widget.new_data.connect(self.on_new_dcs_server_data)
+        MAIN_OBJ.load_files_status.connect(self.on_load_files_status)
 
         self.status_label.connect_to_engine(MAIN_OBJ.engine_widget.engine)
 
@@ -569,7 +570,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         # .children()
         if MAIN_OBJ.get_device_backend() == 'epics':
             # force a loading of the data
-            self.contact_sheet.on_refresh_clicked()
+            self.contact_sheet.on_reload_clicked()
 
         # self.splash.show_msg('initialization done')
         self.enable_energy_change(True)
@@ -4252,6 +4253,15 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         if hasattr(self.contact_sheet, "create_thumbnail_from_h5_file_dct"):
             # add the data to contact sheet
             self.contact_sheet.create_thumbnail_from_h5_file_dct(h5_file_dct)
+
+    def on_load_files_status(self, is_done: bool):
+        """
+        called when the contact sheet has loaded files
+        :return:
+        """
+        if hasattr(self.contact_sheet, "on_loading_data"):
+            # inform the contact sheet that loading is done or not
+            self.contact_sheet.on_loading_data(is_done)
 
     def on_run_engine_progress(self, re_prog_dct):
         """

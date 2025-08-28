@@ -116,7 +116,10 @@ class ContactSheet(QtWidgets.QWidget):
         main_layout = QtWidgets.QVBoxLayout(self)
 
         # Directory label
-        self.dir_label = QtWidgets.QLabel(f"Current Directory: {self.data_dir}")
+        self.dir_label = QtWidgets.QLabel(self.data_dir)
+        self.dir_label.setAlignment(QtCore.Qt.AlignRight)
+        self.dir_label.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        self.dir_label.setFixedWidth(680)  # Set to desired width
         main_layout.addWidget(self.dir_label)
 
         # Toolbar layout with buttons
@@ -283,20 +286,6 @@ class ContactSheet(QtWidgets.QWidget):
         # Tag it so we can identify it later
         folder_thumbnail.setData(0, "folder_thumbnail")
         return folder_thumbnail
-
-    # def on_new_dir_selected(self, data_dir):
-    #     """
-    #     signal handler for when a new directory is selected in the directory selector widget.
-    #     """
-    #     pass
-    #     # if data_dir is None or data_dir == "":
-    #     #     _logger.warning("on_new_dir_selected: data_dir cannot be None or empty")
-    #     #     return
-    #     #
-    #     # self.create_new_scenes(data_dir)
-    #     #
-    #     # # Reload the directory and change the mouse cursor while reloading
-    #     # self.dir_sel_wdg.reload_directory():
 
     def create_new_scenes(self, directory, force_new=False):
         """
@@ -563,7 +552,7 @@ class ContactSheet(QtWidgets.QWidget):
         self.dir_sel_wdg.show()
 
     def set_directory_label(self, directory):
-        self.dir_label.setText(f"Current Directory: {directory}")
+        self.dir_label.setText(directory)
 
     def on_loading_data(self, is_done: bool):
         """

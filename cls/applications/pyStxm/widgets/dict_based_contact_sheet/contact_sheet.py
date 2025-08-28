@@ -41,6 +41,19 @@ class ThumbnailSceneManager:
         self.scenes = {}     # Maps directory name to (image_scene, spec_scene)
         self.current_index = -1
 
+    def switch_to_scene(self, directory):
+        """
+        Switch to the scene for the given directory if it exists.
+        Returns True if switched, False if not found.
+        """
+        if directory in self.scenes:
+            image_scene, spec_scene = self.scenes[directory]
+            self.current_index = self.dir_names.index(directory)
+            self.image_graphics_view.setScene(image_scene)
+            self.spec_graphics_view.setScene(spec_scene)
+            return True
+        return False
+
     def create_scenes(self, directory=None, force_new=False):
         """
         Create new image and spec scenes for the given directory, or return existing if present (unless force_new).
@@ -106,7 +119,7 @@ class ContactSheet(QtWidgets.QWidget):
         self.dir_sel_wdg = RemoteDirectorySelectorWidget(main_obj, base_data_dir, data_dir)
         self.dir_sel_wdg.create_scenes.connect(self.create_new_scenes)
         self.dir_sel_wdg.loading_data.connect(self.on_loading_data)
-        # self.dir_sel_wdg.new_data_dir.connect(self.on_new_dir_selected)
+
         self.data_dir = data_dir
         self.image_win = self.create_image_viewer()
         self.spec_win = self.create_spectra_viewer()
@@ -409,10 +422,12 @@ class ContactSheet(QtWidgets.QWidget):
         if thumb.scan_type == scan_types.SAMPLE_IMAGE_STACK:
             # grab current scene
             filename = os.path.join(thumb.directory, thumb.filename)
-            self.images_scene, self.spectra_scene = self._scene_mgr.create_scenes(filename)
-            self.set_directory_label(filename)
-            QtWidgets.QApplication.processEvents()
-            self.create_stack_thumbnails_from_thumbwidget(thumb)
+            result = self._scene_mgr.switch_to_scene(filename)
+            if not result:
+                self.images_scene, self.spectra_scene = self._scene_mgr.create_scenes(filename)
+                self.set_directory_label(filename)
+                QtWidgets.QApplication.processEvents()
+                self.create_stack_thumbnails_from_thumbwidget(thumb)
 
     def update_scene_layout(self):
         """

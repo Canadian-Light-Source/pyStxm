@@ -930,10 +930,10 @@ class DcsServerApi(BaseDcsServerApi):
             dct = json.loads(resp[1])
             print(f"process_SUB_rcv_messages: loadFile directory: {dct}")
 
-        elif parts[0].find('listDirectory') > -1:
-            # Handle listDirectory message
-            msg_dct = json.loads(parts[1])
-            pprint.pprint(msg_dct)
+        # elif parts[0].find('listDirectory') > -1:
+        #     # Handle listDirectory message
+        #     msg_dct = json.loads(parts[1])
+        #     pprint.pprint(msg_dct)
 
     def get_pystxm_standard_scan_type_from_load_file_response_type(self, scan_type_str):
         """
@@ -1381,12 +1381,13 @@ class DcsServerApi(BaseDcsServerApi):
 
         if reply[0]['status'] == 'ok':
             # filter out the directories that do not match the date pattern
-            msg_dct = json.loads(reply[1]['message'])
-            sub_dir_lst = msg_dct['sub_directories']
+            sub_dir_lst = reply[1]['sub_directories']
+            sorted_sub_dir_lst = sorted(sub_dir_lst, key=lambda x: x['sub_dir'], reverse=True)
             # only return the list of dicts [{"sub_dir": "2025-07-04", "num_h5_files": 5}, ..]
-            return sub_dir_lst
+            # in reverse order newest first
+            return sorted_sub_dir_lst
         else:
-            print(f"pixelator_dcs_server_api:request_data_directory_list: FAILED: could not list sub directoriess from directory [{directory}]")
+            print(f"pixelator_dcs_server_api:request_data_directory_list: FAILED: could not list sub directories from directory [{directory}]")
             return None
 
     def send_scan_request(self, wdg_com={}):

@@ -29,23 +29,85 @@ from cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils import *
 
 from cls.data_io.nxstxm_h5_to_dict import load_nxstxm_file_to_h5_file_dct
 
-from cls.applications.pyStxm.widgets.dict_based_contact_sheet.remote_file_mgr import DirectorySelectorWidget
+from cls.applications.pyStxm.widgets.dict_based_contact_sheet.remote_directory_selector_mgr import RemoteDirectorySelectorWidget
 
 _logger = get_module_logger(__name__)
 
+class ThumbnailSceneManager:
+    def __init__(self, image_graphics_view, spec_graphics_view):
+        self.image_graphics_view = image_graphics_view
+        self.spec_graphics_view = spec_graphics_view
+        self.dir_names = []  # Master list of directory names
+        self.scenes = {}     # Maps directory name to (image_scene, spec_scene)
+        self.current_index = -1
+
+    def create_scenes(self, directory=None, force_new=False):
+        """
+        Create new image and spec scenes for the given directory, or return existing if present (unless force_new).
+        Returns a tuple: (image_scene, spec_scene)
+        """
+        if directory in self.scenes and not force_new:
+            return self.scenes[directory]
+        else:
+            image_scene = QtWidgets.QGraphicsScene()
+            image_scene.directory = directory
+            image_scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(60, 60, 60)))
+
+            spec_scene = QtWidgets.QGraphicsScene()
+            spec_scene.directory = directory
+            spec_scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(60, 60, 60)))
+
+            # Replace scenes if force_new is True
+            self.scenes[directory] = (image_scene, spec_scene)
+            if directory not in self.dir_names:
+                self.dir_names.append(directory)
+            self.current_index = self.dir_names.index(directory)
+            self.image_graphics_view.setScene(image_scene)
+            self.spec_graphics_view.setScene(spec_scene)
+            return (image_scene, spec_scene)
+
+    def _add_scene(self, scenes_tuple, directory=None):
+        """
+        Internal: Add image and spec scenes to the manager.
+        """
+        if directory not in self.dir_names:
+            self.dir_names.append(directory)
+        self.scenes[directory] = scenes_tuple
+        self.current_index = self.dir_names.index(directory)
+        image_scene, spec_scene = scenes_tuple
+        self.image_graphics_view.setScene(image_scene)
+        self.spec_graphics_view.setScene(spec_scene)
+
+    def show_previous_scene(self):
+        if self.current_index > 0:
+            self.current_index -= 1
+            dir_name = self.dir_names[self.current_index]
+            image_scene, spec_scene = self.scenes[dir_name]
+            self.image_graphics_view.setScene(image_scene)
+            self.spec_graphics_view.setScene(spec_scene)
+            return (image_scene, spec_scene)
+        return (None, None)
+
+    def show_next_scene(self):
+        if self.current_index < len(self.dir_names) - 1:
+            self.current_index += 1
+            dir_name = self.dir_names[self.current_index]
+            image_scene, spec_scene = self.scenes[dir_name]
+            self.image_graphics_view.setScene(image_scene)
+            self.spec_graphics_view.setScene(spec_scene)
+            return (image_scene, spec_scene)
+        return (None, None)
+
 class ContactSheet(QtWidgets.QWidget):
-    # sig_reload_dir = QtCore.pyqtSignal(str)
-    # sig_req_dir_list = QtCore.pyqtSignal(str)
 
     def __init__(self, main_obj=None, data_dir=None, data_io=None, base_data_dir='/tmp', parent=None):
         super(ContactSheet, self).__init__(parent)
-        self.main_obj = main_obj
-        self.dir_sel_wdg = DirectorySelectorWidget(main_obj, base_data_dir, data_dir)
-        self.dir_sel_wdg.new_data_dir.connect(self.set_directory_label)
-        self.dir_sel_wdg.clear_scenes.connect(self.on_clear_scenes)
+
+        self.dir_sel_wdg = RemoteDirectorySelectorWidget(main_obj, base_data_dir, data_dir)
+        self.dir_sel_wdg.create_scenes.connect(self.create_new_scenes)
+        self.dir_sel_wdg.loading_data.connect(self.on_loading_data)
+        # self.dir_sel_wdg.new_data_dir.connect(self.on_new_dir_selected)
         self.data_dir = data_dir
-        self.base_data_dir = base_data_dir
-        self.data_io_class = data_io
         self.image_win = self.create_image_viewer()
         self.spec_win = self.create_spectra_viewer()
         self.ptnw = PrintSTXMThumbnailWidget()
@@ -61,12 +123,12 @@ class ContactSheet(QtWidgets.QWidget):
         toolbar_layout = QtWidgets.QHBoxLayout()
 
         # Refresh button
-        self.refreshBtn = QtWidgets.QToolButton()
-        self.refreshBtn.setText("Refresh")
-        self.refreshBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_BrowserReload))
-        self.refreshBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
-        self.refreshBtn.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
-        toolbar_layout.addWidget(self.refreshBtn)
+        self.reloadBtn = QtWidgets.QToolButton()
+        self.reloadBtn.setText("Reload")
+        self.reloadBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_BrowserReload))
+        self.reloadBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
+        self.reloadBtn.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        toolbar_layout.addWidget(self.reloadBtn)
 
         # Horizontal spacer
         toolbar_layout.addItem(QtWidgets.QSpacerItem(40, 20,
@@ -90,14 +152,10 @@ class ContactSheet(QtWidgets.QWidget):
         # Tab widget
         self.tab_widget = QtWidgets.QTabWidget()
 
-
         # Images tab
         images_tab = QtWidgets.QWidget()
         images_layout = QtWidgets.QVBoxLayout(images_tab)
         self.images_view = QtWidgets.QGraphicsView()
-        self.images_scene = QtWidgets.QGraphicsScene()
-        self.images_scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(60, 60, 60)))  # Dark grey
-        self.images_view.setScene(self.images_scene)
         images_layout.addWidget(self.images_view)
         self.tab_widget.addTab(images_tab, "Images")
 
@@ -105,21 +163,73 @@ class ContactSheet(QtWidgets.QWidget):
         spectra_tab = QtWidgets.QWidget()
         spectra_layout = QtWidgets.QVBoxLayout(spectra_tab)
         self.spectra_view = QtWidgets.QGraphicsView()
-        self.spectra_scene = QtWidgets.QGraphicsScene()
-        self.spectra_scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(60, 60, 60)))  # Dark grey
-        self.spectra_view.setScene(self.spectra_scene)
         spectra_layout.addWidget(self.spectra_view)
         self.tab_widget.addTab(spectra_tab, "Spectra")
 
-        main_layout.addWidget(self.tab_widget)
+        self._scene_mgr = ThumbnailSceneManager(self.images_view, self.spectra_view)
+        self.images_scene, self.spectra_scene = self._scene_mgr.create_scenes(self.data_dir)
+
+        nav_layout = QtWidgets.QHBoxLayout()
+
+        self.backBtn = QtWidgets.QToolButton()
+        self.backBtn.direction = -1
+        self.backBtn.setToolTip("Previous loaded scene")
+        self.backBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_ArrowBack))
+        self.backBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
+        self.backBtn.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        nav_layout.addWidget(self.backBtn)
+
+        nav_layout.addWidget(self.tab_widget)
+
+        self.forwardBtn = QtWidgets.QToolButton()
+        self.forwardBtn.direction = 1
+        self.forwardBtn.setToolTip("Next loaded scene")
+        self.forwardBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_ArrowForward))
+        self.forwardBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
+        self.forwardBtn.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        nav_layout.addWidget(self.forwardBtn)
+
+        main_layout.addLayout(nav_layout)
 
         # Connect signals
-        self.refreshBtn.clicked.connect(self.on_refresh_clicked)
+        # self.backBtn.clicked.connect(lambda: self.navigate_scene(-1))
+        # self.forwardBtn.clicked.connect(lambda: self.navigate_scene(1))
+        self.backBtn.clicked.connect(self.navigate_scene)
+        self.forwardBtn.clicked.connect(self.navigate_scene)
+
+        # Connect signals
+        self.reloadBtn.clicked.connect(self.on_reload_clicked)
         self.changeDirBtn.clicked.connect(self.on_change_dir_clicked)
 
         # Set window properties
         self.setWindowTitle("Contact Sheet Viewer")
         self.resize(800, 600)
+
+    def navigate_scene(self):
+        """
+        a slot to navigate between scenes
+        """
+        btn = self.sender()
+        direction = btn.direction
+        if direction == -1:
+            image_scene, spec_scene = self._scene_mgr.show_previous_scene()
+        else:
+            image_scene, spec_scene = self._scene_mgr.show_next_scene()
+
+        if image_scene is None or spec_scene is None:
+            return
+        # Get the current directory name
+        current_dir = self._scene_mgr.dir_names[self._scene_mgr.current_index]
+
+        # Disable backBtn if at the first directory
+        self.backBtn.setEnabled(self._scene_mgr.current_index > 0)
+
+        # Disable forwardBtn if at the last directory
+        self.forwardBtn.setEnabled(current_dir != self._scene_mgr.dir_names[-1])
+
+        # Optionally, update the directory label
+        if image_scene and hasattr(image_scene, 'directory') and image_scene.directory:
+            self.set_directory_label(image_scene.directory)
 
     def create_image_viewer(self):
         """
@@ -174,52 +284,39 @@ class ContactSheet(QtWidgets.QWidget):
         folder_thumbnail.setData(0, "folder_thumbnail")
         return folder_thumbnail
 
-    def on_refresh_clicked(self):
+    # def on_new_dir_selected(self, data_dir):
+    #     """
+    #     signal handler for when a new directory is selected in the directory selector widget.
+    #     """
+    #     pass
+    #     # if data_dir is None or data_dir == "":
+    #     #     _logger.warning("on_new_dir_selected: data_dir cannot be None or empty")
+    #     #     return
+    #     #
+    #     # self.create_new_scenes(data_dir)
+    #     #
+    #     # # Reload the directory and change the mouse cursor while reloading
+    #     # self.dir_sel_wdg.reload_directory():
+
+    def create_new_scenes(self, directory, force_new=False):
+        """
+        signal handler for when a new directory is selected in the directory selector widget.
+        """
+        if directory is None or directory == "":
+            _logger.warning("on_create_new_scenes: directory cannot be None or empty")
+            return
+
+        self.images_scene, self.spectra_scene = self._scene_mgr.create_scenes(directory, force_new=force_new)
+        self.set_directory_label(directory)
+
+    def on_reload_clicked(self):
         """
         signal handler for when the refresh button is clicked.
         """
-        # Clear the images scene
-        self.images_scene.clear()
-        self.spectra_scene.clear()
+        self.create_new_scenes(self.dir_sel_wdg.data_dir, force_new=True)
 
         # Reload the directory and change the mouse cursor while reloading
-        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-        QtWidgets.QApplication.processEvents()
         self.dir_sel_wdg.reload_directory()
-        QtWidgets.QApplication.restoreOverrideCursor()
-        QtWidgets.QApplication.processEvents()
-
-    def create_thumbnails_from_filelist(self, files: [str]) -> None:
-        """
-        """
-
-        # Clear the images scene
-        self.images_scene.clear()
-        self.spectra_scene.clear()
-
-        # Add file thumbnails without positioning (will be positioned by rearrange)
-        for fname in files:
-            try:
-                if fname.find('discard') > -1:
-                    continue
-
-                data_dict = load_nxstxm_file_to_h5_file_dct(fname, ret_as_dict=True)
-                self.create_thumbnail_from_data_dct(data_dict)
-
-            except Exception as e:
-                QtWidgets.QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
-
-        # Add a directory thumbnail that stays at top-left
-        img_dir_thumbnail = self.create_folder_thumbnail()
-        img_dir_thumbnail.dbl_clicked.connect(self.change_dir)
-        self.images_scene.addItem(img_dir_thumbnail)
-
-        spec_dir_thumbnail = self.create_folder_thumbnail()
-        spec_dir_thumbnail.dbl_clicked.connect(self.change_dir)
-        self.spectra_scene.addItem(spec_dir_thumbnail)
-
-        # Arrange thumbnails based on current view size
-        self.update_scene_layout()
 
     def create_thumbnail_from_h5_file_dct(self, h5_file_dct: dict) -> None:
         """
@@ -274,7 +371,6 @@ class ContactSheet(QtWidgets.QWidget):
             _logger.warning("create_stack_thumbnails_from_thumbwidget: thumb cannot be None")
             return
 
-        scene = self.images_scene
         self.image_thumbs = []
         energies = thumb.h5_file_dct[thumb.h5_file_dct['default']]['sp_db_dct']['energy']
         entry_key = thumb.h5_file_dct['default']
@@ -306,15 +402,14 @@ class ContactSheet(QtWidgets.QWidget):
 
         for item in self.image_thumbs:
             # Find the bottom-most y position
-            items = [item for item in scene.items() if isinstance(item, QtWidgets.QGraphicsWidget)]
+            items = [item for item in self.images_scene.items() if isinstance(item, QtWidgets.QGraphicsWidget)]
             items = sorted(items, key=lambda item: item.pos().y())
             if items:
                 max_y = max(item.pos().y() + item.boundingRect().height() for item in items)
             else:
                 max_y = 0
             item.setPos(0, max_y + 10)  # 10 px margin
-            scene.addItem(item)
-
+            self.images_scene.addItem(item)
 
         self.update_scene_layout()
 
@@ -323,7 +418,10 @@ class ContactSheet(QtWidgets.QWidget):
         Handle double-click on a thumbnail, if a folder then go up a directory if a stack then load the stack file,
         """
         if thumb.scan_type == scan_types.SAMPLE_IMAGE_STACK:
-            self.images_scene.clear()
+            # grab current scene
+            filename = os.path.join(thumb.directory, thumb.filename)
+            self.images_scene, self.spectra_scene = self._scene_mgr.create_scenes(filename)
+            self.set_directory_label(filename)
             QtWidgets.QApplication.processEvents()
             self.create_stack_thumbnails_from_thumbwidget(thumb)
 
@@ -335,54 +433,6 @@ class ContactSheet(QtWidgets.QWidget):
         self.rearrange_scene_thumbnails(self.images_scene, self.images_view)
         self.rearrange_scene_thumbnails(self.spectra_scene, self.spectra_view)
 
-    def change_dir(self, _dir=None):
-        """
-        change_dir(): description
-
-        :returns: None
-        """
-        if _dir is None:
-            fpath = getOpenFileName("Pick Directory by selecting a file", filter_str="Data Files (*.hdf5)",
-                                    search_path=self.data_dir)
-            if fpath == None:
-                return
-                #_dir = self.data_dir
-            else:
-                p = pathlib.Path(fpath)
-                _dir = p.as_posix().replace(p.name, "")
-
-        # # prev_cursor = self.cursor()
-        # # QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.WaitCursor))
-        # # self.setCursor(QtCore.Qt.WaitCursor)
-        # #set to default
-        #
-        # # check if directory contains a stack
-        # if self.is_stack_dir(_dir):
-        #     self.set_data_dir(_dir, is_stack_dir=True)
-        #     dirs, data_fnames = dirlist_withdirs(_dir, self.data_file_extension)
-        #     fname = os.path.join(_dir, data_fnames[0])
-        #     # sp_db, data = self.get_stack_data(fname)
-        #     #self.load_entries_into_view(data_fnames[0])
-        #     self.load_stack_file_image_items(os.path.join(_dir, data_fnames[0]))
-        #     self.current_contents_is_dir = True
-        #     self.fsys_mon.set_data_dir(self.data_dir)
-        #     # self.unsetCursor()
-        #     return
-        # elif self.is_stack_file(_dir):
-        #     self.load_stack_file_image_items(_dir)
-        #     self.current_contents_is_dir = False
-        #     self.unsetCursor()
-        #     return
-        # elif os.path.isdir(_dir):
-        #     pass
-        #
-        # if len(_dir) > 0:
-        #     self.set_data_dir(_dir, is_stack_dir=False)
-        #     self.fsys_mon.set_data_dir(self.data_dir)
-        #
-        # self.unsetCursor()
-        # # QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(prev_cursor))
-
     def do_select(self, thumb):
         """
         do_select(): description
@@ -392,11 +442,10 @@ class ContactSheet(QtWidgets.QWidget):
 
         :returns: None
         """
-        for t in self.image_thumbs:
-            if id(thumb) != id(t):
-                t.is_selected = False
-            else:
-                t.is_selected = True
+        thumb_items = [item for item in self.images_scene.items() if isinstance(item, ThumbnailWidget)]
+        for t in thumb_items:
+            t.is_selected = (id(thumb) == id(t))
+            t.update()
         self.update_view()
 
     def update_view(self):
@@ -406,7 +455,6 @@ class ContactSheet(QtWidgets.QWidget):
         :returns: None
         """
         self.images_view.update()
-        # self.images_scene.update(rect=QtCore.QRectF(0,0,1500,1500))
         rect = self.images_scene.sceneRect()
         self.images_scene.update(
             rect=QtCore.QRectF(rect.left(), rect.top(), rect.width(), rect.height())
@@ -508,20 +556,24 @@ class ContactSheet(QtWidgets.QWidget):
         scene.setSceneRect(scene.itemsBoundingRect())
 
     def on_change_dir_clicked(self):
+
+        #grab both scenes
+        # self.spectra_scene_mgr.add_scene(self.spectra_scene)
+        # self.image_scene_mgr.add_scene(self.images_scene)
         self.dir_sel_wdg.show()
 
     def set_directory_label(self, directory):
         self.dir_label.setText(f"Current Directory: {directory}")
 
-    def on_clear_scenes(self):
+    def on_loading_data(self, is_done: bool):
         """
-        Clear the images and spectra scenes.
+        Update the cursor based on loading state.
         """
-        self.images_scene.clear()
-        self.spectra_scene.clear()
-        # self.image_thumbs.clear()
-        # self.spectra_thumbs.clear()
-        self.update_view()
+        if is_done:
+            QtWidgets.QApplication.restoreOverrideCursor()
+        else:
+            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        QtWidgets.QApplication.processEvents()
 
     def print_thumbnail(self, dct):
         self.ptnw.print_file(dct)

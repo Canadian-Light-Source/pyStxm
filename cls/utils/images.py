@@ -71,19 +71,11 @@ def array_to_qimage(arr):
 
 
 def array_to_gray_qimage(arr):
-    """
-    arr is expected to be of type np.float32
-    :param arr:
-    :return:
-    """
-    # if(arr.ptp() == 0.0):
-    # 	im = np.uint8((arr - arr.min())/1.0*255.0)
-    # else:
-    # 	im = np.uint8((arr - arr.min())/arr.ptp()*255.0)
-    #
+    arr = np.array(arr, dtype=np.float32)  # Ensure numeric type
+    arr = np.where(arr == None, np.nan, arr)  # Replace None with np.nan
+
     denom = arr.max() - arr.min()
     if denom <= 0:
-        # print 'array_to_gray_qimage: uh oh divide by zero'
         qi = QtGui.QImage(
             arr.data,
             arr.shape[1],
@@ -92,17 +84,8 @@ def array_to_gray_qimage(arr):
             QtGui.QImage.Format_Indexed8,
         )
     else:
-        #convert all nan's to 1's
         arr = np.nan_to_num(arr, nan=1)
-        # if np.isnan(np.nanmin(arr)) or (np.isnan(np.min(arr))) or (arr.min() == 0):
-        #     _min = 1
-        # else:
-        #     _min = arr.min()
-        if arr.min() == 0:
-            _min = 1
-        else:
-            _min = arr.min()
-
+        _min = 1 if arr.min() == 0 else arr.min()
         _max = max_with_nans(arr)
         if np.isnan(_max):
             _max = 1
@@ -114,7 +97,6 @@ def array_to_gray_qimage(arr):
         qi = QtGui.QImage(
             im.data, im.shape[1], im.shape[0], im.shape[1], QtGui.QImage.Format_Indexed8
         )
-
     return qi
 
 def max_with_nans(arr):
@@ -123,7 +105,8 @@ def max_with_nans(arr):
     # Calculate maximum value
     max_val = arr_with_low_values.max()
     # Check if all values are NaNs
-    all_nans = np.all(np.isnan(arr))
+    #all_nans = np.all(np.isnan(arr))
+    all_nans = np.all(np.isnan(arr.astype(float)))
     # if all_nans:
     #     print("All values in the array are NaNs.")
     # else:

@@ -1,5 +1,6 @@
 import simplejson as json
 import numpy as np
+import math
 
 from bcm.devices.epu import convert_wrapper_epu_to_str
 
@@ -155,6 +156,7 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
                 zzcntr = dct_get(sp_db, SPDB_ZCENTER)
             # dct['center'] = (dct_get(sp_db, SPDB_XCENTER), dct_get(sp_db, SPDB_ZZCENTER))
             dct["center"] = (dct_get(sp_db, SPDB_XCENTER), zzcntr)
+
             zzrng = dct_get(sp_db, SPDB_ZZRANGE)
             if zzrng is None:
                 zzrng = dct_get(sp_db, SPDB_ZRANGE)
@@ -188,10 +190,12 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
                 dct_get(sp_db, SPDB_XCENTER),
                 dct_get(sp_db, SPDB_YCENTER),
             )
+
             dct["range"] = (
                 dct_get(sp_db, SPDB_XRANGE),
                 dct_get(sp_db, SPDB_YRANGE),
             )
+
             dct["step"] = (dct_get(sp_db, SPDB_XSTEP), dct_get(sp_db, SPDB_YSTEP))
             dct["estep"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STEP]
             dct["start"] = (
@@ -278,23 +282,46 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
             "Dwell:", "%.2f ms" % (sp_db[EV_ROIS][ev_idx][DWELL] )
         )
         s += "%s" % format_info_text("Points:", "%d x %d " % (width, height))
-        s += "%s" % format_info_text(
-            "Center:", "(%.2f, %.2f) um" % dct["center"]
-        )
-        s += "%s" % format_info_text(
-            "Range:", "(%.2f, %.2f) um" % dct["range"]
-        )
 
-        # if ('goni_theta_cntr' in dct.keys()):
-        if "goni_theta_cntr" in list(dct):
+        if dct["center"][0] is None:
             s += "%s" % format_info_text(
-                "StepSize:", "(%.3f, %.3f) um" % dct["step"]
+                "Center:", "(?, ?) um"
             )
-            # if ('goni_z_cntr' in dct.keys()):
-            if "goni_z_cntr" in list(dct):
+        else:
+            s += "%s" % format_info_text(
+            "Center:", "(%.2f, %.2f) um" % dct["center"]
+            )
+
+        if dct["range"][0] is None:
+            s += "%s" % format_info_text(
+                "Range:", "(?, ?) um"
+            )
+        else:
+            s += "%s" % format_info_text(
+                "Range:", "(%.2f, %.2f) um" % dct["range"]
+            )
+
+        if "goni_theta_cntr" in list(dct):
+
+            if dct["step"][0] is None:
                 s += "%s" % format_info_text(
-                    "Goni Z:", "%.3f um" % dct["goni_z_cntr"]
+                    "StepSize:", "(?, ?) um"
                 )
+            else:
+                s += "%s" % format_info_text(
+                    "StepSize:", "(%.3f, %.3f) um" % dct["step"]
+                )
+
+            if "goni_z_cntr" in list(dct):
+                if dct["goni_z_cntr"][0] is None:
+                    s += "%s" % format_info_text(
+                        "Goni Z:", "? um"
+                    )
+                else:
+                    s += "%s" % format_info_text(
+                        "Goni Z:", "%.3f um" % dct["goni_z_cntr"]
+                    )
+
             s += "%s" % format_info_text(
                 "Goni Theta:",
                 "%.2f deg" % (dct["goni_theta_cntr"]),
@@ -302,12 +329,17 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
                 end_preformat=True,
             )
         else:
-            s += "%s" % format_info_text(
-                "StepSize:",
-                "(%.3f, %.3f) um" % dct["step"],
-                newline=False,
-                end_preformat=True,
-            )
+            if dct["step"][0] is None:
+                s += "%s" % format_info_text(
+                    "StepSize:", "(?, ?) um"
+                )
+            else:
+                s += "%s" % format_info_text(
+                    "StepSize:",
+                    "(%.3f, %.3f) um" % dct["step"],
+                    newline=False,
+                    end_preformat=True,
+                )
 
         return (s, jstr)
     else:

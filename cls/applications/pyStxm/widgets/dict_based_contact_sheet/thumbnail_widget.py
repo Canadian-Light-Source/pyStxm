@@ -540,6 +540,18 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             )
         return pmap
 
+    def overlay_icon_on_pixmap(self, base_pixmap, icon_path='stack_files.png', x=5, y=5, size=24):
+        """
+        overlay an icon on the base_pixmap at position x,y
+        """
+        icon_pixmap = QtGui.QPixmap(icon_path)
+        if not icon_pixmap.isNull():
+            icon_pixmap = icon_pixmap.scaled(size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            painter = QtGui.QPainter(base_pixmap)
+            painter.drawPixmap(x, y, icon_pixmap)
+            painter.end()
+        return base_pixmap
+
     def get_folder_pic(self, scale_it=True, as_thumbnail=True):
         """
         pmap = get_pixmap(os.path.join(utils.icoDir, 'reload.ico'), ICONSIZE, ICONSIZE)
@@ -577,6 +589,10 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             if pmap is None:
                 # fallback to the icon
                 pmap = get_pixmap(os.path.join(utils.icoDir, image_fname), sz_x, sz_y)
+
+            pmap = self.overlay_icon_on_pixmap(pmap, icon_path=os.path.join(utils.icoDir, 'stack_files.png'),
+                                               x=5, y=5, size=44)
+
         elif as_thumbnail:
             # return a lower res pmap for use as a thumbnail image
             pmap = get_pixmap(os.path.join(utils.icoDir, image_fname), sz_x, sz_y)

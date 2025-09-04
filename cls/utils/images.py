@@ -158,8 +158,7 @@ def data_to_rgb(data0, alpha=False):
     else:
         return (255 * RGB).astype(np.int64)
 
-def numpy_rgb_to_qpixmap(rgb_array):
-    """Convert a NumPy RGB(A) array to QtGui.QPixmap."""
+def numpy_rgb_to_qpixmap(rgb_array, target_width=150, target_height=150):
     if rgb_array.dtype != np.uint8:
         rgb_array = rgb_array.astype(np.uint8)
     height, width = rgb_array.shape[:2]
@@ -169,10 +168,12 @@ def numpy_rgb_to_qpixmap(rgb_array):
         fmt = QtGui.QImage.Format_RGBA8888
     else:
         raise ValueError("Array must have 3 (RGB) or 4 (RGBA) channels")
-    #qimg = QtGui.QImage(rgb_array.data, width, height, rgb_array.strides[0], fmt)
     rgb_array = np.ascontiguousarray(rgb_array, dtype=np.uint8)
     qimg = QtGui.QImage(rgb_array.data, width, height, rgb_array.strides[0], fmt)
-    return QtGui.QPixmap.fromImage(qimg)
+    pixmap = QtGui.QPixmap.fromImage(qimg)
+    if target_width is not None and target_height is not None:
+        pixmap = pixmap.scaled(target_width, target_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+    return pixmap
 
 def hsv_to_rgb(h, s, v):
     if s == 0.0: return (v, v, v)

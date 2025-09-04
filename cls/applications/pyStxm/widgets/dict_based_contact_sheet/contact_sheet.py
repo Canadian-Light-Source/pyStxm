@@ -426,6 +426,7 @@ class ContactSheet(QtWidgets.QWidget):
             self.images_scene.addItem(item)
 
         self.update_scene_layout()
+        self.on_loading_data(True)
 
     def on_thumbnail_dblclicked(self, thumb: ThumbnailWidget) -> None:
         """
@@ -438,7 +439,7 @@ class ContactSheet(QtWidgets.QWidget):
             if not result:
                 self.images_scene, self.spectra_scene = self._scene_mgr.create_scenes(filename)
                 self.set_directory_label(filename)
-                QtWidgets.QApplication.processEvents()
+                self.on_loading_data(False)
                 self.create_stack_thumbnails_from_thumbwidget(thumb)
 
     def update_scene_layout(self):

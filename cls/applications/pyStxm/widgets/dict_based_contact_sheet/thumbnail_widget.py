@@ -73,6 +73,8 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         self.default_counter = data_section.get('default', list(data_section.keys())[0])
         if data is None:
             self.counter_data = np.array(data_section.get(self.default_counter, [[0]]))
+            # make sure any None values are converted to nan
+            self.counter_data = np.where(self.counter_data == None, np.nan, self.counter_data).astype(float)
             self.energy = self.sp_db_dct.get('energy', [0])[0]
         else:
             # use the data passed in, likely for a stack thumb

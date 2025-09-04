@@ -11,9 +11,9 @@ from cls.utils.dict_utils import dct_get
 from cls.utils import roi_dict_defs as roi_defs
 from cls.utils.pixmap_utils import get_pixmap
 from cls.utils.arrays import flip_data_upsdown
-from cls.utils.images import array_to_gray_qpixmap, array_to_image
+from cls.utils.images import array_to_gray_qpixmap, array_to_image, numpy_rgb_to_qpixmap, data_to_rgb
 
-from cls.types.stxmTypes import scan_types, spectra_type_scans, focus_scans
+from cls.types.stxmTypes import scan_types, spectra_type_scans, focus_scans, stack_scans
 from cls.plotWidgets.lineplot_thumbnail import OneD_MPLCanvas
 from cls.applications.pyStxm.widgets.print_stxm_thumbnail import (
     SPEC_THMB_WD,
@@ -22,6 +22,7 @@ from cls.applications.pyStxm.widgets.print_stxm_thumbnail import (
 
 from cls.utils.log import get_module_logger
 import cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils as utils
+
 
 _logger = get_module_logger(__name__)
 
@@ -552,7 +553,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         """
         sz_x = 222
         sz_y = 164
-
+        is_stack = False
         if self.filename.find("..") > -1:
             # image_fname = 'updir.png'
             # image_fname = 'open-folder-icon-png.png'
@@ -561,13 +562,22 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         else:
             if self.scan_type is scan_types.SAMPLE_IMAGE_STACK:
                 image_fname = "stack.bmp"
+                is_stack = True
             elif self.scan_type is scan_types.TOMOGRAPHY:
                 # image_fname = 'tomo.png'
                 image_fname = "folder_bw_tomo.png"
             else:
                 image_fname = "folder_bw.ico"
 
-        if as_thumbnail:
+        if is_stack:
+            # make a thumbnail from the stack data
+
+            arr = data_to_rgb(np.flipud(np.transpose(self.data, [1, 2, 0])), alpha=True)
+            pmap = numpy_rgb_to_qpixmap(arr)
+            if pmap is None:
+                # fallback to the icon
+                pmap = get_pixmap(os.path.join(utils.icoDir, image_fname), sz_x, sz_y)
+        elif as_thumbnail:
             # return a lower res pmap for use as a thumbnail image
             pmap = get_pixmap(os.path.join(utils.icoDir, image_fname), sz_x, sz_y)
         else:

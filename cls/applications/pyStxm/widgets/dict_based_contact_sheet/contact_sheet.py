@@ -37,64 +37,67 @@ class ThumbnailSceneManager:
     def __init__(self, image_graphics_view, spec_graphics_view):
         self.image_graphics_view = image_graphics_view
         self.spec_graphics_view = spec_graphics_view
-        self.dir_names = []  # Master list of directory names
-        self.scenes = {}     # Maps directory name to (image_scene, spec_scene)
+        self.scenes = {}  # Maps directory name to (image_scene, spec_scene)
+        self.history = []  # Browser-like history of directories
         self.current_index = -1
 
+    def get_current_scene_directory(self):
+        """Return the current scene's directory or None if no scenes exist."""
+        if self.current_index >= 0 and self.current_index < len(self.history):
+            return self.history[self.current_index]
+        return None
+
+    def get_last_scene_directory(self):
+        """Return the current scene's directory or None if no scenes exist."""
+        return self.history[-1] if self.history else None
+
+
     def switch_to_scene(self, directory):
-        """
-        Switch to the scene for the given directory if it exists.
-        Returns True if switched, False if not found.
-        """
+        """Switch to a scene and update history like a browser."""
         if directory in self.scenes:
+            # If not at the end, truncate forward history
+            if self.current_index < len(self.history) - 1:
+                self.history = self.history[:self.current_index + 1]
+            # Add new directory to history if not already current
+            if not self.history or self.history[self.current_index] != directory:
+                self.history.append(directory)
+                self.current_index = len(self.history) - 1
             image_scene, spec_scene = self.scenes[directory]
-            self.current_index = self.dir_names.index(directory)
             self.image_graphics_view.setScene(image_scene)
             self.spec_graphics_view.setScene(spec_scene)
             return True
         return False
 
     def create_scenes(self, directory=None, force_new=False):
-        """
-        Create new image and spec scenes for the given directory, or return existing if present (unless force_new).
-        Returns a tuple: (image_scene, spec_scene)
-        """
+        """Create or return scenes, and update history if new."""
+        update_history = True
         if directory in self.scenes and not force_new:
             return self.scenes[directory]
-        else:
-            image_scene = QtWidgets.QGraphicsScene()
-            image_scene.directory = directory
-            image_scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(60, 60, 60)))
-
-            spec_scene = QtWidgets.QGraphicsScene()
-            spec_scene.directory = directory
-            spec_scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(60, 60, 60)))
-
-            # Replace scenes if force_new is True
-            self.scenes[directory] = (image_scene, spec_scene)
-            if directory not in self.dir_names:
-                self.dir_names.append(directory)
-            self.current_index = self.dir_names.index(directory)
-            self.image_graphics_view.setScene(image_scene)
-            self.spec_graphics_view.setScene(spec_scene)
-            return (image_scene, spec_scene)
-
-    def _add_scene(self, scenes_tuple, directory=None):
-        """
-        Internal: Add image and spec scenes to the manager.
-        """
-        if directory not in self.dir_names:
-            self.dir_names.append(directory)
-        self.scenes[directory] = scenes_tuple
-        self.current_index = self.dir_names.index(directory)
-        image_scene, spec_scene = scenes_tuple
+        elif directory in self.scenes and force_new:
+            # we are replacing this scene with a new one
+            update_history = False
+        image_scene = QtWidgets.QGraphicsScene()
+        image_scene.directory = directory
+        image_scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(60, 60, 60)))
+        spec_scene = QtWidgets.QGraphicsScene()
+        spec_scene.directory = directory
+        spec_scene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(60, 60, 60)))
+        self.scenes[directory] = (image_scene, spec_scene)
+        # Update history
+        if update_history:
+            if self.current_index < len(self.history) - 1:
+                self.history = self.history[:self.current_index + 1]
+            self.history.append(directory)
+            self.current_index = len(self.history) - 1
         self.image_graphics_view.setScene(image_scene)
         self.spec_graphics_view.setScene(spec_scene)
+        return (image_scene, spec_scene)
 
     def show_previous_scene(self):
+        """Go back in history."""
         if self.current_index > 0:
             self.current_index -= 1
-            dir_name = self.dir_names[self.current_index]
+            dir_name = self.history[self.current_index]
             image_scene, spec_scene = self.scenes[dir_name]
             self.image_graphics_view.setScene(image_scene)
             self.spec_graphics_view.setScene(spec_scene)
@@ -102,9 +105,10 @@ class ThumbnailSceneManager:
         return (None, None)
 
     def show_next_scene(self):
-        if self.current_index < len(self.dir_names) - 1:
+        """Go forward in history."""
+        if self.current_index < len(self.history) - 1:
             self.current_index += 1
-            dir_name = self.dir_names[self.current_index]
+            dir_name = self.history[self.current_index]
             image_scene, spec_scene = self.scenes[dir_name]
             self.image_graphics_view.setScene(image_scene)
             self.spec_graphics_view.setScene(spec_scene)
@@ -235,13 +239,14 @@ class ContactSheet(QtWidgets.QWidget):
         if image_scene is None or spec_scene is None:
             return
         # Get the current directory name
-        current_dir = self._scene_mgr.dir_names[self._scene_mgr.current_index]
+        current_dir = self._scene_mgr.get_current_scene_directory()
+        last_dir = self._scene_mgr.get_last_scene_directory()
 
         # Disable backBtn if at the first directory
         self.backBtn.setEnabled(self._scene_mgr.current_index > 0)
 
         # Disable forwardBtn if at the last directory
-        self.forwardBtn.setEnabled(current_dir != self._scene_mgr.dir_names[-1])
+        self.forwardBtn.setEnabled(current_dir != self._scene_mgr.scenes[last_dir])
 
         # Optionally, update the directory label
         if image_scene and hasattr(image_scene, 'directory') and image_scene.directory:
@@ -293,11 +298,12 @@ class ContactSheet(QtWidgets.QWidget):
         """
         Create a thumbnail for the folder that will always be at the top-left corner of the images and spectra views.
         """
-
         folder_thumbnail = create_thumbnail({}, is_folder=True)
-        # folder_thumbnail.setPos(0, 0)
-        # Tag it so we can identify it later
-        folder_thumbnail.setData(0, "folder_thumbnail")
+        if folder_thumbnail:
+            # folder_thumbnail.setPos(0, 0)
+            # Tag it so we can identify it later
+            folder_thumbnail.setData(0, "folder_thumbnail")
+
         return folder_thumbnail
 
     def create_new_scenes(self, directory, force_new=False):
@@ -315,6 +321,7 @@ class ContactSheet(QtWidgets.QWidget):
         """
         signal handler for when the refresh button is clicked.
         """
+        self.dir_sel_wdg.data_dir = self._scene_mgr.get_current_scene_directory()
         self.create_new_scenes(self.dir_sel_wdg.data_dir, force_new=True)
 
         # Reload the directory and change the mouse cursor while reloading
@@ -335,6 +342,9 @@ class ContactSheet(QtWidgets.QWidget):
             is_folder = True
         # h5_file_dct['entry1']['sp_db_dct']['file_path']
         thumbnail = create_thumbnail(h5_file_dct, is_folder=is_folder)
+        if thumbnail is None:
+            _logger.warning("create_thumbnail_from_h5_file_dct: thumbnail creation failed")
+            return
 
         if thumbnail.is_valid():
             thumbnail.select.connect(self.do_select)
@@ -389,7 +399,9 @@ class ContactSheet(QtWidgets.QWidget):
                 data = thumb.data[data_idx]
                 thumbnail = create_thumbnail(thumb.h5_file_dct, data=data, energy=e_pnt, ev_idx=ev_idx, ev_pnt=ev_pnt,
                                              pol_idx=0, stack_idx=0)
-
+                if thumbnail is None:
+                    _logger.warning("create_stack_thumbnails_from_thumbwidget: thumbnail creation failed")
+                    continue
                 if thumbnail.is_valid():
                     thumbnail.select.connect(self.do_select)
                     thumbnail.launch_viewer.connect(self.launch_viewer)

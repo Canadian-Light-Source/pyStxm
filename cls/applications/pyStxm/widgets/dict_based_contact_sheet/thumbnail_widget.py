@@ -591,7 +591,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
                 pmap = get_pixmap(os.path.join(utils.icoDir, image_fname), sz_x, sz_y)
 
             pmap = self.overlay_icon_on_pixmap(pmap, icon_path=os.path.join(utils.icoDir, 'stack_files.png'),
-                                               x=5, y=5, size=44)
+                                               x=100, y=3, size=44)
 
         elif as_thumbnail:
             # return a lower res pmap for use as a thumbnail image

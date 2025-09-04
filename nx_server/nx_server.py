@@ -136,13 +136,13 @@ def determine_exporter(nx_app_def):
 
 def process_and_publish_files(pub_socket, files):
     data_lst = []
-    # for fname in files:
-    #     jstr = load_nxstxm_file_to_h5_file_dct(fname, ret_as_jstr=True)
-    #     data_lst.append(jstr)
-    #     ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "load_file_data": jstr})
-    #     pub_socket.send_string(ret_msg)  # Publish each jstr
-    #     print(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published load_file_data for [{fname}]")
-    #     time.sleep(0.1)
+    for fname in files:
+        jstr = load_nxstxm_file_to_h5_file_dct(fname, ret_as_jstr=True)
+        data_lst.append(jstr)
+        ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "load_file_data": jstr})
+        pub_socket.send_string(ret_msg)  # Publish each jstr
+        print(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published load_file_data for [{fname}]")
+        time.sleep(0.1)
 
     print(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published [{len(data_lst)}] files")
     return data_lst

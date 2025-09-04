@@ -56,7 +56,7 @@ if sub_port == '56561':
         'beamShutterMode': None,
         'loadFile directory': '{"directory":"/home/bergr/srv-unix-home/Data/2025-08-08","showHidden":1, "fileExtension":".hdf5"}',
         'listDirectory': '{"directory":"/home/bergr/srv-unix-home/Data"}',
-        'loadFile file': '{ "directory": "/home/bergr/srv-unix-home/Data/2025-08-08", "file": "/home/bergr/srv-unix-home/Data/2025-08-08/Detector_2025-08-08_001.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["OSA_2025-08-19_010.hdf5"], "pluginNumber": 0 }',
+        'loadFile file': '{ "directory": "/home/bergr/srv-unix-home/Data/0502", "file": "/home/bergr/srv-unix-home/Data/0502/A240502001.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["A240502001.hdf5"], "pluginNumber": 0 }',
         'loadFile files': '{"cmd_args":{"files":[]}}',
         'loadDefinition': None,
         'change user': None,

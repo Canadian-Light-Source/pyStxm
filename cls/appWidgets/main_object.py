@@ -132,6 +132,7 @@ class main_object_base(QtCore.QObject):
         self.default_ptycho_cam_nm = None
         self.device_backend = BACKEND #default
         self.zmq_dev_mgr = None
+        self.dcs_settings = None
         self.win_data_dir = self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.linux_data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['linux_data_dir']
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
@@ -257,7 +258,11 @@ class main_object_base(QtCore.QObject):
         # when the engine widget receives new data it will emit this signal
         self.new_data = self.engine_widget.new_data
         self.load_files_status = self.engine_widget.load_files_status
-        
+
+        self.dcs_settings = self.engine_widget.engine.get_settings()
+
+        self.check_dcs_settings(self.dcs_settings)
+
         if not result:
             _logger.error(f"Failed to connect to DCS server")
             raise Exception("ERROR >> Failed to connect to DCS server")
@@ -283,6 +288,75 @@ class main_object_base(QtCore.QObject):
             dct_put(self.main_obj, "PRESETS.ZP_DEFS", self.beamline_cfg_dct['ZP_DEFS'])
 
         return result
+
+    def check_dcs_settings(self, settings: dict=None):
+
+        if self.get_device_backend() == 'zmq':
+            # {'Detector_Archive_Default': 'no',
+            #  'Focus_Archive_Default': 'no',
+            #  'Motor_Archive_Default': 'no',
+            #  'NeXusBaseDirectory': '/home/bergr/srv-unix-home/Data',
+            #  'NeXusDiscardSubDirectory': 'discard',
+            #  'NeXusLocalBaseDirectory': '/home/bergr/srv-unix-home/Data',
+            #  'NeXusScanDate': '2025-08-26',
+            #  'NeXusScanNumber': '001',
+            #  'OSA Focus_Archive_Default': 'yes',
+            #  'OSA_Archive_Default': 'yes',
+            #  'SampleImagePreifx': '.',
+            #  'Sample_Archive_Default': 'locked',
+            #  'axisConfigFileName': './config/axis.json',
+            #  'beamline': 'SLS PolLux X07DA',
+            #  'changeUserScript': 'echo',
+            #  'compression': 'LZW',
+            #  'controllerConfigFileName': './config/controllerNoHardware.json',
+            #  'dataPublisherPort': '56563',
+            #  'defaultSaveLocal': 'yes',
+            #  'defaultUsername': 'stxm',
+            #  'detectorConfigFileName': './config/detectorNoHardware.json',
+            #  'endOfScanScript': './scripts/endOfScan',
+            #  'instrumentConfigFileName': './config/instrument.json',
+            #  'log4cppPropertiesFileName': './config/log4cpp.properties',
+            #  'microscopeControlConfigFileName': './config/microscopeControl.json',
+            #  'missingDataCheckInterval': '0.1',
+            #  'missingDataCheckMaxChecks': '5',
+            #  'pixelClockConfigFileName': './config/pixelClockNoHardware.json',
+            #  'positionerConfigFileName': './config/positionerNoHardware.json',
+            #  'publisherPort': '56561',
+            #  'requestPort': '56562',
+            #  'sampleConfigFileName': './config/sample.json',
+            #  'topupConfigFileName': './config/topupNoHardware.json',
+            #  'zonePlateConfigFileName': './config/zonePlate.json'}
+            # check that the settings specified by the dcs are the ones that we are using
+            DCS_HOST = get_environ_var('DCS_HOST')
+            DCS_HOST_PROC_NAME = get_environ_var('DCS_HOST_PROC_NAME')
+            DCS_SUB_PORT = int(get_environ_var('DCS_SUB_PORT'))
+            DCS_REQ_PORT = int(get_environ_var('DCS_REQ_PORT'))
+
+            if self.data_dir != settings['NeXusBaseDirectory'] and self.data_dir != settings['NeXusLocalBaseDirectory']:
+                _logger.error(f"Data directory in DCS server [{settings['NeXusBaseDirectory']}] does not match the one in the GUI [{self.data_dir}]")
+                print(f"\nERROR: Data directory in DCS server [{settings['NeXusBaseDirectory']}] does not match the one in the GUI [{self.data_dir}]\n")
+                #update the dcs server
+                # self.engine_widget.engine.set_data_directory(self.data_dir)
+
+            if int(settings['dataPublisherPort']) != int(PIX_DATA_SUB_PORT):
+                _logger.error(f"Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{PIX_DATA_SUB_PORT}]")
+                print(f"ERROR: Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{PIX_DATA_SUB_PORT}]")
+                #update the dcs server
+                #self.engine_widget.engine.set_data_publisher_port(PIX_DATA_SUB_PORT)
+
+            if int(settings['publisherPort']) != DCS_SUB_PORT:
+                _logger.error(f"Command publisher port in DCS server [{settings['publisherPort']}] does not match the one in the GUI [{DCS_SUB_PORT}]")
+                print(f"ERROR: Command publisher port in DCS server [{settings['publisherPort']}] does not match the one in the GUI [{DCS_SUB_PORT}]")
+                #update the dcs server
+                #self.engine_widget.engine.set_command_publisher_port(DCS_SUB_PORT)
+
+            if int(settings['requestPort']) != DCS_REQ_PORT:
+                _logger.error(f"Command request port in DCS server [{settings['requestPort']}] does not match the one in the GUI [{DCS_REQ_PORT}]")
+                print(f"ERROR: Command request port in DCS server [{settings['requestPort']}] does not match the one in the GUI [{DCS_REQ_PORT}]")
+                #update the dcs server
+                #self.engine_widget.engine.set_command_request_port(DCS_REQ_PORT)
+
+
 
     def reload_data_directory(self, data_dir: str=None):
         """

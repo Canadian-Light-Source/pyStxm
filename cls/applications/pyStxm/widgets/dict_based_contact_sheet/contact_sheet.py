@@ -137,6 +137,7 @@ class ContactSheet(QtWidgets.QWidget):
         self.dir_label.setAlignment(QtCore.Qt.AlignRight)
         self.dir_label.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.dir_label.setFixedWidth(680)  # Set to desired width
+        self.dir_label.setStyleSheet("background-color: #555555; color: #FFFFFF;")
         main_layout.addWidget(self.dir_label)
 
         # Toolbar layout with buttons
@@ -144,10 +145,10 @@ class ContactSheet(QtWidgets.QWidget):
 
         # Refresh button
         self.reloadBtn = QtWidgets.QToolButton()
-        self.reloadBtn.setText("Reload")
+        self.reloadBtn.setToolTip("Reload")
         self.reloadBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_BrowserReload))
         self.reloadBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
-        self.reloadBtn.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        self.reloadBtn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
         toolbar_layout.addWidget(self.reloadBtn)
 
         # Horizontal spacer
@@ -157,10 +158,10 @@ class ContactSheet(QtWidgets.QWidget):
 
         # Change directory button
         self.changeDirBtn = QtWidgets.QToolButton()
-        self.changeDirBtn.setText("Change Directory")
+        self.changeDirBtn.setToolTip("Change Directory")
         self.changeDirBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DirIcon))
         self.changeDirBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
-        self.changeDirBtn.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        self.changeDirBtn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
         toolbar_layout.addWidget(self.changeDirBtn)
 
         main_layout.addLayout(toolbar_layout)
@@ -196,7 +197,7 @@ class ContactSheet(QtWidgets.QWidget):
         self.backBtn.setToolTip("Previous loaded scene")
         self.backBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_ArrowBack))
         self.backBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
-        self.backBtn.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        self.backBtn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
         nav_layout.addWidget(self.backBtn)
 
         nav_layout.addWidget(self.tab_widget)
@@ -206,7 +207,7 @@ class ContactSheet(QtWidgets.QWidget):
         self.forwardBtn.setToolTip("Next loaded scene")
         self.forwardBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_ArrowForward))
         self.forwardBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
-        self.forwardBtn.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        self.forwardBtn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
         nav_layout.addWidget(self.forwardBtn)
 
         main_layout.addLayout(nav_layout)

@@ -236,6 +236,12 @@ class ScanParamWidget(QtWidgets.QFrame):
         self.test_sp_db = None
         self.test_mod = None
         self._selection_is_oversized = False
+        # this is a dctionary that is used to store the last time (epoch delta) the function (name is the dict key)
+        # was called, if the delta is great enough the function will be allowed to execute, this was implemented to
+        # throttle the calls to estimate scan time which could be quite frequent as the call was attached to the scan
+        # fields that are changed by updating plot slection shapes
+        self._last_called_func_dict = {}
+        self.register_function_to_limit_execution_frequency('update_est_time')
 
         self._help_html_fpath = "place path to plugin help html link here"
         self._help_ttip = "[PLACE SCAN NAME HERE] Scan documentation and instructions"
@@ -279,6 +285,15 @@ class ScanParamWidget(QtWidgets.QFrame):
         self.ensure_defaults_section()
         self.init_plugin()
 
+    def register_function_to_limit_execution_frequency(self, function_name: str):
+        """
+        this is a dctionary that is used to store the last time (epoch delta) the function (name is the dict key)
+        was called, if the delta is great enough the function will be allowed to execute, this was implemented to
+        throttle the calls to estimate scan time which could be quite frequent as the call was attached to the scan
+        fields that are changed by updating plot slection shapes
+        """
+        self._last_called_func_dict[function_name] = 0
+
     def instanciate_scan_class(self, fpath, mod_nm, cls_nm):
         """
         This is a convienience function which handles relative imports for all scan pluggins of their respective scan classes.
@@ -296,8 +311,10 @@ class ScanParamWidget(QtWidgets.QFrame):
         sys.path.append(str(mod_dir.parent))
         # get the name of the beamline config directory
         bl_config_dirname = self.main_obj.get_beamline_id()
+        bl_plugin_dir = self.main_obj.get_beamline_plugin_dir()
         # construct a string with an absolute path to the module
-        _import_str = f"cls.applications.pyStxm.bl_configs.{bl_config_dirname}.scan_plugins.{mod_dir.parent.name}.{mod_nm}"
+        #_import_str = f"cls.applications.pyStxm.bl_configs.{bl_config_dirname}.scan_plugins.{mod_dir.parent.name}.{mod_nm}"
+        _import_str = f"cls.applications.pyStxm.bl_configs.{bl_plugin_dir}.scan_plugins.{mod_dir.parent.name}.{mod_nm}"
         # import the module
         scan_mod = import_module(_import_str, package=None)
         # now get a reference to the desired scan class
@@ -338,6 +355,16 @@ class ScanParamWidget(QtWidgets.QFrame):
 
         to be overridden by inheriting class if need be (doesn't have standard param fields)
         """
+        if 'update_est_time' in self._last_called_func_dict:
+            # check if the function was called recently, if so then return
+            last_called = self._last_called_func_dict['update_est_time']
+            now = time.time()
+            if now - last_called < 0.5:
+                return
+            else:
+                # update the last called time
+                self._last_called_func_dict['update_est_time'] = now
+
         is_multi_region_widget = False
         npoints_ev = 1
         npoints_pol = 1
@@ -368,10 +395,8 @@ class ScanParamWidget(QtWidgets.QFrame):
             npoints_pol = dct['npoints_pol']
             is_multi_region_widget = True
 
-        # ttl_sec = ny * time_per_line
-        #def estimate_scan_time(npoints_x, npoints_y, dwell, npoints_ev=1, npoints_pol=1, is_multi_region_widget=False ):
         self.estimate_scan_time(npoints_x, npoints_y, dwell, npoints_ev, npoints_pol, is_multi_region_widget)
-        # self.new_est_scan_time.emit(ttl_sec)
+
 
     def update_scantime_estimate(self, elapsed_time):
         """
@@ -423,6 +448,7 @@ class ScanParamWidget(QtWidgets.QFrame):
         emits the new_est_scan_time signal with the estimated total number of seconds
 
         """
+        # print("estimate_scan_time")
         scan_name = str(scan_types[self.type])
         # only attempt an estimation if the model has been fitted
         estimated_time_sec = self.scan_time_estimator.estimate_scan_time(scan_name, npoints_x=npoints_x,
@@ -1036,8 +1062,6 @@ class ScanParamWidget(QtWidgets.QFrame):
         loadEvAction = menu.addAction("Load energy scan definition")
         plotScantimeAction = menu.addAction("Plot Scantime Data")
 
-
-
         # set it to False instead of None because the user may not select any action (which would equal None)
         dumpdbgEvAction = False
         debugger = sys.gettrace()
@@ -1059,10 +1083,11 @@ class ScanParamWidget(QtWidgets.QFrame):
         elif action == loadEvAction:
             # print 'OK loading Ev scan def'
             # cfg = self.update_data()
-            self.load_scan_definition(ev_only=True)
-            pass
+            self.load_scan(ev_only=True)
+            #self.load_scan_definition(ev_only=True)
         elif action == loadSpAction:
-            self.load_scan_definition(sp_only=True)
+            #self.load_scan_definition(sp_only=True)
+            self.load_scan(sp_only=True)
         elif action == dumpdbgEvAction:
             self.show_debug_info()
         elif action == plotScantimeAction:
@@ -1138,8 +1163,9 @@ class ScanParamWidget(QtWidgets.QFrame):
         )
         if len(fname) < 1:
             return
-        prfx = self.main_obj.get_datafile_prefix()
-        # d = master_get_seq_names(datadir, prefix_char=prfx, thumb_ext='jpg', dat_ext='json', stack_dir=False, num_desired_datafiles=1)[0]
+        if not fname.endswith(".json"):
+            fname += ".json"
+
         wdg_com = make_active_data_dict()
         dct_put(wdg_com, ADO_CFG_WDG_COM, dct)
         dct_put(wdg_com, ADO_CFG_SCAN_TYPE, self.type)
@@ -1199,7 +1225,12 @@ class ScanParamWidget(QtWidgets.QFrame):
                 continue
 
             #dct[stxm_scan_name] = {'stxm_scan_name': stxm_scan_name, 'panel_idx': int(panel_order_dct[mod_nm])}
-            dct[stxm_scan_name] = int(panel_order_dct[mod_nm])
+            if mod_nm in panel_order_dct.keys():
+                dct[stxm_scan_name] = int(panel_order_dct[mod_nm])
+            else:
+                _logger.warn(f"Module name [{mod_nm}] does not have a panel order defined in the beamline config")
+                print(f"Module name [{mod_nm}] does not have a panel order defined in the beamline config")
+                #dct[stxm_scan_name] = None
         return dct
 
     def get_scan_panel_id_from_scan_name(self, scan_name):
@@ -1256,14 +1287,8 @@ class ScanParamWidget(QtWidgets.QFrame):
         from cls.types.stxmTypes import scan_type_to_panel_dct
 
         dct = mime_to_dct(event.mimeData())
-        #idx = dct['scan_panel_idx']
         idx = self.get_scan_panel_id_from_scan_name(dct['stxm_scan_type'])
-        #self.main_obj.scan_type_to_module_name(dct["scan_type"].split(" ")[0])
-        # idx = scan_type_to_panel_dct[dct['scan_type'].split(' ')[0]]
-        _logger.debug("dragEnterEvent: [%d]" % idx)
-        # self.main_obj.get_scan_panel_order(fname)
         event.acceptProposedAction()
-        # self.dropped.emit(event.mimeData()){"file": "C:/controls/stxm-data/single\\C191212195.hdf5", "scan_type_num": 6, "scan_type": "sample_image Line_Unidir", "scan_panel_idx": 5, "energy": 693.9, "estart": 693.9, "estop": 693.9, "e_npnts": 1, "polarization": "CircLeft", "offset": 0.0, "angle": 0.0, "dwell": 1.0, "npoints": [100, 100], "date": "2019-12-12", "end_time": "22:39:30", "center": [-163.51892127843303, -503.91446634377246], "range": [59.999999999999886, 59.999999999999545], "step": [0.606060606060605, 0.6060606060606014], "start": [-193.51892127843297, -533.9144663437722], "stop": [-133.51892127843308, -473.9144663437727], "xpositioner": "GoniX", "ypositioner": "GoniY", "goni_z_cntr": 0.0, "goni_theta_cntr": 0.0}
         self.selected.emit(idx)
 
     def dragMoveEvent(self, event):
@@ -1272,7 +1297,41 @@ class ScanParamWidget(QtWidgets.QFrame):
     @exception
     def dropEvent(self, event):
         mimeData = event.mimeData()
-        if mimeData.hasImage():
+
+        if mimeData.hasFormat("application/dict-based-lineplot-stxmscan") or mimeData.hasFormat("application/dict-based-imageplot-stxmscan"):
+            for format in mimeData.formats():
+                formatItem = QtWidgets.QTableWidgetItem(format)
+                formatItem.setFlags(QtCore.Qt.ItemIsEnabled)
+                formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+
+                if (format == 'application/dict-based-lineplot-stxmscan') or (format == 'application/dict-based-imageplot-stxmscan'):
+                    itemData = mimeData.data(format)
+                    # text = mimeData.text()
+                    _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
+                    _info_jstr = QtCore.QByteArray()
+                    _data_bytes = QtCore.QByteArray()
+                    _pos = QtCore.QPointF()
+                    _stream >> _info_jstr >> _data_bytes >> _pos
+                    _info_str = bytes(_info_jstr).decode()
+                    drop_dct = json.loads(_info_str)
+
+                    # fname = drop_dct["path"]
+                    #convert to array
+                    data = np.array(drop_dct["data"])
+                    drop_dct["data"] = data
+                    sp_db = drop_dct["sp_db"]
+                    # title = drop_dct["title"]
+                    # xlabel = drop_dct.get("xlabel") or "X"
+                    # ylabel = drop_dct.get("ylabel") or "Y"
+
+                    wdg_com = make_base_wdg_com()
+                    dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+                    dct_put(wdg_com, SPDB_SPATIAL_ROIS, {sp_db[ID_VAL]: sp_db})
+                    drop_dct['wdg_com'] = wdg_com
+
+                    self.load_dict_based_data(drop_dct)
+
+        elif mimeData.hasImage():
             # self.setPixmap(QtGui.QPixmap(mimeData.imageData()))
             print("dropEvent: mime data has an IMAGE")
         elif mimeData.hasHtml():
@@ -1714,7 +1773,7 @@ class ScanParamWidget(QtWidgets.QFrame):
             wdg_com[WDGCOM_CMND] = widget_com_cmnd_types.ROI_CHANGED
             self.roi_changed.emit(wdg_com)
 
-    def load_scan(self):
+    def load_scan(self, ev_only=False, sp_only=False):
         datadir = self.main_obj.get("APP.USER").get_data_dir()
         self.data_file_pfx = self.main_obj.get_datafile_prefix()
         fname = getOpenFileName(
@@ -1722,7 +1781,15 @@ class ScanParamWidget(QtWidgets.QFrame):
             filter_str="Scan Files (%s*.hdf5; *.json)" % self.data_file_pfx,
             search_path=datadir,
         )
-        self.openfile(fname)
+        if fname is None or len(fname) < 1:
+            return
+
+        if fname.endswith(".json"):
+            # the file is a json file, so we need to load the scan definition
+            self.load_config(fname, ev_only=ev_only, sp_only=sp_only)
+        else:
+            # if we hve an actual hdf5 file then the data is "local" and we can load it using the original code
+            self.openfile(fname)
 
     def is_focus_image(self):
         """
@@ -1806,7 +1873,10 @@ class ScanParamWidget(QtWidgets.QFrame):
             filter_str="Scan Def Files (*.hdf5;*.json)",
             search_path=scanDefs_dir,
         )
-        self.openfile(fname, ev_only, sp_only)
+
+        if fname:
+            #self.openfile(fname, ev_only, sp_only)
+            self.load_config(fname, ev_only, sp_only)
 
     def clear_params(self):
         """meant to clear all params from table , to be implemented by inheriting class"""
@@ -1823,133 +1893,6 @@ class ScanParamWidget(QtWidgets.QFrame):
             dct_put(sp_db, SPDB_ID_VAL, u_id)
             sp_rois[u_id] = copy.deepcopy(sp_db)
         dct_put(wdg_com, SPDB_SPATIAL_ROIS, sp_rois)
-
-    # @exception
-    # def openfile(self, fname, ev_only=False, sp_only=False, counter_name="NO_COUNTER_SPECIFIED"):
-    #     """
-    #     check_for_cur_scan_tab: this call was originally used by the load_scan buttons on each scan pluggin
-    #     tab which would only load a scan that matched the scan pluggin you were loading from, but to
-    #     support drag and drop operations we will allow the skipping of this check so that the main app
-    #     can automatically make the dropped scan the curent scan pluggin tab
-    #     """
-    #
-    #     # group the section id's of scans to allow when loading in teh tomography scan
-    #     allow_load_in_tomo_type = ["SAMPLE_LXL", "SAMPLE_PXP", "TOMO"]
-    #
-    #     if fname is None:
-    #         return
-    #     if not ev_only:
-    #         self.clear_params()
-    #         # tell the parent to clear the slate (plotteer)
-    #         self.clear_all_sig.emit()
-    #         reset_unique_roi_id()
-    #
-    #     data_dir, fprefix, fsuffix = get_file_path_as_parts(fname)
-    #     load_image_data = True
-    #     if fsuffix.find(".json") > -1:
-    #         options = {"standard": "json", "def": "nxstxm"}
-    #         load_image_data = False
-    #     else:
-    #         options = {"standard": "nexus", "def": "nxstxm"}
-    #         if sp_only or ev_only:
-    #             load_image_data = False
-    #
-    #     data_io = self.data_io_class(data_dir, fprefix, options)
-    #
-    #     # if(not ev_only):
-    #     #     #tell the parent to clear the slate (plotteer)
-    #     #     self.clear_all_sig.emit()
-    #
-    #     entry_dct = data_io.load()
-    #     if entry_dct is None:
-    #         return
-    #     # use this counter to control if to append or not when loading entries
-    #     i = 0
-    #     ekeys = list(entry_dct.keys())
-    #     ekeys.sort()
-    #
-    #     # for now ignore the default attribute by removing it, mmy use it properly in future
-    #     if 'default' in ekeys:
-    #         ekeys.remove('default')
-    #
-    #     for ekey in ekeys:
-    #         # ekey = entry_dct.keys()[0]
-    #         if load_image_data:
-    #             nx_datas = data_io.get_NXdatas_from_entry(entry_dct, ekey)
-    #             # currently only support 1 counter
-    #             counter_name = data_io.get_default_detector_from_entry(entry_dct)
-    #             data = data_io.get_signal_data_from_NXdata(nx_datas, counter_name)
-    #         wdg_com = data_io.get_wdg_com_from_entry(entry_dct, ekey)
-    #         sp_db = get_first_sp_db_from_wdg_com(wdg_com)
-    #
-    #         if data is None:
-    #             _logger.warn(f"there apparently was no data in the file [{fname}]")
-    #
-    #         loaded_scan_type = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
-    #
-    #         if (
-    #             ev_only
-    #             or (loaded_scan_type == self.section_id)
-    #             or (
-    #                 (self.section_id == "TOMO")
-    #                 and (loaded_scan_type in allow_load_in_tomo_type)
-    #             )
-    #         ):
-    #
-    #             dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
-    #             dct_put(sp_db, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
-    #             if i == 0:
-    #                 self.load_roi(
-    #                     wdg_com, append=False, ev_only=ev_only, sp_only=sp_only
-    #                 )
-    #             else:
-    #                 self.load_roi(
-    #                     wdg_com, append=True, ev_only=ev_only, sp_only=sp_only
-    #                 )
-    #             i += 1
-    #
-    #             if not ev_only:
-    #                 # THIS CALL IS VERY IMPORTANT IN ORDER TO KEEP TEHPLOT AND TABLES IN SYNC
-    #                 add_to_unique_roi_id_list(sp_db[SPDB_ID_VAL])
-    #
-    #             if not load_image_data:
-    #                 return
-    #
-    #             acceptable_2dimages_list = [scan_types.COARSE_IMAGE, scan_types.SAMPLE_IMAGE, scan_types.COARSE_GONI, scan_types.PATTERN_GEN]
-    #
-    #             if (dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_POINT_SPECTRUM ):
-    #                 valid_data_dim = 1
-    #
-    #             #elif dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_IMAGE:
-    #             elif dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) in acceptable_2dimages_list:
-    #                 valid_data_dim = 2
-    #
-    #             elif (dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_IMAGE_STACK ):
-    #                 valid_data_dim = 3
-    #             else:
-    #                 valid_data_dim = 2
-    #
-    #             if data.ndim == 3:
-    #                 data = data[0]
-    #
-    #             if data.ndim is not valid_data_dim:
-    #                 _logger.error(
-    #                     "Data in file [%s] is of wrong dimension, is [%d] should be [%d]"
-    #                     % (fname, data.ndim, valid_data_dim)
-    #                 )
-    #                 print(
-    #                     "Data in file [%s] is of wrong dimension, is [%d] should be [%d]"
-    #                     % (fname, data.ndim, valid_data_dim)
-    #                 )
-    #                 return
-    #             # signal the main GUI that there is data to plot but only if is is a single image, ignore stack or point spectra scans
-    #             if len(list(entry_dct.keys())) == 1:
-    #                 if data is not None:
-    #                     self.plot_data.emit((fname, wdg_com, data))
-    #                 _logger.debug("[%s] scan loaded" % self.section_id)
-    #         else:
-    #             _logger.error("unable to load scan, wrong scan type")
-    #             break
 
     @exception
     def openfile(self, fname, ev_only=False, sp_only=False, counter_name="NO_COUNTER_SPECIFIED"):
@@ -1973,7 +1916,6 @@ class ScanParamWidget(QtWidgets.QFrame):
 
         data_dir, fprefix, fsuffix = get_file_path_as_parts(fname)
         load_image_data = True
-        image_data = None
         if fsuffix.find(".json") > -1:
             options = {"standard": "json", "def": "nxstxm"}
             load_image_data = False
@@ -1983,29 +1925,238 @@ class ScanParamWidget(QtWidgets.QFrame):
                 load_image_data = False
 
         data_io = self.data_io_class(data_dir, fprefix, options)
+
+        # if(not ev_only):
+        #     #tell the parent to clear the slate (plotteer)
+        #     self.clear_all_sig.emit()
+
         entry_dct = data_io.load()
         if entry_dct is None:
             return
         # use this counter to control if to append or not when loading entries
         i = 0
-        ekey = data_io.get_default_entry_key_from_entry(entry_dct)
+        ekeys = list(entry_dct.keys())
+        ekeys.sort()
+
+        # for now ignore the default attribute by removing it, mmy use it properly in future
+        if 'default' in ekeys:
+            ekeys.remove('default')
+
+        for ekey in ekeys:
+            # ekey = entry_dct.keys()[0]
+            if load_image_data:
+                nx_datas = data_io.get_NXdatas_from_entry(entry_dct, ekey)
+                # currently only support 1 counter
+                counter_name = data_io.get_default_detector_from_entry(entry_dct)
+                data = data_io.get_signal_data_from_NXdata(nx_datas, counter_name)
+            wdg_com = data_io.get_wdg_com_from_entry(entry_dct, ekey)
+            sp_db = get_first_sp_db_from_wdg_com(wdg_com)
+
+            if data is None:
+                _logger.warn(f"there apparently was no data in the file [{fname}]")
+
+            loaded_scan_type = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
+
+            if (
+                ev_only
+                or (loaded_scan_type == self.section_id)
+                or (
+                    (self.section_id == "TOMO")
+                    and (loaded_scan_type in allow_load_in_tomo_type)
+                )
+            ):
+
+                dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+                dct_put(sp_db, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+                if i == 0:
+                    self.load_roi(
+                        wdg_com, append=False, ev_only=ev_only, sp_only=sp_only
+                    )
+                else:
+                    self.load_roi(
+                        wdg_com, append=True, ev_only=ev_only, sp_only=sp_only
+                    )
+                i += 1
+
+                if not ev_only:
+                    # THIS CALL IS VERY IMPORTANT IN ORDER TO KEEP TEHPLOT AND TABLES IN SYNC
+                    add_to_unique_roi_id_list(sp_db[SPDB_ID_VAL])
+
+                if not load_image_data:
+                    return
+
+                acceptable_2dimages_list = [scan_types.COARSE_IMAGE, scan_types.SAMPLE_IMAGE, scan_types.COARSE_GONI, scan_types.PATTERN_GEN]
+
+                if (dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_POINT_SPECTRUM ):
+                    valid_data_dim = 1
+
+                #elif dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_IMAGE:
+                elif dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) in acceptable_2dimages_list:
+                    valid_data_dim = 2
+
+                elif (dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_IMAGE_STACK ):
+                    valid_data_dim = 3
+                else:
+                    valid_data_dim = 2
+
+                if data.ndim == 3:
+                    data = data[0]
+
+                if data.ndim is not valid_data_dim:
+                    _logger.error(
+                        "Data in file [%s] is of wrong dimension, is [%d] should be [%d]"
+                        % (fname, data.ndim, valid_data_dim)
+                    )
+                    print(
+                        "Data in file [%s] is of wrong dimension, is [%d] should be [%d]"
+                        % (fname, data.ndim, valid_data_dim)
+                    )
+                    return
+                # signal the main GUI that there is data to plot but only if is is a single image, ignore stack or point spectra scans
+                if len(list(entry_dct.keys())) == 1:
+                    if data is not None:
+                        self.plot_data.emit((fname, wdg_com, data))
+                    _logger.debug("[%s] scan loaded" % self.section_id)
+            else:
+                _logger.error("unable to load scan, wrong scan type")
+                break
+
+    @exception
+    def load_config(self, fname, ev_only=False, sp_only=False):
+        """
+        check_for_cur_scan_tab: this call was originally used by the load_scan buttons on each scan pluggin
+        tab which would only load a scan that matched the scan pluggin you were loading from, but to
+        support drag and drop operations we will allow the skipping of this check so that the main app
+        can automatically make the dropped scan the curent scan pluggin tab
+        """
+        wdg_com = None
+
+        # group the section id's of scans to allow when loading in teh tomography scan
+        allow_load_in_tomo_type = ["SAMPLE_LXL", "SAMPLE_PXP", "TOMO"]
+
+        if fname is None:
+            return
+
+        if not ev_only:
+            self.clear_params()
+            # tell the parent to clear the slate (plotteer)
+            self.clear_all_sig.emit()
+            reset_unique_roi_id()
+
+        data_dir, fprefix, fsuffix = get_file_path_as_parts(fname)
+
+        # data_io = self.data_io_class(data_dir, fprefix, options)
+        # wdg_com = data_io.load()
+        if not os.path.exists(fname):
+            _logger.error(f"load_config: File [{fname}] does not exist")
+            return
+
+        cfg_dict = json.loads(open(fname, "r").read())
+        wdg_com = dct_get(cfg_dict, ADO_CFG_WDG_COM)
+        if wdg_com is None:
+            return
+
+        sp_db = get_first_sp_db_from_wdg_com(wdg_com)
+        scan_type_int = dct_get(cfg_dict, ADO_CFG_SCAN_TYPE)
+        nxstxm_scan_str = scan_types[scan_type_int].replace('_', ' ')
+        loaded_scan_type = self.get_scan_panel_id_from_scan_name(nxstxm_scan_str)
+        # loaded_scan_type = dct_get(cfg_dict, ADO_CFG_SCAN_TYPE)
+        i = 0
+        if ev_only or loaded_scan_type == self.idx or (
+                self.section_id == "TOMO" and loaded_scan_type in allow_load_in_tomo_type):
+
+            dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+            dct_put(sp_db, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+            if i == 0:
+                self.load_roi(
+                    wdg_com, append=False, ev_only=ev_only, sp_only=sp_only
+                )
+            else:
+                self.load_roi(
+                    wdg_com, append=True, ev_only=ev_only, sp_only=sp_only
+                )
+            i += 1
+
+            if not ev_only:
+                # THIS CALL IS VERY IMPORTANT IN ORDER TO KEEP THE PLOT AND TABLES IN SYNC
+                add_to_unique_roi_id_list(sp_db[SPDB_ID_VAL])
+
+        else:
+            _logger.error("unable to load scan, wrong scan type")
+
+    def get_first_entry_key(self, h5_file_dct: dict) -> str:
+        """
+        use the default attribute to return the default entry name to use
+        :param entries_dct:
+        :return:
+        """
+        # support for older nexus files
+        if "default" in h5_file_dct:
+            return h5_file_dct["default"]
+        return None
+
+    @exception
+    def load_dict_based_data(self, dropped_data_dct: dict=None, ev_only: bool=False, sp_only: bool=False):
+        """
+        check_for_cur_scan_tab: this call was originally used by the load_scan buttons on each scan pluggin
+        tab which would only load a scan that matched the scan pluggin you were loading from, but to
+        support drag and drop operations we will allow the skipping of this check so that the main app
+        can automatically make the dropped scan the curent scan pluggin tab
+        """
+
+        # group the section id's of scans to allow when loading in teh tomography scan
+        allow_load_in_tomo_type = ["SAMPLE_LXL", "SAMPLE_PXP", "TOMO"]
+
+        if dropped_data_dct is None:
+            return
+        if not ev_only:
+            self.clear_params()
+            # tell the parent to clear the slate (plotteer)
+            self.clear_all_sig.emit()
+            reset_unique_roi_id()
+
+        data_dir, fprefix, fsuffix = get_file_path_as_parts(dropped_data_dct['path'])
+        fname = f"{fprefix}{fsuffix}"
+
+        load_image_data = True
+        image_data = None
+        if fsuffix.find(".json") > -1:
+            options = {"standard": "json", "def": "nxstxm"}
+            load_image_data = False
+        else:
+            options = {"standard": "nexus", "def": "nxstxm"}
+            if sp_only or ev_only:
+                load_image_data = False
+
+        # data_io = self.data_io_class(data_dir, fprefix, options)
+        # entry_dct = data_io.load()
+        ekey = self.get_first_entry_key(dropped_data_dct["h5_file_dct"])
+        entry_dct = dropped_data_dct["h5_file_dct"][ekey]
+
+        if entry_dct is None:
+            return
+        # use this counter to control if to append or not when loading entries
+        i = 0
+        # ekey = data_io.get_default_entry_key_from_entry(entry_dct)
 
         if load_image_data:
-            nx_datas = data_io.get_NXdatas_from_entry(entry_dct, ekey)
-            # currently only support 1 counter
-            counter_name = data_io.get_default_detector_from_entry(entry_dct)
-            image_data = data_io.get_signal_data_from_NXdata(nx_datas, counter_name)
+            # nx_datas = data_io.get_NXdatas_from_entry(entry_dct, ekey)
+            # # currently only support 1 counter
+            # counter_name = data_io.get_default_detector_from_entry(entry_dct)
+            # image_data = data_io.get_signal_data_from_NXdata(nx_datas, counter_name)
+            image_data = dropped_data_dct['data']
 
             if image_data is None:
                 _logger.warn(f"there apparently was no data in the file [{fname}]")
 
-        wdg_com = data_io.get_wdg_com_from_entry(entry_dct, ekey)
+        # wdg_com = data_io.get_wdg_com_from_entry(entry_dct, ekey)
+        wdg_com = dropped_data_dct['wdg_com']
         sp_db = get_first_sp_db_from_wdg_com(wdg_com)
 
         loaded_scan_type = self.get_scan_panel_id_from_scan_name(dct_get(sp_db, SPDB_SCAN_PLUGIN_STXM_SCAN_TYPE))
 
         # loaded_scan_type = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
-        #if ev_only or loaded_scan_type == self.section_id or (self.section_id == "TOMO" and loaded_scan_type in allow_load_in_tomo_type):
+        # if ev_only or loaded_scan_type == self.section_id or (self.section_id == "TOMO" and loaded_scan_type in allow_load_in_tomo_type):
         if ev_only or loaded_scan_type == self.idx or (
                 self.section_id == "TOMO" and loaded_scan_type in allow_load_in_tomo_type):
 
@@ -2028,7 +2179,7 @@ class ScanParamWidget(QtWidgets.QFrame):
             if not load_image_data:
                 return
 
-            if (dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_POINT_SPECTRUM):
+            if (dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) in [scan_types.SAMPLE_POINT_SPECTRUM, scan_types.GENERIC_SCAN]):
                 valid_data_dim = 1
 
             # elif dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_IMAGE:
@@ -2036,7 +2187,7 @@ class ScanParamWidget(QtWidgets.QFrame):
                 valid_data_dim = 2
 
             elif (dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_IMAGE_STACK):
-                #valid_data_dim = 3
+                # valid_data_dim = 3
                 valid_data_dim = 2
             else:
                 valid_data_dim = 2
@@ -2046,9 +2197,9 @@ class ScanParamWidget(QtWidgets.QFrame):
 
             if image_data.ndim is not valid_data_dim:
                 _logger.error("Data in file [%s] is of wrong dimension, is [%d] should be [%d]"
-                    % (fname, image_data.ndim, valid_data_dim))
+                              % (fname, image_data.ndim, valid_data_dim))
                 print("Data in file [%s] is of wrong dimension, is [%d] should be [%d]"
-                    % (fname, image_data.ndim, valid_data_dim))
+                      % (fname, image_data.ndim, valid_data_dim))
                 return
 
             # signal the main GUI that there is data to plot but only if is is a single image, ignore stack or point spectra scans
@@ -2673,21 +2824,26 @@ class ScanParamWidget(QtWidgets.QFrame):
         gt_roi = dct_get(self.sp_db, SPDB_GT)
         zz_roi = dct_get(self.sp_db, SPDB_ZZ)
 
-        if x_roi[CENTER] is None:
+        #if x_roi[CENTER] is None:
+        if dct_get(x_roi, CENTER) is None:
             if hasattr(self, "centerXFld"):
                 x_roi[CENTER] = float(str(self.centerXFld.text()))
                 on_center_changed(x_roi)
-        if y_roi[CENTER] is None:
+
+        #if y_roi[CENTER] is None:
+        if dct_get(y_roi, CENTER) is None:
             if hasattr(self, "centerYFld"):
                 y_roi[CENTER] = float(str(self.centerYFld.text()))
                 on_center_changed(y_roi)
 
-        if z_roi[CENTER] is None:
+        #if z_roi[CENTER] is None:
+        if dct_get(z_roi, CENTER) is None:
             if hasattr(self, "centerZFld"):
                 z_roi[CENTER] = float(str(self.centerZFld.text()))
                 on_center_changed(z_roi)
 
-        if zz_roi[CENTER] is None:
+        #if zz_roi[CENTER] is None:
+        if dct_get(zz_roi, CENTER) is None:
             if hasattr(self, "centerZPFld"):
                 zz_roi[CENTER] = float(str(self.centerZPFld.text()))
                 on_center_changed(zz_roi)

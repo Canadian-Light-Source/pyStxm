@@ -71,19 +71,11 @@ def array_to_qimage(arr):
 
 
 def array_to_gray_qimage(arr):
-    """
-    arr is expected to be of type np.float32
-    :param arr:
-    :return:
-    """
-    # if(arr.ptp() == 0.0):
-    # 	im = np.uint8((arr - arr.min())/1.0*255.0)
-    # else:
-    # 	im = np.uint8((arr - arr.min())/arr.ptp()*255.0)
-    #
+    arr = np.array(arr, dtype=np.float32)  # Ensure numeric type
+    arr = np.where(arr == None, np.nan, arr)  # Replace None with np.nan
+
     denom = arr.max() - arr.min()
     if denom <= 0:
-        # print 'array_to_gray_qimage: uh oh divide by zero'
         qi = QtGui.QImage(
             arr.data,
             arr.shape[1],
@@ -92,17 +84,8 @@ def array_to_gray_qimage(arr):
             QtGui.QImage.Format_Indexed8,
         )
     else:
-        #convert all nan's to 1's
         arr = np.nan_to_num(arr, nan=1)
-        # if np.isnan(np.nanmin(arr)) or (np.isnan(np.min(arr))) or (arr.min() == 0):
-        #     _min = 1
-        # else:
-        #     _min = arr.min()
-        if arr.min() == 0:
-            _min = 1
-        else:
-            _min = arr.min()
-
+        _min = 1 if arr.min() == 0 else arr.min()
         _max = max_with_nans(arr)
         if np.isnan(_max):
             _max = 1
@@ -114,7 +97,6 @@ def array_to_gray_qimage(arr):
         qi = QtGui.QImage(
             im.data, im.shape[1], im.shape[0], im.shape[1], QtGui.QImage.Format_Indexed8
         )
-
     return qi
 
 def max_with_nans(arr):
@@ -123,7 +105,8 @@ def max_with_nans(arr):
     # Calculate maximum value
     max_val = arr_with_low_values.max()
     # Check if all values are NaNs
-    all_nans = np.all(np.isnan(arr))
+    #all_nans = np.all(np.isnan(arr))
+    all_nans = np.all(np.isnan(arr.astype(float)))
     # if all_nans:
     #     print("All values in the array are NaNs.")
     # else:
@@ -150,6 +133,71 @@ def array_to_qpixmap(gray):
     pixmap = QtGui.QPixmap.fromImage(qimg, QtCore.Qt.MonoOnly)
     return pixmap
 
+def data_to_rgb(data0, alpha=False):
+    """Interpret an MxNxP array as an MxNx3 RGB image."""
+    data = np.nan_to_num(data0, copy=True, nan=0.)
+    N = data.shape[2]
+    RGB = np.zeros((list(data.shape[:2]) + [3]))
+    total = np.empty((N, 3))
+    C = hsv_cmap(N)
+    for k in range(N):
+        total[k, :] = C[k, :]
+        if data is None or np.any(data == None):
+            pass
+        else:
+            RGB = RGB + np.broadcast_to(C[k, :], [1, 1, 3]) * data[:, :, [k, k, k]]
+    RGB = RGB / np.sum(total, axis=0)
+    RGB = RGB / np.amax(RGB)
+    ## Debug:The following code adds the set of hues to the first N pixels of the image
+    # for k in range(N):
+    # ind = np.unravel_index(k,RGB.shape[:2])
+    # RGB[ind[0],ind[1],:] = C[k,:]
+    # np.nan_to_num(RGB, copy=False,nan=0.)
+    if alpha:
+        return (255 * np.dstack((RGB, np.ones(RGB.shape[:2])))).astype(np.int64)
+    else:
+        return (255 * RGB).astype(np.int64)
+
+def numpy_rgb_to_qpixmap(rgb_array, target_width=150, target_height=150):
+    if rgb_array.dtype != np.uint8:
+        rgb_array = rgb_array.astype(np.uint8)
+    height, width = rgb_array.shape[:2]
+    if rgb_array.shape[2] == 3:
+        fmt = QtGui.QImage.Format_RGB888
+    elif rgb_array.shape[2] == 4:
+        fmt = QtGui.QImage.Format_RGBA8888
+    else:
+        raise ValueError("Array must have 3 (RGB) or 4 (RGBA) channels")
+    rgb_array = np.ascontiguousarray(rgb_array, dtype=np.uint8)
+    qimg = QtGui.QImage(rgb_array.data, width, height, rgb_array.strides[0], fmt)
+    pixmap = QtGui.QPixmap.fromImage(qimg)
+    if target_width is not None and target_height is not None:
+        pixmap = pixmap.scaled(target_width, target_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+    return pixmap
+
+def hsv_to_rgb(h, s, v):
+    if s == 0.0: return (v, v, v)
+    i = int(h * 6.)  # XXX assume int() truncates!
+    f = (h * 6.) - i;
+    p, q, t = v * (1. - s), v * (1. - s * f), v * (1. - s * (1. - f));
+    i %= 6
+    if i == 0: return (v, t, p)
+    if i == 1: return (q, v, p)
+    if i == 2: return (p, v, t)
+    if i == 3: return (p, q, v)
+    if i == 4: return (t, p, v)
+    if i == 5: return (v, p, q)
+
+
+def hsv_cmap(N):
+    """Select N colour hues and return RGB values."""
+    if N == 2:
+        return np.array([[1, 1, 0], [0, 1, 1]])
+    C = np.empty((N, 3))
+    for k in range(N):
+        val = k / (N * (1.3333333333333) - 1)
+        C[k, :] = hsv_to_rgb(val - int(val), 1., 1.)
+    return C
 
 __all__ = ["image_to_array", "array_to_image", "array_to_qimage", "array_to_qpixmap"]
 

@@ -455,8 +455,6 @@ class MultiRegionWidget(BaseSelectionWidget):
             )
             return
 
-        _logger.info("[%d] scan loaded" % scan_type)
-
         # if(len(sp_ids) > 1):
         #    self.multiSpatialCheckBox.setChecked(True)
         #    self.on_multi_spatial_chk(True)
@@ -486,6 +484,8 @@ class MultiRegionWidget(BaseSelectionWidget):
             self.ev_widg.total_ev_changed.emit(1)
         else:
             self.ev_widg.emit_new_total()
+
+        _logger.info("[%d] scan loaded" % scan_type)
 
     def row_was_selected(self, scan):
 

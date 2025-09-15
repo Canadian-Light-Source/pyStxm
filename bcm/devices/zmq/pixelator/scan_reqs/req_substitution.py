@@ -1,5 +1,5 @@
 import simplejson as json
-from bcm.devices.zmq.pixelator.app_dcs_devnames import app_to_dcs_devname_map
+# from bcm.devices.zmq.pixelator.app_dcs_devnames import app_to_dcs_devname_map
 # assuming
 
 
@@ -10,19 +10,19 @@ def do_substitutions(scan_request_dct, parent):
     if x_nm in ['None', None]:
         x_posner_nm = '"NO_NAME_SPECIFIED"'
     else:
-        x_nm = app_to_dcs_devname_map[x_nm]
+        x_nm = parent.dcs_server_api.app_to_dcs_devname_map[x_nm]
         x_posner_nm = f'"{x_nm}"'
 
     if y_nm in ['None', None]:
         y_posner_nm = '"NO_NAME_SPECIFIED"'
     else:
-        y_nm = app_to_dcs_devname_map[y_nm]
+        y_nm = parent.dcs_server_api.app_to_dcs_devname_map[y_nm]
         y_posner_nm = f'"{y_nm}"'
 
     if z_nm in ['None', None]:
         z_posner_nm = '"NO_NAME_SPECIFIED"'
     else:
-        z_nm = app_to_dcs_devname_map[z_nm]
+        z_nm = parent.dcs_server_api.app_to_dcs_devname_map[z_nm]
         z_posner_nm = f'"{z_nm}"'
 
     replace_map = {'VAR_MEANDER': 1 if parent.wdg_scan_req['meander'] else 0,

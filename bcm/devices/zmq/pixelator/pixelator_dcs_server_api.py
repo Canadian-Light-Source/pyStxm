@@ -1,25 +1,25 @@
+import time
+import os
+from PyQt5.QtCore import QTimer
+from queue import Queue
+import re
 import simplejson as json
-from enum import Enum
-import numpy as np
-import math
-import pprint
 
-from bcm.devices.zmq.pixelator.app_dcs_devnames import dcs_to_app_devname_map
+
 from bcm.devices.zmq.base_dcs_server_api import BaseDcsServerApi
-from bcm.devices.zmq.pixelator.gen_scan_req import (gen_base_req_structure, gen_displayed_axis_dicts, gen_regions,
-                                                    make_base_energy_region, make_point_spatial_region,
-                                                    gen_point_displayed_axis_dicts)
+from bcm.devices.zmq.pixelator.gen_scan_req import GenScanRequestClass
 from bcm.devices.zmq.pixelator.scan_reqs.req_substitution import do_substitutions
-from bcm.devices.zmq.pixelator.app_dcs_devnames import app_to_dcs_devname_map
-
+from bcm.devices.zmq.pixelator.loadfile_reponse import LoadFileResponseClass
 from cls.utils.roi_utils import *
 from cls.utils.dict_utils import dct_get
+from cls.utils.fileUtils import get_file_path_as_parts
+from cls.types.stxmTypes import (
+    scan_types,
+)
+
 
 from cls.utils.log import get_module_logger
 _logger = get_module_logger(__name__)
-
-DEFAULT_DETECTOR = 'Counter0'
-
 
 class ScanStatus(Enum):
     IDLE = 0
@@ -55,9 +55,45 @@ def gen_non_tiled_map_entry(sdInnerRegionIdx, arr_npoints, npoints_x):
     return {'row': pixel_row, 'col': pixel_col}
 
 
+
+RE_DATA_DIR_PATTERN = r'^\d{4}-\d{2}-\d{2}$'
+
+def gen_loadfile_directory_msg(directory: str, extension: str='.hdf5') -> dict:
+    dct = {"directory":f"{directory}",
+           "showHidden":1,
+           "fileExtension":f"{extension}"
+,   }
+    return dct
+
+def gen_listDirectory_msg(directory: str, extension: str='.hdf5') -> dict:
+    dct = {"directory":f"{directory}",
+           "fileExtension": f"{extension}"
+,   }
+    return dct
+
+
+def gen_loadfile_msg(directory: str, filename: str) -> dict:
+    dct = {
+        "directory": f"{directory}"
+        , "file": os.path.join(directory, filename)
+        , "showHidden": 0
+        , "fileExtension": ".hdf5"
+        , "directories": [
+            ".."
+            , "discard"
+        ]
+        , "files": [
+            filename
+        ]
+        , "pluginNumber": 0
+    }
+    return dct
+
+
 class ScanClass(object):
-    def __init__(self):
+    def __init__(self, *, dcs_server_api=None):
         super().__init__()
+        self.dcs_server_api = dcs_server_api
         self.x = {} # x
         self.y = {} # y
         self.z = {} # z
@@ -136,6 +172,7 @@ class ScanClass(object):
         self.cur_col_idx = None
         self.cur_tile_num = 0
         self.wdg_com = {}
+
     def map_app_polarization_to_dcs_polarization(self, pol: str) -> []:
         """
         convert a pyStxm string for polarization to stokes parameters required by Pixelator
@@ -313,9 +350,10 @@ class ScanClass(object):
         #     line_mode = "Point by Point"
         # else:
         #     line_mode = "Constant Velocity"
+        scan_req_cls = GenScanRequestClass(self.dcs_server_api.app_to_dcs_devname_map)
         line_mode = self.wdg_scan_req['scan_point_or_line_mode']
 
-        scan_request = gen_base_req_structure(self.scan_type_str)
+        scan_request = scan_req_cls.gen_base_req_structure(self.scan_type_str)
 
         # set flags to decide what sample scan it is
         self.sample_scan_type = self.determine_sample_scan_type(scan_request, app_scan_type_str)
@@ -338,28 +376,30 @@ class ScanClass(object):
             scan_request["spatialType"] = self.spatial_type
             scan_request["lineMode"] = line_mode
 
+
+
             # # set flags to decide what sample scan it is
             # self.sample_scan_type = self.determine_sample_scan_type(scan_request, app_scan_type_str)
 
             if self.sample_scan_type in [ScanType.POINT_SPEC, ScanType.LINE_SPEC]:
                 #create inner and outer regions for a point and line spec scan
                 for e_roi in self.e:
-                    scan_request["outerRegions"].append(make_base_energy_region(e_roi, app_to_dcs_devname_map))
+                    scan_request["outerRegions"].append(scan_req_cls.make_base_energy_region(e_roi, self.dcs_server_api.app_to_dcs_devname_map))
 
                 for spid, sp_dct in self.sp_roi_dct.items():
-                    scan_request["innerRegions"].append(make_point_spatial_region(sp_dct['X'], sp_dct['Y'], app_to_dcs_devname_map))
+                    scan_request["innerRegions"].append(scan_req_cls.make_point_spatial_region(sp_dct['X'], sp_dct['Y'], self.dcs_server_api.app_to_dcs_devname_map))
 
-                scan_request["displayedAxes"] = gen_point_displayed_axis_dicts(["x", "y"], [self.x, self.y],
+                scan_request["displayedAxes"] = scan_req_cls.gen_point_displayed_axis_dicts(["x", "y"], [self.x, self.y],
                                                                          [True, False])  # order matters
                 scan_request["nInnerRegions"] = len(self.sp_ids)
                 scan_request["nOuterRegions"] = len(scan_request["outerRegions"])
             else:
                 # Sample Image
-                scan_request["outerRegions"] = gen_regions(self.scan_type_str, self.dwell_ms * 0.001, self, is_outer=True)
-                scan_request["innerRegions"] = gen_regions(self.scan_type_str, self.dwell_ms * 0.001, self, is_outer=False)
+                scan_request["outerRegions"] = scan_req_cls.gen_regions(self.scan_type_str, self.dwell_ms * 0.001, self, is_outer=True)
+                scan_request["innerRegions"] = scan_req_cls.gen_regions(self.scan_type_str, self.dwell_ms * 0.001, self, is_outer=False)
 
                 #the following is scan dependant I would think so this will need modification
-                scan_request["displayedAxes"] = gen_displayed_axis_dicts(["y", "x"], [self.y, self.x],
+                scan_request["displayedAxes"] = scan_req_cls.gen_displayed_axis_dicts(["y", "x"], [self.y, self.x],
                                                                      [True, True])  # order matters
                 scan_request["nInnerRegions"] = len(self.sp_ids)
                 scan_request["nOuterRegions"] = len(self.ev_rois)
@@ -385,43 +425,6 @@ class ScanClass(object):
             scan_request["polarization"] = pol
 
         return scan_request
-
-
-    # def calculate_progress(self, total_time: str, elapsed_time: str, remaining_time: str) -> float:
-    #     """
-    #     Calculate the percentage progress based on total and elapsed time coming from Pixelator,
-    #     this may be used in teh future if Pixelator can give accurate timeing
-    #
-    #     Args:
-    #         total_time (str): Total time in the format '00h 18m 12s'.
-    #         elapsed_time (str): Elapsed time in the format '00h 03m 04s'.
-    #
-    #     Returns:
-    #         float: Percentage progress as a float value.
-    #     """
-    #
-    #     def time_to_seconds(time_str: str) -> int:
-    #         """Convert time string to total seconds."""
-    #         h, m, s = 0, 0, 0
-    #         if 'h' in time_str:
-    #             h = int(time_str.split('h')[0].strip())
-    #             time_str = time_str.split('h')[1]
-    #         if 'm' in time_str:
-    #             m = int(time_str.split('m')[0].strip())
-    #             time_str = time_str.split('m')[1]
-    #         if 's' in time_str:
-    #             s = int(time_str.split('s')[0].strip())
-    #         return h * 3600 + m * 60 + s
-    #
-    #     total_seconds = time_to_seconds(total_time)
-    #     elapsed_seconds = time_to_seconds(elapsed_time)
-    #     remaining_seconds = time_to_seconds(remaining_time)
-    #
-    #     if total_seconds == 0:  # Avoid division by zero
-    #         return 0.0
-    #
-    #     return (elapsed_seconds / total_seconds) * 100
-
 
     def intake_scan_status(self, dct):
         """
@@ -660,12 +663,44 @@ class ScanClass(object):
         return self.scan_req
 
 
+
+#################################################################################################################
 class DcsServerApi(BaseDcsServerApi):
 
     def __init__(self, parent):
         super().__init__(parent)
         self.devices = {}
-        self.scan_class = ScanClass()
+        self.scan_class = ScanClass(dcs_server_api=self)
+
+        self.load_file_q = Queue()
+        self.load_file_q_poller = QTimer()
+        self.load_file_q_poller.timeout.connect(self.process_load_file_queue)
+        self.load_file_q_poller.start(750)
+
+        self.busy = False
+
+    def get_server_version_id(self) -> str:
+        """
+        return the server version id, to be implemented by the inheriting class
+        Returns: str
+        -------
+
+        """
+        return self.parent.server_version
+
+    def get_base_data_dir(self):
+        """
+        return value from remoteFileSystem dict that we received from Pix controller
+        """
+        # {'bookmarks': [], 'directory': '/tmp', 'fileExtension': '.hdf5', 'showHidden': 0}
+        return self.parent.remote_file_system_info['directory']
+
+    def get_data_file_extension(self):
+        """
+        return value from remoteFileSystem dict that we received from Pix controller
+        """
+        # {'bookmarks': [], 'directory': '/tmp', 'fileExtension': '.hdf5', 'showHidden': 0}
+        return self.parent.remote_file_system_info['fileExtension']
 
     def reset_scan_info(self):
         self.scan_class.reset()
@@ -760,12 +795,15 @@ class DcsServerApi(BaseDcsServerApi):
 
         elif resp[0].find("positionerStatus") > -1:
             # print(f"positionerStatus: resp={resp}")
-            values = json.loads(resp[1])
+            #values = json.loads(resp[1])
+            values = json.loads(resp[1].replace('NaN', 'null'))
             if len(self.parent.devices['POSITIONERS']) > 0 and (len(self.parent.devices['POSITIONERS']) == len(values)):
                 #self.parent.devices['POSITIONERS'], values)
                 i = 0
                 for app_devname in list(self.parent.devices['POSITIONERS'].keys()):
                     pos = values[i]['position']
+                    if pos is None or pos == 'null':
+                        pos = -909090.9090909
                     status = values[i]['status']
                     self._update_device_feedback(app_devname, pos, app_devname=app_devname)
                     self._update_device_status(app_devname, status, app_devname=app_devname)
@@ -814,6 +852,8 @@ class DcsServerApi(BaseDcsServerApi):
             # print(f"process_SUB_rcv_messages: emitting {self.scan_class.status}")
             self.scan_status.emit(ScanStatus.IDLE)
             self.on_exec_finished(json.loads(resp[1]))
+
+
 
         elif resp[0].find("userStatus") > -1:
             print(f"process_SUB_rcv_messages: {resp}")
@@ -865,15 +905,74 @@ class DcsServerApi(BaseDcsServerApi):
             self.parent.positioner_definition = json.loads(resp[1])
             for posner_dct in self.parent.positioner_definition:
                 dcs_devname = posner_dct['name']
-                if dcs_devname in dcs_to_app_devname_map.keys():
-                    app_devname = dcs_to_app_devname_map[dcs_devname]
+                if dcs_devname in self.dcs_to_app_devname_map.keys():
+                    app_devname = self.dcs_to_app_devname_map[dcs_devname]
                     if app_devname in list(self.parent.devs.keys()):
                         dev = self.parent.devs[app_devname]['dev']
                         dev.set_positioner_dct(posner_dct)
                         # print(f"process_SUB_rcv_messages: positionerDefinition: {app_devname} {posner}")
 
+        elif resp[0].find("scanFileContent") > -1:
+            lfr = LoadFileResponseClass(resp[1])
+            # Try to clean the string before parsing
+            cleaned_json = lfr.pystxm_load.strip()
+            if not cleaned_json:
+                print("Error: pystxm_load string is empty")
+                return
 
+            h5_file_dct = json.loads(cleaned_json)
+            # ekey = entry_dct['default']
+            # sp_db_dct = entry_dct[ekey]['sp_db_dct']
+            self.parent.new_data.emit(h5_file_dct)
 
+        elif resp[0].find('loadFile directory') > -1:
+            # reply is the contents of the directory
+            dct = json.loads(resp[1])
+            print(f"process_SUB_rcv_messages: loadFile directory: {dct}")
+
+        # elif parts[0].find('listDirectory') > -1:
+        #     # Handle listDirectory message
+        #     msg_dct = json.loads(parts[1])
+        #     pprint.pprint(msg_dct)
+
+    def get_pystxm_standard_scan_type_from_load_file_response_type(self, scan_type_str):
+        """
+        returns the correct scan_type from enumerated types
+           the scan type was read from the stxm_scan_type dataset from the NXdata group of the data file
+            and we want to convert it to using the stxm scan_types
+        """
+        # scan_type_str = get_stxm_scan_type(file_dct)
+        if scan_type_str == "Detector":
+            return scan_types.DETECTOR_IMAGE
+        if scan_type_str == "osa image":
+            return scan_types.OSA_IMAGE
+        if scan_type_str == "osa focus":
+            return scan_types.OSA_FOCUS
+        if scan_type_str == "sample focus":
+            return scan_types.SAMPLE_FOCUS
+        if scan_type_str == "sample point spectrum":
+            return scan_types.SAMPLE_POINT_SPECTRUM
+        if scan_type_str == "sample line spectrum":
+            return scan_types.SAMPLE_LINE_SPECTRUM
+        if scan_type_str == "sample image":
+            return scan_types.SAMPLE_IMAGE
+        if scan_type_str == "sample image stack":
+            return scan_types.SAMPLE_IMAGE_STACK
+        if scan_type_str == "generic scan":
+            return scan_types.GENERIC_SCAN
+        if scan_type_str == "coarse image":
+            return scan_types.COARSE_IMAGE
+        if scan_type_str == "coarse goni":
+            return scan_types.COARSE_GONI
+        if scan_type_str == "tomography":
+            return scan_types.TOMOGRAPHY
+        if scan_type_str == "pattern gen":
+            return scan_types.PATTERN_GEN
+        if scan_type_str == "ptychography":
+            return scan_types.PTYCHOGRAPHY
+        if scan_type_str == "two variable image":
+            return scan_types.TWO_VARIABLE_IMAGE
+    
     def connect_to_dcs_server(self, devices_dct: dict) -> bool:
         """
         Connect to the DCS server and sort info returned from dcs server into sections in a dict
@@ -898,8 +997,8 @@ class DcsServerApi(BaseDcsServerApi):
             self.parent.detector_definition = reply[2]
             self.parent.oscilloscope_definition = reply[3]
             self.parent.zone_plate_definition = reply[4]
-            #self.parent.dcs_server_config['ZONEPLATES'] = reply[4]
-            #self.parent.dcs_server_config['REMOTE_FILE_SYSTEM'] = reply[5]
+            self.parent.remote_file_system_info = reply[5]
+            self.parent.server_version = reply[6]
 
             self.parent.print_all_devs("positionerDefinition", reply[1])
             self.parent.print_all_devs("detectorDefinition", reply[2])
@@ -910,8 +1009,8 @@ class DcsServerApi(BaseDcsServerApi):
 
             for positioner_dct in self.parent.positioner_definition:
                 dcs_devname = positioner_dct['name']
-                if dcs_devname in dcs_to_app_devname_map.keys():
-                    app_devname = dcs_to_app_devname_map[dcs_devname]
+                if dcs_devname in self.dcs_to_app_devname_map.keys():
+                    app_devname = self.dcs_to_app_devname_map[dcs_devname]
                     if app_devname in list(self.parent.devs.keys()):
                         dev = self.parent.devs[app_devname]['dev']
                         #set device name (the app device name like DNM_PMT etc) and the device dcs_name (Counter0)
@@ -920,13 +1019,23 @@ class DcsServerApi(BaseDcsServerApi):
 
                         dev.set_connected(True)
                         dev.set_desc(positioner_dct['description'])
+
+                        #over ride the limits for the fine sample positioners to hack around naming of abstract motor for now
+                        if app_devname in ["DNM_SAMPLE_FINE_X", "DNM_SAMPLE_FINE_Y"]:
+                            positioner_dct['lowerSoftLimit'] = -7000
+                            positioner_dct['upperSoftLimit'] = 7000
+
                         dev.set_positioner_dct(positioner_dct)
+
                         if hasattr(dev, 'set_low_limit'):
                             #dev.set_low_limit(positioner_dct['lowerSoftLimit'])
                             dev._low_limit = positioner_dct['lowerSoftLimit']
                         if hasattr(dev, 'set_high_limit'):
                             #dev.set_high_limit(positioner_dct['upperSoftLimit'])
                             dev._high_limit = positioner_dct['upperSoftLimit']
+
+
+
                         if hasattr(dev, 'set_units'):
                             #dev.set_units(positioner_dct['unit'])
                             dev._units = positioner_dct['unit']
@@ -941,6 +1050,9 @@ class DcsServerApi(BaseDcsServerApi):
                         positioner_dct['position'] = 99
                         self.parent.devices['POSITIONERS'][app_devname] = positioner_dct
                         self.devices[app_devname] = positioner_dct
+                else:
+                    print(
+                        f"** Pixelator configuration contains device [{dcs_devname}] that does not exist in devs.py file **")
                 
             # add DNM_A0 as a device so that its feedback can be updated when Pixelator  sets the ○
             self.devices['DNM_A0'] = {}
@@ -953,7 +1065,11 @@ class DcsServerApi(BaseDcsServerApi):
             for det_dct in self.parent.detector_definition:
                 #det_name = det_dct['name']
                 dcs_det_name = det_dct['name']
-                det_name = dcs_to_app_devname_map[dcs_det_name]
+                if dcs_det_name not in self.dcs_to_app_devname_map.keys():
+                    print(f"** Pixelator configuration contains detector [{dcs_det_name}] that does not exist in devs.py file **")
+                    _logger.warn(f"Pixelator configuration contains detector [{dcs_det_name}] that does not exist in devs.py file")
+                    continue
+                det_name = self.dcs_to_app_devname_map[dcs_det_name]
                 selected = False
                 # if det_name.find(DEFAULT_DETECTOR) > -1:
                 #     reply = self.parent.zmq_dev_server_thread.send_receive(['recordedChannels', json.dumps([det_name])])
@@ -980,6 +1096,22 @@ class DcsServerApi(BaseDcsServerApi):
                     dev.update_position(val, False)
 
         return True
+
+    def get_settings(self):
+        """
+        return a dict of settings that will be saved in the user settings file
+        Returns
+        -------
+
+        """
+        reply = self.parent.zmq_dev_server_thread.send_receive(['getSettings'])
+        if reply[0]['status'] == 'ok':
+            dct = reply[1]
+        else:
+            _logger.warn(f"get_settings: failed to get settings from Pixelator")
+            dct = {}
+        return dct
+
     def put(self, put_dct):
         """
         A device setpoint has changed on pyStxm and the put function has been called on the ZMQDevice or ZMQSignal so
@@ -1012,11 +1144,11 @@ class DcsServerApi(BaseDcsServerApi):
 
         #only try to put to a pixelator device if it exists on Pixelator
 
-        if dcs_devname not in dcs_to_app_devname_map.keys():
+        if dcs_devname not in self.dcs_to_app_devname_map.keys():
             return
 
         else:
-            app_devname = dcs_to_app_devname_map[dcs_devname]
+            app_devname = self.dcs_to_app_devname_map[dcs_devname]
             if app_devname not in list(self.parent.devs.keys()):
                 return
             dev = self.parent.devs[app_devname]['dev']
@@ -1129,6 +1261,54 @@ class DcsServerApi(BaseDcsServerApi):
             reply = self.parent.zmq_dev_server_thread.send_receive(
                 ['modified positioner definition', json.dumps({"name": dcs_devname, "autoOffMode": value})])
 
+        elif attr.find('loadFile directory') > -1:
+            # arg is {"directory":"/tmp/2025-07-14","showHidden":1, "fileExtension":".hdf5"}
+            reply = self.parent.zmq_dev_server_thread.send_receive(['loadFile directory', json.dumps(
+                {'directory': value, 'showHidden': 1, 'fileExtension': '.hdf5'}
+            )])
+            # need to emite the reply so that subscribers can use it
+            #dev.update_position(value, False)
+
+        elif attr.find('loadFile file') > -1:
+            dct = {
+                "directory": "/tmp/2025-07-04"
+                , "file": "/tmp/2025-07-04/Sample_Image_2025-07-04_001.hdf5"
+                , "showHidden": 0
+                , "fileExtension": ".hdf5"
+                , "directories": [
+                    ".."
+                    , "discard"
+                ]
+                , "files": [
+                    "Sample_Image_2025-07-04_001.hdf5"
+                ]
+                , "pluginNumber": 0
+            }
+            #
+            # readMode = 'binary' or 'text'
+            # {"filePath": "/tmp/2025-07-14/OSA_2025-07-14_006.hdf5", "readMode": "binary"}
+            reply = self.parent.zmq_dev_server_thread.send_receive(['loadFile file', json.dumps(
+                dct
+            )])
+
+            lfr = LoadFileResponseClass(response_text)
+            # Try to clean the string before parsing
+            cleaned_json = lfr.pystxm_load.strip()
+            if not cleaned_json:
+                print("Error: pystxm_load string is empty")
+                return
+
+            # Try parsing with error details
+            try:
+                parsed_data_dct = json.loads(cleaned_json)
+                # print(f"Successfully parsed JSON data:")
+                # pprint.pprint(parsed_data)
+                self.new_data.emit(parsed_data_dct)
+                # need to emite the reply so that subscribers can use it
+                #dev.update_position(value, False)
+            except Exception as e:
+                print(f"General error: {str(e)}")
+
         else:
 
                 reply = self.parent.zmq_dev_server_thread.send_receive(
@@ -1138,6 +1318,91 @@ class DcsServerApi(BaseDcsServerApi):
             selected = True
 
 
+    def load_file(self, directory, filename):
+        """
+        This function calls the DCS server to load a file and then emits the result
+        """
+        dct = {
+            "directory": f"{directory}",
+            "file": f"{filename}",
+            "showHidden": 0,
+            "fileExtension": ".hdf5",
+            "directories": ["..", "discard"],
+            "files": [f"{filename}"],
+             "pluginNumber": 0,
+        }
+        reply = self.parent.zmq_dev_server_thread.send_receive(['loadFile file', json.dumps(dct)])
+
+        if reply[0]['status'] == 'ok':
+            print(f"pixelator_dcs_server_api:load_file: success: loaded file [{filename}] from directory [{directory}]")
+        else:
+            print(f"pixelator_dcs_server_api:load_file: FAILED: could not load file [{filename}] from directory [{directory}]")
+        return
+
+    def load_files(self, directory, filenames):
+        """
+        This function calls the DCS server to load a file and then emits the result
+        """
+
+        files = [f'{directory}{os.path.sep}{filename}' for filename in filenames]
+
+        if len(files) == 0:
+            return
+
+        dct = {
+            "directory": f"{directory}",
+            "file": f"{files[0]}",
+            "showHidden": 0,
+            "fileExtension": ".hdf5",
+            "directories": ["..", "discard"],
+            "files": files,
+             "pluginNumber": 0,
+        }
+        reply = self.parent.zmq_dev_server_thread.send_receive(['loadFile files', json.dumps(dct)])
+
+        if reply[0]['status'] == 'ok':
+            print(f"pixelator_dcs_server_api:load_files: success: loaded file [{files}] from directory [{directory}]")
+        else:
+            print(f"pixelator_dcs_server_api:load_files: FAILED: could not load file [{files}] from directory [{directory}]")
+        return
+
+
+    def load_directory(self, directory, extension: str='.hdf5'):
+        """
+        This function calls the DCS server to return a list of files in the given directory
+        """
+        dct = gen_loadfile_directory_msg(directory, extension=extension)
+        reply = self.parent.zmq_dev_server_thread.send_receive(['loadFile directory', json.dumps(dct)])
+
+        if reply[0]['status'] == 'ok':
+            # filter out the directories that do not match the date pattern
+            strings = reply[1]['directories']
+            date_strings = [s for s in strings if re.match(RE_DATA_DIR_PATTERN, s)]
+            reply[1]['directories'] = date_strings
+            print(f"pixelator_dcs_server_api:load_directory: success: loaded files from directory [{directory}]")
+        else:
+            print(f"pixelator_dcs_server_api:load_directory: FAILED: could not load files from directory [{directory}]")
+        # only return the list of filenames
+        return reply[1]['files']
+
+    def request_data_directory_list(self, directory: str, extension: str='.hdf5'):
+        """
+        querey the DCS server for a list of data directories in the given base directory and return the list of
+        sub directories
+        """
+        dct = gen_listDirectory_msg(directory)
+        reply = self.parent.zmq_dev_server_thread.send_receive(['listDirectory', json.dumps(dct)])
+
+        if reply[0]['status'] == 'ok':
+            # filter out the directories that do not match the date pattern
+            sub_dir_lst = reply[1]['sub_directories']
+            sorted_sub_dir_lst = sorted(sub_dir_lst, key=lambda x: x['sub_dir'], reverse=True)
+            # only return the list of dicts [{"sub_dir": "2025-07-04", "num_h5_files": 5}, ..]
+            # in reverse order newest first
+            return sorted_sub_dir_lst
+        else:
+            print(f"pixelator_dcs_server_api:request_data_directory_list: FAILED: could not list sub directories from directory [{directory}]")
+            return None
 
     def send_scan_request(self, wdg_com={}):
         """
@@ -1160,13 +1425,24 @@ class DcsServerApi(BaseDcsServerApi):
         else:
             print(f"send_scan_request: send scanRequest failed, reply={reply}")
 
+    def set_default_detector(self, det_name):
+        """
+        Set the default detector to be used by Pixelator for scans.
+        Name comes from beamline configuration file and is teh DCS detector name, e.g. 'Counter1', 'Counter1', etc.
+        """
+
+        self.default_detector = self.app_to_dcs_devname_map.get(det_name, None)
+        if self.default_detector is None:
+            print(f"set_default_detector: ERROR: could not find DCS detector name for app detector [{det_name}]")
+            _logger.error(f"set_default_detector: ERROR: could not find DCS detector name for app detector [{det_name}]")
+            return
 
     def send_default_detector_select(self):
-        reply = self.parent.zmq_dev_server_thread.send_receive(['recordedChannels', json.dumps([DEFAULT_DETECTOR])])
+        reply = self.parent.zmq_dev_server_thread.send_receive(['recordedChannels', json.dumps([self.default_detector])])
         if reply[0]['status'] == 'ok':
-            print(f'send_default_detector_select: success: selected DEFAULT_DETECTOR[{DEFAULT_DETECTOR}]')
+            print(f'send_default_detector_select: success: selected DEFAULT_DETECTOR[{self.default_detector}]')
         else:
-            print(f'send_default_detector_select: FAILED: selected DEFAULT_DETECTOR[{DEFAULT_DETECTOR}]')
+            print(f'send_default_detector_select: FAILED: selected DEFAULT_DETECTOR[{self.default_detector}]')
 
     def abort_scan(self):
 
@@ -1465,13 +1741,45 @@ class DcsServerApi(BaseDcsServerApi):
 
         """
         dct = self.make_scan_finished_dct()
-        dct['file_name'] = msg_dct['filename']
+        fname = msg_dct['filename']
+        if fname.find('Detector_') == -1:
+            # fix a bug in PixelatorController
+            # this is a detector file, so we need to replace the Detector_ with Sample_Image_
+            fname = fname.replace('/discard', '')
+        dct['file_name'] = fname
         dct['local_base_dir'] = msg_dct['neXusLocalBaseDirectory']
         dct['dcs_server_base_dir'] = msg_dct['neXusBaseDirectory']
         dct['flags'] = msg_dct['flag']
         dct['run_uids'] = [0]
         self.paused = False
         self.parent.exec_result.emit(dct)
+        self.load_file_q.put_nowait(dct)
+
+    def process_load_file_queue(self):
+        """
+        Process all items in the load_file_q, calling load_file for each one
+        """
+        if not self.busy:
+            self.busy = True
+            while not self.load_file_q.empty():
+
+                try:
+                    dct = self.load_file_q.get_nowait()
+                    # Extract directory and filename from the full path
+                    file_path = dct.get('file_name', '')
+
+                    if file_path:
+                        data_dir, fprefix, fsuffix = get_file_path_as_parts(file_path)
+                        # Call load_file
+                        self.load_file(data_dir, file_path)
+
+                except Queue.empty:
+                    # Queue is empty, we're done
+                    break
+                except Exception as e:
+                    _logger.error(f"Error processing load_file_q item: {e}")
+                    continue
+            self.busy = False
 
     def on_msg_to_app(self, msg: dict) -> None:
         """
@@ -1499,7 +1807,7 @@ class DcsServerApi(BaseDcsServerApi):
             if dcs_det_name[0:4] == "DNM_":
                 app_det_names.append(dcs_det_name)
             else:
-                app_det_names.append(dcs_to_app_devname_map[dcs_det_name])
+                app_det_names.append(self.dcs_to_app_devname_map[dcs_det_name])
 
         return app_det_names
 
@@ -1520,7 +1828,7 @@ class DcsServerApi(BaseDcsServerApi):
         ret_lst = []
         for nm in det_nm_lst:
             if nm.find('DNM_') > -1:
-                ret_lst.append(app_to_dcs_devname_map[nm])
+                ret_lst.append(self.app_to_dcs_devname_map[nm])
             else:
                 ret_lst.append(nm)
         return ret_lst

@@ -1,58 +1,9 @@
-# -*- coding:utf-8 -*-
-"""
- Copyright © 2011 Canadian Light Source Inc. (CLSI) All rights reserved.
-
- Permission to use, copy, modify, and distribute this software and its
- documentation for any purpose and without fee or royalty is hereby granted,
- provided that the full text of this NOTICE appears on ALL copies of the
- software and documentation or portions thereof, including modifications,
- that you make.
-
- THIS SOFTWARE IS PROVIDED BY CLSI "AS IS" AND CLSI EXPRESSLY DISCLAIMS
- LIABILITY FOR ANY AND ALL DAMAGES AND LOSSES (WHETHER DIRECT, INCIDENTAL,
-  CONSEQUENTIAL OR OTHERWISE) ARISING FROM OR IN ANY WAY RELATED TO THE
- USE OF SOFTWARE, INCLUDING, WITHOUT LIMITATION, DAMAGES TO ANY COMPUTER,
- SOFTWARE OR DATA ARISING OR RESULTING FROM USE OF THIS SOFTWARE.
- BY WAY OF EXAMPLE, BUT NOT LIMITATION, CLSI MAKE NO REPRESENTATIONS OR
- WARRANTIES OF MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR
- THAT THE USE OF THE SOFTWARE  OR DOCUMENTATION WILL NOT INFRINGE ANY THIRD
- PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS. CLSI WILL BEAR NO
- LIABILITY FOR ANY USE OF THIS SOFTWARE OR DOCUMENTATION.
-
- Title to copyright in this software and any associated documentation will
- at all times remain with CLSI. The reproduction of CLSI and its trademarks
- is strictly prohibited, except with the prior written consent of CLSI.
-
------------------------------------------------
-wireCurveWidget provides <WHAT DOES THIS PROVIDE?>, classes for <WHAT?>.
-
-<PUT A DESCRITION HERE OF WHAT THIS DOES>
-"""
-# put builtin imports here
 import os
 import sys
-
-__author__ = "bergr"
-__copyright__ = "Copyright 2011, The Canadian Lightsource"
-__credits__ = ["bergr", "?"]
-__license__ = "GPL"
-__version__ = "1.0.0"
-__maintainer__ = "bergr"
-__email__ = "russ.berg@lightsource.ca"
-__status__ = "Development"
-
-# put 3rd party imports here
-# -*- coding:utf-8 -*-
-"""
-Created on 2011-03-09
-
-@author: bergr
-This widget is used to either import .dat files created by the data acquisition
-library or to simply connect the plot to a PV and plot the changing value, the
-test() function shows how to use the widget
-"""
 import numpy as np
 import qwt as Qwt
+import simplejson as json
+
 from plotpy.builder import make
 from plotpy.config import _
 from plotpy.items.curve import CurveItem
@@ -68,7 +19,9 @@ from cls.plotWidgets.curve_object import curve_Obj
 from cls.plotWidgets.utils import gen_complete_spec_chan_name
 from cls.stylesheets import color_str_as_hex, get_style, is_style_light, master_colors
 from cls.utils.fileUtils import get_file_path_as_parts
-from cls.utils.json_threadsave import mime_to_dct
+from cls.utils.roi_utils import make_base_wdg_com, widget_com_cmnd_types
+from cls.utils.dict_utils import dct_get, dct_put
+import cls.utils.roi_dict_defs as roi_dict_defs
 from cls.utils.log import get_module_logger
 
 # setup module logger with a default do-nothing handler
@@ -508,7 +461,7 @@ class CurveViewerWidget(PlotDialog):
 
         self.plot.SIG_ITEMS_CHANGED.connect(self.items_changed)
         # self.connect(self.plot, SIG_RANGE_CHANGED, self.range_changed)
-        self.dropped.connect(self.updateFormatsTable)
+        self.dropped.connect(self.on_drop)
 
         self.curve_objs = {}
 
@@ -563,47 +516,48 @@ class CurveViewerWidget(PlotDialog):
         if self.drop_enabled:
             event.acceptProposedAction()
 
-    def dropEvent(self, event):
-        if self.drop_enabled:
-            # import simplejson as json
-            mimeData = event.mimeData()
-            if mimeData.hasImage():
-                # self.setPixmap(QtGui.QPixmap(mimeData.imageData()))
-                # print 'dropEvent: mime data has an IMAGE'
-                pass
-            elif mimeData.hasHtml():
-                # self.setText(mimeData.html())
-                # self.setTextFormat(QtCore.Qt.RichText)
-                # print 'dropEvent: mime data has HTML'
-                pass
-            elif mimeData.hasText():
-                # self.setText(mimeData.text())
-                # self.setTextFormat(QtCore.Qt.PlainText)
-                # print 'dropEvent: mime data has an TEXT = \n[%s]' %
-                # mimeData.text()
-                dct = mime_to_dct(mimeData)
-                # print 'dropped file is : %s' % dct['file']
-                self.blockSignals(True)
-
-                self.openfile(dct["file"], scan_type=dct["scan_type_num"])
-                self.blockSignals(False)
-            elif mimeData.hasUrls():
-                # self.setText("\n".join([url.path() for url in mimeData.urls()])){"polarity": "CircLeft", "angle": 0.0, "center": [-419.172, 5624.301], "energy": 1029.0, "step": [110.86591666666668, 114.90791666666667], "scan_type": "coarse_image Line_Unidir", "range": [2660.782, 2757.79], "file": "S:\\STXM-data\\Cryo-STXM\\2017\\guest\\1207\\C171207014.hdf5", "offset": 0.0, "npoints": [25, 25], "dwell": 30.408937142857148, "scan_panel_idx": 8}
-                # print 'dropEvent: mime data has URLs'
-                pass
-            else:
-                # self.setText("Cannot display data")
-                # print 'dropEvent: mime data Cannot display data'
-                pass
-
-            # self.setBackgroundRole(QtGui.QPalette.Dark)
-            event.acceptProposedAction()
+    # def dropEvent(self, event):
+    #     if self.drop_enabled:
+    #         # import simplejson as json
+    #         mimeData = event.mimeData()
+    #         if mimeData.hasImage():
+    #             # self.setPixmap(QtGui.QPixmap(mimeData.imageData()))
+    #             # print 'dropEvent: mime data has an IMAGE'
+    #             pass
+    #         elif mimeData.hasHtml():
+    #             # self.setText(mimeData.html())
+    #             # self.setTextFormat(QtCore.Qt.RichText)
+    #             # print 'dropEvent: mime data has HTML'
+    #             pass
+    #         elif mimeData.hasText():
+    #             pass
+    #             # # self.setText(mimeData.text())
+    #             # # self.setTextFormat(QtCore.Qt.PlainText)
+    #             # # print 'dropEvent: mime data has an TEXT = \n[%s]' %
+    #             # # mimeData.text()
+    #             # dct = mime_to_dct(mimeData)
+    #             # # print 'dropped file is : %s' % dct['file']
+    #             # self.blockSignals(True)
+    #             #
+    #             # self.openfile(dct["file"], scan_type=dct["scan_type_num"])
+    #             # self.blockSignals(False)
+    #         elif mimeData.hasUrls():
+    #             # self.setText("\n".join([url.path() for url in mimeData.urls()])){"polarity": "CircLeft", "angle": 0.0, "center": [-419.172, 5624.301], "energy": 1029.0, "step": [110.86591666666668, 114.90791666666667], "scan_type": "coarse_image Line_Unidir", "range": [2660.782, 2757.79], "file": "S:\\STXM-data\\Cryo-STXM\\2017\\guest\\1207\\C171207014.hdf5", "offset": 0.0, "npoints": [25, 25], "dwell": 30.408937142857148, "scan_panel_idx": 8}
+    #             # print 'dropEvent: mime data has URLs'
+    #             pass
+    #         else:
+    #             # self.setText("Cannot display data")
+    #             # print 'dropEvent: mime data Cannot display data'
+    #             pass
+    #
+    #         # self.setBackgroundRole(QtGui.QPalette.Dark)
+    #         event.acceptProposedAction()
 
     def dragLeaveEvent(self, event):
         if self.drop_enabled:
             event.accept()
 
-    def updateFormatsTable(self, mimeData=None):
+    def on_drop(self, mimeData=None):
         # self.formatsTable.setRowCount(0)
         if self.drop_enabled:
             if mimeData is None:
@@ -614,12 +568,84 @@ class CurveViewerWidget(PlotDialog):
                 formatItem.setFlags(QtCore.Qt.ItemIsEnabled)
                 formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
 
-                if format == "text/plain":
+                # ToDo remove this
+                if format == 'application/x-stxmscan':
+                    itemData = mimeData.data("application/x-stxmscan")
+                    _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
+                    _info_jstr = QtCore.QByteArray()
+                    _data_bytes = QtCore.QByteArray()
+                    _pos = QtCore.QPointF()
+                    _stream >> _info_jstr >> _data_bytes >> _pos
+                    # import numpy as np
+                    _info_str = bytes(_info_jstr).decode()
+                    dct = json.loads(_info_str)
+
+                    fname = dct["path"]
+                    xdata = dct["xdata"]
+                    ydatas = dct["ydatas"]
+                    sp_db = dct["sp_db"]
+                    title = dct["title"]
+                    num_specs = len(ydatas)
+                    num_spec_pnts = len(xdata)
+                    data_dir, fprefix, fsuffix = get_file_path_as_parts(fname)
+
+                    self.clear_plot()
+                    for i in range(num_specs):
+                        color = get_next_color(use_dflt=False)
+                        style = get_basic_line_style(color)
+                        self.create_curve(f"point_spectra_{i}", x=xdata, y=ydatas[i], curve_style=style)
+
+                    xlabel = dct.get("xlabel")
+                    self.setPlotAxisStrs("counts", xlabel)
+                    self.update()
+                    self.set_autoscale()
+                    break
+
+                elif format == "application/dict-based-lineplot-stxmscan":
+                    itemData = mimeData.data("application/dict-based-lineplot-stxmscan")
+                    _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
+                    _info_jstr = QtCore.QByteArray()
+                    _data_bytes = QtCore.QByteArray()
+                    _pos = QtCore.QPointF()
+                    _stream >> _info_jstr >> _data_bytes >> _pos
+                    _info_str = bytes(_info_jstr).decode()
+                    drop_dct = json.loads(_info_str)
+
+                    # fname = drop_dct["path"]
+                    # convert to array
+                    data = np.array(drop_dct["data"])
+                    drop_dct["data"] = data
+                    sp_db = drop_dct["sp_db"]
+                    title = drop_dct["title"]
+                    xlabel = drop_dct.get("xlabel") or "X"
+                    ylabel = drop_dct.get("ylabel") or "Y"
+                    xdata = drop_dct["xdata"]
+                    ydatas = drop_dct["ydatas"]
+                    sp_db = drop_dct["sp_db"]
+                    num_specs = len(ydatas)
+
+                    self.clear_plot()
+                    for i in range(num_specs):
+                        color = get_next_color(use_dflt=False)
+                        style = get_basic_line_style(color)
+                        self.create_curve(f"point_spectra_{i}", x=xdata, y=ydatas[i], curve_style=style)
+
+                    xlabel = drop_dct.get("xlabel")
+                    self.setPlotAxisStrs("counts", xlabel)
+
+                    self.update()
+                    self.set_autoscale()
+                    break
+
+                elif format == "text/plain":
                     text = mimeData.text()  # .strip()
+                    break
                 elif format == "text/html":
                     text = mimeData.html()  # .strip()
+                    break
                 elif format == "text/uri-list":
                     text = " ".join([url.toString() for url in mimeData.urls()])
+                    break
                 else:
                     # text = " ".join(["%02X" % ord(datum)
                     #                  for datum in mimeData.data(format)])
@@ -640,6 +666,7 @@ class CurveViewerWidget(PlotDialog):
                                 )
                             ]
                         )
+                    break
 
                 # row = self.formatsTable.rowCount()
                 # self.formatsTable.insertRow(row)
@@ -938,7 +965,10 @@ class CurveViewerWidget(PlotDialog):
         if y is None:
             num_points = 0
         else:
-            num_points = len(y)
+            if type(y) == list:
+                num_points = len(y)
+            else:
+                num_points = y.shape[0]
 
         if curve_style is None:
             curve_style = get_basic_line_style(
@@ -950,6 +980,7 @@ class CurveViewerWidget(PlotDialog):
         )
         self.curve_objs[curve_name].changed.connect(self.update_curve)
         self._addItems(self.curve_objs[curve_name].curve_item)
+        self.update_curve()
 
     def reset_curve(self, curve_name=None):
         if curve_name is None:

@@ -4,7 +4,7 @@ Created on Mar 2, 2015
 @author: bergr
 """
 import copy
-#!/usr/bin/python
+
 import datetime
 import xml.etree.ElementTree as ET
 import glob
@@ -14,7 +14,7 @@ import sys
 
 import time
 
-from cls.utils.hdf_to_dict import get_sp_db_from_entry_dict, hdf5_to_dict # read_hdf5_nxstxm_file_with_attributes
+from cls.utils.hdf_to_dict import get_sp_db_dct_from_file_dict, hdf5_to_dict
 
 # import nxs
 import numpy as np
@@ -40,7 +40,7 @@ from cls.utils.time_utils import msec_to_sec
 from cls.utils.roi_dict_defs import *
 from cls.utils.roi_utils import get_base_energy_roi, get_base_roi,make_spatial_db_dict
 from cls.utils.roi_utils import get_ado_obj_from_wdg_com, make_base_wdg_com
-from cls.utils.hdf_to_dict import get_sp_db_from_entry_dict
+from cls.utils.hdf_to_dict import get_sp_db_dct_from_file_dict
 from cls.utils.json_utils import pickle_deepcopy
 
 _logger = get_module_logger(__name__)
@@ -484,572 +484,6 @@ def make_bens_file(filepath="tester"):
         "count_time", data=np.array([self.ExposureTime])
     )
     NXfile.close()
-
-
-# def _data_as_1D(data_dct):
-#     """ takes the standard data_dct from the scan configuration and creates 1D [numP]
-#     versions of :
-#         energy
-#         count_time
-#         polarization
-#         offset
-#     also creates the 1D versions of all data for use in the /instrument section <data>[numP]
-#     and the normal NXdata section <data>[numE]
-#
-#     The data is converted once here in this function then used in the rest of the make_ functions as is
-#     so if data needs to be converted, do it here to keep the confusion of what happens to the data to a minimum
-#     """
-#
-#     numE = 0
-#     numPolarities = 0
-#     epnts = None
-#     dpnts = None
-#     pol_pnts = None
-#     off_pnts = None
-#     angle_pnts = None
-#     scan_type = dct_get(data_dct, ADO_CFG_SCAN_TYPE)
-#     x_roi = dct_get(data_dct, ADO_CFG_X)
-#     y_roi = dct_get(data_dct,ADO_CFG_Y)
-#     z_roi = dct_get(data_dct,ADO_CFG_Z)
-#     e_rois = dct_get(data_dct, ADO_CFG_EV_ROIS)
-#     numX = int(x_roi[NPOINTS])
-#     numY = int(y_roi[NPOINTS])
-#     numZ = int(z_roi[NPOINTS])
-#
-#     if(numZ > 0):
-#         zp1ra = dct_get(data_dct,'DATA.SSCANS.Z.P1RA')
-#         if (zp1ra is None):
-#             zpnts = np.linspace(z_roi[START], z_roi[STOP], numZ)
-#         else:
-#             zpnts = zp1ra[: numZ ]
-#
-#     positioners_dct = dct_get(data_dct,'POSITIONERS')
-#     detectors_dct = dct_get(data_dct,'DETECTORS')
-#     temps_dct = dct_get(data_dct, 'TEMPERATURES')
-#     sr_current = detectors_dct[DNM_RING_CURRENT][RBV]
-#
-#     for e_roi in e_rois:
-#         #elst.append(np.linspace(e_roi[START], e_roi[STOP], e_roi[NPOINTS]))
-#         _e1 = np.linspace(e_roi[START], e_roi[STOP], e_roi[NPOINTS])
-#         if(epnts is not None):
-#             epnts = np.concatenate((epnts, _e1), axis=0)
-#         else:
-#             epnts = _e1
-#         numE += e_roi[NPOINTS]
-#
-#         #count_time
-#         _d1 = make_1d_array(e_roi[NPOINTS], msec_to_sec(e_roi[DWELL]))
-#         if(dpnts is not None):
-#             dpnts = np.concatenate((dpnts, _d1), axis=0)
-#         else:
-#             dpnts = _d1
-#         count_time = dpnts
-#
-#         num_pol_pnts = len(e_roi['EPU_POL_PNTS'])
-#
-#         _p1 = make_1d_array(e_roi[NPOINTS] * num_pol_pnts, e_roi['EPU_POL_PNTS'])
-#         _o1 = make_1d_array(e_roi[NPOINTS] * num_pol_pnts, e_roi['EPU_OFF_PNTS'])
-#         _a1 = make_1d_array(e_roi[NPOINTS] * num_pol_pnts, e_roi['EPU_ANG_PNTS'])
-#         #numPolarities += 1
-#         numPolarities += len(e_roi['EPU_POL_PNTS'])
-#         if(pol_pnts is not None):
-#             pol_pnts = np.concatenate((pol_pnts, _p1), axis=0)
-#             off_pnts = np.concatenate((pol_pnts, _o1), axis=0)
-#             angle_pnts = np.concatenate((pol_pnts, _a1), axis=0)
-#         else:
-#             pol_pnts = _p1
-#             off_pnts = _o1
-#             angle_pnts = _a1
-#
-#     data_numE = dct_get(data_dct,ADO_DATA_POINTS)
-#     if(isinstance(data_numE, list)):
-#         data_numE = np.array(data_numE)
-#         data_numP = data_numE.flatten()
-#     else:
-#         data_numP = data_numE.flatten()
-#
-#     #make the array for the line_position used in Line Spectrum Scans
-#     #ls_dat = np.linspace(e_roi[START], e_roi[STOP] + e_roi[STEP], num=e_roi[NPOINTS] + 1, endpoint=True)
-#     ls_dat = np.linspace(x_roi[START], x_roi[STOP] + x_roi[STEP], num=x_roi[NPOINTS] + 1, endpoint=True)
-#     line_position = np.cumsum(np.diff(ls_dat))
-#
-#     #get relevant positioner data
-#     EPUGap = positioners_dct[DNM_EPU_GAP][RBV]
-#     EPUHarmonic = positioners_dct[DNM_EPU_HARMONIC][RBV]
-#     #Epu_pol_angle = pvs[DNM_EPU_POL_ANGLE][RBV]
-#
-#     SlitX = positioners_dct[DNM_SLIT_X][RBV]
-#     SlitY = positioners_dct[DNM_SLIT_Y][RBV]
-#     M3STXMPitch = positioners_dct[DNM_M3_PITCH][RBV]
-#     if(DNM_GONI_THETA in positioners_dct.keys()):
-#         GoniTheta = positioners_dct[DNM_GONI_THETA][RBV]
-#
-#     x_sscan_npnts = dct_get(data_dct,'DATA.SSCANS.X.NPTS')
-#     #check if the sscan was a line scan (2 points start and stop) or a point by point scan
-#     if(x_sscan_npnts == 2):
-#         xpnts = np.linspace(x_roi[START], x_roi[STOP], numX)
-#     else:
-#         #point by point so read out the points
-#         xp1ra = dct_get(data_dct,'DATA.SSCANS.X.P1RA')
-#         if(xp1ra is None):
-#             xpnts = np.linspace(x_roi[START], x_roi[STOP], numX)
-#         else:
-#             xpnts = xp1ra[: numX ]
-#
-#     if(numY > 0):
-#         yp1ra = dct_get(data_dct,'DATA.SSCANS.Y.P1RA')
-#         if(yp1ra is None):
-#             ypnts = np.linspace(y_roi[START], y_roi[STOP], numY)
-#         else:
-#             ypnts = yp1ra[: numY ]
-#     else:
-#         if(scan_type == scan_types.GENERIC_SCAN):
-#             numY = numX
-#             arr = np.ones(numY, dtype=np.float32)
-#             yp1ra = arr*positioners_dct['SampleY'][RBV]
-#             ypnts = arr*positioners_dct['SampleY'][RBV]
-#         else:
-#             yp1ra = []
-#             ypnts = []
-#
-#
-#     if(scan_type == scan_types.SAMPLE_LINE_SPECTRUM):
-#         #the order of the data shape is different than other scans
-#         # (numPol, numEv, numX) or ( # images, # rows per image, #cols per image)
-#         # so translate so that the shape will be standard, where numEV typically is # images
-#         numY = int(e_roi[NPOINTS])
-#         numE = numPolarities
-#         if(numZ <= 0):
-#             numP = numE * numY * numX
-#         else:
-#             numP = numE * numY * numX * numZ
-#     else:
-#         numE = numE * numPolarities
-#         if(numZ <= 0):
-#             numP = numE * numY * numX
-#         else:
-#             numP = numE * numY * numX * numZ
-#
-#     #with multiple energy regions the value of numP can get into the millions which will cauwse a numpy error
-#     #until I can figure out a work around only use 10 points for numP
-#     if(numP > 100000):
-#         #if it is more than a million setup numP for only a single energy
-#         if (numZ <= 0):
-#             numP = numY * numX
-#         else:
-#             numP = numY * numX * numZ
-#
-#             #pull these out because they are required in EVERY NXData group
-#     if(scan_type == scan_types.SAMPLE_POINT_SPECTRUM):
-#         #cant use the RBV positions because they will be from teh last sp_db and not from THIS sp_db
-#         #so use the setpoint for this sp_db
-#         sx_pnts = x_roi[START]
-#         sy_pnts = y_roi[START]
-#     else:
-#         sx_pnts = positioners_dct['SampleX'][RBV]
-#         sy_pnts = positioners_dct['SampleY'][RBV]
-#
-#     dct = {}
-#     dct_put(dct, 'SYMBOLS.numP', numP)
-#     dct_put(dct, 'SYMBOLS.numX', numX)
-#     dct_put(dct, 'SYMBOLS.numY', numY)
-#     dct_put(dct, 'SYMBOLS.numE', numE)
-#
-#     #create numE and numP versions of data so they can just be pulled out later in
-#     #[numE] versions
-#     dct_put(dct, 'NUM_E.EV', epnts )
-#     dct_put(dct, 'NUM_E.COUNT_TIME', count_time)
-#     dct_put(dct, 'NUM_E.EPU_GAP',make_1d_array(numE, EPUGap))
-#     dct_put(dct, 'NUM_E.EPU_POL',pol_pnts)
-#     dct_put(dct, 'NUM_E.EPU_OFFSET',off_pnts)
-#     dct_put(dct, 'NUM_E.EPU_POL_ANGLE',angle_pnts)
-#     dct_put(dct, 'NUM_E.EPU_HARMONIC', make_1d_array(numE, EPUHarmonic))
-#     dct_put(dct, 'NUM_E.MOTOR_X', xpnts)
-#     dct_put(dct, 'NUM_E.MOTOR_Y', ypnts)
-#     if(numZ > 0):
-#         dct_put(dct, 'NUM_E.MOTOR_Z', zpnts)
-#     dct_put(dct, 'NUM_E.SLIT_X',make_1d_array(numE, SlitX))
-#     dct_put(dct, 'NUM_E.SLIT_Y',make_1d_array(numE, SlitY))
-#     dct_put(dct, 'NUM_E.M3_PITCH',make_1d_array(numE, M3STXMPitch))
-#
-#     dct_put(dct, 'NUM_E.SAMPLE_X', sx_pnts)
-#     dct_put(dct, 'NUM_E.SAMPLE_Y', sy_pnts)
-#
-#     dct_put(dct, 'NUM_E.DATA', data_numE)
-#
-#     #dct_put(dct, 'NUM_E.SR_CURRENT', make_1d_array(numE, sr_current))
-#
-#     #make 1d and 2d versions of data used in the /control/data section
-#     oned_sdata = []
-#     twod_sdata = []
-#     thrd_sdata = []
-#
-#     data_E = dct_get(dct, 'NUM_E.DATA')
-#     data_E_shape = data_E.shape
-#     if(len(data_E_shape) == 1):
-#         cols = data_E_shape[0]
-#         oned_sdata = np.zeros(cols, dtype=np.float32)
-#         oned_sdata.fill(sr_current)
-#     elif(len(data_E_shape) == 2):
-#         rows = data_E_shape[0]
-#         cols = data_E_shape[1]
-#         twod_sdata = np.zeros((rows, cols), dtype=np.float32)
-#         twod_sdata.fill(sr_current)
-#
-#     elif(len(data_E_shape) == 3):
-#         #print '_data_as_1D: 3D data not totally supported yet'
-#         if((scan_type == scan_types.SAMPLE_POINT_SPECTRUM) or (scan_type == scan_types.GENERIC_SCAN)):
-#             cols = data_E_shape[0]
-#             oned_sdata = np.zeros(cols, dtype=np.float32)
-#             oned_sdata.fill(sr_current)
-#         else:
-#             #numI = data_E_shape[0]
-#             #setting the following to 1 for now because for stacks I larger numI will generate a memory exception because the
-#             #array would be too large
-#             numI = 1
-#
-#             rows = data_E_shape[1]
-#             cols = data_E_shape[2]
-#             twod_sdata = np.zeros((rows, cols), dtype=np.float32)
-#             twod_sdata.fill(sr_current)
-#
-#             thrd_sdata = np.zeros((numI, rows, cols), dtype=np.float32)
-#             thrd_sdata.fill(sr_current)
-#
-#     dct_put(dct, 'NUM_E.SR_CURRENT.ONE_D', oned_sdata)
-#     dct_put(dct, 'NUM_E.SR_CURRENT.TWO_D', twod_sdata)
-#     dct_put(dct, 'NUM_E.SR_CURRENT.THREE_D', thrd_sdata)
-#
-#     #dct_put(dct, 'NUM_E.ROTATION_ANGLE', make_1d_array(numE, GoniTheta))
-#
-#     xpnts2 =  np.tile(xpnts, numY)
-#     sample_x =  np.tile(xpnts2, numE)
-#
-#     ypnts2 = np.repeat(ypnts, numX)
-#     sample_y = np.tile(ypnts2, numE)
-#
-#     #now [numP] versions
-#     #dct_put(dct, 'NUM_P.EV', np.tile(epnts, (numY * numX)))
-#     dct_put(dct, 'NUM_P.EV', np.repeat(epnts, (numY * numX)))
-#     dct_put(dct, 'NUM_P.COUNT_TIME', np.repeat(count_time, (numY * numX)))
-#     dct_put(dct, 'NUM_P.EPU_POL', np.repeat(pol_pnts, (numY * numX)))
-#     dct_put(dct, 'NUM_P.EPU_OFFSET', np.repeat(off_pnts, (numY * numX)))
-#     dct_put(dct, 'NUM_P.EPU_POL_ANGLE',np.repeat(angle_pnts, (numY * numX)))
-#     dct_put(dct, 'NUM_P.EPU_GAP',make_1d_array(numP, EPUGap))
-#     dct_put(dct, 'NUM_P.EPU_HARMONIC',make_1d_array(numP, EPUHarmonic))
-#
-#     if(scan_type == scan_types.SAMPLE_LINE_SPECTRUM):
-#         xpnts2 =  np.tile(xpnts, numY)
-#         sample_x =  np.tile(xpnts2, numE)
-#         ypnts2 = np.tile(ypnts, numX)
-#         sample_y = np.tile(ypnts2, numE)
-#         dct_put(dct, 'NUM_P.MOTOR_X', sample_x)
-#         dct_put(dct, 'NUM_P.MOTOR_Y', sample_y)
-#
-#         dct_put(dct, 'NUM_P.SAMPLE_X', sample_x)
-#         dct_put(dct, 'NUM_P.SAMPLE_Y', sample_y)
-#     else:
-#         dct_put(dct, 'NUM_P.MOTOR_X', sample_x)
-#         dct_put(dct, 'NUM_P.MOTOR_Y', sample_y)
-#
-#         dct_put(dct, 'NUM_P.SAMPLE_X', sample_x)
-#         dct_put(dct, 'NUM_P.SAMPLE_Y', sample_y)
-#
-#     if(numZ > 0):
-#         dct_put(dct, 'NUM_P.MOTOR_Z', np.repeat(zpnts, (numY * numX)))
-#     dct_put(dct, 'NUM_P.SLIT_X',make_1d_array(numP, SlitX))
-#     dct_put(dct, 'NUM_P.SLIT_Y',make_1d_array(numP, SlitY))
-#     dct_put(dct, 'NUM_P.M3_PITCH',make_1d_array(numP, M3STXMPitch))
-#     dct_put(dct, 'NUM_P.DATA', data_numP)
-#     dct_put(dct, 'NUM_P.SR_CURRENT', make_1d_array(numP, sr_current))
-#     #dct_put(dct, 'NUM_P.ROTATION_ANGLE', make_1d_array(numP, GoniTheta))
-#
-#     dct_put(dct, 'NUM_P.LINE_POSITION', line_position)
-#
-#
-#     return(dct)
-
-# def _data_as_1D(data_dct):
-#     """ takes the standard data_dct from the scan configuration and creates 1D [numP]
-#     versions of :
-#         energy
-#         count_time
-#         polarization
-#         offset
-#     also creates the 1D versions of all data for use in the /instrument section <data>[numP]
-#     and the normal NXdata section <data>[numE]
-#
-#     The data is converted once here in this function then used in the rest of the make_ functions as is
-#     so if data needs to be converted, do it here to keep the confusion of what happens to the data to a minimum
-#     """
-#
-#     numE = 0
-#     numPolarities = 0
-#     epnts = None
-#     dpnts = None
-#     pol_pnts = None
-#     off_pnts = None
-#     angle_pnts = None
-#     scan_type = dct_get(data_dct, ADO_CFG_SCAN_TYPE)
-#     x_roi = dct_get(data_dct, ADO_CFG_X)
-#     y_roi = dct_get(data_dct, ADO_CFG_Y)
-#     z_roi = dct_get(data_dct, ADO_CFG_Z)
-#     e_rois = dct_get(data_dct, ADO_CFG_EV_ROIS)
-#     numX = int(x_roi[NPOINTS])
-#     numY = int(y_roi[NPOINTS])
-#     numZ = int(z_roi[NPOINTS])
-#
-#     if (numZ > 0):
-#         zp1ra = dct_get(data_dct, 'DATA.SSCANS.Z.P1RA')
-#         if (zp1ra is None):
-#             zpnts = np.linspace(z_roi[START], z_roi[STOP], numZ)
-#         else:
-#             zpnts = zp1ra[: numZ]
-#
-#     positioners_dct = dct_get(data_dct, 'POSITIONERS')
-#     detectors_dct = dct_get(data_dct, 'DETECTORS')
-#     temps_dct = dct_get(data_dct, 'TEMPERATURES')
-#     sr_current = detectors_dct[DNM_RING_CURRENT][RBV]
-#
-#     for e_roi in e_rois:
-#         # elst.append(np.linspace(e_roi[START], e_roi[STOP], e_roi[NPOINTS]))
-#         _e1 = np.linspace(e_roi[START], e_roi[STOP], e_roi[NPOINTS])
-#         if (epnts is not None):
-#             epnts = np.concatenate((epnts, _e1), axis=0)
-#         else:
-#             epnts = _e1
-#         numE += e_roi[NPOINTS]
-#
-#         # count_time
-#         _d1 = make_1d_array(e_roi[NPOINTS], msec_to_sec(e_roi[DWELL]))
-#         if (dpnts is not None):
-#             dpnts = np.concatenate((dpnts, _d1), axis=0)
-#         else:
-#             dpnts = _d1
-#         count_time = dpnts
-#
-#         num_pol_pnts = len(e_roi['EPU_POL_PNTS'])
-#
-#         _p1 = make_1d_array(e_roi[NPOINTS] * num_pol_pnts, e_roi['EPU_POL_PNTS'])
-#         _o1 = make_1d_array(e_roi[NPOINTS] * num_pol_pnts, e_roi['EPU_OFF_PNTS'])
-#         _a1 = make_1d_array(e_roi[NPOINTS] * num_pol_pnts, e_roi['EPU_ANG_PNTS'])
-#         # numPolarities += 1
-#         numPolarities += len(e_roi['EPU_POL_PNTS'])
-#         if (pol_pnts is not None):
-#             pol_pnts = np.concatenate((pol_pnts, _p1), axis=0)
-#             off_pnts = np.concatenate((pol_pnts, _o1), axis=0)
-#             angle_pnts = np.concatenate((pol_pnts, _a1), axis=0)
-#         else:
-#             pol_pnts = _p1
-#             off_pnts = _o1
-#             angle_pnts = _a1
-#
-#     data_numE = dct_get(data_dct, ADO_DATA_POINTS)
-#     if (isinstance(data_numE, list)):
-#         data_numE = np.array(data_numE)
-#         data_numP = data_numE.flatten()
-#     else:
-#         data_numP = data_numE.flatten()
-#
-#     # make the array for the line_position used in Line Spectrum Scans
-#     # ls_dat = np.linspace(e_roi[START], e_roi[STOP] + e_roi[STEP], num=e_roi[NPOINTS] + 1, endpoint=True)
-#     ls_dat = np.linspace(x_roi[START], x_roi[STOP] + x_roi[STEP], num=x_roi[NPOINTS] + 1, endpoint=True)
-#     line_position = np.cumsum(np.diff(ls_dat))
-#
-#     # get relevant positioner data
-#     EPUGap = positioners_dct[DNM_EPU_GAP][RBV]
-#     EPUHarmonic = positioners_dct[DNM_EPU_HARMONIC][RBV]
-#     # Epu_pol_angle = pvs[DNM_EPU_POL_ANGLE][RBV]
-#
-#     SlitX = positioners_dct[DNM_SLIT_X][RBV]
-#     SlitY = positioners_dct[DNM_SLIT_Y][RBV]
-#     M3STXMPitch = positioners_dct[DNM_M3_PITCH][RBV]
-#     if (DNM_GONI_THETA in positioners_dct.keys()):
-#         GoniTheta = positioners_dct[DNM_GONI_THETA][RBV]
-#
-#     x_sscan_npnts = dct_get(data_dct, 'DATA.SSCANS.X.NPTS')
-#     # check if the sscan was a line scan (2 points start and stop) or a point by point scan
-#     if (x_sscan_npnts == 2):
-#         xpnts = np.linspace(x_roi[START], x_roi[STOP], numX)
-#     else:
-#         # point by point so read out the points
-#         xp1ra = dct_get(data_dct, 'DATA.SSCANS.X.P1RA')
-#         if (xp1ra is None):
-#             xpnts = np.linspace(x_roi[START], x_roi[STOP], numX)
-#         else:
-#             xpnts = xp1ra[: numX]
-#
-#     if (numY > 0):
-#         yp1ra = dct_get(data_dct, 'DATA.SSCANS.Y.P1RA')
-#         if (yp1ra is None):
-#             ypnts = np.linspace(y_roi[START], y_roi[STOP], numY)
-#         else:
-#             ypnts = yp1ra[: numY]
-#     else:
-#         if (scan_type == scan_types.GENERIC_SCAN):
-#             numY = numX
-#             arr = np.ones(numY, dtype=np.float32)
-#             yp1ra = arr * positioners_dct['SampleY'][RBV]
-#             ypnts = arr * positioners_dct['SampleY'][RBV]
-#         else:
-#             yp1ra = []
-#             ypnts = []
-#
-#     if (scan_type == scan_types.SAMPLE_LINE_SPECTRUM):
-#         # the order of the data shape is different than other scans
-#         # (numPol, numEv, numX) or ( # images, # rows per image, #cols per image)
-#         # so translate so that the shape will be standard, where numEV typically is # images
-#         numY = int(e_roi[NPOINTS])
-#         numE = numPolarities
-#         if (numZ <= 0):
-#             numP = numE * numY * numX
-#         else:
-#             numP = numE * numY * numX * numZ
-#     else:
-#         numE = numE * numPolarities
-#         if (numZ <= 0):
-#             numP = numE * numY * numX
-#         else:
-#             numP = numE * numY * numX * numZ
-#
-#             # with multiple energy regions the value of numP can get into the millions which will cauwse a numpy error
-#     # until I can figure out a work around only use 10 points for numP
-#     if (numP > 100000):
-#         # if it is more than a million setup numP for only a single energy
-#         if (numZ <= 0):
-#             numP = numY * numX
-#         else:
-#             numP = numY * numX * numZ
-#
-#             # pull these out because they are required in EVERY NXData group
-#     if (scan_type == scan_types.SAMPLE_POINT_SPECTRUM):
-#         # cant use the RBV positions because they will be from teh last sp_db and not from THIS sp_db
-#         # so use the setpoint for this sp_db
-#         sx_pnts = x_roi[START]
-#         sy_pnts = y_roi[START]
-#     else:
-#         sx_pnts = positioners_dct['SampleX'][RBV]
-#         sy_pnts = positioners_dct['SampleY'][RBV]
-#
-#     dct = {}
-#     dct_put(dct, 'SYMBOLS.numP', numP)
-#     dct_put(dct, 'SYMBOLS.numX', numX)
-#     dct_put(dct, 'SYMBOLS.numY', numY)
-#     dct_put(dct, 'SYMBOLS.numE', numE)
-#
-#     # create numE and numP versions of data so they can just be pulled out later in
-#     # [numE] versions
-#     dct_put(dct, 'NUM_E.EV', epnts)
-#     dct_put(dct, 'NUM_E.COUNT_TIME', count_time)
-#     dct_put(dct, 'NUM_E.EPU_GAP', make_1d_array(numE, EPUGap))
-#     dct_put(dct, 'NUM_E.EPU_POL', pol_pnts)
-#     dct_put(dct, 'NUM_E.EPU_OFFSET', off_pnts)
-#     dct_put(dct, 'NUM_E.EPU_POL_ANGLE', angle_pnts)
-#     dct_put(dct, 'NUM_E.EPU_HARMONIC', make_1d_array(numE, EPUHarmonic))
-#     dct_put(dct, 'NUM_E.MOTOR_X', xpnts)
-#     dct_put(dct, 'NUM_E.MOTOR_Y', ypnts)
-#     if (numZ > 0):
-#         dct_put(dct, 'NUM_E.MOTOR_Z', zpnts)
-#     dct_put(dct, 'NUM_E.SLIT_X', make_1d_array(numE, SlitX))
-#     dct_put(dct, 'NUM_E.SLIT_Y', make_1d_array(numE, SlitY))
-#     dct_put(dct, 'NUM_E.M3_PITCH', make_1d_array(numE, M3STXMPitch))
-#
-#     dct_put(dct, 'NUM_E.SAMPLE_X', sx_pnts)
-#     dct_put(dct, 'NUM_E.SAMPLE_Y', sy_pnts)
-#
-#     dct_put(dct, 'NUM_E.DATA', data_numE)
-#
-#     # dct_put(dct, 'NUM_E.SR_CURRENT', make_1d_array(numE, sr_current))
-#
-#     # make 1d and 2d versions of data used in the /control/data section
-#     oned_sdata = []
-#     twod_sdata = []
-#     thrd_sdata = []
-#
-#     data_E = dct_get(dct, 'NUM_E.DATA')
-#     data_E_shape = data_E.shape
-#     if (len(data_E_shape) == 1):
-#         cols = data_E_shape[0]
-#         oned_sdata = np.zeros(cols, dtype=np.float32)
-#         oned_sdata.fill(sr_current)
-#     elif (len(data_E_shape) == 2):
-#         rows = data_E_shape[0]
-#         cols = data_E_shape[1]
-#         twod_sdata = np.zeros((rows, cols), dtype=np.float32)
-#         twod_sdata.fill(sr_current)
-#
-#     elif (len(data_E_shape) == 3):
-#         # print '_data_as_1D: 3D data not totally supported yet'
-#         if ((scan_type == scan_types.SAMPLE_POINT_SPECTRUM) or (scan_type == scan_types.GENERIC_SCAN)):
-#             cols = data_E_shape[0]
-#             oned_sdata = np.zeros(cols, dtype=np.float32)
-#             oned_sdata.fill(sr_current)
-#         else:
-#             numI = data_E_shape[0]
-#             # setting the following to 1 for now because for stacks I larger numI will generate a memory exception because the
-#             # array would be too large
-#             #numI = 1
-#
-#             rows = data_E_shape[1]
-#             cols = data_E_shape[2]
-#             twod_sdata = np.zeros((rows, cols), dtype=np.float32)
-#             twod_sdata.fill(sr_current)
-#
-#             thrd_sdata = np.zeros((numI, rows, cols), dtype=np.float32)
-#             thrd_sdata.fill(sr_current)
-#
-#     dct_put(dct, 'NUM_E.SR_CURRENT.ONE_D', oned_sdata)
-#     dct_put(dct, 'NUM_E.SR_CURRENT.TWO_D', twod_sdata)
-#     dct_put(dct, 'NUM_E.SR_CURRENT.THREE_D', thrd_sdata)
-#
-#     # dct_put(dct, 'NUM_E.ROTATION_ANGLE', make_1d_array(numE, GoniTheta))
-#
-#     xpnts2 = np.tile(xpnts, numY)
-#     sample_x = np.tile(xpnts2, numE)
-#
-#     ypnts2 = np.repeat(ypnts, numX)
-#     sample_y = np.tile(ypnts2, numE)
-#
-#     # now [numP] versions
-#     # dct_put(dct, 'NUM_P.EV', np.tile(epnts, (numY * numX)))
-#     dct_put(dct, 'NUM_P.EV', np.repeat(epnts, (numY * numX)))
-#     dct_put(dct, 'NUM_P.COUNT_TIME', np.repeat(count_time, (numY * numX)))
-#     dct_put(dct, 'NUM_P.EPU_POL', np.repeat(pol_pnts, (numY * numX)))
-#     dct_put(dct, 'NUM_P.EPU_OFFSET', np.repeat(off_pnts, (numY * numX)))
-#     dct_put(dct, 'NUM_P.EPU_POL_ANGLE', np.repeat(angle_pnts, (numY * numX)))
-#     dct_put(dct, 'NUM_P.EPU_GAP', make_1d_array(numP, EPUGap))
-#     dct_put(dct, 'NUM_P.EPU_HARMONIC', make_1d_array(numP, EPUHarmonic))
-#
-#     if (scan_type == scan_types.SAMPLE_LINE_SPECTRUM):
-#         xpnts2 = np.tile(xpnts, numY)
-#         sample_x = np.tile(xpnts2, numE)
-#         ypnts2 = np.tile(ypnts, numX)
-#         sample_y = np.tile(ypnts2, numE)
-#         dct_put(dct, 'NUM_P.MOTOR_X', sample_x)
-#         dct_put(dct, 'NUM_P.MOTOR_Y', sample_y)
-#
-#         dct_put(dct, 'NUM_P.SAMPLE_X', sample_x)
-#         dct_put(dct, 'NUM_P.SAMPLE_Y', sample_y)
-#     else:
-#         dct_put(dct, 'NUM_P.MOTOR_X', sample_x)
-#         dct_put(dct, 'NUM_P.MOTOR_Y', sample_y)
-#
-#         dct_put(dct, 'NUM_P.SAMPLE_X', sample_x)
-#         dct_put(dct, 'NUM_P.SAMPLE_Y', sample_y)
-#
-#     if (numZ > 0):
-#         dct_put(dct, 'NUM_P.MOTOR_Z', np.repeat(zpnts, (numY * numX)))
-#     dct_put(dct, 'NUM_P.SLIT_X', make_1d_array(numP, SlitX))
-#     dct_put(dct, 'NUM_P.SLIT_Y', make_1d_array(numP, SlitY))
-#     dct_put(dct, 'NUM_P.M3_PITCH', make_1d_array(numP, M3STXMPitch))
-#     dct_put(dct, 'NUM_P.DATA', data_numP)
-#     dct_put(dct, 'NUM_P.SR_CURRENT', make_1d_array(numP, sr_current))
-#     # dct_put(dct, 'NUM_P.ROTATION_ANGLE', make_1d_array(numP, GoniTheta))
-#
-#     dct_put(dct, 'NUM_P.LINE_POSITION', line_position)
-#
-#     return (dct)
-
 
 def _data_as_1D(data_dct, sp_id=None):
     """takes the standard data_dct from the scan configuration and creates 1D [numP]
@@ -1755,39 +1189,6 @@ def _data_as_1D_polarities_are_entries(data_dct):
     detectors_dct = dct_get(data_dct, "DETECTORS")
     sr_current = detectors_dct[DNM_RING_CURRENT][RBV]
 
-    #     for e_roi in e_rois:
-    #         #elst.append(np.linspace(e_roi[START], e_roi[STOP], e_roi[NPOINTS]))
-    #         _e1 = np.linspace(e_roi[START], e_roi[STOP], e_roi[NPOINTS])
-    #         if(epnts is not None):
-    #             epnts = np.concatenate((epnts, _e1), axis=0)
-    #         else:
-    #             epnts = _e1
-    #         numE += e_roi[NPOINTS]
-    #
-    #         #count_time
-    #         _d1 = make_1d_array(e_roi[NPOINTS], msec_to_sec(e_roi[DWELL]))
-    #         if(dpnts is not None):
-    #             dpnts = np.concatenate((dpnts, _d1), axis=0)
-    #         else:
-    #             dpnts = _d1
-    #         count_time = dpnts
-    #
-    #         num_pol_pnts = len(e_roi['EPU_POL_PNTS'])
-    #
-    #         _p1 = make_1d_array(e_roi[NPOINTS] * num_pol_pnts, e_roi['EPU_POL_PNTS'])
-    #         _o1 = make_1d_array(e_roi[NPOINTS] * num_pol_pnts, e_roi['EPU_OFF_PNTS'])
-    #         _a1 = make_1d_array(e_roi[NPOINTS] * num_pol_pnts, e_roi['EPU_ANG_PNTS'])
-    #         #numPolarities += 1
-    #         numPolarities += len(e_roi['EPU_POL_PNTS'])
-    #         if(pol_pnts is not None):
-    #             pol_pnts = np.concatenate((pol_pnts, _p1), axis=0)
-    #             off_pnts = np.concatenate((pol_pnts, _o1), axis=0)
-    #             angle_pnts = np.concatenate((pol_pnts, _a1), axis=0)
-    #         else:
-    #             pol_pnts = _p1
-    #             off_pnts = _o1
-    #             angle_pnts = _a1
-    # elst.append(np.linspace(e_roi[START], e_roi[STOP], e_roi[NPOINTS]))
     e_roi = e_rois[0]
     _e1 = np.linspace(e_roi[START], e_roi[STOP], e_roi[NPOINTS])
     if epnts is not None:
@@ -4448,56 +3849,6 @@ def fix_start_time_and_other_fields(sp_db_dct, dest):
     #dest[SPDB_ACTIVE_DATA_OBJECT][ADO_VERSION] = sp_db_dct["version"]
 
 
-# def get_NXstxm_entry(entry_grp):
-#     """
-#     the goal is to load a nexus file and return an entry dict that contains:
-#      - DATA        The data that represents the entry
-#      - WDG_COM     The WDG_COM used to configure the scan
-#
-#     so what should be returned is a dict with 2 keys ['WDGCOM', nxkd.NXD_DATA]
-#
-#     """
-#     from cls.utils.roi_utils import get_ado_obj_from_wdg_com
-#
-#     try:
-#         dct = {}
-#
-#         # dct_put(dct, 'CFG.ROI.THETA', entry_dct['numE']['rotation_angle'])
-#         js_str = entry_grp[nxkd.NXD_COLLECTION]["scan_request"]["scan_request"][()]
-#
-#         if isinstance(js_str, (list, np.ndarray)):
-#             js_str = js_str[0]
-#
-#         wdg_dct = json.loads(js_str)
-#
-#         # a place to keep the indiv ev_rois for each spatial ID
-#         # spid_ev_rois = {}
-#         for sp_id in wdg_dct[SPATIAL_ROIS]:
-#             fix_start_time_and_other_fields(entry_grp, wdg_dct[SPATIAL_ROIS][sp_id])
-#             # erois = []
-#             # spid_ev_rois = wdg_dct['SPATIAL_ROIS'][sp_id]['EV_ROIS']
-#             # for eroi in  spid_ev_rois:
-#             #     erois.append(eroi)
-#
-#         dct_put(dct, "WDG_COM", wdg_dct)
-#
-#         ado = get_ado_obj_from_wdg_com(wdg_dct)
-#
-#         # wdg_dct['SPATIAL_ROIS']['0']['ACTIVE_DATA_OBJ']['CFG']['DATA_STATUS']
-#         # d_sts= get_entry_data_status(entry_grp)
-#
-#         # dct_put(dct, 'DATA_STATUS', d_sts)
-#
-#         datas = {}
-#         nxkd.NXD_grps = find_NXdata_groups(entry_grp)
-#         for nxkd.NXD_grp in nxkd.NXD_grps:
-#             datas[nxkd.NXD_grp] = get_axes_data_from_NXdata(entry_grp[nxkd.NXD_grp])
-#
-#         dct_put(dct, nxkd.NXD_DATA, datas)
-#         return dct
-#
-#     except ValueError:
-#         _logger.error("Datafile appears to be corrupt or non standard")
 def get_pystxm_positioner_name(name: str) -> str :
     """
     When loading an NXstxm file the data will contains axis names, thiose axis names will have pystxm equivelants
@@ -4648,9 +3999,12 @@ def create_ev_region_data_from_1D_array(data):
     regions, split the array into diff energy region setpoints
     """
     ev_datas = split_by_difference(data)
+    if len(ev_datas) == 0:
+        # if no data then return an empty list
+        return [data]
     return ev_datas
 
-def create_spdb_wdgcom_from_file_dct(file_dct):
+def create_h5_file_dct_from_file_dct(file_dct):
     """
     the goal is to load a nexus file and return an entry dict that contains:
      - DATA        The data that represents the entry
@@ -4682,14 +4036,16 @@ def create_spdb_wdgcom_from_file_dct(file_dct):
 
 
     try:
+        z_dev_names = ['DNM_SAMPLE_Z', 'DNM_OSA_Z', 'DNM_ZONEPLATE_Z', 'DNM_DETECTOR_Z', 'DNM_COARSE_Z',
+                                         'DNM_SAMPLEFINE_Z']
         dct = {}
-        x_roi = y_roi = z_roi = e_roi = {}
+        x_roi = y_roi = z_roi = e_roi = None
         wdg_dct = make_base_wdg_com()
         #read all of the data from the file into a dict
-        #start_time = time.time()
-        sp_db_dct = get_sp_db_from_entry_dict(file_dct)
+        sp_db_dct = get_sp_db_dct_from_file_dict(file_dct)
 
         #set plot_shape_type
+        # dont like this hard coding
         if sp_db_dct['pystxm_enum_scan_type'] in [0, 1, 2, 3, 5, 6, 7, 9, 10, 11, 12, 13, 14]:
             plot_shape_type = spatial_type_prefix.ROI
         elif sp_db_dct['pystxm_enum_scan_type'] in [4]:
@@ -4701,6 +4057,7 @@ def create_spdb_wdgcom_from_file_dct(file_dct):
 
         sp_id = 0
         e_roi = None
+        # or this
         if sp_db_dct['pystxm_enum_scan_type'] in [0,1,2,3,4,5,6,7,9,10,11,12,13,14]:
 
             for ax_nm in sp_db_dct['axis_names']:
@@ -4708,7 +4065,7 @@ def create_spdb_wdgcom_from_file_dct(file_dct):
                 # now create the model that this pluggin will use to record its params
                 if positioner_nm in ['DNM_SAMPLE_X', 'DNM_OSA_X', 'DNM_ZONEPLATE_X', 'DNM_DETECTOR_X', 'DNM_COARSE_X', 'DNM_SAMPLEFINE_X']:
                     x_roi = generate_spatial_roi_from_data(positioner_nm, sp_db_dct[ax_nm].astype(float), roi_nm)
-                elif positioner_nm in ['DNM_SAMPLE_Y', 'DNM_OSA_Y', 'DNM_ZONEPLATE_Y', 'DNM_DETECTOR_Y', 'DNM_COARSE_Y', 'DNM_SAMPLEFINE_Y']:
+                elif positioner_nm in ['DNM_SAMPLE_Y', 'DNM_OSA_Y', 'DNM_ZONEPLATE_Y', 'DNM_DETECTOR_Y', 'DNM_COARSE_Y', 'DNM_SAMPLEFINE_Y', 'DNM_ZONEPLATE_Z']:
                     y_roi = generate_spatial_roi_from_data(positioner_nm, sp_db_dct[ax_nm].astype(float), roi_nm)
                 elif positioner_nm in ['DNM_SAMPLE_Z', 'DNM_OSA_Z', 'DNM_ZONEPLATE_Z', 'DNM_DETECTOR_Z', 'DNM_COARSE_Z', 'DNM_SAMPLEFINE_Z']:
                     z_roi = generate_spatial_roi_from_data(positioner_nm, sp_db_dct[ax_nm].astype(float), roi_nm, enable=False)
@@ -4725,11 +4082,23 @@ def create_spdb_wdgcom_from_file_dct(file_dct):
                     else:
                         x_roi = generate_spatial_roi_from_data('DNM_SAMPLE_X', sp_db_dct[ax_nm].astype(float), SPDB_X)
                         y_roi = generate_spatial_roi_from_data('DNM_SAMPLE_Y', sp_db_dct[ax_nm].astype(float), SPDB_Y)
+
+                # this is a catch all for the Z positioners so that if the scan is a two variable scan,
+                # this will make sure that y_roi and z_roi are set
+                #
+                if y_roi is None:
+                    if positioner_nm in z_dev_names:
+                        y_roi = generate_spatial_roi_from_data(positioner_nm, sp_db_dct[ax_nm].astype(float), roi_nm)
+
+                if z_roi is None:
+                    if positioner_nm in z_dev_names:
+                        z_roi = generate_spatial_roi_from_data(positioner_nm, sp_db_dct[ax_nm].astype(float), roi_nm,
+                                                               enable=False)
             if e_roi is None:
                 # need to make sure data contains ALL ev_regions
                 # need to make sure data contains ALL ev_regions
                 ev_setpoint_region_arr = create_ev_region_data_from_1D_array(sp_db_dct['energy'].astype(float))
-                if isinstance(ev_setpoint_region_arr[0], list or np.ndarray):
+                if isinstance(ev_setpoint_region_arr[0], list) or isinstance(ev_setpoint_region_arr[0] ,np.ndarray):
                     ev_setpoint_region_arr = ev_setpoint_region_arr[0]
                 ax_nm = get_pystxm_positioner_name_from_list('ENERGY', list(sp_db_dct.keys()))
                 if ax_nm:
@@ -4772,149 +4141,13 @@ def create_spdb_wdgcom_from_file_dct(file_dct):
         def_entry_nm = sp_db_dct['default']
         def_counter_nm = sp_db_dct['nxdata_nm']
 
-        #put these at base level for convienience
-        # dct['default_nxdata_nm'] = def_counter_nm
-        # dct['default_nxsignal_nm'] = sp_db_dct['nxsignal_nm']
-
-        dct[def_entry_nm] = {"WDG_COM": wdg_dct, nxkd.NXD_DATA: sp_db_dct['nxdata'], 'default': def_counter_nm}
+        dct[def_entry_nm] = {"WDG_COM": wdg_dct, 'default': def_counter_nm, 'sp_db_dct': sp_db_dct}
 
         return dct
 
     except ValueError:
         _logger.error("Datafile appears to be corrupt or non standard")
 
-
-# def get_NXstxm_entry(entry_grp):
-#     """
-#         the goal is to load a nexus file and return an entry dict that contains:
-#          - DATA        The data that represents the entry
-#          - WDG_COM     The WDG_COM used to configure the scan
-#
-#         so what should be returned is a dict with 2 keys ['WDGCOM', nxkd.NXD_DATA]
-#
-#     """
-#
-#     try:
-#         dct = {}
-#
-#         #dct_put(dct, 'CFG.ROI.THETA', entry_dct['numE']['rotation_angle'])
-#         js_str = entry_grp[nxkd.NXD_COLLECTION]['scan_request']['scan_request'][()]
-#         if(isinstance(js_str, (list, np.ndarray))):
-#             js_str = js_str[0]
-#
-#         wdg_dct = json.loads(js_str)
-#         #dct_put(dct, 'CFG', cfg_dct)
-#         #dct_put(dct, 'WDG_COM', wdg_dct)
-#
-# #         cntr_str = None
-# #         counter_dct = {}
-# #         for k in entry_dct.keys():
-# #             if((k.find('counter') > -1) or (k.find('Counter') > -1)):
-# #                 cntr_str = k
-# # #                 counter_dct[k] = {}
-# # #                 counter_dct[k]['COUNT_TIME'] = entry_dct[k]['count_time'][()]
-# # #                 counter_dct[k]['STXM_SCAN_TYPE'] = entry_dct[k]['stxm_scan_type'][()]
-# # #                 #get attributes
-# # #                 attrs = entry_dct[k].attrs
-# # #                 axes = attrs['axes'] #a string ex: energy,sample_y,sample_x
-# # #                 signal_name = attrs['signal']
-# # #
-# # #                 counter_dct[k]['SIGNAL'] = signal_name.upper() #a string ex: signal=data
-# # #                 #the actual signal data
-# # #                 counter_dct[k][signal_name.upper()] = entry_dct[k][signal_name][()]
-# # #                 #now get the indices and their repsective data
-# # #                 for ax in axes:
-# # #                     counter_dct[k][ax.upper() + '_INDICES'] = attrs[ax + '_indices']
-# # #                     counter_dct[k][ax.upper()] = entry_dct[k][ax][()]
-# # #
-# # #        dct_put(dct, 'COUNTERS', counter_dct)
-# #
-# #
-# #         if(cntr_str is not None):
-# #             #return(new_get_roi_and_data(dct, cntr_str))
-# #             dct_put(dct, 'WDG_COM', wdg_dct)
-# #             dct_put(dct, nxkd.NXD_DATA, entry_dct[cntr_str][nxkd.NXD_DATA][()])
-# #             return(dct)
-#
-#         dct_put(dct, 'WDG_COM', wdg_dct)
-#
-#
-#         datas = {}
-#         nxkd.NXD_grps = find_NXdata_groups(entry_grp)
-#         for nxkd.NXD_grp in nxkd.NXD_grps:
-#             datas[nxkd.NXD_grp] = get_axes_data_from_NXdata(entry_grp[nxkd.NXD_grp])
-#
-#         dct_put(dct, nxkd.NXD_DATA, datas)
-# #         else:
-# #             _logger.error('this entry_dct contains no data')
-# #
-#         return(dct)
-#
-#         #return(None)
-#
-#     except ValueError:
-#         _logger.error('Datafile appears to be corrupt or non standard')
-
-
-# def get_NXstxm_entry(entry_dct, only_roi_and_data=False):
-#     """
-#         the goal is to load a nexus file and return an entry dict that contains:
-#          - DATA        The data that represents the entry
-#          - WDG_COM     The WDG_COM used to configure the scan
-#
-#         so what should be returned is a dict with 2 keys ['WDGCOM', nxkd.NXD_DATA]
-#
-#     """
-#
-#     try:
-#         dct = {}
-#         #everything below will be a child of 'SCAN' in teh dict
-#         dct_put(dct, ADO_START_TIME, entry_dct['start_time'])
-#         dct_put(dct, ADO_END_TIME, entry_dct['end_time'])
-#         #dct_put(scan_dct, 'DEFINITION', entry_dct['definition'])
-#         #dct_put(scan_dct, 'TITLE', entry_dct['title'])
-#         #dct_put(dct, ADO_VERSION, entry_dct['version'])
-#
-#         #dct_put(dct, 'CFG.ROI.THETA', entry_dct['numE']['rotation_angle'])
-#         js_str = entry_dct[nxkd.NXD_COLLECTION]['scan_request']['scan_request'][()]
-#         if(isinstance(js_str, (list, np.ndarray))):
-#             js_str = js_str[0]
-#
-#         wdg_dct = json.loads(js_str)
-#         #dct_put(dct, 'CFG', cfg_dct)
-#         dct_put(dct, 'WDG_COM', wdg_dct)
-#
-#         cntr_str = None
-#         counter_dct = {}
-#         for k in entry_dct.keys():
-#             if((k.find('counter') > -1) or (k.find('Counter') > -1)):
-#                 cntr_str = k
-#                 counter_dct[k] = {}
-#                 counter_dct[k]['COUNT_TIME'] = entry_dct[k]['count_time'][()]
-#                 counter_dct[k]['STXM_SCAN_TYPE'] = entry_dct[k]['stxm_scan_type'][()]
-#                 #get attributes
-#                 attrs = entry_dct[k].attrs
-#                 axes = attrs['axes'] #a string ex: energy,sample_y,sample_x
-#                 signal_name = attrs['signal']
-#
-#                 counter_dct[k]['SIGNAL'] = signal_name.upper() #a string ex: signal=data
-#                 #the actual signal data
-#                 counter_dct[k][signal_name.upper()] = entry_dct[k][signal_name][()]
-#                 #now get the indices and their repsective data
-#                 for ax in axes:
-#                     counter_dct[k][ax.upper() + '_INDICES'] = attrs[ax + '_indices']
-#                     counter_dct[k][ax.upper()] = entry_dct[k][ax][()]
-#
-#         dct_put(dct, 'COUNTERS', counter_dct)
-#
-#         if(only_roi_and_data):
-#             if(cntr_str is not None):
-#                 return(get_roi_and_data(dct, cntr_str))
-#
-#         return(dct)
-#
-#     except ValueError:
-#         _logger.error('Datafile appears to be corrupt or non standard')
 
 
 def make_stxm_entry(nf, name, scan_type, data_dct={}):
@@ -5703,24 +4936,17 @@ def load_NXstxm_file(filename, only_roi_and_data=False):
         dct_put(dct, ADO_CFG_DATA_FILE_NAME, None)     #the data file name WITHOUT the extension, that is determined by the
         dct_put(dct, ADO_CFG_UNIQUEID, None)
     """
-    #print(f"load_NXstxm_file: reading [{filename}]" )
     # create a standard active object, then load h5 file and populate the active object dict
     active_data_obj = ActiveDataObj()
     active_data_obj.reset_data_dct()
     try:
+        # print(f"load_NXstxm_file: calling hdf5_to_dict for file {filename}")
         file_dct = hdf5_to_dict(filename)
         file_dct = ensure_default_attrs_exist(file_dct)
-        # start_time = time.time()
-        sp_db = create_spdb_wdgcom_from_file_dct(file_dct)
-        # end_time = time.time()  # Get the timestamp after execution
-        # elapsed_time = end_time - start_time
-        #print(f"Took: Elapsed Time: {elapsed_time:.6f} seconds to run create_spdb_wdgcom_from_file_dct [{filename}]")
-        # print(f"\tsp_db = {sys.getsizeof(sp_db)} bytes")
-        return sp_db
+        h5_file_dct = create_h5_file_dct_from_file_dct(file_dct)
+        return h5_file_dct
 
     except Exception as e:
-        # if nf is not None:
-        #     nf.close()
         print(f'load_NXstxm_file: opening file failed [{filename}]: exception = {e}')
         _logger.info("load_NXstxm_file: opening file failed [%s]" % filename)
         return None
@@ -6065,119 +5291,4 @@ if __name__ == "__main__":
     test_saving_with_validation()
     # time_trial_update_speed()
     # time_open_updateall_close()
-#    data_dct = load_single_entry_from_NXstxm_file(hdf5_fname, only_roi_and_data=False)
-#     nf = h5py.File(hdf5_fname,  "r+")
-#     e_lst = get_entry_names(nf)
-#     #print e_lst
-#     for entry in e_lst:
-#         c_lst = get_counter_names(nf[entry])
-#         #print c_lst
-#     nf.close()
-#     data = np.array(ado_obj[nxkd.NXD_DATA]['POINTS'])
-#     update_data(hdf5_fname, e_lst[0], data, counter=c_lst[0])
-# create_standard_NXstxm_file(fname, scan_type, data_dct={'ID':None}, intermediate_file=False)
-# create_standard_NXstxm_file(hdf5_fname, scan_types.SAMPLE_IMAGE, data_dct=ado_obj, intermediate_file=False)
-# dct_put(data_dct, ADO_CFG_DATA_DIR, r'C:/controls/py2.7/Beamlines/sm/data/guest/May19/')
-# dct_put(data_dct, ADO_CFG_DATA_FILE_NAME, r'C:/controls/py2.7/Beamlines/sm/data/guest/May19/C160519030.hdf5')
-# spatial_roi_id = dct_get(data_dct, ADO_CFG_CUR_SPATIAL_ROI_IDX)
-# create_NXstxm_file(r'C:/controls/py2.7/Beamlines/sm/data/guest/May19/C160519099.hdf5', scan_types.SAMPLE_LINE_SPECTRUM, data_dct=data_dct, intermediate_file=False)
 
-
-# try_this()
-# walk_xml()
-#     dtype = ['sample point spectrum', 'sample line spectrum', 'sample image' ,\
-#             'sample image stack' ,'sample focus', 'osa image', 'osa focus', 'detector image',\
-#             'generic scan']
-#
-# #     pp = pprint.PrettyPrinter(indent=1)
-#      bc_dct = nx_classes_to_dct('base_classes')
-# #     print bc_dct
-#     #dct = convert(make_NXstxm_dict())
-#     #hdf5storage.write(dct, filename='test.hdf5')
-#     dct = make_NXstxm_dict()
-#     nf = h5py.File('base_NXstxm.hdf5', "w")
-#     make_stxm_dct_to_file(nf, nxkd.NXD_ENTRY, dct, bc_dct)
-#     nf.close()
-
-
-# ac = parse_nxdef()
-
-# print 'Base Classes'
-# for k in dct.keys():
-#    dump_class_dct(k, ac[k])
-
-
-#     #t = datetime.datetime.time(12, 10, 30, tz=CST())
-#     #t
-#     #datetime.time(12, 10, 30, tzinfo=<GMT1 object at 0x...>)
-#     t = datetime.datetime.now(tz=CST()).isoformat()
-#     gmt = CST()
-#     print t
-#     #'12:10:30+01:00'
-#     print t.dst()
-#     #datetime.timedelta(0)
-#     print t.tzname()
-#     #'Europe/Prague'
-#     print t.strftime("%H:%M:%S %Z")
-#'12:10:30 Europe/Prague'
-#'The {} is {:%H:%M}.'.format("time", t)
-#'The time is 12:10.'
-#     data_dir = 'C:/controls/py2.7/Beamlines/sm/data/guest/Feb27/A110213/'
-# #    data_dir = 'C:/controls/py2.7/Beamlines/sm/data/guest/Feb27/'
-# #    fname = 'ms1-00057.json'
-# #    ximfname = 's1-00057.xim'
-# #     "SCAN": {
-# #         "CFG": {
-# #             "ROI": {
-# #                 "DATA_LEVEL": false,
-# #                 "EV": {
-# #                     "DATA_LEVEL": false,
-# #                     "DWELL": 2.5,
-# #                     "ENABLED": true,
-# #                     "EV_IDX": null,
-# #                     "EV_ROIS": [
-#     i = 1
-#     fname = 'ms1-%05d.json' % i
-#     ximfname = 's1-%05d.xim' % i
-#     data_dct = json.loads(file(data_dir + fname).read())
-#     xim_dat = loadXim2Array(data_dir + ximfname)
-#     data_dct['SCAN'][nxkd.NXD_DATA]['CHANNELS'] = []
-#     data_dct['SCAN'][nxkd.NXD_DATA]['CHANNELS'].append(xim_dat.copy())
-#     for i in range(2,20):
-#         fname = 'ms1-%05d.json' % i
-#         ximfname = 's1-%05d.xim' % i
-#         xim_dat = loadXim2Array(data_dir + ximfname)
-#         data_dct['SCAN'][nxkd.NXD_DATA]['CHANNELS'].append(xim_dat.copy())
-#
-#
-#     #create_NXstxm_file('sample_point_spectra.hdf5', dtype[0], data_dct)
-#     #create_NXstxm_file('sample_line_spectra.hdf5', dtype[1], data_dct)
-#     #epnts = data_dct['ScanDefinition']['StackAxis']['EV']['NumPoints']
-#     #xpnts = data_dct['ScanDefinition']['Regions'][1]['PAxis']['NumPoints']
-#     #ypnts = data_dct['ScanDefinition']['Regions'][1]['QAxis']['NumPoints']
-#
-#     data_dct['Time'] = make_timestamp_now()
-#     create_NXstxm_file('sample_image.hdf5', dtype[2], data_dct)
-#
-#
-#
-
-# create_NXstxm_file('sample_image_stack.hdf5', dtype[3], data_dct)
-# create_NXstxm_file('sample_focus.hdf5', dtype[4], data_dct)
-# create_NXstxm_file('osa_image.hdf5', dtype[5], data_dct)
-# create_NXstxm_file('osa_focus.hdf5', dtype[6], data_dct)
-# create_NXstxm_file('detector_image.hdf5', dtype[7], data_dct)
-
-# returns tuple (class_doc, class_fields, class_groups)
-#    dom = md.parse(r'C:\controls\nexus-definitions-development\dist\applications\NXstxm.nxdl.xml')
-#    root = dom.documentElement
-#    print_node(root)
-
-#     bc = readin_base_classes()
-#     ac = readin_application_classes()
-#     (stxm_doc, stxm_flds, stxm_grps) = ac['NXstxm']
-#
-#     create_NXstxm_file("positioner.hdf5")
-#
-#
-#     exit

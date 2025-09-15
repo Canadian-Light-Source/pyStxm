@@ -12,14 +12,73 @@ class BaseDcsServerApi(QtCore.QObject):
     scan_status = QtCore.pyqtSignal(object)  # a signal to be emitted when scan status changes
     progress = QtCore.pyqtSignal(object)  # a signal to be emitted when scan status changes
     exec_result = QtCore.pyqtSignal(object)
-    msg_to_app = QtCore.pyqtSignal(object) # a singal used to send message to the app from the DCS server,
+    msg_to_app = QtCore.pyqtSignal(object) # a signal used to send message to the app from the DCS server,
                                            # ex: filename to tell app what teh filename and data dir are before scan
                                            # execution
+    load_files_status = QtCore.pyqtSignal(bool) # a signal to be emitted when loading files from the DCS server is
+                                           # complete
     def __init__(self, parent):
         super().__init__(None)
         self.parent = parent
         self.paused = False
+        self.app_to_dcs_devname_map = {}
+        self.dcs_to_app_devname_map = {}
+        self._loadfile_timer = QtCore.QTimer()
+        self._loadfile_timer.setSingleShot(True)
+        self._loadfile_timer.timeout.connect(self.load_file)
         self.exec_result.connect(self.on_exec_finished)
+
+    def get_server_version_id(self) -> str:
+        """
+        return the server version id, to be implemented by the inheriting class
+        Returns: str
+        -------
+
+        """
+        _logger.warning("BaseDcsServerApi.get_server_version_id: This method must be implemented by the inheriting class.")
+
+
+    def load_file(self, directory: str="/tmp/2025-07-04", filename: str="SampleData.hdf5"):
+        """
+        load a file from the DCS server, to be implemented by inheriting class
+        Args:
+            directory: the directory to load the file from
+            filename: the name of the file to load
+
+        """
+        _logger.warning("BaseDcsServerApi.load_file: This method must be implemented by the inheriting class.")
+        #
+
+    def load_directory(self, directory, extension: str='.hdf5'):
+        """
+        Load the contents of a directory on the DCS server.
+        """
+        _logger.warning("BaseDcsServerApi.load_directory: This method must be implemented by the inheriting class.")
+
+    def get_base_data_dir(self):
+        """
+        return value from DCS server
+        to be implemented by the inheriting class
+        """
+        _logger.warning("BaseDcsServerApi.get_base_data_dir: This method must be implemented by the inheriting class.")
+
+    def get_data_file_extension(self):
+        """
+        return value from DCS server
+        to be implemented by the inheriting class
+        """
+        _logger.warning("BaseDcsServerApi.get_data_file_extension: This method must be implemented by the inheriting class.")
+
+
+    def set_device_name_maps(self, app_to_dcsname_map: dict, dcs_to_appname_map: dict):
+        """
+        set the device name maps for this server api
+        Args:
+            app_to_dcsname_map: map from app device names to dcs device names
+            dcs_to_appname_map: map from dcs device names to app device names
+        """
+        self.app_to_dcs_devname_map = app_to_dcsname_map
+        self.dcs_to_app_devname_map = dcs_to_appname_map
 
     def on_exec_finished(self, msg):
         """
@@ -28,7 +87,7 @@ class BaseDcsServerApi(QtCore.QObject):
          in which it will emit:
             self.parent.exec_result.emit(msg)
         """
-        pass
+        _logger.warning("BaseDcsServerApi.on_exec_finished: This method must be implemented by the inheriting class.")
 
     def make_scan_finished_dct(self):
         """

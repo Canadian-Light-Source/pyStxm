@@ -48,7 +48,7 @@ scan_panel_order = Enum(
     "positioner_scan",
     "pattern_gen",
     "ptychography",
-    "two_variable_scan",
+    "two_variable_image",
 )
 
 scan_types = Enum(
@@ -84,7 +84,7 @@ scan_type_to_panel_dct["coarse_goni"] = scan_panel_order.COARSE_GONI_IMAGE_SCAN
 scan_type_to_panel_dct["tomography"] = scan_panel_order.TOMOGRAPHY
 scan_type_to_panel_dct["pattern_gen"] = scan_panel_order.PATTERN_GEN
 scan_type_to_panel_dct["ptychography"] = scan_panel_order.PTYCHOGRAPHY
-scan_type_to_panel_dct["two_variable_image"] = scan_panel_order.TWO_VARIABLE_SCAN
+scan_type_to_panel_dct["two_variable_image"] = scan_panel_order.TWO_VARIABLE_IMAGE
 
 spectra_type_scans = [scan_types.SAMPLE_POINT_SPECTRUM, scan_types.GENERIC_SCAN]
 

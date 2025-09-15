@@ -197,53 +197,6 @@ class PositionersPanel(QtWidgets.QWidget):
                 ma_str = "pv wasnt connected yet"
             object.setToolTip(ma_str)
 
-        # if event.type() == QtCore.QEvent.FocusOut:
-        # 	self.__showCursor(False)
-        # if event.type() == QtCore.QEvent.Paint:
-        # 	QtWidgets.QApplication.postEvent(self, QtCore.QEvent(QtCore.QEvent.User))
-        # elif event.type() == QtCore.QEvent.MouseButtonPress:
-        # 	self.__select(event.pos())
-        # 	return True
-        # elif event.type() == QtCore.QEvent.MouseMove:
-        # 	self.__move(event.pos())
-        # 	return True
-        # if event.type() == QtCore.QEvent.KeyPress:
-        # 	delta = 5
-        # 	key = event.key()
-        # 	if key == QtCore.Qt.Key_Up:
-        # 		self.__shiftCurveCursor(True)
-        # 		return True
-        # 	elif key == QtCore.Qt.Key_Down:
-        # 		self.__shiftCurveCursor(False)
-        # 		return True
-        # 	elif key == QtCore.Qt.Key_Right or key == QtCore.Qt.Key_Plus:
-        # 		if self.__selectedCurve:
-        # 			self.__shiftPointCursor(True)
-        # 		else:
-        # 			self.__shiftCurveCursor(True)
-        # 		return True
-        # 	elif key == QtCore.Qt.Key_Left or key == QtCore.Qt.Key_Minus:
-        # 		if self.__selectedCurve:
-        # 			self.__shiftPointCursor(False)
-        # 		else:
-        # 			self.__shiftCurveCursor(True)
-        # 		return True
-        # 	if key == QtCore.Qt.Key_1:
-        # 		self.__moveBy(-delta, delta)
-        # 	elif key == QtCore.Qt.Key_2:
-        # 		self.__moveBy(0, delta)
-        # 	elif key == QtCore.Qt.Key_3:
-        # 		self.__moveBy(delta, delta)
-        # 	elif key == QtCore.Qt.Key_4:
-        # 		self.__moveBy(-delta, 0)
-        # 	elif key == QtCore.Qt.Key_6:
-        # 		self.__moveBy(delta, 0)
-        # 	elif key == QtCore.Qt.Key_7:
-        # 		self.__moveBy(-delta, -delta)
-        # 	elif key == QtCore.Qt.Key_8:
-        # 		self.__moveBy(0, -delta)
-        # 	elif key == QtCore.Qt.Key_9:
-        # 		self.__moveBy(delta, -delta)
         return QtWidgets.QWidget.eventFilter(self, object, event)
 
     def enable_feedback(self):
@@ -280,17 +233,17 @@ class PositionersPanel(QtWidgets.QWidget):
         mtr_ui.detailsBtn.setStatusTip(pv_name)
 
         if self.main_obj.get_device_backend() == 'zmq':
-            mtr.add_callback("motor_done_move", self.zmq_updateMoving)
-            mtr.add_callback("user_readback", self.zmq_updateFbk)
-            mtr.add_callback("spmg_enum", self.zmq_updateEmergStop)
-            mtr.add_callback("at_low_limit_val", self.zmq_updateLimitLEDs)
-            mtr.add_callback("at_high_limit_val", self.zmq_updateLimitLEDs)
+            mtr.add_callback("motor_done_move", self.zmq_update_moving)
+            mtr.add_callback("user_readback", self.zmq_update_fbk)
+            mtr.add_callback("spmg_enum", self.zmq_update_emerg_stop)
+            mtr.add_callback("at_low_limit_val", self.zmq_update_limit_le_ds)
+            mtr.add_callback("at_high_limit_val", self.zmq_update_limit_le_ds)
         else:
-            mtr.add_callback("motor_done_move", self.updateMoving)
-            mtr.add_callback("user_readback", self.updateFbk)
-            mtr.add_callback("spmg_enum", self.updateEmergStop)
-            mtr.add_callback("at_low_limit_val", self.updateLimitLEDs)
-            mtr.add_callback("at_high_limit_val", self.updateLimitLEDs)
+            mtr.add_callback("motor_done_move", self.update_moving)
+            mtr.add_callback("user_readback", self.update_fbk)
+            mtr.add_callback("spmg_enum", self.update_emerg_stop)
+            mtr.add_callback("at_low_limit_val", self.update_limit_le_ds)
+            mtr.add_callback("at_high_limit_val", self.update_limit_le_ds)
 
         if mtr.connected:
             #mtr_fbk = mtr.get("user_readback")
@@ -347,13 +300,13 @@ class PositionersPanel(QtWidgets.QWidget):
 
         # add callbacks to the ophyd EpicsMotor object
         if self.main_obj.get_device_backend() == 'zmq':
-            mtr.add_callback("motor_done_move", self.zmq_updateMoving)
-            mtr.add_callback("user_readback", self.zmq_updateFbk)
-            mtr.add_callback("spmg_enum", self.zmq_updateEmergStop)
+            mtr.add_callback("motor_done_move", self.zmq_update_moving)
+            mtr.add_callback("user_readback", self.zmq_update_fbk)
+            mtr.add_callback("spmg_enum", self.zmq_update_emerg_stop)
         else:
-            mtr.add_callback("motor_done_move", self.updateMoving)
-            mtr.add_callback("user_readback", self.updateFbk)
-            mtr.add_callback("spmg_enum", self.updateEmergStop)
+            mtr.add_callback("motor_done_move", self.update_moving)
+            mtr.add_callback("user_readback", self.update_fbk)
+            mtr.add_callback("spmg_enum", self.update_emerg_stop)
 
         if mtr.connected:
             mtr_fbk = mtr.get("user_readback")
@@ -654,16 +607,18 @@ class PositionersPanel(QtWidgets.QWidget):
         (dev, dev_ui, widg, mtr) = self.mtr_dict[pvname]
         mtr.stop()
 
-    def zmq_updateMoving(self, dct):
+    def zmq_update_moving(self, dct):
         """
         convert zmq args to kwargs like epics uses
         """
         dct['obj'].parent = QtCore.QObject()
         dct['obj'].parent.name = dct['obj'].get_name()
-        self.updateMoving(**dct)
+        dct['obj'].pvname = dct['obj'].get_name()
+        self.update_moving(**dct)
 
-    def updateMoving(self, **kwargs):
-        """do not try to set a widget property here as
+    def update_moving(self, **kwargs):
+        """
+        do not try to set a widget property here as
         it will eventually scew up teh main GUI thread
         Hence the use of a Queue and QTimer
         """
@@ -672,7 +627,12 @@ class PositionersPanel(QtWidgets.QWidget):
         is_moving = False
         if 'obj' not in kwargs.keys():
             return
-        pvname = kwargs["obj"].parent.name
+
+        if not hasattr(kwargs['obj'], 'pvname'):
+            _logger.error(f"No attribute [pvname] in kwargs['obj'] {kwargs['obj']}")
+            return
+        pvname = kwargs['obj'].pvname.split(".")[0]
+
         (dev, dev_ui, widg, mtr) = self.mtr_dict[pvname]
         val = float(kwargs["value"])
         txt_clr = "color: black;"
@@ -687,8 +647,6 @@ class PositionersPanel(QtWidgets.QWidget):
             # txt_clr = "color: white;"
 
         _dct = {}
-        # _dct['setStyleSheet'] = [(dev_ui.mtrNameFld, "background-color: " + clr_str), (dev_ui.posFbkLbl, txt_clr)]
-        # _dct['setStyleSheet'] = [(dev_ui.mtrNameFld, "border: 2 px solid %s; background-color: %s;" % (clr_str, clr_str), is_moving), (dev_ui.posFbkLbl, txt_clr)]
         _dct["setStyleSheet"] = [
             (
                 dev_ui.mtrNameFld,
@@ -696,21 +654,22 @@ class PositionersPanel(QtWidgets.QWidget):
                 is_moving,
             )
         ]
-
         self.updateQueue.put_nowait(_dct)
 
-    def zmq_updateEmergStop(self, dct):
+    def zmq_update_emerg_stop(self, dct):
         """
         convert zmq args to kwargs like epics uses
         """
         dct['obj'].parent = QtCore.QObject()
-        dct['obj'].parent.name = dct['obj'].get_name()
-        self.updateEmergStop(**dct)
+        #dct['obj'].parent.name = dct['obj'].get_name()
+        dct["obj"].pvname = dct['obj'].get_name()
+        self.update_emerg_stop(**dct)
 
-    def updateEmergStop(self, **kwargs):
+    def update_emerg_stop(self, **kwargs):
         if not self.fbk_enabled:
             return
-        pvname = kwargs["obj"].parent.name
+        #pvname = kwargs["obj"].parent.name
+        pvname = kwargs["obj"].pvname.split('.')[0]
         (dev, dev_ui, widg, mtr) = self.mtr_dict[pvname]
         if mtr.is_hard_stopped():
             clr_str = _fbk_hardstopped
@@ -728,15 +687,15 @@ class PositionersPanel(QtWidgets.QWidget):
         self.updateQueue.put_nowait(_dct)
 
 
-    def zmq_updateLimitLEDs(self, dct):
+    def zmq_update_limit_le_ds(self, dct):
         """
         convert zmq args to kwargs like epics uses
         """
         dct['obj'].parent = QtCore.QObject()
         dct['obj'].parent.name = dct['obj'].get_name()
-        self.updateLimitLEDs(**dct)
+        self.update_limit_le_ds(**dct)
 
-    def updateLimitLEDs(self, **kwargs):
+    def update_limit_le_ds(self, **kwargs):
         if not self.fbk_enabled:
             return
 
@@ -762,7 +721,7 @@ class PositionersPanel(QtWidgets.QWidget):
         self.updateQueue.put_nowait(_dct)
 
 
-    def zmq_updateFbk(self, dct):
+    def zmq_update_fbk(self, dct):
         """
         convert zmq args to kwargs like epics uses
         """
@@ -770,9 +729,9 @@ class PositionersPanel(QtWidgets.QWidget):
         dct['obj']._read_pv = QtCore.QObject()
         dct['obj']._read_pv.pvname = dct['obj'].get_name()
         dct["pvname"] = dct['obj'].get_name()
-        self.updateFbk(**dct)
+        self.update_fbk(**dct)
 
-    def updateFbk(self, **kwargs):
+    def update_fbk(self, **kwargs):
         """
         do not try to set a widget property here as
         it will eventually screw up the main GUI thread
@@ -925,20 +884,6 @@ class PositionersPanel(QtWidgets.QWidget):
             pass
 
 
-
-
-
-# if __name__ == '__main__':
-#
-# 	app = QtWidgets.QApplication(sys.argv)
-# 	window = PositionersPanel('beamline')
-# 	window.show()
-# 	window2 = PositionersPanel('endstation')
-# 	window2.show()
-#
-# 	app.exec_()
-#
-#
 def go():
     app = QtWidgets.QApplication(sys.argv)
     # window = PositionersPanel('beamline')

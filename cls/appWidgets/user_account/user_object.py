@@ -4,8 +4,7 @@ Created on Dec 2, 2016
 @author: control
 """
 import os
-import time
-from datetime import date
+from datetime import datetime
 
 from cls.utils.cfgparser import ConfigClass
 from cls.appWidgets.user_account.sample_holder_object import sample_holder_obj
@@ -33,7 +32,8 @@ class user_obj(object):
         self._password = None
         self._access_lvl = ACCESS_LVLS.GUEST  # default
         self._description = ""
-        self._date_created = date.fromtimestamp(time.time())
+        #self._date_created = date.fromtimestamp(time.time())
+        self._date_created = datetime.now()
         self._enabled = False
         self._group = None
         self._base_data_dir = data_dir
@@ -102,16 +102,14 @@ class user_obj(object):
     def get_group(self):
         return self._group
 
+    def get_base_data_dir(self):
+        return self._base_data_dir
+
     def get_data_dir(self, pos=None):
         return self._data_dir
-        # if(pos is None):
-        #     return self._data_dir
-        # else:
-        #     ddir = self._sample_ids[self._cur_sample_id].get_pos_dir(pos)
-        #     return(ddir)
 
     def get_scan_defs_dir(self):
-        return os.path.join(self._base_data_dir, self._userName, "scan_defs")
+        return os.path.join(self._data_dir, "scan_defs")
 
     def create_data_dir(self):
         """
@@ -119,49 +117,32 @@ class user_obj(object):
         result should be :
             <base_data_dir>/<username>/MonSep2013/,<sample holder id>/<pos1 - pos6>
         """
-        import os, datetime
-
-        t = datetime.datetime.now()
-
-        today = date.today()
-        monthStr = today.strftime("%b")
-        dayStr = today.strftime("%a")
-        year = int(today.strftime("%Y"))
-        dayNum = int(today.strftime("%d"))
+        current_date = datetime.now().strftime('%Y-%m-%d')
 
         if self._data_sub_dir == '_cur_date_':
-            self._data_dir = os.path.join(self._base_data_dir, str(self._date_created))
+            self._data_dir = os.path.join(self._base_data_dir, current_date)
 
         elif self._data_sub_dir == '_default_':
-            _usrDir = os.path.join(self._base_data_dir, self._userName)
-            # first see if the users directory is exists, if not make it
-            self.ensure_dir(_usrDir)
-            # now make actual data directory
-            self._data_dir = os.path.join(_usrDir, str(t.strftime("%m%d")))
+            self._data_dir = os.path.join(self._base_data_dir, current_date)
 
         else:
-            #use the explicit string from the beamline config
-            _usrDir = os.path.join(self._base_data_dir, self._data_sub_dir)
-            # first see if the users directory is exists, if not make it
-            self.ensure_dir(_usrDir)
-            # now make actual data directory
-            self._data_dir = os.path.join(_usrDir, str(t.strftime("%m%d")))
+            self._data_dir = os.path.join(self._base_data_dir, current_date)
 
-        self.ensure_dir(self._data_dir)
+        # self.ensure_dir(self._data_dir)
 
-    def ensure_dir(self, dir):
-        if os.path.exists(dir):
-            pass
-        else:
-            os.makedirs(dir, exist_ok=True)
-            #os.mkdir(dir)
+    # def ensure_dir(self, dir):
+    #     if os.path.exists(dir):
+    #         pass
+    #     else:
+    #         os.makedirs(dir, exist_ok=True)
+    #         #os.mkdir(dir)
 
-    def make_basedata_dir(self):
-        if os.path.exists(self._data_dir):
-            pass
-        else:
-            #os.mkdir(self._data_dir)
-            os.makedirs(self._data_dir, exist_ok=True)
+    # def make_basedata_dir(self):
+    #     if os.path.exists(self._data_dir):
+    #         pass
+    #     else:
+    #         #os.mkdir(self._data_dir)
+    #         os.makedirs(self._data_dir, exist_ok=True)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ Created on Dec 2, 2016
 
 @author: bergr
 """
+from PyQt5.QtGui import QColor
 import simplejson as json
 import numpy as np
 import datetime
@@ -26,14 +27,16 @@ class NumpyAwareJSONEncoder(json.JSONEncoder):
         elif isinstance(obj, set):
             return list(obj)
         elif isinstance(obj, datetime.date):
-            str = obj.isoformat()
+            _str = obj.isoformat()
             # str = unicode(str, errors='replace')
-            str = str(str, errors="ignore")
-            return str
+            _str = str(_str, errors="ignore")
+            return _str
 
         elif isinstance(obj, user_obj):
             # return(obj.__dict__)
             return "USER_OBJ_NOT_SAVED"
+        elif isinstance(obj, QColor):
+            return obj.value()
         elif isinstance(obj, ctypes.c_longlong):
             return obj.value
 

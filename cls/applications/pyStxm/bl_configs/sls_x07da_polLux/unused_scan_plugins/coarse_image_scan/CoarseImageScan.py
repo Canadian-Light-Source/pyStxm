@@ -4,16 +4,16 @@ Created on 04/11/2022
 @author: bergr
 """
 from cls.utils.log import get_module_logger
-from cls.utils.roi_dict_defs import *
-from cls.applications.pyStxm.bl_configs.base_scan_plugins.two_variable_scan.TwoVariableScan import (
-    BaseTwoVariableScanClass
+from cls.applications.pyStxm.bl_configs.base_scan_plugins.coarse_image_scan.CoarseImageScan import (
+    BaseCoarseImageScanClass,
 )
+
 
 _logger = get_module_logger(__name__)
 
 
-class TwoVariableScanClass(BaseTwoVariableScanClass):
-    """a scan for executing a Positioner scan
+class CoarseImageScanClass(BaseCoarseImageScanClass):
+    """a scan for executing a CoarseImage scan
 
     This class is stubbed in here in case you would like to orverride the base implementation, if you want to use
     as is there is no need to do anything else just leave as is
@@ -27,8 +27,8 @@ class TwoVariableScanClass(BaseTwoVariableScanClass):
         :returns: None
         """
         super().__init__(main_obj=main_obj)
-        self.is_pxp = False
-        self.is_lxl = True
+        self.is_pxp = True
+        self.is_lxl = False
         # in working with integration with SLS Pixelator I realized that there should be a separation
         # between how the scan is executed (lxl or pxp) and how the data arrives to be plotted (lxl or pxp)
         # the scan type does not determine the plot type, so added this var so that a ScanClass can dictate which
@@ -44,10 +44,22 @@ class TwoVariableScanClass(BaseTwoVariableScanClass):
         :param det_lst is a list of detector ophyd objects
         :return:
         """
+        # !!!!!!!!!!!!!!!!!!!!!!!!!!!!! for now connect only the first detector, in the future though this needs to setup an emitter for each selected detector
+        # so that the detectors data can be stored and plottable items can be created and built as the scan progresses
         if len(det_lst) > 0 and hasattr(det_lst[0], 'name'):
-            for d in det_lst:
-                if hasattr(d, 'reset'):
-                    d.reset()
-                d.new_plot_data.connect(func)
-                self._det_subscriptions.append(d)
+            d = det_lst[0]
+            if hasattr(d, 'reset'):
+                d.reset()
+            if hasattr(d, 'set_line_scan'):
+                d.set_line_scan()
+            d.new_plot_data.connect(func)
+            self._det_subscription = d
 
+    def go_to_scan_start(self):
+        """
+        stubbed in so that it does nothing
+        Returns
+        -------
+
+        """
+        return True

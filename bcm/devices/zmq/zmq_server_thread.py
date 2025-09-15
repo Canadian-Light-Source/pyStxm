@@ -44,6 +44,7 @@ class ZMQServerThread(QThread):
         if len(command) == 0:  # nothing to send
             print("send_receive_async: WARNING >> send_receive_async called without data")
             return {}
+        print(f"send_receive_async: Sending command [{command}]")
 
         # print(f"send_receive_async: command={command}")
         # send all but last part
@@ -54,7 +55,7 @@ class ZMQServerThread(QThread):
 
         # Receive the multipart response
         reply_parts = await self.req_socket.recv_multipart()
-        # print(f"send_receive_async: Received multipart reply: {reply_parts}")
+        print(f"send_receive_async: Received multipart reply: {reply_parts}")
 
         # Assuming the server sends back a JSON-encoded response in one of the parts
         # We'll deserialize the first part into a Python dictionary
@@ -70,55 +71,6 @@ class ZMQServerThread(QThread):
         #socket.close()
         return response
 
-
-    def zmqRequest(self, command, timeout=500):
-        """
-        This function sends a command through the specified ZMQ request port
-        and returns the response from the ZMQ server
-        """
-
-        def isListOfStrings(data):
-            if type(data) != list:
-                return False
-
-            for d in data:
-                if type(d) != str:  ## Python 3 str = unicode
-                    return False
-            return True
-
-        # check data
-        if not isListOfStrings(command):
-            raise Exception("ERROR >> zmqRequest needs a list of strings (use json.dumps if you have a dictionary)")
-
-        # something to send?
-        if len(command) == 0:  # nothing to send
-            print("WARNING >> zmqRequest called without data")
-            return ''
-
-        try:
-            # send all but last part
-            for i in range(len(command) - 1):
-                self.REQsocket.send_string(command[i], flags=zmq.SNDMORE)
-            # send last part
-            self.REQsocket.send_string(command[-1])
-        except zmq.error.ZMQError:
-            self.zmqREQconnect()
-
-        response = None
-        if (self.REQsocket.poll(timeout) & zmq.POLLIN) != 0:
-            response = [json.loads(x.decode()) for x in self.REQsocket.recv_multipart(zmq.NOBLOCK)]
-            self.REQ_response = True
-            self.time_last_message = datetime.now()
-            if not (type(response) is list and response[0] == {'status': 'ok'}):  # responds with error message
-                error_dialog = QtWidgets.QErrorMessage()
-                error_dialog.showMessage(response[0]['message'])
-                error_dialog.exec_()
-                print(f"ZMQ ERROR >> {response[0]['message']}")
-        else:  # when no response at all
-            self.REQ_response = False
-        self.showTime()
-        return response
-
     def send_receive(self, message_dict):
         """
         Synchronously send a request (as a dictionary) and return the multipart reply.
@@ -130,18 +82,9 @@ class ZMQServerThread(QThread):
         loop = asyncio.get_event_loop()
 
         # Run the async send/receive function in the event loop and wait for it to finish
+        print(f"zmq_server_thread: send_receive called with message_dict={message_dict}")
         return loop.run_until_complete(self.send_receive_async(message_dict))
 
-    # def run(self):
-    #     """
-    #     Run the ZMQ event loop (if necessary).
-    #     """
-    #     loop = asyncio.new_event_loop()
-    #     asyncio.set_event_loop(loop)
-    #     try:
-    #         loop.run_forever()
-    #     finally:
-    #         loop.close()
     def run(self):
 
         #asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())

@@ -47,8 +47,6 @@ class BaseTwoVariableScanParam(ScanParamWidget):
         self.var_dct = {}
         self.populate_variable_cbox()
 
-        self.loadScanBtn.clicked.connect(self.load_scan)
-
         self.prim_positioner = None
         self.sec_positioner = None
         self.prim_units = None
@@ -116,13 +114,6 @@ class BaseTwoVariableScanParam(ScanParamWidget):
         self.idx = self.main_obj.get_scan_panel_order(__file__)
         self.type = scan_types.TWO_VARIABLE_IMAGE
         self.section_id = "TWO_VARIABLE_SCAN"
-        # devices = self.main_obj.get_devices_in_category("POSITIONERS")
-        # var_keys = list(devices['POSITIONERS'].keys())
-        # var_keys = list(devices.keys())
-        # var_keys.sort()
-        # self.axis_strings = ["Detector Counts", "%s microns" % var_keys[0], "", ""]
-        # use the mode that adjusts the zoneplate by calculating the zpz using the A0 mod
-        # self.zp_focus_mode = zp_focus_modes.A0MOD
         self.data_file_pfx = self.main_obj.get_datafile_prefix()
         self.plot_item_type = spatial_type_prefix.ROI
 
@@ -561,11 +552,31 @@ class BaseTwoVariableScanParam(ScanParamWidget):
 
             self.mod_roi(sp_db, do_recalc=False)
 
-            idx = self.var_dct[x_positioner]
-            self.primVarComboBox.setCurrentIndex(idx)
+            idx = self.get_idx_from_positioner_name(x_positioner)
+            if idx:
+                self.primVarComboBox.setCurrentIndex(idx)
+            else:
+                _logger.error(f"Primary positioner {x_positioner} not found in var_dct, cannot set it in combobox")
+                print(f"Primary positioner {x_positioner} not found in var_dct, cannot set it in combobox")
 
-            idx = self.var_dct[y_positioner]
-            self.secVarComboBox.setCurrentIndex(idx)
+            idx = self.get_idx_from_positioner_name(y_positioner)
+            if idx:
+                self.secVarComboBox.setCurrentIndex(idx)
+            else:
+                _logger.error(f"Secondary positioner {y_positioner} not found in var_dct, cannot set it in combobox")
+                print(f"Secondary positioner {y_positioner} not found in var_dct, cannot set it in combobox")
+
+
+    def get_idx_from_positioner_name(self, positioner_name: str):
+        """
+        Get the index of the positioner in the var_dct based on its name.
+        :param positioner_name: The name of the positioner.
+        :return: The index of the positioner in var_dct, or -1 if not found.
+        """
+        for idx, var in self.var_dct.items():
+            if var['name'] == positioner_name:
+                return idx
+        return None
 
     def update_last_settings(self):
         """update the 'default' settings that will be reloaded when this scan pluggin is selected again"""
@@ -594,6 +605,7 @@ class BaseTwoVariableScanParam(ScanParamWidget):
         """
         wdg_com = self.update_single_spatial_wdg_com(positioner=self.prim_positioner)
         self.sub_type = scan_sub_types.POINT_BY_POINT
+        dct_put(wdg_com, SPDB_SCAN_PLUGIN_TYPE, self.type)
         dct_put(wdg_com, SPDB_SCAN_PLUGIN_SUBTYPE, self.sub_type)  # default
         self.update_est_time()
         self.update_last_settings()

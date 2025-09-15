@@ -39,6 +39,7 @@ if BACKEND == 'epics':
 
 else:
     from bcm.devices import MultiSelectable
+    from bcm.devices import Command
 
 #from bcm.devices import BaseOphydGate
 from bcm.devices import DCSShutter, init_pv_report_file
@@ -324,6 +325,11 @@ class device_config(dev_config_base):
 
         elif dct["class"] == "Counter":
             d = Counter(dct["dcs_nm"], name=dct["name"])
+
+        elif dct["class"] == "Command":
+            if "arg_keywords" not in dct.keys():
+                dct["arg_keywords"] = []
+            d = Command(dct["dcs_nm"], name=dct["name"], arg_keywords=dct["arg_keywords"])
 
         elif dct["class"] == "make_basedevice":
             if "units" not in dct.keys():

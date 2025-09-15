@@ -1,5 +1,6 @@
 import pprint
 import os
+import time
 import h5py
 import numpy as np
 import simplejson as json
@@ -10,6 +11,7 @@ from cls.types.stxmTypes import (
 from cls.utils.list_utils import merge_to_one_list
 from cls.utils.dict_utils import dct_get
 from cls.utils.roi_dict_defs import *
+from cls.utils.fileUtils import get_file_path_as_parts
 
 def hdf5_to_dict_with_attributes(hdf5_group):
     """
@@ -50,56 +52,6 @@ def get_roi_from_data_array(dat_array):
     rng = dat_array[-1] - dat_array[0]
     step = dat_array[1] - dat_array[0]
 
-# def hdf5_to_dict(file_path):
-#     """
-#     Converts an HDF5 file into a nested Python dictionary.
-#
-#     Args:
-#         file_path (str): Path to the HDF5 file.
-#
-#     Returns:
-#         dict: Nested dictionary representing the HDF5 file structure.
-#     """
-#
-#     # print(f"hdf5_to_dict: reading [{file_path}]")
-#     def decode_if_bytes(value):
-#         try:
-#             if isinstance(value, bytes):
-#                 return value.decode('utf-8', errors='replace')
-#             elif isinstance(value, np.ndarray):
-#                 if value.dtype.kind == 'S':
-#                     return np.char.decode(value, 'utf-8', errors='replace').tolist()
-#                 return value.tolist()
-#             elif isinstance(value, list):
-#                 return [decode_if_bytes(v) for v in value]
-#         except Exception:
-#             return str(value)
-#         return value
-#
-#     def extract_attrs(h5_obj):
-#         """Extract attributes from an HDF5 object into a dictionary."""
-#         return {decode_if_bytes(k): decode_if_bytes(v) for k, v in h5_obj.attrs.items()}
-#
-#     def traverse_h5_group(group):
-#         """Recursively traverse an HDF5 group and convert it to a dictionary."""
-#         group_dict = {"__attrs__": extract_attrs(group)}
-#
-#         for key, item in group.items():
-#             if isinstance(item, h5py.Group):
-#                 group_dict[key] = traverse_h5_group(item)
-#             elif isinstance(item, h5py.Dataset):
-#                 group_dict[key] = {
-#                     "__data__": decode_if_bytes(item[()]),
-#                     "__attrs__": extract_attrs(item),
-#                 }
-#
-#         return group_dict
-#
-#     with h5py.File(file_path, 'r') as h5_file:
-#         hdf5_dict = traverse_h5_group(h5_file)
-#
-#     return hdf5_dict
-import time
 
 total_items = 0
 total_time = 0
@@ -278,7 +230,7 @@ def get_polarization(data_dgr):
     return dct
 
 
-def get_sp_db_from_entry_dict(file_dct):
+def get_sp_db_dct_from_file_dict(file_dct):
     """
     make sp-dbs for each default axis and also return the stxm_scan_type in the dict
 
@@ -298,9 +250,21 @@ def get_sp_db_from_entry_dict(file_dct):
     dct['energy'] = np.array(dgrp['energy']['__data__'])
     dct['polarization'] = get_polarization_offset_angle_from_instrument(entry_dct)
     dct['start_time'], dct['end_time'], dct['count_time'] = get_times(entry_dct, dgrp)
-    dct['stxm_scan_type'] = get_stxm_scan_type(dgrp)
+
+    scan_type_str = get_stxm_scan_type(dgrp)
+    if scan_type_str == 'generic scan':
+        # Pixelator saves Two Variable scans as generic scan
+        # check the dimensions of the data
+        cntr = list(dct['nxdata'].keys())[0]
+        if dct['nxdata'][cntr].ndim > 1:
+            scan_type_str = 'two variable image'
+
+    dct['stxm_scan_type'] = scan_type_str
     dct['pystxm_enum_scan_type'] = get_pystxm_standard_scan_type_from_string(dct['stxm_scan_type'])
-    dct['file_name'] = file_dct['__attrs__']['file_name']
+    directory, filename, suffix = get_file_path_as_parts(file_dct['__attrs__']['file_name'])
+    dct['file_path'] = file_dct['__attrs__']['file_name']
+    dct['directory'] = directory
+    dct['file_name'] = filename + suffix
 
     axis_names = list(dgrp['__attrs__']['axes'])
     if dct['pystxm_enum_scan_type'] == scan_types.SAMPLE_POINT_SPECTRUM:
@@ -318,6 +282,7 @@ def get_sp_db_from_entry_dict(file_dct):
         ax_data = dgrp[ax_nm]['__data__']
         dct[ax_nm] = np.array(ax_data)
 
+    #print(f"finished: get_sp_db_from_entry_dict: keys={list(dct.keys())}")
     return dct
 
 def get_default_data_from_hdf5_file(file_path):
@@ -488,6 +453,9 @@ def hdf5_to_dict(file_path, load_all_data=True):
 
     with h5py.File(file_path, 'r') as h5_file:
         hdf5_dict = traverse_h5_group(h5_file)
+
+    # make sure the file name is the final file name not the temporary file name
+    hdf5_dict['__attrs__']['file_name'] = file_path
 
     return hdf5_dict
 

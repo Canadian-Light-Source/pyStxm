@@ -3,7 +3,7 @@ import json
 
 from nx_server.nx_server import gen_nx_server_dict
 
-def send_to_server(cmnd, run_uids=[], fprefix='', data_dir='', nx_app_def=None, fpaths=[],host='localhost',port='5555',verbose=False):
+def send_to_server(cmnd, run_uids=[], fprefix='', data_dir='', nx_app_def=None, fpaths=[],host='localhost',port='5555',verbose=False, cmd_args={}):
     """
     This function creates a zmq connecttion to the nxstxm_server
     and passes it serialized data in the form of:
@@ -29,7 +29,8 @@ def send_to_server(cmnd, run_uids=[], fprefix='', data_dir='', nx_app_def=None, 
         socket.setsockopt(zmq.SNDTIMEO, 5000)
         socket.setsockopt(zmq.RCVTIMEO, 5000)
 
-        data = gen_nx_server_dict(cmnd=cmnd, run_uids=run_uids,fprefix=fprefix,data_dir=data_dir,nx_app_def=nx_app_def,fpaths=fpaths)
+        data = gen_nx_server_dict(cmnd=cmnd, run_uids=run_uids,fprefix=fprefix,data_dir=data_dir,nx_app_def=nx_app_def,
+                                  fpaths=fpaths, cmd_args=cmd_args)
 
         # Serialize the dictionary to JSON
         message = json.dumps(data)

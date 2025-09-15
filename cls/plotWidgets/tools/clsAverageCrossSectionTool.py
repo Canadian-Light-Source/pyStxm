@@ -11,6 +11,7 @@ from plotpy.tools import *
 # from guiqwt.config import _
 from plotpy.interfaces import IShapeItemType
 from cls.plotWidgets.config import _
+from plotpy.items import AnnotatedRectangle
 from cls.plotWidgets.tools.utils import get_parent_who_has_attr, get_widget_with_objectname
 
 from cls.utils.roi_utils import get_unique_roi_id, add_to_unique_roi_id_list
@@ -105,69 +106,11 @@ class clsAverageCrossSectionTool(AverageCrossSectionTool):
 
         :returns: None
         """
-        #         cur_shapes = self.manager.getShapeItemsByShapeType(AnnotatedRectangle)
-        #         if((not self.enable_multi_shape) and (len(cur_shapes) > 0)):
-        #             #only allow one shape to exist
-        #
-        #             return
-
-        # if(self.manager.multi_region_enabled):
-        # shape.setTitle('ROI %d' % self.shapeNum)
         shape.setTitle("ROI %d" % self.unique_id)
         # create a new property of the shape
         shape.unique_id = self.unique_id
         shape.shapeNum = self.shapeNum
         shape._parent_tool = self
-
-        #         Shape:
-        #     _styles:
-        #       _ShapeParam___line:
-        #         LineStyleParam:
-        #           Style: Dotted line
-        #           Color: #55ff4c
-        #           Width: 1.0
-        #         LineStyleParam:
-        #           Style: Dotted line
-        #           Color: #06ff02
-        #           Width: 1.0
-        #       _ShapeParam___sym:
-        #         SymbolParam:
-        #           Style: Diamond
-        #           Size: 7
-        #           Border: #00ff7f
-        #           Background color: #00aa7f
-        #           Background alpha: 0.6
-        #         SymbolParam:
-        #           Style: Diamond
-        #           Size: 9
-        #           Border: #308f30
-        #           Background color: #2eff00
-        #           Background alpha: 0.7
-        #       _ShapeParam___fill:
-        #         BrushStyleParam:
-        #           Style: Uniform color
-        #           Color: #ffffff
-        #           Alpha: 0.100007629511
-        #           Angle: 0.0
-        #           sx: 1.0
-        #           sy: 1.0
-        #         BrushStyleParam:
-        #           Style: Uniform color
-        #           Color: #14ff00
-        #           Alpha: 0.176470588235
-        #           Angle: 0.0
-        #           sx: 1.0
-        #           sy: 1.0
-        #     : False
-        #     : False
-
-        # sp = shape.shape.shapeparam
-        # sp.sel_line.color = '#00ff00'
-        # sp.line.color = '#ffff00'
-        # #shape.shape.shapeparam.sel_line.color
-        #
-        # shape.set_item_parameters({"ShapeParam":sp})
-
         self.setup_shape_appearance(shape)
         super(CrossSectionTool, self).setup_shape(shape)
         self.register_shape(shape, final=False)

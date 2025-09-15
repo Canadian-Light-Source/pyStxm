@@ -307,7 +307,7 @@ class ContactSheet(QtWidgets.QWidget):
 
         return folder_thumbnail
 
-    def create_new_scenes(self, directory, force_new=False):
+    def create_new_scenes(self, directory, force_new=True):
         """
         signal handler for when a new directory is selected in the directory selector widget.
         """

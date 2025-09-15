@@ -46,7 +46,7 @@ devq = Query()
 
 NX_SERVER_DATA_SUB_PORT = os.getenv('NX_SERVER_DATA_SUB_PORT', 56566)
 PIX_DATA_SUB_PORT = os.getenv('PIX_DATA_SUB_PORT', 55563)
-DATA_SERVER_HOST = os.getenv('DATA_SERVER_HOST', 'vopi1610-005.clsi.ca')
+DATA_SERVER_HOST = os.getenv('DATA_SERVER_HOST', None)
 
 _logger = get_module_logger(__name__)
 
@@ -138,6 +138,9 @@ class main_object_base(QtCore.QObject):
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
         self.data_sub_context = zmq.Context()
 
+        if DATA_SERVER_HOST is None:
+            _logger.error("DATA_SERVER_HOST environment variable is not set, cannot continue")
+            raise Exception("ERROR: DATA_SERVER_HOST environment variable is not set, cannot continue")
 
         if self.device_backend == 'zmq':
             # a ZMQ DCS Server is running and so mongo and nx_server are not needed
@@ -473,12 +476,11 @@ class main_object_base(QtCore.QObject):
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=False, cmd_args=cmd_args)
         # #print(f"ZMQDevManager: nx_server_load_file: {h5_file_dct}")
-        #
-        # #h5_file_dct = json.loads(res_dct['directories'])
-        # h5_file_dct = nulls_to_nans(json.loads(res_dct['directories']))
-        # # emit the signal that new data has arrived, the contact_sheet will be called to create a data thumbnail with
-        # # this dict
-        # self.engine_widget.new_data.emit(h5_file_dct)
+        if 'directories' in res_dct.keys():
+            h5_file_dct = nulls_to_nans(json.loads(res_dct['directories']))
+            # emit the signal that new data has arrived, the contact_sheet will be called to create a data thumbnail with
+            # this dict
+            self.engine_widget.new_data.emit(h5_file_dct)
 
     def nx_server_load_files(self, data_dir: str=None, *, file_lst: [str], extension='.hdf5') -> None:
         """
@@ -492,12 +494,14 @@ class main_object_base(QtCore.QObject):
         cmd_args['directory'] = data_dir
         cmd_args['extension'] = extension
         fpaths_lst = [os.path.join(data_dir, f) for f in file_lst]
+        # most recent first
+        #sorted_paths = sorted(fpaths_lst, key=lambda x: int(x.split('/')[-1][1:10]), reverse=True)
         cmd_args['files'] = json.dumps(fpaths_lst)
         res = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILES, [], '', data_dir, nx_app_def='nxstxm',
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=True, cmd_args=cmd_args)
         # data_lst = json.loads(res['data_lst'])
-        print(f"ZMQDevManager: nx_server_load_files: {file_lst}")
+        print(f"ZMQDevManager: nx_server_load_files: {fpaths_lst}")
 
 
     def nx_server_request_data_directory_list(self, data_dir: str=None, extension: str='.hdf5') -> None:

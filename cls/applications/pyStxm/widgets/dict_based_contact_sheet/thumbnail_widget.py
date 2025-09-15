@@ -640,7 +640,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         # Set font for text
         painter.setPen(QtCore.Qt.black)
         font = painter.font()
-        font.setPointSize(8)
+        font.setPointSize(6)
         painter.setFont(font)
 
         # Reserve minimal space for text

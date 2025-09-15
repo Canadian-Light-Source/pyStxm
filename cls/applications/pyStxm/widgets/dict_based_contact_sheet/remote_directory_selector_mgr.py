@@ -103,10 +103,10 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
         if selected:
             subdir_name = selected.text().split('\t')[0].strip()
             if subdir_name == '..':
-                if self.data_dir == self.base_data_dir:
-                    # if we are at the base directory, request the subdirs from the main_obj
-                    # this is to avoid an infinite loop of going up to the base dir
-                    return
+                # if self.data_dir == self.base_data_dir:
+                #     # if we are at the base directory, request the subdirs from the main_obj
+                #     # this is to avoid an infinite loop of going up to the base dir
+                #     return
 
                 new_data_dir = os.path.dirname(self.data_dir)
                 do_hide = False

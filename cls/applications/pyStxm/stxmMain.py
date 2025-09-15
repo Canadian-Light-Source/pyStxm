@@ -568,11 +568,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         # for child_widget in self.findChildren(QtWidgets.QWidget):
         #     child_widget.installEventFilter(event_filter)
         # .children()
-        if MAIN_OBJ.get_device_backend() == 'epics':
-            # force a loading of the data
-            self.contact_sheet.on_reload_clicked()
 
-        # self.splash.show_msg('initialization done')
         self.enable_energy_change(True)
 
     def on_update_rois(self, dct):

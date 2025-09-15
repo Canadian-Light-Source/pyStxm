@@ -136,7 +136,8 @@ def determine_exporter(nx_app_def):
 
 def process_and_publish_files(pub_socket, files):
     data_lst = []
-    for fname in files:
+    sorted_paths = sorted(files)
+    for fname in sorted_paths:
         jstr = load_nxstxm_file_to_h5_file_dct(fname, ret_as_jstr=True)
         data_lst.append(jstr)
         ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "load_file_data": jstr})

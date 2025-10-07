@@ -366,6 +366,12 @@ class main_object_base(QtCore.QObject):
         send out a request to teh remote servers/services to send back teh contents of the data directory
         """
         if data_dir is None:
+            return
+
+        if not self.nx_server_is_windows:
+            data_dir = self.make_linux_data_dir(data_dir)
+
+        if data_dir is None:
             data_dir = self.data_dir
             current_date = datetime.now().strftime('%Y-%m-%d')
             data_dir = os.path.join(data_dir, current_date)
@@ -709,8 +715,7 @@ class main_object_base(QtCore.QObject):
         makes calls to save a scan file(s)
         """
         if not self.nx_server_is_windows:
-            data_dir = data_dir.replace(self.win_data_dir, self.linux_data_dir)
-            data_dir = data_dir.replace("\\", "/")
+            data_dir = self.make_linux_data_dir(data_dir)
 
         res = self.send_to_nx_server(NX_SERVER_CMNDS.SAVE_FILES, run_uids, fprefix, data_dir, nx_app_def=nx_app_def,
                                      host=self.nx_server_host, port=self.nx_server_port,
@@ -728,8 +733,7 @@ class main_object_base(QtCore.QObject):
         """
         final_paths = fpaths
         if not self.nx_server_is_windows:
-            data_dir = data_dir.replace(self.win_data_dir, self.linux_data_dir)
-            data_dir = data_dir.replace("\\", "/")
+            data_dir = self.make_linux_data_dir(data_dir)
 
         res = self.send_to_nx_server(NX_SERVER_CMNDS.REMOVE_FILES, data_dir=data_dir, fpaths=final_paths,
                                      host=self.nx_server_host, port=self.nx_server_port, verbose=verbose)

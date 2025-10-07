@@ -311,7 +311,16 @@ class Serializer(event_model.DocumentRouter):
 
         self._file_prefix = "{}-" + file_prefix
         self._kwargs = kwargs
-        self._directory = directory
+        if isinstance(directory, (str, Path)):
+            # Ensure directory exists
+            dir_path = Path(directory)
+            dir_path.mkdir(parents=True, exist_ok=True)
+            self._directory = dir_path  # normalize to Path
+            self._manager = suitcase.utils.MultiFileManager(self._directory)
+        else:
+            self._directory = directory  # a Manager-like object
+            self._manager = directory
+
         self._templated_file_prefix = file_prefix  # set when we get a 'start' document
         self._streamnames = {}  # maps descriptor uids to stream_names
         self._img_idx_map_dct = {}
@@ -326,13 +335,6 @@ class Serializer(event_model.DocumentRouter):
         self._start_found = False
         self._nf = None
 
-        if isinstance(directory, (str, Path)):
-            # The user has given us a filepath; they want files.
-            # Set up a MultiFileManager for them.
-            self._manager = suitcase.utils.MultiFileManager(directory)
-        else:
-            # The user has given us their own Manager instance. Use that.
-            self._manager = directory
 
     @property
     def artifacts(self):

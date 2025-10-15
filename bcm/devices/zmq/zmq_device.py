@@ -199,8 +199,6 @@ class ZMQBaseDevice(ZMQBaseSignal):
         self.name = name
         if name == None:
             self.name = dcs_name
-        else:
-            self.name = name
         self.dcs_name = dcs_name
         self._user_readback = 0
         self._user_setpoint = 0

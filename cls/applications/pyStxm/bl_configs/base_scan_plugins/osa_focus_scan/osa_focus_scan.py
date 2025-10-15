@@ -399,15 +399,22 @@ class BaseOsaFocusScanParam(ScanParamWidget):
             if sflag:
                 sflag.put(SAMPLE_FOCUS_MODE)
 
-            #zp_cent = float(str(self.centerZPFld.text()))
             zp_cent = float(self._new_zpz_pos)
-            # mtrz = self.main_obj.device('DNM_ZONEPLATE_Z')
 
-            mtrz.move(zp_cent)
-            if hasattr(mtrz, 'confirm_stopped'):
-                mtrz.confirm_stopped()
-            if hasattr(mtrz, 'set_position'):
-                mtrz.set_position(fl)
+            #zp_cent = float(str(self.centerZPFld.text()))
+
+            # support for DCS server motors that use offsets
+            if hasattr(mtrz, 'apply_delta_to_offset'):
+                delta = float(str(self.centerZPFld.text())) - zp_cent
+                mtrz.apply_delta_to_offset(delta)
+            else:
+                mtrz.move(zp_cent)
+
+                if hasattr(mtrz, 'confirm_stopped'):
+                    mtrz.confirm_stopped()
+                if hasattr(mtrz, 'set_position'):
+                    mtrz.set_position(fl)
+
             mtrx.move(0.0)
             mtry.move(0.0)
 
@@ -428,10 +435,16 @@ class BaseOsaFocusScanParam(ScanParamWidget):
             zp_cent = float(self._new_zpz_pos)
             # mtrz = self.main_obj.device('DNM_ZONEPLATE_Z')
 
-            mtrz.move(zp_cent)
-            mtrz.confirm_stopped()
+            # support for DCS server motors that use offsets
+            if hasattr(mtrz, 'apply_delta_to_offset'):
+                delta = float(str(self.centerZPFld.text())) - zp_cent
+                mtrz.apply_delta_to_offset(delta)
+            else:
+                mtrz.move(zp_cent)
+                mtrz.confirm_stopped()
 
-            mtrz.set_position(fl)
+                mtrz.set_position(fl)
+
             mtrx.move(0.0)
             mtry.move(0.0)
             # now move to Sample Focus position which is == FL - A0

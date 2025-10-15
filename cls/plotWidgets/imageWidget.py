@@ -16,10 +16,11 @@ from PyQt5 import uic
 
 import copy
 import qwt as Qwt
-
+import simplejson as json
 import numpy as np
 
-from cls.types.stxmTypes import SPEC_ROI_PREFIX
+from cls.utils.roi_utils import make_base_wdg_com, widget_com_cmnd_types
+from cls.types.stxmTypes import SPEC_ROI_PREFIX, scan_types
 from plotpy.plot import PlotOptions
 from plotpy.mathutils.colormap import get_cmap, register_extra_colormap
 from plotpy.plot import  PlotDialog
@@ -568,7 +569,6 @@ class ImageWidgetPlot(PlotDialog):
         self.plot.SIG_PLOT_AXIS_CHANGED.connect(self.on_sig_plot_axis_changed)
         self.plot.SIG_AXES_CHANGED.connect(self.on_sig_axes_changed)
 
-        self.dropped.connect(self.on_drop)
         # force the plot axis to make vertical 0 at the bottom instead of the
         # default of top
         self.plot.set_axis_direction("left", False)
@@ -749,7 +749,139 @@ class ImageWidgetPlot(PlotDialog):
         if self.drop_enabled:
             # import simplejson as json
             mimeData = event.mimeData()
-            if mimeData.hasImage():
+
+            #ToDo: remove this: this is the old assumed local file based drag and drop this
+            if mimeData.hasFormat("application/x-stxmscan"):
+                if mimeData == None:
+                    return
+
+                for format in mimeData.formats():
+                    formatItem = QtWidgets.QTableWidgetItem(format)
+                    formatItem.setFlags(QtCore.Qt.ItemIsEnabled)
+                    formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+
+                    if format == "text/plain":
+                        text = mimeData.text()  # .strip()
+                    elif format == "text/html":
+                        text = mimeData.html()  # .strip()
+                    elif format == "text/uri-list":
+                        text = " ".join([url.toString() for url in mimeData.urls()])
+                    elif format == 'application/x-stxmscan':
+                        itemData = mimeData.data("application/x-stxmscan")
+                        # text = mimeData.text()
+                        _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
+                        _info_jstr = QtCore.QByteArray()
+                        _data_bytes = QtCore.QByteArray()
+                        _pos = QtCore.QPointF()
+                        _stream >> _info_jstr >> _data_bytes >> _pos
+                        _info_str = bytes(_info_jstr).decode()
+                        dct = json.loads(_info_str)
+
+                        fname = dct["path"]
+                        data = np.array(dct["data"])
+                        sp_db = dct["sp_db"]
+                        title = dct["title"]
+                        xlabel = dct.get("xlabel") or "X"
+                        ylabel = dct.get("ylabel") or "Y"
+
+                        wdg_com = make_base_wdg_com()
+                        dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+                        dct_put(wdg_com, SPDB_SPATIAL_ROIS, {sp_db[ID_VAL]: sp_db})
+
+                        if dct["scan_type"] is scan_types.SAMPLE_LINE_SPECTRUM:
+                            # sample line spec data may have different ev region resolutions so its special
+                            # wdg_com = make_base_wdg_com()
+                            # # wdg_com = sp_db
+                            # dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+                            # dct_put(wdg_com, SPDB_SPATIAL_ROIS, {sp_db[ID_VAL]: sp_db})
+                            # self.do_load_linespec_file(
+                            #     fname, wdg_com, data, dropped=False
+                            # )
+                            self.setPlotAxisStrs(ylabel, xlabel)
+                            # self.show()
+                            self.set_autoscale(fill_plot_window=True)
+                            # self.raise_()
+                            if title is not None:
+                                self.plot.set_title(title)
+                            else:
+                                self.plot.set_title(f"{fprefix}{fsuffix}")
+
+                        else:
+                            data_dir, fprefix, fsuffix = get_file_path_as_parts(fname)
+                            rect = dct_get(sp_db, SPDB_RECT)
+                            self.load_image_data(
+                                fname,
+                                wdg_com,
+                                data,
+                                addimages=False,
+                                flipud=False,
+                                name_lbl=True,
+                                item_z=None,
+                                show=True,
+                                dropped=True,
+                                stack_index=0)
+
+                            self.setPlotAxisStrs(ylabel, xlabel)
+
+
+            elif mimeData.hasFormat("application/dict-based-imageplot-stxmscan"):
+
+                for format in mimeData.formats():
+                    formatItem = QtWidgets.QTableWidgetItem(format)
+                    formatItem.setFlags(QtCore.Qt.ItemIsEnabled)
+                    formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
+
+                    if format == "application/dict-based-imageplot-stxmscan":
+                            itemData = mimeData.data(format)
+                            # text = mimeData.text()
+                            _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
+                            _info_jstr = QtCore.QByteArray()
+                            _data_bytes = QtCore.QByteArray()
+                            _pos = QtCore.QPointF()
+                            _stream >> _info_jstr >> _data_bytes >> _pos
+                            _info_str = bytes(_info_jstr).decode()
+                            drop_dct = json.loads(_info_str)
+
+                            # fname = drop_dct["path"]
+                            # convert to array
+                            data = np.array(drop_dct["data"])
+                            sp_db = drop_dct["sp_db"]
+                            title = drop_dct['title']
+                            xlabel = drop_dct.get("xlabel") or "X"
+                            ylabel = drop_dct.get("ylabel") or "Y"
+
+                            wdg_com = make_base_wdg_com()
+                            dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
+                            dct_put(wdg_com, SPDB_SPATIAL_ROIS, {sp_db[ID_VAL]: sp_db})
+                            drop_dct['wdg_com'] = wdg_com
+                            data_dir, fprefix, fsuffix = get_file_path_as_parts(drop_dct['path'])
+                            rect = dct_get(sp_db, SPDB_RECT)
+                            self.load_image_data(
+                                drop_dct['path'],
+                                wdg_com,
+                                data,
+                                addimages=True,
+                                flipud=False,
+                                name_lbl=True,
+                                item_z=None,
+                                show=True,
+                                dropped=True,
+                                stack_index=0)
+
+                            if drop_dct["scan_type"] is scan_types.SAMPLE_LINE_SPECTRUM:
+                                self.setPlotAxisStrs(ylabel, xlabel)
+                                # self.show()
+                                self.set_autoscale(fill_plot_window=True)
+                                # self.raise_()
+                                if title is not None:
+                                    self.plot.set_title(title)
+                                else:
+                                    self.plot.set_title(f"{fprefix}{fsuffix}")
+                            else:
+                                self.setPlotAxisStrs(ylabel, xlabel)
+
+
+            elif mimeData.hasImage():
                 # self.setPixmap(QtGui.QPixmap(mimeData.imageData()))
                 # print 'dropEvent: mime data has an IMAGE'
                 pass
@@ -763,17 +895,18 @@ class ImageWidgetPlot(PlotDialog):
                 # self.setTextFormat(QtCore.Qt.PlainText)
                 # print 'dropEvent: mime data has an TEXT = \n[%s]' %
                 # mimeData.text()
-                dct = mime_to_dct(mimeData)
-                # print 'dropped file == : %s' % dct['file']
-                self.blockSignals(True)
-                self.openfile(
-                    [dct["file"]],
-                    scan_type=dct["scan_type_num"],
-                    addimages=True,
-                    dropped=True,
-                    stack_index=dct.get("stack_index"),
-                )
-                self.blockSignals(False)
+                # dct = mime_to_dct(mimeData)
+                # # print 'dropped file == : %s' % dct['file']
+                # self.blockSignals(True)
+                # self.openfile(
+                #     [dct["file"]],
+                #     scan_type=dct["scan_type_num"],
+                #     addimages=True,
+                #     dropped=True,
+                #     stack_index=dct.get("stack_index"),
+                # )
+                # self.blockSignals(False)
+                pass
             elif mimeData.hasUrls():
                 # print 'dropEvent: mime data has URLs'
                 pass
@@ -788,50 +921,6 @@ class ImageWidgetPlot(PlotDialog):
     def dragLeaveEvent(self, event):
         if self.drop_enabled:
             event.accept()
-
-    @exception
-    def on_drop(self, mimeData=None):
-        # self.formatsTable.setRowCount(0)
-
-        if self.drop_enabled:
-            if mimeData == None:
-                return
-
-            for format in mimeData.formats():
-                formatItem = QtWidgets.QTableWidgetItem(format)
-                formatItem.setFlags(QtCore.Qt.ItemIsEnabled)
-                formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
-
-                if format == "text/plain":
-                    text = mimeData.text()  # .strip()
-                elif format == "text/html":
-                    text = mimeData.html()  # .strip()
-                elif format == "text/uri-list":
-                    text = " ".join([url.toString() for url in mimeData.urls()])
-                elif format == 'application/x-stxmscan':
-                    text = mimeData.text()
-                else:
-                    # text = " ".join(["%02X" % ord(datum)
-                    #                 for datum in mimeData.data(format)])
-                    # text = " ".join(["%02X" % ord(datum) for datum in str(mimeData.data(format))])
-                    if str(mimeData.data(format)).find("8f") > -1:
-                        text = " ".join(
-                            [
-                                "%02X" % ord(datum)
-                                for datum in str(mimeData.data(format))
-                            ]
-                        )
-                    else:
-                        text = " ".join(
-                            [
-                                "%02X" % ord(datum)
-                                for datum in str(
-                                    mimeData.data(format), encoding="cp1252"
-                                )
-                            ])
-
-                    # print(" ".join(["%02X" % ord(datum) for datum in str(mimeData.data(format), encoding='cp1252')]))
-                    # text = " ".join(["%02X" % ord(datum) for datum in str(mimeData.data(format), encoding='cp1252')])
 
     def on_sig_axes_changed(self, obj):
         """
@@ -4187,6 +4276,7 @@ class ImageWidgetPlot(PlotDialog):
             #     rect = parms["RECT"]
             #     self.set_image_parameters(det_nm, rect[0], rect[1], rect[2], rect[3])
 
+
     def get_image_item(self, item_name=''):
         '''
         based on the name of the image item search list of current plot items and return it if it exists
@@ -4622,7 +4712,7 @@ class ImageWidgetPlot(PlotDialog):
         """
         return(list(self.data.keys()))
 
-    def load_file_data(self, fileName, data, img_idx):
+    def load_file_data(self, info_dct, data, img_idx):
         """
         load_file_data(): description
 
@@ -4631,16 +4721,41 @@ class ImageWidgetPlot(PlotDialog):
 
         :param data: data description
         :type data: data type
-
         :returns: None
         """
-        self.fileName = fileName
-        self.data[img_idx] = data
+        self.filename = info_dct['file']
+        rows, columns = data.shape
+        if img_idx not in list(self.data.keys()):
+            image_type = 0
+            #self.initData(filename, image_type, rows, columns)
+            self.init_image_items([img_idx], image_type, rows, columns)
+            item = self.get_image_item(img_idx)
+            item.data = data
+        else:
+            self.data[img_idx] = data
         # self.show_data(self.data)
         if self.filtVal > 0:
             self.apply_filter(self.filtVal)
         else:
             self.show_data(img_idx)
+
+        if info_dct['scan_type_num'] in [scan_types.SAMPLE_LINE_SPECTRUM, scan_types.SAMPLE_POINT_SPECTRUM]:
+            # this == a spectra scan so set the image parameters
+            xmin = info_dct['estart']
+            xmax = info_dct['estop']
+            ymin = info_dct['start'][1]
+            ymax = info_dct['stop'][1]
+
+        else:
+            # this == a spectra scan so set the image parameters
+            xmin = info_dct['start'][0]
+            ymin = info_dct['start'][1]
+            xmax = info_dct['stop'][0]
+            ymax = info_dct['stop'][1]
+
+        self.set_image_parameters(img_idx, xmin, ymin, xmax, ymax)
+        self.apply_auto_contrast(img_idx)
+        self.set_autoscale()
 
     def set_data(self, item_name, data):
         """
@@ -5667,7 +5782,7 @@ class ImageWidgetPlot(PlotDialog):
             self.data = {}
         self.plot.replot()
 
-    def delShapePlotItems(self, exclude_rois=True):
+    def delShapePlotItems(self, exclude_rois=False):
         """
         delShapePlotItems(): description
 
@@ -5675,7 +5790,7 @@ class ImageWidgetPlot(PlotDialog):
         """
         items = self.plot.get_items(item_type=IShapeItemType)
         for item in items:
-            if exclude_rois:
+            if not exclude_rois:
                 if hasattr(item, "title"):
                     if item.title().text().find(SPEC_ROI_PREFIX) == -1:
                         self.delShapePlotItem(item, replot=False)
@@ -5901,8 +6016,7 @@ class ImageWidgetPlot(PlotDialog):
         """
         a function for opening/loading files
         fnames = lisdt of file names including full path
-        scan_type=None,
-        addimages= allow the addition of other images to plot
+        addimages= allodropw the addition of other images to plot
         rotatable=False,
         flipud= boolean to flip the data up and down
         dropped=boolean to indicate the is a dropped file
@@ -6308,6 +6422,160 @@ class ImageWidgetPlot(PlotDialog):
         plot.setFocus()
         if wdg_com is not None:
             sp_db = get_first_sp_db_from_wdg_com(wdg_com)
+            if sp_db == {}:
+                sp_db = wdg_com
+            # only display first energy [0]
+            data = data.astype(np.float64)
+
+            #data[data == 0.0] = np.nan
+            # If a value == INIT values then set them to be nan so that they are not legit data
+            data[data == DEFAULT_IMG_INIT_VAL] = np.nan
+
+            self.data[img_idx] = data
+            if self.data[img_idx].ndim == 3:
+                self.data[img_idx] = self.data[img_idx][0]
+            if flipud:
+                _data = np.flipud(self.data[img_idx])
+            else:
+                _data = self.data[img_idx]
+
+            self.data[img_idx] = _data
+            _logger.info(
+                "[%s] scan loaded" % dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
+            )
+
+        self.image_type = dct_get(sp_db, SPDB_PLOT_IMAGE_TYPE)
+        # if it == a focus image I dont want any of the tools screweing up the
+        # scan params so disable them
+        # if the image was dropped do NOT do anything with the tools
+        if not dropped:
+            if self.image_type in [types.image_types.FOCUS, types.image_types.OSAFOCUS]:
+                self.enable_tools_by_spatial_type(None)
+            else:
+                self.enable_tools_by_spatial_type(dct_get(sp_db, SPDB_PLOT_SHAPE_TYPE))
+
+        dct_put(sp_db, SPDB_PLOT_IMAGE_TYPE, self.image_type)
+        if name_lbl:
+            _title = str(fname)
+            self.setWindowTitle(_title)
+            plot.set_title("%s%s" % (fprefix, fsuffix))
+        else:
+            _title = str(img_idx)
+
+        self.htSc = 1
+        self.widthSc = 1
+
+        if len(self.data) > 0:
+            shape = self.data[img_idx].shape
+            if len(shape) == 3:
+                e, self.dataHeight, self.dataWidth = self.data[img_idx].shape
+                self.data[img_idx] = self.data[img_idx][0]
+            elif len(shape) == 2:
+                self.dataHeight, self.dataWidth = self.data[img_idx].shape
+            else:
+                _logger.error("Not sure what kind of shape this is")
+                return
+
+            self.wPtr = 0
+            self.hPtr = 0
+            # if((not addimages) or (self.items[img_idx] == None)):
+            #if (not addimages) or (img_idx not in self.items.keys()): # this breaks dropping a new image onto a viewer
+            if not addimages:
+                self.delImagePlotItems()
+                self.delShapePlotItems(exclude_rois=False)
+                self.items[img_idx] = make.image(
+                    self.data[img_idx],
+                    interpolation="nearest",
+                    colormap="gist_gray",
+                    title=_title,
+                )
+                plot = self.get_plot()
+                plot.add_item(self.items[img_idx], z=0)
+
+            elif img_idx not in self.items:
+                self.items[img_idx] = make.image(
+                    self.data[img_idx],
+                    interpolation="nearest",
+                    colormap="gist_gray",
+                    title=_title,
+                )
+                items = self.plot.get_items(item_type=ICSImageItemType)
+                plot.add_item(self.items[img_idx], z=len(items) + 1 if item_z is None else item_z)
+
+            (x1, y1, x2, y2) = dct_get(sp_db, SPDB_RECT)
+            # self.set_image_parameters(img_idx, self.items, x1, y1, x2, y2)
+            self.set_image_parameters(img_idx, x1, y1, x2, y2)
+
+            if show:
+                self.show_data(img_idx, True)
+                self.set_autoscale()
+
+            dct_put(sp_db, SPDB_PLOT_KEY_PRESSED, self.inputState.keyisPressed)
+
+            # wdg_com = dct_get(sp_db, ADO_CFG_WDG_COM)
+            wdg_com[WDGCOM_CMND] = widget_com_cmnd_types.LOAD_SCAN
+            sp_db[WDGCOM_CMND] = widget_com_cmnd_types.LOAD_SCAN
+
+            if (
+                dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE)
+                != types.scan_types.SAMPLE_POINT_SPECTRUM
+            ):
+                # self.on_set_aspect_ratio(True)
+                pass
+
+            if dropped:
+                # enable signal emission earlier such that we
+                # can update the scan param widgets.
+                self.blockSignals(False)
+
+            self.scan_loaded.emit(wdg_com)
+
+            if self.show_image_params:
+                self.display_image_params(fprefix, sp_db)
+            else:
+                self.report_image_params(fprefix, sp_db, img_idx=img_idx)
+
+    def load_dropped_data(
+        self,
+        fname,
+        data,
+        addimages=False,
+        flipud=False,
+        name_lbl=True,
+        item_z=None,
+        show=True,
+        dropped=True,
+        stack_index=0,
+    ):
+        """
+        load_dropped_data(): This function is used to load data that has been dropped onto the plot widget. It was
+        added to support data being remotely located on the DCS server, so no physical file access is available
+
+        :param fname: fname description
+        :type fname: fname type
+
+        :param addimages=False: addimages=False description
+        :type addimages=False: addimages=False type
+
+        :returns: None
+        """
+        # # default to img_idx = 0
+        # #img_idx = 0
+        # fname = str(fname)
+        # data_dir, fprefix, fsuffix = get_file_path_as_parts(fname)
+        # # img_idx needs to be unique if user is going to load multiple images.
+        # # append the stack number to avoid overwriting.
+        # img_idx = f"{fprefix}_{stack_index}"
+        # if data_dir is None:
+        #     _logger.error("Problem with file [%s]" % fname)
+        #     return
+        #
+        plot = self.get_plot()
+        plot.setFocus()
+        if wdg_com is not None:
+            sp_db = get_first_sp_db_from_wdg_com(wdg_com)
+            if sp_db == {}:
+                sp_db = wdg_com
             # only display first energy [0]
             data = data.astype(np.float64)
 

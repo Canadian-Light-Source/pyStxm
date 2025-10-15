@@ -303,6 +303,7 @@ class NexusDataIo(QObject):
 
         # rough in support for other nexus definitions
         if nx_def == "nxstxm":
+            # print(f"NexusDataIo: Using nexus definition [{nx_def}]")
             self.load_nexus_file = load_NXstxm_file
             self.create_nexus_file = create_NXstxm_file
             self.add_nexus_entry = create_entry_in_NXstxm_file
@@ -332,8 +333,8 @@ class NexusDataIo(QObject):
 
     def read(self, only_roi_and_data=False):
         # entry_dct = load_NXstxm_file(self.file_name)
-        sp_db = self.load_nexus_file(self.file_name)
-        return sp_db
+        h5_file_dct = self.load_nexus_file(self.file_name)
+        return h5_file_dct
 
     def write(self, dct, use_tmpfile=False, allow_tmp_rename=False):
         save_success = False
@@ -531,9 +532,8 @@ class DataIo(QObject):
         sp_db = None
         if self.data_io is not None:
             if self.file_prefix is not None:
-                sp_db = self.data_io.read()
-        # dct = convert_to_non_unicode(dct)
-        return sp_db
+                h5_file_dct = self.data_io.read()
+        return h5_file_dct
 
     def save(self, data_dct, use_tmpfile=False, allow_tmp_rename=False):
         """save data through the configured data exporter

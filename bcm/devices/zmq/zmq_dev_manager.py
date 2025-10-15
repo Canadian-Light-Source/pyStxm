@@ -6,7 +6,7 @@ import asyncio
 import pprint
 import simplejson as json
 
-from PyQt5.QtCore import QTimer, pyqtSignal
+from PyQt5.QtCore import QTimer, pyqtSignal, QObject
 from PyQt5.QtWidgets import QWidget
 
 from bcm.devices.zmq.zmq_server_thread import ZMQServerThread
@@ -34,10 +34,7 @@ if is_port_forwarded(DCS_SUB_PORT):
         #                 )
         HOST_IS_LOCAL = False
 
-#if dcs_server_name.find('pixelator') > -1:
 if dcs_server_name.find(DCS_HOST_PROC_NAME.lower()) > -1:
-    from bcm.devices.zmq.pixelator.pixelator_commands import cmd_func_map_dct
-    from bcm.devices.zmq.pixelator.app_dcs_devnames import dcs_to_app_devname_map
     from bcm.devices.zmq.pixelator.pixelator_dcs_server_api import DcsServerApi
 else:
     # not supported
@@ -45,7 +42,7 @@ else:
     exit(1)
 
 
-class ZMQDevManager(QWidget):
+class ZMQRunEngine(QObject):
     """
     the main ZMQ device manager that creates the ZMQ context and socket,
     it processes the commands received in the queue, it also keeps a dict of devices so that it can pass the command to
@@ -61,7 +58,10 @@ class ZMQDevManager(QWidget):
     exec_result = pyqtSignal(object)
     prog_changed = pyqtSignal(object)
     msg_to_app = pyqtSignal(object)
+    new_data = pyqtSignal(object)  # this is used to update the data in the widgets
     # bl_component_changed = pyqtSignal(str, object) #component name, val or dict
+    load_files_status = pyqtSignal(object)  # a signal to be emitted when loading files from the DCS server is
+                                           # complete
 
     def __init__(self, devices_dct, parent=None):
         super().__init__(parent)
@@ -72,6 +72,8 @@ class ZMQDevManager(QWidget):
         self.dcs_server_api.scan_status.connect(self.on_scan_status)
         self.dcs_server_api.progress.connect(self.on_scan_progress)
         self.dcs_server_is_local = HOST_IS_LOCAL
+        self.new_data = self.dcs_server_api.new_data  # connect to the new_data signal from the DCS server API
+        self.load_files_status = self.dcs_server_api.load_files_status
 
         # SUB socket: Subscribing to the publisher
         self.sub_socket = self.context.socket(zmq.SUB)
@@ -87,8 +89,8 @@ class ZMQDevManager(QWidget):
         # self.publish_thread = ZMQServerThread("PUB_TO_ZMQ", self.socket, read_only=False)
         self.zmq_dev_server_thread = ZMQServerThread("ZMQServerThread", self.sub_socket, self.req_socket, read_only=False)
         self.zmq_dev_server_thread.message_received.connect(self.add_to_SUB_rcv_queue)
-        # self.publish_thread.start()
-        self.zmq_dev_server_thread.start()
+        # # self.publish_thread.start()
+        # self.zmq_dev_server_thread.start()
 
         self.rcv_queue = queue.Queue()
         self.updateTimer = QTimer()
@@ -99,8 +101,8 @@ class ZMQDevManager(QWidget):
         self.oscilloscope_definition = {}
         self.osa_definition = {}
         self.zone_plate_definition = {}
-        #self.zonePlateDefinition = reply[4]
         self.remote_file_system_info = {}
+
 
         self.devices = {}
         self.devices['POSITIONERS'] = {}
@@ -128,11 +130,13 @@ class ZMQDevManager(QWidget):
         self.devices_dct = devices_dct
         self.devs = {}
         self.dcs_to_appname_map = {}
+        self.app_to_dcsname_map = {}
         device_types = list(devices_dct.keys())
         for dev_type in device_types:
             for app_devname, dev in devices_dct[dev_type].items():
                 dcs_name = dev.dcs_name
                 self.devs[app_devname] = {'dev': dev, 'dcs_name': dcs_name}
+                self.app_to_dcsname_map[app_devname] = dcs_name
                 self.dcs_to_appname_map[dcs_name] = app_devname
 
                 #connect device signals
@@ -148,7 +152,20 @@ class ZMQDevManager(QWidget):
                 dev.do_get.connect(self.on_dev_get)
                 dev.on_connect.connect(self.on_dev_connect)
 
+        # must set the device name maps after all devices have been added
+        self.dcs_server_api.set_device_name_maps(self.app_to_dcsname_map, self.dcs_to_appname_map)
+        # self.publish_thread.start()
+        self.zmq_dev_server_thread.start()
         self.start_feedback()
+
+    def set_default_detector(self, det_name):
+        """
+        This function sets the default detector to be used by the DCS server
+        """
+        if det_name in self.devs.keys():
+            self.dcs_server_api.set_default_detector(det_name)
+        else:
+            print(f"ZMQDevManager: set_default_detector: {det_name} not found in devices")
 
     def is_dcs_server_local(self):
         """
@@ -207,7 +224,7 @@ class ZMQDevManager(QWidget):
         """
         send 'initialize' to pixelator
         """
-        print("connect_to_dcs_server")
+        print(f"connect_to_dcs_server: \n\tDCS_HOST={DCS_HOST} \n\tDCS_HOST_PROC_NAME={DCS_HOST_PROC_NAME} \n\tDCS_SUB_PORT={DCS_SUB_PORT} \n\tDCS_REQ_PORT={DCS_REQ_PORT}")
         result = self.dcs_server_api.connect_to_dcs_server(devices_dct)
 
         #return lists of supported OSAS and ZONEPLATES
@@ -217,6 +234,41 @@ class ZMQDevManager(QWidget):
         dct['REMOTE_FILE_SYSTEM'] = self.dcs_server_config['REMOTE_FILE_SYSTEM']
 
         return result, dct
+
+    def get_settings(self):
+        """
+        return the current settings from the DCS server
+        """
+        settings = self.dcs_server_api.get_settings()
+        return settings
+
+    def load_data_directory(self, data_dir: str=None, *, extension: str='.hdf5') -> None:
+        """
+        This function loads the data directory from the DCS server and updates the remote file system info.
+        It is used to load the data directory from the DCS server.
+        """
+        if data_dir is None:
+            remote_file_system_info = self.remote_file_system_info
+            data_dir = remote_file_system_info['directory']
+        file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+        # if isinstance(file_lst, list):
+        #     for filename in file_lst:
+        #         fname = os.path.join(data_dir, filename)
+        #         self.dcs_server_api.load_file(data_dir, fname)
+        if isinstance(file_lst, list):
+            self.dcs_server_api.load_files(data_dir, file_lst)
+
+    def request_data_directory_list(self, data_dir: str=None) -> None:
+        """
+        This function requests the data directory list from the DCS server and updates the remote file system info.
+        It is used to request the data directory list from the DCS server.
+        """
+        if data_dir is None:
+            remote_file_system_info = self.remote_file_system_info
+            data_dir = remote_file_system_info['directory']
+        file_lst = self.dcs_server_api.request_data_directory_list(data_dir, extension='.hdf5')
+        print(f"ZMQDevManager: request_data_directory_list: {file_lst}")
+        return file_lst
 
     def print_all_devs(self, title: str, devlist: [str]) -> None:
         print(f"{title}:")

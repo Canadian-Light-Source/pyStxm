@@ -50,7 +50,7 @@ pyStxm can be configured to connect to two different types of data acquisition s
 ### Installing
 
 On the machine where you are going to run pyStxm:
-1.	Install miniconda: https://docs.anaconda.com/miniconda/install/
+1.	Install miniforge: https://conda-forge.org/download/
 2.	```conda create -n pyStxm python=3.11.5```
 3.	```git clone https://github.com/Canadian-Light-Source/pyStxm```
 4.	```pip install -r requirements.txt```
@@ -59,8 +59,9 @@ On the machine where you are going to run pyStxm:
       ```shell
       export DCS_HOST="localhost"
       export DCS_HOST_PROC_NAME="Pixelator"
-      export DCS_SUB_PORT="56561"
-      export DCS_REQ_PORT="56562"
+      export DCS_SUB_PORT="55561"
+      export DCS_REQ_PORT="55562"
+      export DATA_SUB_PORT="55563"
       
       export PYSTXM_DATA_DIR =”/tmp”
       export LINUX_DATA_DIR =”/tmp”

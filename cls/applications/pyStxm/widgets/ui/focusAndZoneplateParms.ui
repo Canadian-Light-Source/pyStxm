@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>600</width>
-    <height>730</height>
+    <width>628</width>
+    <height>469</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>600</width>
-    <height>625</height>
+    <height>300</height>
    </size>
   </property>
   <property name="maximumSize">
@@ -25,50 +25,84 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
+  <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
-      <widget class="QGroupBox" name="zpGroupBox">
-       <property name="minimumSize">
-        <size>
-         <width>441</width>
-         <height>250</height>
-        </size>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>608</width>
+        <height>118</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="spacing">
+        <number>0</number>
        </property>
-       <property name="font">
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
+       <property name="leftMargin">
+        <number>0</number>
        </property>
-       <property name="title">
-        <string>Zone Plate</string>
+       <property name="topMargin">
+        <number>0</number>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout_4"/>
-      </widget>
-     </item>
-     <item>
-      <widget class="QGroupBox" name="osaGroupBox">
-       <property name="minimumSize">
-        <size>
-         <width>130</width>
-         <height>161</height>
-        </size>
+       <property name="rightMargin">
+        <number>0</number>
        </property>
-       <property name="font">
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
+       <property name="bottomMargin">
+        <number>0</number>
        </property>
-       <property name="title">
-        <string>OSA</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_6"/>
-      </widget>
-     </item>
-    </layout>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QGroupBox" name="zpGroupBox">
+           <property name="minimumSize">
+            <size>
+             <width>441</width>
+             <height>100</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="title">
+            <string>Zone Plate</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_4"/>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="osaGroupBox">
+           <property name="minimumSize">
+            <size>
+             <width>130</width>
+             <height>50</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="title">
+            <string>OSA</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_6"/>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </widget>
    </item>
    <item>
     <widget class="Line" name="line">
@@ -79,6 +113,12 @@
    </item>
    <item>
     <widget class="QGroupBox" name="groupBox">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>123</height>
+      </size>
+     </property>
      <property name="font">
       <font>
        <weight>75</weight>
@@ -175,6 +215,12 @@
         </item>
         <item row="1" column="2">
          <widget class="QLineEdit" name="a0Fld">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="maximumSize">
            <size>
             <width>100</width>

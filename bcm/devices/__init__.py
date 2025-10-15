@@ -177,6 +177,7 @@ elif USE_PIXELATOR:
     #from .ophyd.waveform import Waveform
     from .zmq.motor import ZMQMotor as MotorQt
     from .zmq.stxm_sample_motor import sample_abstract_motor, sample_motor
+    from .zmq.command import ZMQCommand as Command
     # from .zmq.motor import ZMQMotor as sample_motor
     # from .zmq.zmq_device import ZMQMotor as e712_sample_motor
 

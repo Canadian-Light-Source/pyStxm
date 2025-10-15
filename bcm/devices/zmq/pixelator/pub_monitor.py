@@ -1,3 +1,4 @@
+import os
 import zmq
 
 def pub_monitor(host, port, ignore_detector=False):
@@ -47,8 +48,9 @@ def pub_monitor(host, port, ignore_detector=False):
 
 if __name__ == "__main__":
     # Set the host and port dynamically
-    HOST = "localhost"  # Replace with the PUB socket host
-    PORT = 56561        # Replace with the PUB socket port
+    host = os.getenv('DCS_HOST', 'localhost')  # Default to 'localhost' if not set
+    sub_port = os.getenv('DCS_SUB_PORT', 56561)
+
 
     # Start the PUB socket monitor
-    pub_monitor(HOST, PORT, ignore_detector=True)
+    pub_monitor(host, sub_port, ignore_detector=True)

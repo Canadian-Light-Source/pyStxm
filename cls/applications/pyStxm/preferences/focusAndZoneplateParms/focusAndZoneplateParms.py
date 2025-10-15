@@ -96,10 +96,11 @@ class FocusParams(BasePreference):
         else:
             self.sampleZFbkLbl.setText("No DNM_IDEAL_A0 Device in database")
 
-        if MAIN_OBJ.device("DNM_ZPZ_RBV"):
+        #if MAIN_OBJ.device("DNM_ZPZ_RBV"):
+        if MAIN_OBJ.device("DNM_ZONEPLATE_Z"):
             self.zpzFbkLbl = assign_aiLabelWidget(
                 self.zpzFbkLbl,
-                MAIN_OBJ.device("DNM_ZPZ_RBV"),
+                MAIN_OBJ.device("DNM_ZONEPLATE_Z"),
                 hdrText="Zpz",
                 egu="um",
                 title_color="white",
@@ -180,10 +181,14 @@ class FocusParams(BasePreference):
 
         # get previous selected zp def and load the pvs
         zp_idx = self.get_section("ZP_FOCUS_PARAMS.ZP_IDX")
+        if zp_idx is None:
+            zp_idx = 0
         self.zpToolBox.setCurrentIndex(zp_idx)
 
         # do same for osa
         osa_idx = self.get_section("ZP_FOCUS_PARAMS.OSA_IDX")
+        if osa_idx is None:
+            osa_idx = 0
         self.osaToolBox.setCurrentIndex(osa_idx)
 
         self.update_zp_selection(zp_idx=zp_idx)
@@ -324,6 +329,11 @@ class FocusParams(BasePreference):
         if 'zpA1' in self._cur_sel_zp_def.keys():
             self.flFbkLbl.on_val_change(new_fl)
 
+            if MAIN_OBJ.get_device_backend() == 'zmq':
+                # for zmq backend we need to set the focal length on the device
+                MAIN_OBJ.device("DNM_FOCAL_LENGTH").set_readback(new_fl)
+
+
     def on_energy_fbk_changed(self, val):
         self.update_zp_data(update_defaults=False)
 
@@ -415,6 +425,7 @@ class FocusParams(BasePreference):
 
         zp_defs = MAIN_OBJ.get_preset_section("ZP_DEFS")
         MAIN_OBJ.set_dcs_zoneplate_definitions(zp_defs)
+
 
     def get_cur_zp_def(self):
         self.update_zp_data()

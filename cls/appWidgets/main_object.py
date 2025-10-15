@@ -1,5 +1,9 @@
+
 import os.path
+import numpy as np
 import sys
+import zmq
+import zmq.asyncio
 from PyQt5 import QtCore, QtWidgets
 from datetime import datetime
 import pathlib
@@ -8,6 +12,7 @@ from tinydb import TinyDB, Query
 import simplejson as json
 
 from nx_server.nx_server import NX_SERVER_CMNDS, NX_SERVER_REPONSES
+from cls.utils.arrays import nulls_to_nans
 from cls.utils.dict_utils import dct_put, dct_get, dct_merge, find_key_in_dict
 from cls.utils.version import get_version
 from cls.utils.process_utils import check_windows_procs_running
@@ -16,6 +21,7 @@ from cls.utils.roi_dict_defs import *
 from cls.utils.log import get_module_logger
 from cls.utils.fileUtils import get_module_name
 from cls.utils.json_utils import json_to_dict
+from cls.utils.environment import get_environ_var
 from cls.types.stxmTypes import (
     sample_fine_positioning_modes,
     sample_positioning_modes,
@@ -26,7 +32,7 @@ from cls.scan_engine.bluesky.qt_run_engine import EngineWidget, ZMQEngineWidget
 from bcm.devices import BACKEND
 
 if BACKEND == 'zmq':
-    from bcm.devices.zmq.zmq_dev_manager import ZMQDevManager
+    from bcm.devices.zmq.zmq_dev_manager import ZMQRunEngine
 # from bcm.devices.device_names import *
 
 # POS_TYPE_BL = 'BL'
@@ -37,6 +43,10 @@ POS_TYPE_ES = "POS_TYPE_ES"
 USE_ZMQ = False
 
 devq = Query()
+
+NX_SERVER_DATA_SUB_PORT = os.getenv('NX_SERVER_DATA_SUB_PORT', 56566)
+PIX_DATA_SUB_PORT = os.getenv('PIX_DATA_SUB_PORT', 55563)
+DATA_SERVER_HOST = os.getenv('DATA_SERVER_HOST', None)
 
 _logger = get_module_logger(__name__)
 
@@ -56,6 +66,25 @@ def gen_session_obj():
     )  # unique ID for the 6 position sample holder, maybe from a barcode?
     dct_put(ses_obj, "SAMPLE_POS", 1)  # current sample position (1 - 6)
     return ses_obj
+
+class DataSubListenerThread(QtCore.QThread):
+    message_received = QtCore.pyqtSignal(object)
+
+    def __init__(self, sub_socket):
+        super().__init__()
+        self.sub_socket = sub_socket
+        self._running = True
+
+    def run(self):
+        self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
+        while self._running:
+            msg = self.sub_socket.recv_string()
+            self.message_received.emit(msg)
+
+    def stop(self):
+        self._running = False
+        self.quit()
+        self.wait()
 
 
 class main_object_base(QtCore.QObject):
@@ -83,6 +112,9 @@ class main_object_base(QtCore.QObject):
     changed = QtCore.pyqtSignal()
     export_msg = QtCore.pyqtSignal(object)
     seldets_changed = QtCore.pyqtSignal(list) #when the user selects different detectors emit this signal with list of app_devnames
+    new_data = QtCore.pyqtSignal(object)  # when new data is received from the zmq server emit this signal with the data
+    data_sub_message_received = QtCore.pyqtSignal(str)
+    load_files_status = QtCore.pyqtSignal(bool)
 
     def __init__(self, name, endstation, beamline_cfg_dct=None, splash=None, main_cfg=None):
 
@@ -92,6 +124,7 @@ class main_object_base(QtCore.QObject):
         self.endstation = endstation
         self.beamline_cfg_dct = beamline_cfg_dct
         self.beamline_id = beamline_cfg_dct["BL_CFG_MAIN"]["endstation_prefix"]
+        self.beamline_plugin_dir = beamline_cfg_dct["BL_CFG_MAIN"]["plugin_dir"]
         self.main_obj = {}
         self.endstation_prefix = "uhv"  # for default
         self.devdb_path = None
@@ -99,8 +132,15 @@ class main_object_base(QtCore.QObject):
         self.default_ptycho_cam_nm = None
         self.device_backend = BACKEND #default
         self.zmq_dev_mgr = None
-        self.win_data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
+        self.dcs_settings = None
+        self.win_data_dir = self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.linux_data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['linux_data_dir']
+        self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
+        self.data_sub_context = zmq.Context()
+
+        if DATA_SERVER_HOST is None:
+            _logger.error("DATA_SERVER_HOST environment variable is not set, cannot continue")
+            raise Exception("ERROR: DATA_SERVER_HOST environment variable is not set, cannot continue")
 
         if self.device_backend == 'zmq':
             # a ZMQ DCS Server is running and so mongo and nx_server are not needed
@@ -108,7 +148,19 @@ class main_object_base(QtCore.QObject):
             self.nx_server_host = None
             self.nx_server_port = None
             self.nx_server_is_windows = None
+            # SUB socket: Subscribing to the publisher
+            print(f"Connecting to data server at tcp://{DATA_SERVER_HOST}:{PIX_DATA_SUB_PORT}")
+            self.data_sub_socket = self.data_sub_context.socket(zmq.SUB)
+            self.data_sub_socket.connect(f"tcp://{DATA_SERVER_HOST}:{PIX_DATA_SUB_PORT}")  # Connect to the PUB socket
+            self.data_sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
+
         else:
+            # SUB socket: Subscribing to the publisher
+            self.data_sub_socket = self.data_sub_context.socket(zmq.SUB)
+            print(f"Connecting to data server at tcp://{DATA_SERVER_HOST}:{NX_SERVER_DATA_SUB_PORT}")
+            self.data_sub_socket.connect(f"tcp://{DATA_SERVER_HOST}:{NX_SERVER_DATA_SUB_PORT}")  # Connect to the PUB socket
+            self.data_sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
+
             if main_cfg:
                 self.mongo_db_nm = main_cfg.get_value("MAIN", "mongo_db_nm")
                 self.nx_server_host = main_cfg.get_value("MAIN", "nx_server_host")
@@ -160,15 +212,60 @@ class main_object_base(QtCore.QObject):
         else:
             self.engine_widget = EngineWidget(mongo_db_nm=self.mongo_db_nm)
             self.nx_server_is_running = self.check_nx_server_running()
+            # when the engine widget receives new data it will emit this signal
+            self.new_data = self.engine_widget.new_data
+            self.load_files_status = self.engine_widget.load_files_status
+
+        self.data_sub_message_received.connect(self.on_data_sub_message_received)
+        self.start_sub_listener_thread()
+
+    def start_sub_listener_thread(self):
+        """
+        start a thread to listen for messages from the data server
+        """
+        self.data_sub_listener_thread = DataSubListenerThread(self.data_sub_socket)
+        self.data_sub_listener_thread.message_received.connect(self.on_data_sub_message_received)
+        self.data_sub_listener_thread.start()
+
+    def on_data_sub_message_received(self, msg):
+        """
+        The data server sends hf_file_dct's so convert jstrs to dicts and emit the new_data signal
+        """
+        if isinstance(msg, str):
+            if len(msg) < 5:
+                return
+            # print(f"MAIN_OBJ:on_data_sub_message_received: DATA SUB MSG: {msg[:100]}")
+            msg_dct = json.loads(msg)
+            if 'load_file_data' in msg_dct.keys():
+                if len(msg_dct['load_file_data']) < 5:
+                    return
+                h5_file_dct = json.loads(msg_dct['load_file_data'])
+                self.engine_widget.new_data.emit(h5_file_dct)
+
+            elif 'load_files_status' in msg_dct.keys():
+                done = False
+                status_str = msg_dct['load_files_status']
+                if status_str.find('complete') >= 0:
+                    done = True
+                self.engine_widget.load_files_status.emit(done)
+
 
 
     def init_zmq_engine_widget(self, devices_dct):
         """
-        the BACKEND is set to zmq so instanciate the zmq_device_manager
+        the BACKEND is set to zmq so instantiate the zmq_device_manager
         """
         self.engine_widget = ZMQEngineWidget(devices_dct)
+        self.engine_widget.set_default_detector(self.default_detector)
         result, dcs_params_dct = self.engine_widget.engine.connect_to_dcs_server(devices_dct)
-        
+        # when the engine widget receives new data it will emit this signal
+        self.new_data = self.engine_widget.new_data
+        self.load_files_status = self.engine_widget.load_files_status
+
+        self.dcs_settings = self.engine_widget.engine.get_settings()
+
+        self.check_dcs_settings(self.dcs_settings)
+
         if not result:
             _logger.error(f"Failed to connect to DCS server")
             raise Exception("ERROR >> Failed to connect to DCS server")
@@ -192,7 +289,303 @@ class main_object_base(QtCore.QObject):
             #now updates teh PRESETS sections
             dct_put(self.main_obj, "PRESETS.OSA_DEFS", self.beamline_cfg_dct['OSA_DEFS'])
             dct_put(self.main_obj, "PRESETS.ZP_DEFS", self.beamline_cfg_dct['ZP_DEFS'])
+
         return result
+
+    def check_dcs_settings(self, settings: dict=None):
+
+        if self.get_device_backend() == 'zmq':
+            # {'Detector_Archive_Default': 'no',
+            #  'Focus_Archive_Default': 'no',
+            #  'Motor_Archive_Default': 'no',
+            #  'NeXusBaseDirectory': '/home/bergr/srv-unix-home/Data',
+            #  'NeXusDiscardSubDirectory': 'discard',
+            #  'NeXusLocalBaseDirectory': '/home/bergr/srv-unix-home/Data',
+            #  'NeXusScanDate': '2025-08-26',
+            #  'NeXusScanNumber': '001',
+            #  'OSA Focus_Archive_Default': 'yes',
+            #  'OSA_Archive_Default': 'yes',
+            #  'SampleImagePreifx': '.',
+            #  'Sample_Archive_Default': 'locked',
+            #  'axisConfigFileName': './config/axis.json',
+            #  'beamline': 'SLS PolLux X07DA',
+            #  'changeUserScript': 'echo',
+            #  'compression': 'LZW',
+            #  'controllerConfigFileName': './config/controllerNoHardware.json',
+            #  'dataPublisherPort': '56563',
+            #  'defaultSaveLocal': 'yes',
+            #  'defaultUsername': 'stxm',
+            #  'detectorConfigFileName': './config/detectorNoHardware.json',
+            #  'endOfScanScript': './scripts/endOfScan',
+            #  'instrumentConfigFileName': './config/instrument.json',
+            #  'log4cppPropertiesFileName': './config/log4cpp.properties',
+            #  'microscopeControlConfigFileName': './config/microscopeControl.json',
+            #  'missingDataCheckInterval': '0.1',
+            #  'missingDataCheckMaxChecks': '5',
+            #  'pixelClockConfigFileName': './config/pixelClockNoHardware.json',
+            #  'positionerConfigFileName': './config/positionerNoHardware.json',
+            #  'publisherPort': '56561',
+            #  'requestPort': '56562',
+            #  'sampleConfigFileName': './config/sample.json',
+            #  'topupConfigFileName': './config/topupNoHardware.json',
+            #  'zonePlateConfigFileName': './config/zonePlate.json'}
+            # check that the settings specified by the dcs are the ones that we are using
+            DCS_HOST = get_environ_var('DCS_HOST')
+            DCS_HOST_PROC_NAME = get_environ_var('DCS_HOST_PROC_NAME')
+            DCS_SUB_PORT = int(get_environ_var('DCS_SUB_PORT'))
+            DCS_REQ_PORT = int(get_environ_var('DCS_REQ_PORT'))
+
+            if self.data_dir != settings['NeXusBaseDirectory'] and self.data_dir != settings['NeXusLocalBaseDirectory']:
+                _logger.error(f"Data directory in DCS server [{settings['NeXusBaseDirectory']}] does not match the one in the GUI [{self.data_dir}]")
+                print(f"\nERROR: Data directory in DCS server [{settings['NeXusBaseDirectory']}] does not match the one in the GUI [{self.data_dir}]\n")
+                #update the dcs server
+                # self.engine_widget.engine.set_data_directory(self.data_dir)
+
+            if int(settings['dataPublisherPort']) != int(PIX_DATA_SUB_PORT):
+                _logger.error(f"Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{PIX_DATA_SUB_PORT}]")
+                print(f"ERROR: Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{PIX_DATA_SUB_PORT}]")
+                #update the dcs server
+                #self.engine_widget.engine.set_data_publisher_port(PIX_DATA_SUB_PORT)
+
+            if int(settings['publisherPort']) != DCS_SUB_PORT:
+                _logger.error(f"Command publisher port in DCS server [{settings['publisherPort']}] does not match the one in the GUI [{DCS_SUB_PORT}]")
+                print(f"ERROR: Command publisher port in DCS server [{settings['publisherPort']}] does not match the one in the GUI [{DCS_SUB_PORT}]")
+                #update the dcs server
+                #self.engine_widget.engine.set_command_publisher_port(DCS_SUB_PORT)
+
+            if int(settings['requestPort']) != DCS_REQ_PORT:
+                _logger.error(f"Command request port in DCS server [{settings['requestPort']}] does not match the one in the GUI [{DCS_REQ_PORT}]")
+                print(f"ERROR: Command request port in DCS server [{settings['requestPort']}] does not match the one in the GUI [{DCS_REQ_PORT}]")
+                #update the dcs server
+                #self.engine_widget.engine.set_command_request_port(DCS_REQ_PORT)
+
+
+
+    def reload_data_directory(self, data_dir: str=None):
+        """
+        send out a request to teh remote servers/services to send back teh contents of the data directory
+        """
+        if data_dir is None:
+            return
+
+        if not self.nx_server_is_windows:
+            data_dir = self.make_linux_data_dir(data_dir)
+
+        if data_dir is None:
+            data_dir = self.data_dir
+            current_date = datetime.now().strftime('%Y-%m-%d')
+            data_dir = os.path.join(data_dir, current_date)
+
+        if self.get_device_backend() == 'zmq':
+            # request that the DCS sends back the current contents of the data directory
+            #current_date = datetime.now().strftime('%Y-%m-%d')
+            #self.zmq_reload_data_directory(os.path.join(self.data_dir, current_date))
+            self.zmq_reload_data_directory(data_dir)
+        else:
+            self.nx_server_reload_data_directory(data_dir)
+
+    def get_master_file_seq_names(self, data_dir: str=None,
+        thumb_ext="jpg",
+        dat_ext="hdf5",
+        stack_dir=False,
+        num_desired_datafiles=1,
+        new_stack_dir=False,
+        prefix_char=None,
+        dev_backend='epics'
+        ) -> list:
+        """
+        get a list of master file sequence names from the data directory from teh remote
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+
+        if dev_backend == 'epics':
+            cmd_args = {}
+            cmd_args['data_dir'] = data_dir
+            cmd_args['thumb_ext'] = thumb_ext
+            cmd_args['dat_ext'] = dat_ext
+            cmd_args['stack_dir'] = stack_dir
+            cmd_args['num_desired_datafiles'] = num_desired_datafiles
+            cmd_args['new_stack_dir'] = new_stack_dir
+            cmd_args['prefix_char'] = prefix_char
+            cmd_args['dev_backend'] = dev_backend
+
+            master_seq_jstr = self.send_to_nx_server(NX_SERVER_CMNDS.GET_FILE_SEQUENCE_NAMES, [], '', data_dir, nx_app_def='nxstxm',
+                                             host=self.nx_server_host, port=self.nx_server_port,
+                                             verbose=False, cmd_args=cmd_args)
+            dct = json.loads(master_seq_jstr['seq_name_jstr'])
+            # the integer keys have been turned into strings, so we need to convert them back to integers
+            master_seq_dct = {}
+            keys = dct.keys()
+            for key in keys:
+                if isinstance(key, str):
+                    if key.isdigit():
+                        int_key = int(key)
+                elif isinstance(key, int):
+                    int_key = key
+                master_seq_dct[int_key] = dct[key]
+
+        else:
+            from cls.utils.file_system_tools import master_get_seq_names
+
+            master_seq_dct = master_get_seq_names(data_dir=data_dir,
+                    thumb_ext=thumb_ext,
+                    dat_ext=dat_ext,
+                    stack_dir=stack_dir,
+                    num_desired_datafiles=num_desired_datafiles,
+                    new_stack_dir=new_stack_dir,
+                    prefix_char=prefix_char,
+                    dev_backend=dev_backend)
+
+        return master_seq_dct
+
+    def nx_server_load_data_directory(self, data_dir: str=None, *, extension: str='.hdf5') -> None:
+        """
+        This function loads the data directory from the DCS server and updates the remote file system info.
+        It is used to load the data directory from the DCS server.
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+        #file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+        cmd_args = {}
+        cmd_args['directory'] = data_dir
+        cmd_args['extension'] = extension
+        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_DIRECTORY, [], '', data_dir, nx_app_def='nxstxm',
+                                     host=self.nx_server_host, port=self.nx_server_port,
+                                     verbose=False, cmd_args=cmd_args)
+        if 'directories' in res_dct.keys():
+            file_lst = res_dct['directories']['files']
+            if isinstance(file_lst, list):
+                self.nx_server_load_files(data_dir, file_lst=file_lst)
+
+            subdir_lst = res_dct['directories']['directories']
+            if isinstance(subdir_lst, list):
+                for subdir in subdir_lst:
+                    #self.nx_server_load_file(data_dir, fname)
+                    # cause a directory data thumbnail to be created
+                    fname = subdir + extension
+                    self.nx_server_load_file(os.path.join(data_dir, subdir), fname, extension=extension)
+
+    def nx_server_load_file(self, data_dir: str=None, fname: str=None, extension: str='.hdf5') -> None:
+        """
+        This function loads the data directory from the DCS server and updates the remote file system info.
+        It is used to load the data directory from the DCS server.
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+        #file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+        cmd_args = {}
+        cmd_args['directory'] = data_dir
+        cmd_args['extension'] = extension
+        cmd_args['file'] = os.path.join(data_dir, fname)
+        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILE, [], '', data_dir, nx_app_def='nxstxm',
+                                     host=self.nx_server_host, port=self.nx_server_port,
+                                     verbose=False, cmd_args=cmd_args)
+        # #print(f"ZMQDevManager: nx_server_load_file: {h5_file_dct}")
+        if 'directories' in res_dct.keys():
+            h5_file_dct = nulls_to_nans(json.loads(res_dct['directories']))
+            # emit the signal that new data has arrived, the contact_sheet will be called to create a data thumbnail with
+            # this dict
+            self.engine_widget.new_data.emit(h5_file_dct)
+
+    def nx_server_load_files(self, data_dir: str=None, *, file_lst: [str], extension='.hdf5') -> None:
+        """
+        This function loads the data directory from the DCS server and updates the remote file system info.
+        It is used to load the data directory from the DCS server.
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+        #file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+        cmd_args = {}
+        cmd_args['directory'] = data_dir
+        cmd_args['extension'] = extension
+        fpaths_lst = [os.path.join(data_dir, f) for f in file_lst]
+        # most recent first
+        #sorted_paths = sorted(fpaths_lst, key=lambda x: int(x.split('/')[-1][1:10]), reverse=True)
+        cmd_args['files'] = json.dumps(fpaths_lst)
+        res = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILES, [], '', data_dir, nx_app_def='nxstxm',
+                                     host=self.nx_server_host, port=self.nx_server_port,
+                                     verbose=True, cmd_args=cmd_args)
+        # data_lst = json.loads(res['data_lst'])
+        print(f"ZMQDevManager: nx_server_load_files: {fpaths_lst}")
+
+
+    def nx_server_request_data_directory_list(self, data_dir: str=None, extension: str='.hdf5') -> None:
+        """
+        This function requests the data directory list from the DCS server and updates the remote file system info.
+        It is used to request the data directory list from the DCS server.
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+        # file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+        cmd_args = {}
+        cmd_args['directory'] = data_dir
+        cmd_args['fileExtension'] = extension
+        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LIST_DIRECTORY, [], '', data_dir, nx_app_def='nxstxm',
+                                         host=self.nx_server_host, port=self.nx_server_port,
+                                         verbose=False, cmd_args=cmd_args)
+        return res_dct['sub_directories']
+
+    def nx_server_reload_data_directory(self, data_dir: str=None):
+        """
+        reload the data directory from nxserver
+        """
+        if data_dir is None:
+            _logger.error(
+                f"nx_server_reload_data_directory: data_dir passed cannot be None")
+            return False
+
+        if self.get_device_backend() == 'epics':
+            resp_dct = self.nx_server_load_data_directory(data_dir)
+            return True
+        else:
+            _logger.error(f"nx_server_reload_data_directory: not implemented for this backend ->[{self.get_device_backend()}] ")
+            return False
+
+    def zmq_reload_data_directory(self, data_dir: str=None):
+        """
+        reload the data directory in the zmq engine widget
+        """
+        if self.get_device_backend() == 'zmq':
+            if data_dir is None:
+                _data_dir = self.data_dir
+                current_date = datetime.now().strftime('%Y-%m-%d')
+                self.engine_widget.engine.load_data_directory(data_dir=f'{os.path.join(_data_dir,current_date)}')
+            else:
+                self.engine_widget.engine.load_data_directory(data_dir=data_dir)
+            return True
+        else:
+            _logger.error(f"zmq_reload_data_directory: not implemented for this backend ->[{self.get_device_backend()}] ")
+            return False
+
+    def request_data_dir_list(self, base_dir: str=None):
+        """
+        request the zmq server to return a list of data directories
+        """
+        if self.get_device_backend() == 'zmq':
+            if base_dir is None:
+                _base_dir = self.data_dir
+            else:
+                _base_dir = base_dir
+            return self.zmq_req_data_dir_list(data_dir=_base_dir)
+        else:
+            return self.nx_server_request_data_directory_list(data_dir=base_dir, extension='.hdf5')
+            #_logger.error(f"request_data_dir_list: not implemented for this backend ->[{self.get_device_backend()}] ")
+
+
+    def zmq_req_data_dir_list(self, data_dir: str=None):
+        """
+        request the zmq server to return a list of data directories
+        """
+        if self.get_device_backend() == 'zmq':
+            if data_dir is None:
+                _data_dir = self.data_dir
+            else:
+                _data_dir = data_dir
+            return self.engine_widget.engine.request_data_directory_list(data_dir=_data_dir)
+        else:
+            _logger.error(f"zmq_req_data_dir_list: not implemented for this backend ->[{self.get_device_backend()}] ")
+            return False
 
     def get_beamline_cfg_preset(self, preset_name: str =None):
         """
@@ -281,7 +674,7 @@ class main_object_base(QtCore.QObject):
         return data_dir
 
     def send_to_nx_server(self, cmnd, run_uids=[], fprefix='', data_dir='', nx_app_def=None, fpaths=[],
-                          host='localhost', port=5555, verbose=False):
+                          host='localhost', port=5555, verbose=False, cmd_args={}):
         """
         a function to send data to the nx server over a zmq pubsub socket
         run_uids: tuple of run_uids retuirned from teh RE following a scan
@@ -293,7 +686,7 @@ class main_object_base(QtCore.QObject):
         verbose=False
         """
         res = send_to_server(cmnd, run_uids, fprefix, data_dir, nx_app_def=nx_app_def, fpaths=fpaths, host=host,
-                             port=port, verbose=verbose)
+                             port=port, verbose=verbose, cmd_args=cmd_args)
         if res == -1:
             _logger.error(
                 "There was an error sending/receiving data from nx_server, check that it is running properly")
@@ -322,12 +715,15 @@ class main_object_base(QtCore.QObject):
         makes calls to save a scan file(s)
         """
         if not self.nx_server_is_windows:
-            data_dir = data_dir.replace(self.win_data_dir, self.linux_data_dir)
-            data_dir = data_dir.replace("\\", "/")
+            data_dir = self.make_linux_data_dir(data_dir)
 
         res = self.send_to_nx_server(NX_SERVER_CMNDS.SAVE_FILES, run_uids, fprefix, data_dir, nx_app_def=nx_app_def,
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=verbose)
+
+        # now ask nx server to load the file
+        self.nx_server_load_file(data_dir, fprefix)
+
         return res['status']
 
     def remove_ptycho_tif_files(self, data_dir: str, fpaths: list, host: str = 'localhost', port: int = 5555,
@@ -337,8 +733,7 @@ class main_object_base(QtCore.QObject):
         """
         final_paths = fpaths
         if not self.nx_server_is_windows:
-            data_dir = data_dir.replace(self.win_data_dir, self.linux_data_dir)
-            data_dir = data_dir.replace("\\", "/")
+            data_dir = self.make_linux_data_dir(data_dir)
 
         res = self.send_to_nx_server(NX_SERVER_CMNDS.REMOVE_FILES, data_dir=data_dir, fpaths=final_paths,
                                      host=self.nx_server_host, port=self.nx_server_port, verbose=verbose)
@@ -511,6 +906,12 @@ class main_object_base(QtCore.QObject):
     def get_beamline_id(self):
         return self.beamline_id
 
+    def get_beamline_plugin_dir(self):
+        """
+        return the beamline plugin directory where all of the scan plugins are located
+        """
+        return self.beamline_plugin_dir
+
     def get_sample_positioning_mode(self):
         return self.sample_positioning_mode
 
@@ -566,7 +967,12 @@ class main_object_base(QtCore.QObject):
                 continue
 
             #dct[stxm_scan_name] = {'stxm_scan_name': stxm_scan_name, 'panel_idx': int(panel_order_dct[mod_nm])}
-            dct[stxm_scan_name] = int(panel_order_dct[mod_nm])
+            if mod_nm not in panel_order_dct.keys():
+                _logger.warn(f"Module name [{mod_nm}] does not have a panel order defined in the beamline configuration")
+                print(f"Module name [{mod_nm}] does not have a panel order defined in the beamline configuration")
+                continue
+            else:
+                dct[stxm_scan_name] = int(panel_order_dct[mod_nm])
         return dct
 
     def get_scan_panel_id_from_scan_name(self, scan_name):
@@ -688,7 +1094,10 @@ class main_object_base(QtCore.QObject):
             # get the devices dictionary in categories and pass it to the zmq_dev_manager
             self.init_zmq_engine_widget(self.main_obj["DEVICES"].get_devices())
 
+        self.reload_data_directory()
+
         self.changed.emit()
+
 
 
     def device(self, name, do_warn=True):

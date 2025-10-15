@@ -10,7 +10,7 @@ import simplejson as json
 from bcm.devices import BACKEND
 if BACKEND == 'zmq':
     # ZMQDevManager is going to take the place of `engine` for zmq
-    from bcm.devices.zmq.zmq_dev_manager import ZMQDevManager
+    from bcm.devices.zmq.zmq_dev_manager import ZMQRunEngine
 
 from bluesky import RunEngine
 from bluesky.utils import RunEngineInterrupted
@@ -231,6 +231,8 @@ class QRunEngine(QObject, RunEngine):
 
         # print(name, doc)
 
+
+
 class EngineControl(QWidget):
     """
     RunEngine through a QComboBox
@@ -356,6 +358,8 @@ class EngineWidget(QWidget):
     exec_result = pyqtSignal(object)
     prog_changed = pyqtSignal(object)
     msg_to_app = pyqtSignal(object)
+    new_data = pyqtSignal(object)  # when the DCS server sends new data to the app
+    load_files_status = pyqtSignal(bool)
 
     def __init__(self, engine=None, plan_creator=None, mongo_db_nm="mongo_databroker",parent=None):
         # Instantiate widget information and layout
@@ -456,22 +460,35 @@ class ZMQEngineWidget(QWidget):
     exec_result = pyqtSignal(object)
     prog_changed = pyqtSignal(object)
     msg_to_app =  pyqtSignal(object)
+    new_data = pyqtSignal(object) #when the DCS server sends new data to the app
+    load_files_status = pyqtSignal(object)  # a signal to be emitted when loading files from the DCS server is
+
+    # complete
 
     def __init__(self, devices_dct={}, parent=None):
         # Instantiate widget information and layout
         super().__init__(parent=parent)
         # Create a new RunEngine if we were not provided one
-        self._engine = ZMQDevManager(devices_dct)
+        self._engine = ZMQRunEngine(devices_dct)
         self.control = None
         self.engine = self._engine
         self._old_state = ""
         self._new_state = ""
         self.prog_changed = self.engine.prog_changed
         self.msg_to_app = self.engine.msg_to_app
+        self.new_data = self.engine.new_data
+        self.load_files_status = self.engine.load_files_status
 
         #skip connecting a broker
         self.db = None # Broker.named(mongo_db_nm)#"pystxm_amb_bl10ID1")
         self.engine.exec_result.connect(self.on_exec_result)
+
+    def set_default_detector(self, det_name):
+        """
+        set the default detector for the ZMQDevManager
+        :param det_name: name of the detector to set as default
+        """
+        self.engine.set_default_detector(det_name)
 
     def is_dcs_server_local(self):
         return self.engine.is_dcs_server_local()
@@ -482,10 +499,10 @@ class ZMQEngineWidget(QWidget):
         self.state_changed.emit( new_state, old_state)
 
     def on_exec_result(self, exec_result_dct):
-        _logger.debug(f"on_exec_result: passed {exec_result_dct['run_uids']} (unused)")
+        _logger.debug(f"ZMQEngineWidget: on_exec_result: passed {exec_result_dct['run_uids']} (unused)")
         #SKIP self.on_state_changed(self.engine.state, self._old_state)
         self.exec_result.emit(exec_result_dct['run_uids'])
-        _logger.info(f"DCS server saved: {exec_result_dct['file_name']}")
+        _logger.info(f"ZMQEngineWidget: DCS server saved: {exec_result_dct['file_name']}")
 
     def on_msg_to_app(self, msg):
         """

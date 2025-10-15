@@ -496,7 +496,7 @@ def getOpenFileName(
     title="Get Filename", filter_str="Dat Files (*.dat)", search_path=""
 ):
     dialog = Dialog()
-    ret = dialog.getOpenFileName(title, filter_str, search_path)
+    ret = dialog.getOpenFileName(title, filter_str, search_path=search_path)
     return ret
 
 

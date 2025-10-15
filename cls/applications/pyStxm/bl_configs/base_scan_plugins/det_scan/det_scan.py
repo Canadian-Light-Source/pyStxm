@@ -357,13 +357,6 @@ class BaseDetectorScanParam(ScanParamWidget):
         centX = float(str(self.centerXFld.text()))
         centY = float(str(self.centerYFld.text()))
 
-        # DRBV + CENTX
-        # pcalX = mtrx.get('calibPosn')
-        # pcalY = mtry.get('calibPosn')
-
-        # mtrx.set_calibrated_position(centX + pcalX)
-        # mtry.set_calibrated_position(centY + pcalY)
-
         self.sp_db[SPDB_X][CENTER] = 0.0
         on_center_changed(self.sp_db[SPDB_X])
         self.sp_db[SPDB_Y][CENTER] = 0.0
@@ -374,6 +367,12 @@ class BaseDetectorScanParam(ScanParamWidget):
 
         mtr_x.wait_for_stopped_and_zero()
         mtr_y.wait_for_stopped_and_zero()
+
+        # support for DCS server motors that use offsets
+        if hasattr(mtr_x, 'apply_delta_to_offset'):
+            mtr_x.apply_delta_to_offset(centX)
+        if hasattr(mtr_y, 'apply_delta_to_offset'):
+            mtr_y.apply_delta_to_offset(centY)
 
         roi = {}
         roi[CENTER] = (0.0, 0.0, 0.0, 0.0)

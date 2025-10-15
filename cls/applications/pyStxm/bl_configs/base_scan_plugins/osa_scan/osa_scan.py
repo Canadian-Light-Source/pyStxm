@@ -46,7 +46,6 @@ from cls.plotWidgets.color_def import (
 from cls.utils.dict_utils import dct_get, dct_put
 from cls.utils.roi_dict_defs import *
 from cls.utils.log import get_module_logger
-
 # from cls.applications.pyStxm.bl_configs.basic.scan_plugins.osa_scan.osa_scan_tester import test_sp_db
 
 _logger = get_module_logger(__name__)
@@ -334,13 +333,19 @@ class BaseOsaScanParam(ScanParamWidget):
         centX = float(str(self.centerXFld.text()))
         centY = float(str(self.centerYFld.text()))
 
-        mtrx = self.main_obj.device("DNM_OSA_X")
-        mtry = self.main_obj.device("DNM_OSA_Y")
-        mtrx.move(centX)
-        mtry.move(centY)
+        mtr_x = self.main_obj.device("DNM_OSA_X")
+        mtr_y = self.main_obj.device("DNM_OSA_Y")
+        mtr_x.move(centX)
+        mtr_y.move(centY)
 
-        mtrx.wait_for_stopped_and_zero()
-        mtry.wait_for_stopped_and_zero()
+        mtr_x.wait_for_stopped_and_zero()
+        mtr_y.wait_for_stopped_and_zero()
+
+        # support for DCS server motors that use offsets
+        if hasattr(mtr_x, 'apply_delta_to_offset'):
+            mtr_x.apply_delta_to_offset(centX)
+        if hasattr(mtr_y, 'apply_delta_to_offset'):
+            mtr_y.apply_delta_to_offset(centY)
 
         self.sp_db[SPDB_X][CENTER] = 0.0
         on_center_changed(self.sp_db[SPDB_X])

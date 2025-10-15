@@ -1,4 +1,5 @@
 from PyQt5.QtCore import Qt
+
 from bcm.devices.zmq.zmq_device import ZMQBaseDevice, ZMQSignal
 from bcm.devices.zmq.pixelator.positioner_defines import MAX_DELTA_FINE_RANGE_UM
 from cls.utils.roi_dict_defs import *
@@ -73,7 +74,7 @@ class ZMQMotor(ZMQBaseDevice):
     """
 
     def __init__(self, dcs_name, name, **kwargs):
-        super().__init__(name, dcs_name, **kwargs)
+        super().__init__(dcs_name, name, **kwargs)
         self._low_limit = -10000
         self._high_limit = 10000
         self._spmg_enum = 0
@@ -322,6 +323,8 @@ class ZMQMotor(ZMQBaseDevice):
         """
         vmax = self.max_velo.get()
         if vmax == 0.0:
+            vmax = self._max_velo
+        if vmax == 0.0:
             vmax = self.velocity.get()
         return vmax
 
@@ -405,6 +408,16 @@ class ZMQMotor(ZMQBaseDevice):
         """
         print(f"ZMQMotor: set_position: setting position to {position} NOT IMPLEMENTED YET")
         pass
+
+
+    def apply_delta_to_offset(self, delta: float) -> None:
+        """
+        apply a delta to the position offset
+        """
+        prev_offset = self.get_positioner_dct_value('positionOffset')
+        new_pos = prev_offset - delta
+        self.set_position_offset(new_pos)
+
 
     def move_and_zero(self, pos):
         self.move(pos)

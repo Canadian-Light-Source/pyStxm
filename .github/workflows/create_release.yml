@@ -1,0 +1,155 @@
+name: Tag and Release on PR Merge
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get latest PR merged
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed',
+              sort: 'updated',
+              direction: 'desc',
+              per_page: 1
+            });
+            const pr = prs.data.find(pr => pr.merged_at && pr.merge_commit_sha === context.sha);
+            if (!pr) throw new Error('No merged PR found for this commit.');
+            console.log(`pr_number=${pr.number}`);
+            console.log(`pr_title=${pr.title}`);
+            console.log(`pr_body=${pr.body}`);
+            core.exportVariable('PR_NUMBER', pr.number);
+            core.exportVariable('PR_TITLE', pr.title);
+            core.exportVariable('PR_BODY', pr.body);
+
+      - name: Check for release trigger
+        id: release_trigger
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = Number(process.env.PR_NUMBER);
+            let isMajor = false;
+            let isMinor = false;
+            if (prNumber) {
+              const pr = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+              const labels = pr.data.labels.map(l => l.name.toLowerCase());
+              const title = pr.data.title.toLowerCase();
+              const body = pr.data.body ? pr.data.body.toLowerCase() : '';
+              if (labels.includes('major-release')) isMajor = true;
+              if (title.includes('[major]') || body.includes('[major]')) isMajor = true;
+              if (title.includes('[minor]') || body.includes('[minor]')) isMinor = true;
+            } else {
+              const commit = await github.rest.repos.getCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: context.sha
+              });
+              const message = commit.data.commit.message.toLowerCase();
+              if (message.includes('[major]')) isMajor = true;
+              if (message.includes('[minor]')) isMinor = true;
+            }
+            core.exportVariable('IS_MAJOR', isMajor ? 'true' : 'false');
+            core.exportVariable('IS_MINOR', isMinor ? 'true' : 'false');
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          git fetch --tags
+          latest_tag=$(git tag --sort=-v:refname | head -n 1)
+          echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
+
+      - name: Bump version and create tag
+        id: bump_tag
+        run: |
+          latest_tag=${{ env.LATEST_TAG }}
+          is_major=${{ env.IS_MAJOR }}
+          is_minor=${{ env.IS_MINOR }}
+          if [[ -z "$latest_tag" ]]; then
+            new_tag="v0.1.0"
+          else
+            IFS='.' read -r major minor patch <<< "${latest_tag#v}"
+            if [[ "$is_major" == "true" ]]; then
+              new_tag="v$((major+1)).0.0"
+            elif [[ "$is_minor" == "true" ]]; then
+              new_tag="v$major.$((minor+1)).0"
+            else
+              new_tag="v$major.$minor.$((patch+1))"
+            fi
+          fi
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag "$new_tag"
+          git push origin "$new_tag"
+          echo "NEW_TAG=$new_tag" >> $GITHUB_ENV
+
+      - name: Check if major or minor version
+        id: is_major_or_minor
+        run: |
+          tag=${{ env.NEW_TAG }}
+          major=$(echo $tag | cut -d'.' -f1 | tr -d 'v')
+          minor=$(echo $tag | cut -d'.' -f2)
+          patch=$(echo $tag | cut -d'.' -f3)
+          if [[ "$minor" == "0" && "$patch" == "0" ]]; then
+            echo "IS_MAJOR=true" >> $GITHUB_ENV
+            echo "IS_MINOR=false" >> $GITHUB_ENV
+          elif [[ "$patch" == "0" ]]; then
+            echo "IS_MAJOR=false" >> $GITHUB_ENV
+            echo "IS_MINOR=true" >> $GITHUB_ENV
+          else
+            echo "IS_MAJOR=false" >> $GITHUB_ENV
+            echo "IS_MINOR=false" >> $GITHUB_ENV
+          fi
+
+      - name: Generate release summary
+        id: release_notes
+        run: |
+          cat > pr_body_temp.txt << 'ENDOFBODY'
+          ${{ env.PR_BODY }}
+          ENDOFBODY
+
+          cat > pr_title_temp.txt << 'ENDOFTITLE'
+          ${{ env.PR_TITLE }}
+          ENDOFTITLE
+
+          pr_title=$(sed -E 's/\[([Mm][Aa][Jj][Oo][Rr])\]/[major]/g; s/\[([Mm][Ii][Nn][Oo][Rr])\]/[minor]/g' pr_title_temp.txt)
+          pr_body=$(sed -E 's/\[([Mm][Aa][Jj][Oo][Rr])\]/[major]/g; s/\[([Mm][Ii][Nn][Oo][Rr])\]/[minor]/g' pr_body_temp.txt)
+          
+          printf "# Release Summary\n\n" > release-notes.txt
+          printf "**PR Title:** %s\n\n" "$pr_title" >> release-notes.txt
+          printf "**PR Description:**\n" >> release-notes.txt
+          printf "%s\n" "$pr_body" >> release-notes.txt
+
+          rm -f pr_body_temp.txt pr_title_temp.txt
+
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
+        with:
+          tag: ${{ env.NEW_TAG }}
+          name: Release ${{ env.NEW_TAG }}
+          bodyFile: release-notes.txt
+          draft: false
+          prerelease: false

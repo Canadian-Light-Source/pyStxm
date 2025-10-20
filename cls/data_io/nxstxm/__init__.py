@@ -24,32 +24,7 @@ import copy
 
 import suitcase.utils
 
-# from cls.data_io.nxstxm.utils import *
-# from cls.data_io.nxstxm.device_names import *
-# from cls.data_io.nxstxm.stxm_types import scan_types, single_entry_scans, single_2d_scans, single_image_scans, \
-#         stack_type_scans, spectra_type_scans, line_spec_scans, focus_scans, sample_image_filetypes
-#
-# from cls.data_io.nxstxm.nxstxm_utils import (_dataset, _string_attr, _group, make_1d_array, \
-#                     get_nx_standard_epu_mode, get_nx_standard_epu_harmonic_new, translate_pol_id_to_stokes_vector, \
-#                     readin_base_classes, make_NXclass, remove_unused_NXsensor_fields)
-#
-# from cls.data_io.nxstxm.generic_scan_utils import modify_generic_scan_nxdata_group, modify_generic_scan_ctrl_data_grps, \
-#                                                 modify_generic_scan_instrument_group
-# from cls.data_io.nxstxm.single_2d_image_utils import modify_base_2d_nxdata_group, modify_2posner_ctrl_data_grps, \
-#                                                 modify_base_2d_instrument_group
-# from cls.data_io.nxstxm.focus_image_utils import modify_focus_nxdata_group, modify_focus_ctrl_data_grps, \
-#                                                 modify_focus_instrument_group
-# from cls.data_io.nxstxm.single_image_utils import modify_single_image_nxdata_group, modify_single_image_ctrl_data_grps, \
-#                                                 modify_single_image_instrument_group
-#
-# from cls.data_io.nxstxm.stack_image_utils import modify_stack_nxdata_group, modify_stack_ctrl_data_grps
-# from cls.data_io.nxstxm.spectra_utils import modify_spectra_nxdata_group, modify_spectra_ctrl_data_grps, \
-#                                                 modify_spectra_instrument_group
-#
-# from cls.data_io.nxstxm.linespec_utils import modify_line_spectra_nxdata_group, modify_line_spectra_ctrl_data_grps, \
-#                                                 modify_line_spectra_instrument_group
-#
-# import cls.data_io.nxstxm.nx_key_defs as nxkd
+
 from cls.data_io.nxstxm.utils import *
 from cls.data_io.nxstxm.device_names import *
 from cls.data_io.nxstxm.stxm_types import (

@@ -3953,7 +3953,7 @@ def generate_spatial_roi_from_data(positioner_nm: str, data: [], roi_nm: str, en
 #
 #     return e_roi
 
-def generate_energy_roi_from_data(dwell, ev_setpoints_arr, enable=True):
+def generate_energy_roi_from_data(dwell, ev_setpoints_arr, polarization=None, enable=True):
     num_ev_regions = len(ev_setpoints_arr)
     e_rois = []
     for ev_idx in range(num_ev_regions):
@@ -3972,7 +3972,10 @@ def generate_energy_roi_from_data(dwell, ev_setpoints_arr, enable=True):
             rng = 0.0
 
         #todo: this will need to be actual polarization values in future
-        pol_roi = get_epu_pol_dct(-1, 0.0, angle=0.0)
+        if polarization is not None:
+            pol_roi = get_epu_pol_dct(polarization['epu_polarization'], polarization['epu_offset'], angle=polarization['epu_angle'])
+        else:
+            pol_roi = get_epu_pol_dct(0, 0.0, angle=0.0)
 
         e_roi = get_base_energy_roi(SPDB_EV,"DNM_ENERGY", energy_start, energy_stop, rng, npts, dwell*1000.0, [pol_roi], enable=enable)
         e_roi[ID_VAL] = ev_idx
@@ -4072,7 +4075,7 @@ def create_h5_file_dct_from_file_dct(file_dct):
                 elif positioner_nm in ['DNM_ENERGY']:
                     # need to make sure data contains ALL ev_regions
                     ev_setpoint_region_arr = create_ev_region_data_from_1D_array(sp_db_dct[ax_nm].astype(float))
-                    e_roi = generate_energy_roi_from_data(sp_db_dct['count_time'], ev_setpoint_region_arr)
+                    e_roi = generate_energy_roi_from_data(sp_db_dct['count_time'], ev_setpoint_region_arr, polarization=sp_db_dct['polarization'])
 
                 elif positioner_nm in ['line_position']:
                     if sp_db_dct['pystxm_enum_scan_type'] == 2:

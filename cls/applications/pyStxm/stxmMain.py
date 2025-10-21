@@ -815,7 +815,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         from the nx_server process
         """
         msg = str(msg_str)
-        print(f"add_exporter_msg_to_log: [{msg_str}]")
         clr = QtGui.QColor('#000000')
         if len(msg) < 50:
             self.add_to_log(clr, msg)
@@ -4379,7 +4378,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             self._threadpool.start(worker)
 
         lines = ret_msg.split("nxstxm:")
-
         _logger.info(lines[-1])
 
     def get_counter_from_table(self, tbl, prime_cntr):

@@ -73,6 +73,10 @@ class BaseOsaFocusScanParam(ScanParamWidget):
         self.connect_paramfield_signals()
         self.on_focus_scan_single_spatial_npoints_changed()
         self.init_loadscan_menu()
+
+        fl_val = 0.0 - math.fabs(focal_length(self.energy_mtr.get_position(), self.a1.get_position()))
+        self.set_parm(self.centerZPFld, fl_val)
+
         self._zpz_fbk_timer.start(250)
 
     def init_plugin(self):
@@ -177,6 +181,7 @@ class BaseOsaFocusScanParam(ScanParamWidget):
             A0 = 0.0
             fl_val = A0 - math.fabs(focal_length(self.energy_mtr.get_position(), self.a1.get_position()))
             #fl_val = A0 - math.fabs(self.fl.get_position())
+            print(f"OSA Focus: on_update_zpz_fbk: setting self.centerZPFld to {fl_val}")
             self.set_parm(self.centerZPFld, fl_val)
 
         elif re.search(scanning_mode, 'GONI_ZONEPLATE', re.IGNORECASE):
@@ -484,8 +489,8 @@ class BaseOsaFocusScanParam(ScanParamWidget):
         self.set_parm(self.startYFld, sy)
 
         # we want the ZP center to always be the current Zpz pozition
-        zpz_pos = self.main_obj.device("DNM_ZONEPLATE_Z").get_position()
-        self.set_parm(self.centerZPFld, zpz_pos)
+        # zpz_pos = self.main_obj.device("DNM_ZONEPLATE_Z").get_position()
+        # self.set_parm(self.centerZPFld, zpz_pos)
 
         if ex != None:
             self.set_parm(self.endXFld, ex)

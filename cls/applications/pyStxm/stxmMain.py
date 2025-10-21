@@ -810,12 +810,12 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             self.dcsServerWindow.setTextColor(clr)
         self.dcsServerWindow.append(str(msg))
 
-    def add_exporter_msg_to_log(self, msg_dct):
+    def add_exporter_msg_to_log(self, msg_str):
         """
         from the nx_server process
         """
-        # msg = str(msg_dct['status'])
-        msg = str(msg_dct)
+        msg = str(msg_str)
+        print(f"add_exporter_msg_to_log: [{msg_str}]")
         clr = QtGui.QColor('#000000')
         if len(msg) < 50:
             self.add_to_log(clr, msg)
@@ -4348,24 +4348,24 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             is_stack = True
             if not os.path.exists(data_dir):
                 os.makedirs(data_dir)
-            MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
+            ret_msg =  MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
                                    verbose=False)
 
         elif scan_type in [scan_types.PTYCHOGRAPHY]:
             nx_app_def = "nxptycho"
             data_dir = self.executingScan.get_current_scan_data_dir()
             fprefix = data_dir.split("\\")[-1]
-            MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost',
+            ret_msg = MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost',
                                    port='5555', verbose=False)
             return
 
         # elif(scan_type is scan_types.SAMPLE_POINT_SPECTRUM):
         elif scan_type in spectra_type_scans:
-            MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
+            ret_msg = MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
                                    verbose=False)
 
         else:
-            MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
+            ret_msg = MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
                                    verbose=False)
 
         if self.validate_saved_files["doit"]:
@@ -4377,6 +4377,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             )
             # # Execute
             self._threadpool.start(worker)
+
+        lines = ret_msg.split("nxstxm:")
+
+        _logger.info(lines[-1])
 
     def get_counter_from_table(self, tbl, prime_cntr):
         for k in list(tbl.keys()):

@@ -478,23 +478,23 @@ class Serializer(event_model.DocumentRouter):
         """
 
         if len(shp) == 1:
-            init_dat = np.empty((shp[0]))
+            init_dat = np.full((shp[0]), np.nan)
         elif len(shp) == 2:
             if self._scan_subtype == IS_PXP:
-                init_dat = np.empty((shp[0] * shp[1]))
+                init_dat = np.full((shp[0] * shp[1]), np.nan)
             else:
-                init_dat = np.empty((shp[0] , shp[1]))
+                init_dat = np.full((shp[0] , shp[1]), np.nan)
         elif len(shp) == 3:
             if self._scan_subtype == IS_PXP:
-                init_dat = np.empty((shp[0] * shp[1] * shp[2]))
+                init_dat = np.full((shp[0] * shp[1] * shp[2]), np.nan)
             else:
-                init_dat = np.empty((shp[0], shp[1], shp[2]))
+                init_dat = np.full((shp[0], shp[1], shp[2]), np.nan)
         else:
             #most likely this is a baseline stream detector so give it 2 values for start and stop values
-            init_dat = np.empty((2))
+            init_dat = np.full((2), np.nan)
 
         #init_dat[:] = np.nan
-        init_dat[:] = -1
+        # init_dat[:] = -1
 
         return list(init_dat)
 
@@ -583,7 +583,8 @@ class Serializer(event_model.DocumentRouter):
                     #     self._data[strm_name][ch_dct['chan_nm']][self._cur_uid][
                     #         "data_full_shape"] = self.return_initialized_data(v['shape'])
                     # else:
-                    self._data[strm_name][ch_dct['chan_nm']][self._cur_uid]["data_full_shape"] = self.return_initialized_data(v['shape'])
+                    #self._data[strm_name][ch_dct['chan_nm']][self._cur_uid]["data_full_shape"] = self.return_initialized_data(v['shape'])
+                    self._data[strm_name][ch_dct['chan_nm']][self._cur_uid]["data_full_shape"] = self.return_initialized_data(num_pnts_shape)
             else:
 
                 self._data[strm_name][k] = {}

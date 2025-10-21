@@ -115,25 +115,26 @@ def modify_spectra_nxdata_group(parent, data_nxgrp, doc, scan_type):
     rows = 1
     (cols,) = det_data.shape
 
-    if (rows * cols) < ttlpnts:
-        # scn had been aborted
-        resize_data = True
-        # scan was aborted so use setpoint data here
-        xdata = np.array(xnpoints, dtype=np.float32)
-        ydata = np.array(rois[SPDB_Y][SETPOINTS], dtype=np.float32)
-    else:
-        if x_src not in parent._data["primary"].keys():
-            xdata = make_1d_array(ttlpnts, rois[SPDB_X][SETPOINTS])
-            ydata = make_1d_array(ttlpnts, rois[SPDB_Y][SETPOINTS])
-        else:
-            # use actual data
-            # xdata is teh first xnpoints
-            # xdata = np.array(parent._data['primary'][x_src][uid]['data'][0:xnpoints], dtype=np.float32)
-            xdata = make_1d_array(ttlpnts, parent.get_sample_x_data("start"))
-            # ydata is every ynpoint
-            # ydata = np.array(parent._data['primary'][y_src][uid]['data'][0::ynpoints], dtype=np.float32)
-            ydata = make_1d_array(ttlpnts, parent.get_sample_y_data("start"))
-
+    # if (rows * cols) < ttlpnts:
+    #     # scn had been aborted
+    #     resize_data = True
+    #     # scan was aborted so use setpoint data here
+    #     xdata = np.array(xnpoints, dtype=np.float32)
+    #     ydata = np.array(rois[SPDB_Y][SETPOINTS], dtype=np.float32)
+    # else:
+    #     if x_src not in parent._data["primary"].keys():
+    #         xdata = make_1d_array(ttlpnts, rois[SPDB_X][SETPOINTS])
+    #         ydata = make_1d_array(ttlpnts, rois[SPDB_Y][SETPOINTS])
+    #     else:
+    #         # use actual data
+    #         # xdata is teh first xnpoints
+    #         # xdata = np.array(parent._data['primary'][x_src][uid]['data'][0:xnpoints], dtype=np.float32)
+    #         xdata = make_1d_array(ttlpnts, parent.get_sample_x_data("start"))
+    #         # ydata is every ynpoint
+    #         # ydata = np.array(parent._data['primary'][y_src][uid]['data'][0::ynpoints], dtype=np.float32)
+    #         ydata = make_1d_array(ttlpnts, parent.get_sample_y_data("start"))
+    xdata = make_1d_array(ttlpnts, parent.get_sample_x_data("start"))
+    ydata = make_1d_array(ttlpnts, parent.get_sample_y_data("start"))
     # regardless of the positioner, these names (sample_x, sample_y) are hardcoded into the nxstxm definition
     # if there were already sample_x and y created by the default constructors then delete them and recreate with the right data
     if nxkd.SAMPLE_Y in data_nxgrp.keys():

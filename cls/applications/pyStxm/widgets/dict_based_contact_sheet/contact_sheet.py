@@ -344,7 +344,6 @@ class ContactSheet(QtWidgets.QWidget):
         # h5_file_dct['entry1']['sp_db_dct']['file_path']
         thumbnail = create_thumbnail(h5_file_dct, is_folder=is_folder)
         if thumbnail is None:
-            _logger.warning("create_thumbnail_from_h5_file_dct: thumbnail creation failed")
             return
 
         if thumbnail.is_valid():

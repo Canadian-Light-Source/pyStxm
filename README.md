@@ -1,5 +1,5 @@
 # pyStxm
-python Qt software for STXM data acquisition, this application was originally put together to preform data collection 
+python Qt software for STXM data acquisition, this application was originally put together to perform data collection 
 on the UHV STXM at the SM beam line (10ID1) at the CLS. The application uses several main frameworks to deliver the 
 data collection capability, namely:
  
@@ -219,9 +219,9 @@ The documentation for the software has been started and will soon be available o
 
 * [Python](https://www.python.org/) - The open source programming used
 * [Qt](https://www.qt.io/) - The open source application framework used
-* [BlueSky] (https://nsls-ii.github.io/bluesky/) - Bluesky Data Collection Framework
+* [BlueSky](https://nsls-ii.github.io/bluesky/) - Bluesky Data Collection Framework
 * [Epics](http://www.aps.anl.gov/epics/) - The open source device and data acquisition control
-* [Synapps] (https://www1.aps.anl.gov/bcda/synapps/) The device and data collection software the 
+* [Synapps](https://www1.aps.anl.gov/bcda/synapps/) The device and data collection software the 
 
 
 ## Contributing

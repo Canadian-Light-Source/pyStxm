@@ -106,11 +106,7 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
         dct = {}
         dct["file"] = fpath
         dct["scan_type_num"] = dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE)
-        dct["scan_type"] = (
-                scan_types[dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE)]
-                + " "
-                + scan_sub_types[dct_get(sp_db, SPDB_SCAN_PLUGIN_SUBTYPE)]
-        )
+        dct["scan_type"] = scan_types[dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE)]
         dct['stxm_scan_type'] = dct_get(sp_db, SPDB_SCAN_PLUGIN_STXM_SCAN_TYPE)
         # this following scan_panel_idx is needed for drag and drop
         # dct["scan_panel_idx"] = dct_get(sp_db, SPDB_SCAN_PLUGIN_PANEL_IDX)

@@ -163,7 +163,7 @@ class main_object_base(QtCore.QObject):
 
             if main_cfg:
                 self.mongo_db_nm = main_cfg.get_value("MAIN", "mongo_db_nm")
-                self.nx_server_host = main_cfg.get_value("MAIN", "nx_server_host")
+                self.nx_server_host = DATA_SERVER_HOST
                 self.nx_server_port = main_cfg.get_value("MAIN", "nx_server_port")
             else:
                 self.mongo_db_nm = 'mongo_databroker'

@@ -4377,8 +4377,12 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             # # Execute
             self._threadpool.start(worker)
 
-        lines = ret_msg.split("nxstxm:")
-        _logger.info(lines[-1])
+        if isinstance(ret_msg, str):
+            if ret_msg.find('nxstxm:') > -1:
+                lines = ret_msg.split("nxstxm:")
+                _logger.info(lines[-1])
+            else:
+                _logger.info(ret_msg)
 
     def get_counter_from_table(self, tbl, prime_cntr):
         for k in list(tbl.keys()):

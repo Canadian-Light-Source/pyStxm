@@ -264,7 +264,6 @@ class BaseCoarseImageScanClass(BaseScan):
                 DECCEL_DISTANCE = self.x_roi["RANGE"] * deccel_dist_prcnt_pv.get()
 
                 #scan_velo = self.x_roi["RANGE"] / ((self.x_roi["NPOINTS"] * self.dwell) * 0.001)
-                sisdev = dets[0]
                 piezo_mtr.scan_start.put(self.x_roi['START'] - ACCEL_DISTANCE)
                 #piezo_mtr.scan_stop.put(self.x_roi['STOP'] + ACCEL_DISTANCE)
                 piezo_mtr.scan_stop.put(self.x_roi['STOP'] + DECCEL_DISTANCE)
@@ -273,11 +272,6 @@ class BaseCoarseImageScanClass(BaseScan):
                 piezo_mtr.marker_stop.put(self.x_roi['STOP'])
                 piezo_mtr.set_marker.put(self.x_roi['START'])
                 piezo_mtr.set_marker_position(self.x_roi['START'])
-                #hack to soret out why trigs need to be opposite sign for positions
-                # piezo_mtr.marker_start.put(self.x_roi['START'] * -1.0)
-                # piezo_mtr.marker_stop.put(self.x_roi['STOP'] * -1.0)
-                # piezo_mtr.set_marker.put(self.x_roi['START'] * -1.0)
-                # piezo_mtr.set_marker_position(self.x_roi['START'] * -1.0)
 
                 # move to scan start
                 yield from bps.mv(crs_x, self.x_roi['START'] - ACCEL_DISTANCE, group='BB')
@@ -290,7 +284,9 @@ class BaseCoarseImageScanClass(BaseScan):
                     #print(f"CoarseImageScan: ACCEL_DISTANCE = {ACCEL_DISTANCE}, DECCEL_DISTANCE={DECCEL_DISTANCE}")
                     crs_x.velocity.put(self.scan_velo)
                     piezo_mtr.enable_marker_position(True)
-                    yield from bps.mv(sisdev.run, 1, group='SIS3820')
+                    for d in dets:
+                        if hasattr(d, 'run'):
+                            yield from bps.mv(d.run, 1, group='SIS3820')
                     # yield from bps.mv(crs_y, y_sp)
                     yield from bps.mv(crs_x, self.x_roi['STOP'] + DECCEL_DISTANCE, group='BB')
                     yield from bps.wait('BB')
@@ -301,10 +297,7 @@ class BaseCoarseImageScanClass(BaseScan):
                     yield from bps.wait('CC')
 
                 shutter.close()
-                # print("CoarseSampleImageScanClass LxL: make_scan_plan Leaving")
-            # except NameError as ne:
-            #     # Code to handle NameError
-            #     print(ne)
+
             except LimitError as le:
                 _logger.error(f"There was a problem involving a motor setpoint being larger than valid range: [{le}]")
 

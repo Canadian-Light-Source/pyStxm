@@ -30,5 +30,5 @@ class SampleFineImageScanParam(BaseFineImageScansParam):
             )
         else:
             self.scan_class = self.instanciate_scan_class(
-                __file__, "SampleFineImageScan", "FineSampleImageScanClass"
+                __file__, "SampleFineImageScan", "SampleFineImageScanClass"
             )

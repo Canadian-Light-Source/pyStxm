@@ -15,7 +15,7 @@ from nx_server.nx_server import NX_SERVER_CMNDS, NX_SERVER_REPONSES
 from cls.utils.arrays import nulls_to_nans
 from cls.utils.dict_utils import dct_put, dct_get, dct_merge, find_key_in_dict
 from cls.utils.version import get_version
-from cls.utils.process_utils import check_windows_procs_running
+
 from cls.data_io.zmq_utils import send_to_server
 from cls.utils.roi_dict_defs import *
 from cls.utils.log import get_module_logger
@@ -132,9 +132,7 @@ class main_object_base(QtCore.QObject):
         self.device_backend = BACKEND #default
         self.zmq_dev_mgr = None
         self.dcs_settings = None
-        # self.win_data_dir = self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
-        # self.linux_data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
         self.data_sub_context = zmq.Context()
 
@@ -147,7 +145,6 @@ class main_object_base(QtCore.QObject):
             self.mongo_db_nm = None
             self.nx_server_host = None
             self.nx_server_port = None
-            # self.nx_server_is_windows = None
             # SUB socket: Subscribing to the publisher
             print(f"Connecting to data server at tcp://{DATA_SERVER_HOST}:{DATA_SUB_PORT}")
             self.data_sub_socket = self.data_sub_context.socket(zmq.SUB)
@@ -169,7 +166,6 @@ class main_object_base(QtCore.QObject):
                 self.mongo_db_nm = 'mongo_databroker'
                 self.nx_server_host = 'localhost'
                 self.nx_server_port = 5555
-            # self.nx_server_is_windows = self.check_is_nx_server_windows()
 
         ver_dct = get_version()
 
@@ -367,9 +363,6 @@ class main_object_base(QtCore.QObject):
         """
         if data_dir is None:
             return
-
-        # if not self.nx_server_is_windows:
-        #     data_dir = self.make_linux_data_dir(data_dir)
 
         if data_dir is None:
             data_dir = self.data_dir
@@ -665,14 +658,6 @@ class main_object_base(QtCore.QObject):
             return False
 
 
-    # def make_linux_data_dir(self, data_dir: str) -> str:
-    #     """
-    #     translate the data_dir from windows to linux
-    #     """
-    #     data_dir = data_dir.replace(self.win_data_dir, self.linux_data_dir)
-    #     data_dir = data_dir.replace("\\", "/")
-    #     return data_dir
-
     def send_to_nx_server(self, cmnd, run_uids=[], fprefix='', data_dir='', nx_app_def=None, fpaths=[],
                           host='localhost', port=5555, verbose=False, cmd_args={}):
         """
@@ -714,9 +699,6 @@ class main_object_base(QtCore.QObject):
         """
         makes calls to save a scan file(s)
         """
-        # if not self.nx_server_is_windows:
-        #     data_dir = self.make_linux_data_dir(data_dir)
-
         res = self.send_to_nx_server(NX_SERVER_CMNDS.SAVE_FILES, run_uids, fprefix, data_dir, nx_app_def=nx_app_def,
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=verbose)
@@ -732,9 +714,6 @@ class main_object_base(QtCore.QObject):
         makes calls to save a scan file(s)
         """
         final_paths = fpaths
-        # if not self.nx_server_is_windows:
-        #     data_dir = self.make_linux_data_dir(data_dir)
-
         res = self.send_to_nx_server(NX_SERVER_CMNDS.REMOVE_FILES, data_dir=data_dir, fpaths=final_paths,
                                      host=self.nx_server_host, port=self.nx_server_port, verbose=verbose)
         return res['status']
@@ -766,14 +745,6 @@ class main_object_base(QtCore.QObject):
         that nx_server is running, the MAIN_OBJ has already determined if the process is running on windows
         or linux
         """
-        # if self.nx_server_is_windows:
-        #     return check_windows_procs_running(procs_to_check={
-        #         "DataRecorder Process": ("python.exe", "nx_server.py"),
-        #         "MongoDB": ("mongod.exe", None),
-        #     })
-        # else:
-        #     # linux
-        #     return self.check_linux_nx_server_running()
         return self.check_linux_nx_server_running()
 
     def check_linux_nx_server_running(self):

@@ -19,7 +19,7 @@ from cls.utils.hdf_to_dict import get_sp_db_dct_from_file_dict, hdf5_to_dict
 # import nxs
 import numpy as np
 import h5py
-import pkg_resources
+import importlib.metadata
 import nexpy
 
 from cls.utils.json_threadsave import dict_to_json_string

@@ -791,7 +791,8 @@ class Serializer(event_model.DocumentRouter):
             inst_nxgrp = self.create_base_instrument_group(entry_nxgrp, doc, scan_type)
             self.specific_scan_funcs["mod_nxinst"](self, inst_nxgrp, doc, scan_type)
             for det_nm in self._detector_names:
-                self.create_base_instrument_detector(inst_nxgrp, det_nm, doc)
+                if det_nm not in inst_nxgrp.keys():
+                    self.create_base_instrument_detector(inst_nxgrp, det_nm, doc)
 
             self.create_base_sample_group(entry_nxgrp, doc, scan_type)
 

@@ -20,11 +20,13 @@ from cls.types.stxmTypes import (
     sample_fine_positioning_modes,
 )
 from cls.scanning.scan_cfg_utils import ensure_valid_values, calc_accRange
+from cls.scan_engine.decorators import conditional_decorator
 from cls.utils.roi_dict_defs import *
 from cls.utils.log import get_module_logger
 from cls.utils.cfgparser import ConfigClass
 from cls.utils.dict_utils import dct_put, dct_get
 from cls.utils.json_utils import dict_to_json
+
 from cls.plotWidgets.utils import *
 
 _logger = get_module_logger(__name__)
@@ -169,63 +171,177 @@ class BaseSampleFineImageScanClass(BaseScan):
         """
         over ride base class def
         """
+        # if self.is_lxl:
+        #     return self.y_roi[NPOINTS]
+        # else:
+        #     #point scan
+        #     return self.x_roi[NPOINTS] * self.y_roi[NPOINTS]
         if self.is_lxl:
-            return self.y_roi[NPOINTS]
+            return self.y_roi[NPOINTS] * self.numE * self.numEPU * self.numSPIDS
         else:
-            #point scan
-            return self.x_roi[NPOINTS] * self.y_roi[NPOINTS]
+            # point scan
+            return self.x_roi[NPOINTS] * self.y_roi[NPOINTS] * self.numE * self.numEPU * self.numSPIDS
 
-    def make_pxp_scan_plan(self, dets, bi_dir=False, md={}):
-        dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()  # skip_lst)
-        self._bi_dir = bi_dir
-        if md is None:
-            md = {
-                "metadata": dict_to_json(
-                    self.make_standard_metadata(
-                        entry_name="entry0", scan_type=self.scan_type, dets=dets
-                    )
-                )
-            }
+    def make_scan_plan(self, dets, md=None, bi_dir=False):
+        """
+        override the default make_scan_plan to set the scan_type
+        :param dets:
+        :param gate:
+        :param md:
+        :param bi_dir:
+        :return:
+        """
+        self.configure_devs(dets)
+        self.dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()
+        if self.numImages == 1:
+            self.scan_type = scan_types.SAMPLE_IMAGE
+            return self.make_soft_stack_image_plan(dets, md=md, bi_dir=bi_dir)
+        else:
+            self.scan_type = scan_types.SAMPLE_IMAGE_STACK
+            return self.make_soft_stack_image_plan(dets, md=md, bi_dir=bi_dir)
 
-        @bpp.baseline_decorator(dev_list)
-        @bpp.run_decorator(md=md)
+    
+    def make_soft_stack_image_plan(self, dets, md=None, bi_dir=False):
+        #print("entering: make_stack_image_plan")
+        self._saved_one = False
+        stagers = []
+        for d in dets:
+            stagers.append(d)
+
         def do_scan():
-            # Declare the end of the run.
-            # make sure that the positions of the piezos are correct to start
-            psmtr_x = self.main_obj.device("DNM_SAMPLE_X")
-            psmtr_y = self.main_obj.device("DNM_SAMPLE_Y")
-            psmtr_x.set_piezo_power_off()
-            psmtr_y.set_piezo_power_off()
-            x_roi = self.sp_db["X"]
-            y_roi = self.sp_db["Y"]
-            if self.is_fine_scan:
-                mtr_x = self.main_obj.device(mtr_dct["fx_name"])
-                mtr_y = self.main_obj.device(mtr_dct["fy_name"])
-                mtr_x.set_piezo_power_on()
-                mtr_y.set_piezo_power_on()
-            else:
-                mtr_x = self.main_obj.device(mtr_dct["cx_name"])
-                mtr_y = self.main_obj.device(mtr_dct["cy_name"])
+            ev_mtr = self.main_obj.device("DNM_ENERGY")
+            pol_mtr = self.main_obj.device("DNM_EPU_POLARIZATION")
+            off_mtr = self.main_obj.device("DNM_EPU_OFFSET")
+            ang_mtr = self.main_obj.device("DNM_EPU_ANGLE")
 
-            shutter = self.main_obj.device("DNM_SHUTTER")
-            # the detector will be staged automatically by the grid_scan plan
-            shutter.open()
+            # print('starting: make_stack_image_plan: do_scan()')
+            entrys_lst = []
+            entry_num = 0
+            # idx = 0
+            self._current_img_idx = 0
+            point_spec_devs_configd = False
+            prev_entry_nm = ""
+            # , starts=starts, stops=stops, npts=npts, group='e712_wavgen', wait=True)
+            # this starts the wavgen and waits for it to finish without blocking the Qt event loop
+            epu_sps = zip(self.setpointsPol, self.setpointsOff,self.setpointsAngle)
 
-            yield from bps.mv(mtr_x, x_roi['START'], mtr_y, y_roi['START'], group='B')
-            yield from bps.wait('B')
-            for y_sp in y_roi['SETPOINTS']:
-                yield from bps.mv(mtr_y, y_sp)
-                for x_sp in x_roi['SETPOINTS']:
-                    yield from bps.mv(mtr_x, x_sp, group='BB')
-                    yield from bps.wait('BB')
-                    yield from bps.trigger_and_read(dets)
+            for pol, off, ang in epu_sps:
+                # switch to new polarization, offset and angle
+                if pol_mtr.get_position() != pol:
+                    yield from bps.mv(pol_mtr, pol)
+                if off_mtr.get_position() != off:
+                    yield from bps.mv(off_mtr, off)
+                if ang_mtr.get_position() != ang:
+                    yield from bps.mv(ang_mtr, ang)
+                # switch to new energy
+                for ev_sp in self.ev_setpoints:
+                    yield from bps.mv(ev_mtr, ev_sp)
+                    # self.dwell = ev_roi[DWELL]
+                    self.dwell = self.setpointsDwell
 
-            shutter.close()
-            # print("CoarseSampleImageScanClass: make_pxp_scan_plan Leaving")
+                    # now load and execute each spatial region
+                    for sp_id in self.sp_ids:
+                        self.sp_id = sp_id
+                        # this updates member vars x_roi, y_roi, etc... with current spatial id specifics
+                        self.update_roi_member_vars(self.sp_rois[self.sp_id])
+                        if self.is_point_spec and (not point_spec_devs_configd):
+                            # config the det and gate
+                            for d in dets:
+                                if hasattr(d, "set_mode"):
+                                    d.set_mode(bs_dev_modes.NORMAL_PXP)
+                                if hasattr(d, "configure"):
+                                    d.configure()
+
+                            point_spec_devs_configd = True
+
+                        samplemtrx = self.main_obj.get_sample_positioner("X")
+                        samplemtry = self.main_obj.get_sample_positioner("Y")
+                        finemtrx = self.main_obj.get_sample_fine_positioner("X")
+                        finemtry = self.main_obj.get_sample_fine_positioner("Y")
+                        # make sure servo power is on
+                        finemtrx.servo_power.put(1)
+                        finemtry.servo_power.put(1)
+
+                        if self.is_zp_scan:
+                            # moving them to the start gets rid of a goofy first line of the scan
+                            yield from bps.mv(finemtrx, self.zx_roi[START])
+                            yield from bps.mv(finemtry, self.zy_roi[START])
+                            yield from bps.mv(
+                                samplemtrx,
+                                self.gx_roi[CENTER],
+                                samplemtry,
+                                self.gy_roi[CENTER],
+                            )
+                            # samplemtrx.move(self.gx_roi[CENTER], wait=True)
+                            # samplemtry.move(self.gy_roi[CENTER], wait=True)
+
+                        else:
+                            # !!! THIS NEEDS TESTING
+                            # moving them to the start gets rid of a goofy first line of the scan
+                            yield from bps.mv(finemtrx, self.x_roi[START])
+                            yield from bps.mv(finemtry, self.y_roi[START])
+                            ############################
+                        # take a single image that will be saved with its own run scan id
+                        # img_dct = self.img_idx_map['%d' % idx]
+                        img_dct = self.img_idx_map["%d" % self._current_img_idx]
+
+                        md = {
+                            "metadata": dict_to_json(
+                                self.make_standard_metadata(
+                                    entry_name=img_dct["entry"],
+                                    dets=dets,
+                                    scan_type=self.scan_type,
+                                )
+                            )
+                        }
+                        # if(entry_num is 0):
+                        # if(img_dct['entry'] is not prev_entry_nm):
+                        if img_dct["entry"] not in entrys_lst:
+                            # only create the entry once
+                            if self.is_point_spec:
+                                yield from self.make_soft_single_point_spec_plan(
+                                    dets, md=md, do_baseline=True
+                                )
+                            else:
+                                if self.is_lxl:
+                                    yield from self.make_lxl_scan_plan(
+                                        dets, md=md, do_baseline=True
+                                    )
+                                else:
+                                    yield from self.make_pxp_scan_plan(
+                                        dets, md=md, do_baseline=True
+                                    )
+
+                        else:
+                            # this data will be used to add to previously created entries
+                            if self.is_point_spec:
+                                yield from self.make_soft_single_point_spec_plan(
+                                    dets, md=md, do_baseline=False
+                                )
+                            else:
+                                if self.is_lxl:
+                                    yield from self.make_lxl_scan_plan(
+                                        dets, md=md, do_baseline=False
+                                    )
+                                else:
+                                    yield from self.make_pxp_scan_plan(
+                                        dets, md=md, do_baseline=False
+                                    )
+
+                        # entry_num += 1
+                        # idx += 1
+                        self._current_img_idx += 1
+                        # prev_entry_nm = img_dct['entry']
+                        entrys_lst.append(img_dct["entry"])
+
+                self._saved_one = True
+
+            #print("make_stack_image_plan Leaving")
 
         return (yield from do_scan())
 
-    def make_lxl_scan_plan(self, dets, md=None, bi_dir=False):
+
+    def make_lxl_scan_plan(self, dets, md=None, bi_dir=False, do_baseline=True):
         """
         This produces a line by line scan that uses base level plans to do the scan
         due to the sis3820 requiring it to be running before the X motor moves across the scan line
@@ -233,9 +349,9 @@ class BaseSampleFineImageScanClass(BaseScan):
         :param dets:
         :param gate:
         :param bi_dir:
+        :param do_baseline: should a baseline reading be taken, stack scan controlled
         :return:
         """
-        dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()#skip_lst)
         self._bi_dir = bi_dir
         if md is None:
             md = {
@@ -245,12 +361,13 @@ class BaseSampleFineImageScanClass(BaseScan):
                     )
                 )
             }
-
-        @bpp.baseline_decorator(dev_list)
+        print(f"RUSS:make_lxl_scan_plan: self.scan_type={self.scan_type}")
+        @conditional_decorator(bpp.baseline_decorator(self.dev_list), do_baseline)
         @bpp.run_decorator(md=md)
         def do_scan():
             try:
-                print('entering BaseCoarseImageScanClass: line_by_line do_scan')
+                print('entering BaseSampleFineImageScanClass: make_lxl_scan_plan')
+                print(f"RUSS:make_lxl_scan_plan:do_scan: self.scan_type={self.scan_type}")
 
                 psmtr_x = self.main_obj.device("DNM_SAMPLE_X")
                 psmtr_y = self.main_obj.device("DNM_SAMPLE_Y")
@@ -271,7 +388,6 @@ class BaseSampleFineImageScanClass(BaseScan):
 
                 #scan_velo = self.x_roi["RANGE"] / ((self.x_roi["NPOINTS"] * self.dwell) * 0.001)
                 piezo_mtr_x.scan_start.put(self.x_roi['START'] - ACCEL_DISTANCE)
-                #piezo_mtr.scan_stop.put(self.x_roi['STOP'] + ACCEL_DISTANCE)
                 piezo_mtr_x.scan_stop.put(self.x_roi['STOP'] + DECCEL_DISTANCE)
 
                 piezo_mtr_x.marker_start.put(self.x_roi['START'])
@@ -312,8 +428,17 @@ class BaseSampleFineImageScanClass(BaseScan):
 
         return (yield from do_scan())
 
-    def make_pxp_scan_plan(self, dets, bi_dir=False, md={}):
-        dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()
+    def make_pxp_scan_plan(self, dets, bi_dir=False, md={}, do_baseline=True):
+        """
+        This produces a point by point scan that uses base level plans to do the scan
+        due to the sis3820 requiring it to be running before the X motor moves across the scan line
+
+        :param dets:
+        :param gate:
+        :param bi_dir:
+        :param do_baseline: should a baseline reading be taken, stack scan controlled
+        :return:
+        """
         self._bi_dir = bi_dir
         # zp_def = self.get_zoneplate_info_dct()
         mtr_dct = self.determine_samplexy_posner_pvs()
@@ -326,9 +451,10 @@ class BaseSampleFineImageScanClass(BaseScan):
                 )
             }
 
-        @bpp.baseline_decorator(dev_list)
+        @conditional_decorator(bpp.baseline_decorator(self.dev_list), do_baseline)
         @bpp.run_decorator(md=md)
         def do_scan():
+            print('entering BaseSampleFineImageScanClass: make_pxp_scan_plan')
             # Declare the end of the run.
             # make sure that the positions of the piezos are correct to start
             psmtr_x = self.main_obj.device("DNM_SAMPLE_X")
@@ -473,7 +599,15 @@ class BaseSampleFineImageScanClass(BaseScan):
         # # function to find out which we are to use and return those names in a dct
         dct = self.determine_samplexy_posner_pvs()
 
-        #SKIP THIS AND SEE Oct 24 2022 self.config_for_sample_holder_scan(dct)
+        self.numImages = int(
+                self.sp_db[SPDB_EV_NPOINTS] * self.numEPU * self.numSPIDS
+            )
+
+        # set some flags that are used elsewhere
+        if self.numImages > 1:
+            self.stack = True
+        else:
+            self.stack = False
 
         self.final_data_dir = self.config_hdr_datarecorder(
             self.stack, self.final_data_dir
@@ -490,7 +624,7 @@ class BaseSampleFineImageScanClass(BaseScan):
         # THIS must be the last call
         self.finish_setup()
         # self.new_spatial_start.emit(sp_id)
-        return(ret)
+        return ret
 
     def config_for_sample_holder_scan(self, dct):
         """

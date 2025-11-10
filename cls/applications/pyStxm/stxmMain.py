@@ -3482,8 +3482,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         # if its a point scan make sure to include the DNM_RING_CURRENT
         # only add Ring current if device exists
-        if MAIN_OBJ.device("DNM_RING_CURRENT"):
-            dets.append(MAIN_OBJ.device("DNM_RING_CURRENT").get_ophyd_device())
+        # if MAIN_OBJ.device("DNM_RING_CURRENT"):
+        #     dets.append(MAIN_OBJ.device("DNM_RING_CURRENT").get_ophyd_device())
 
         if len(sel_dets_lst) == 0:
             _logger.error('No detector selected')
@@ -4329,6 +4329,9 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         data_dir = self.active_user.get_data_dir()
         fprefix = str(MAIN_OBJ.get_datafile_prefix()) + str(
             get_next_file_num_in_seq(data_dir, extension="hdf5"))
+        
+        if 0 in MAIN_OBJ.nx_server_master_seq_dct.keys():
+            data_dir = MAIN_OBJ.nx_server_master_seq_dct[0]['data_dir']
 
         scan_type = self.get_cur_scan_type()
         first_uid = run_uids[0]
@@ -4339,11 +4342,17 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             # we only want the information in the main
             # first_uid = run_uids[4]
             # run_uids = [first_uid]
-            pass
+
+            # pass
+            return
 
         if scan_type in [scan_types.SAMPLE_IMAGE_STACK, scan_types.TOMOGRAPHY]:
+            print(f"do_data_export: scan_type = {scan_type} is in [scan_types.SAMPLE_IMAGE_STACK, scan_types.TOMOGRAPHY]")
             # could also just be multiple rois on a single energy
+            print(f"do_data_export: data_dir={data_dir} fprefix={fprefix}")
             data_dir = os.path.join(data_dir, fprefix)
+            print(f"do_data_export: final data_dir={data_dir} ")
+            
             is_stack = True
             if not os.path.exists(data_dir):
                 os.makedirs(data_dir)
@@ -4351,6 +4360,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                                    verbose=False)
 
         elif scan_type in [scan_types.PTYCHOGRAPHY]:
+            print(f"do_data_export: scan_type = {scan_type} is in [scan_types.PTYCHOGRAPHY]")
             nx_app_def = "nxptycho"
             data_dir = self.executingScan.get_current_scan_data_dir()
             fprefix = data_dir.split("\\")[-1]
@@ -4360,10 +4370,12 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         # elif(scan_type is scan_types.SAMPLE_POINT_SPECTRUM):
         elif scan_type in spectra_type_scans:
+            print(f"do_data_export: scan_type = {scan_type} is in spectra_type_scans")
             ret_msg = MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
                                    verbose=False)
 
         else:
+            print(f"do_data_export: scan_type = {scan_type} in CATCH ALL else block")
             ret_msg = MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
                                    verbose=False)
 

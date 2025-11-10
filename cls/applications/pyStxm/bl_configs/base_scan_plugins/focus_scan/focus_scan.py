@@ -102,7 +102,7 @@ class BaseFocusScanParam(ScanParamWidget):
         self.arbSelBtn.clicked.connect(self.on_arbitrary_line_sel_btn)
 
         #self.loadScanBtn.clicked.connect(self.load_scan)
-        self.testBtn.clicked.connect(self.do_test)
+        #self.testBtn.clicked.connect(self.do_test)
         self.resetDeltaA0Btn.clicked.connect(self.on_reset_delta_a0)
 
         self.mtr_zpz = self.main_obj.device("DNM_ZONEPLATE_Z")

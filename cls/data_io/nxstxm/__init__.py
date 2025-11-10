@@ -2040,7 +2040,8 @@ class Serializer(event_model.DocumentRouter):
             nf.close()
 
         except:
-            _logger.error("Problem modifying data in [%s]" % self._tmp_fname)
+            _logger.error(f"Problem modifying data in [{self._tmp_fname}], creating an error file")
+            print(f"Problem modifying data in [{self._tmp_fname}], creating an error file")
             if nf is not None:
                 nf.close()
             os.rename(self._tmp_fname, self._tmp_fname + ".err")

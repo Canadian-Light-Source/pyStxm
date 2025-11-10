@@ -137,7 +137,8 @@ class main_object_base(QtCore.QObject):
         self.linux_data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['linux_data_dir']
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
         self.data_sub_context = zmq.Context()
-
+        self.nx_server_master_seq_dct = None
+         
         if DATA_SERVER_HOST is None:
             _logger.error("DATA_SERVER_HOST environment variable is not set, cannot continue")
             raise Exception("ERROR: DATA_SERVER_HOST environment variable is not set, cannot continue")
@@ -436,7 +437,7 @@ class main_object_base(QtCore.QObject):
                     new_stack_dir=new_stack_dir,
                     prefix_char=prefix_char,
                     dev_backend=dev_backend)
-
+        self.nx_server_master_seq_dct = master_seq_dct
         return master_seq_dct
 
     def nx_server_load_data_directory(self, data_dir: str=None, *, extension: str='.hdf5') -> None:

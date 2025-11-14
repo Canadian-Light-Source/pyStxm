@@ -98,55 +98,16 @@ from cls.appWidgets.dialogs import excepthook, notify as dialog_notify, warn as 
 # from cls.appWidgets.spyder_console import ShellWidget#, ShellDock
 from cls.appWidgets.thread_worker import Worker
 
-# from cls.applications.pyStxm.widgets.sampleSelector import SampleSelectorWidget
 from cls.applications.pyStxm.widgets.motorPanel import PositionersPanel
 
 from cls.applications.pyStxm.widgets.devDisplayPanel import DevsPanel
 
-# from cls.applications.pyStxm.bl10ID01 import MAIN_OBJ, POS_TYPE_BL, POS_TYPE_ES
-
 from cls.applications.pyStxm.widgets.scan_queue_table import ScanQueueTableWidget
-from cls.applications.pyStxm.widgets.ioc_apps_panel import IOCAppsPanel
 from cls.applications.pyStxm.widgets.ptycho_viewer import PtychoDataViewerPanel
 from cls.utils.focus_calculations import focal_length
 
 from cls.types.beamline import BEAMLINE_IDS
-# from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
-
-# import suitcase.nxstxm as suit_nxstxm
-
 from cls.data_io.nxstxm import Serializer
-
-# RUSS FEB25 from suitcase.csv import Serializer
-
-
-def factory(name, start_doc):
-    # def factory(data_dir):
-    # serializer = Serializer(data_dir)
-    serializer = Serializer("C:/controls/stxm-data/2022/guest/0224")
-    # serializer = Serializer(name)
-    # serializer('start', start_doc)
-
-    return [serializer], []
-
-
-# from bcm.devices.device_names import *
-
-
-# from event_model import RunRouter
-# from suitcase.nxstxm import Serializer
-#
-# def factory(name, start_doc):
-#
-#     serializer = Serializer(data_dir)
-#     serializer('start', start_doc)
-#
-#     return [serializer], []
-#
-#
-# #connect outr data
-# rr = RunRouter([factory])
-# RE.subscribe(rr)
 
 # read the ini file and load the default directories
 appConfig = ConfigClass(abs_path_to_ini_file)
@@ -418,14 +379,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.scan_in_progress = False
         self.image_started = False
 
-        if MAIN_OBJ.device("DNM_RING_CURRENT"):
-            self.ring_ma = MAIN_OBJ.device("DNM_RING_CURRENT").get_ophyd_device()
-        else:
-            self.ring_ma = 0.0
-
-        # self.vidTimer = QtCore.QTimer()
-        # self.vidTimer.timeout.connect(self.on_video_timer)
-
         self.scan_elapsed_timer = QtCore.QTimer()
         self.scan_elapsed_timer.timeout.connect(self.on_elapsed_timer_to)
         self.elapsed_time = 0
@@ -442,39 +395,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.setup_chartmode_plot()
         self.setup_stack_rois_plot()
 
-        # In most cases, when (un)docking multiple widgets from the same area, they may take up an annoying
-        # amount of space. By resizing to "zero", when floated, the necessary space is used; when docked, a
-        # sensible resize is done with regards to the other docked items. Default sizing can be set here, or
-        # using the minimumSize Qt property and/or minimum sizes of child items.
-        self.dockWidget_Counts.topLevelChanged.connect(lambda _: self.left_dock_resize(self.dockWidget_Counts))
-        self.dockWidget_Beamline.topLevelChanged.connect(lambda _: self.left_dock_resize(self.dockWidget_Beamline))
-        self.dockWidget_Endstation.topLevelChanged.connect(lambda _: self.left_dock_resize(self.dockWidget_Endstation))
-        self.dockWidget_Info.topLevelChanged.connect(lambda _: self.dockWidget_Info.resize(0, 0))
-        self.dockWidget_Configuration.topLevelChanged.connect(lambda _: self.dockWidget_Configuration.resize(0, 0))
-        self.dockWidget_Data.topLevelChanged.connect(lambda _: self.dockWidget_Data.resize(0, 0))
-
-        # After being closed/hidden, widgets should be always opened in their docked location.
-        self.dockWidget_Counts.visibilityChanged.connect(
-            lambda vis: self.on_dockwidget_visibility_changed(self.dockWidget_Counts, vis)
-        )
-        self.dockWidget_Beamline.visibilityChanged.connect(
-            lambda vis: self.on_dockwidget_visibility_changed(self.dockWidget_Beamline, vis)
-        )
-        self.dockWidget_Endstation.visibilityChanged.connect(
-            lambda vis: self.on_dockwidget_visibility_changed(self.dockWidget_Endstation, vis)
-        )
-        self.dockWidget_Info.visibilityChanged.connect(
-            lambda vis: self.on_dockwidget_visibility_changed(self.dockWidget_Info, vis)
-        )
-        self.dockWidget_Configuration.visibilityChanged.connect(
-            lambda vis: self.on_dockwidget_visibility_changed(self.dockWidget_Configuration, vis)
-        )
-        self.dockWidget_Data.visibilityChanged.connect(
-            lambda vis: self.on_dockwidget_visibility_changed(self.dockWidget_Data, vis)
-        )
-        self.dockWidget_Status.visibilityChanged.connect(
-            lambda vis: self.on_dockwidget_visibility_changed(self.dockWidget_Status, vis)
-        )
         self.status_label = EngineLabel(self.scanActionLbl)
 
         MAIN_OBJ.engine_widget.engine.exec_result.connect(self.on_execution_status_changed)
@@ -488,9 +408,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.rr = None
         self.rr_id = None
 
-        # beam spot feedback dispatcher
-        # self.bmspot_fbk_obj = BeamSpotFeedbackObj(MAIN_OBJ)
-        # self.bmspot_fbk_obj.new_beam_pos.connect(self.on_new_beamspot_fbk)
         _cam_en = MAIN_OBJ.get_preset_as_bool("enabled", "CAMERA")
         if _cam_en:
             if int(_cam_en) == 1:
@@ -659,16 +576,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             return self._pref_panels[pref_nm]
         else:
             _logger.error("Pref panel [%s] does not exist" % pref_nm)
-
-    def left_dock_resize(self, widget: QtWidgets.QDockWidget):
-        widget.resize(0, 0)
-        # also resize the E-STOP widget to take minimum space
-        self.dockWidget_StopAll.resize(0, 0)
-
-    def on_dockwidget_visibility_changed(self, widget: QtWidgets.QDockWidget, visible: bool):
-        # ensure widget goes back to the dock when closed->reopened
-        if not visible and widget.isFloating():
-            widget.setFloating(False)
 
     def on_preference_changed(self, idx):
         self.prefsStackedWidget.setCurrentIndex(idx)

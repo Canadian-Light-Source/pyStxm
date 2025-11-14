@@ -597,8 +597,7 @@ class BaseFineImageScansParam(MultiRegionScanParamBase):
 
         dct_put(self.wdg_com, SPDB_SCAN_PLUGIN_SUBTYPE, self.sub_type)
         dct_put(self.wdg_com, SPDB_SCAN_PLUGIN_TYPE, self.get_scan_type())
-        print(f"fine_image_scans pluggin: update_data: scan_type={self.get_scan_type()}")
-
+        
         self.roi_changed.emit(self.wdg_com)
         self.update_est_time()
         return self.wdg_com

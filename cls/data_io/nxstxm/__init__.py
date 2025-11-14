@@ -660,7 +660,6 @@ class Serializer(event_model.DocumentRouter):
 
         seq_num = doc['seq_num'][0] - 1
         strm_name = self._streamnames[doc["descriptor"]]
-        strm_name = self._streamnames[doc["descriptor"]]
         for k in doc["data"].keys():
             if k in self._data[strm_name].keys() or k.find('SIS3820') > -1:
                 if k.find('SIS3820') > -1:
@@ -1683,7 +1682,7 @@ class Serializer(event_model.DocumentRouter):
                 for ev_roi in self._wdg_com["SPATIAL_ROIS"][spid]["EV_ROIS"]:
                     ev_setpoints += ev_roi[SETPOINTS]
             else:
-                ev_setpoints = self._wdg_com["SINGLE_LST"]["EV_ROIS"]
+                ev_setpoints = self._wdg_com["SINGLE_LST"]["EV_ROIS"][SETPOINTS]
 
             num_ev_points = len(ev_setpoints)
             if num_ev_points < 1:

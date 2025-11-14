@@ -435,6 +435,8 @@ class PositionersPanel(QtWidgets.QWidget):
         toggle=True,
         min_mtrfld_nm_width=MIN_MTR_FLD_NM_WIDTH
     ):
+        # assign callback if provided
+        self.cb = cb
         widg = QtWidgets.QWidget()
         dev_ui = btn_small_pass_a_btn()
         if fbk_dev:
@@ -447,6 +449,7 @@ class PositionersPanel(QtWidgets.QWidget):
                 on_str=on_str,
                 fbk_dev=fbk_dev,
                 toggle=toggle,
+                cb=self.cb
             )
         else:
             pBtn = ophydPushBtn(
@@ -456,6 +459,7 @@ class PositionersPanel(QtWidgets.QWidget):
                 off_str=off_str,
                 on_str=on_str,
                 toggle=toggle,
+                cb=self.cb
             )
 
         dev_ui.setupUi(widg, pBtn)
@@ -490,6 +494,7 @@ class PositionersPanel(QtWidgets.QWidget):
         min_mtrfld_nm_width=MIN_MTR_FLD_NM_WIDTH
     ):
         ss = get_style()
+        self.cb = cb
         widg = QtWidgets.QWidget()
         dev_ui = combo_small_ui()
         dev_ui.setupUi(widg)
@@ -525,8 +530,12 @@ class PositionersPanel(QtWidgets.QWidget):
         the handler for when a new selection is made from a combobox, ex: Polarization
         """
         cmbo = self.sender()
-        dev = cmbo._device
-        sts = dev.set(pos)
+        # if there is a callback provided call it, else set the device value
+        if cmbo.cb:
+            cmbo.cb(pos)
+        else:
+            dev = cmbo._device
+            sts = dev.set(pos)
 
     def format_tooltip_text(
         self,

@@ -261,6 +261,19 @@ class BaseFocusScanClass(BaseScan):
                 # use defaults of all args = False
                 d.set_row_change_index_points()
 
+    def get_num_points_in_scan(self):
+        """
+        overriddden by inheriting class
+        """
+        # self.numX = dct_get(self.sp_db, SPDB_XNPOINTS)
+        # self.numY = dct_get(self.sp_db, SPDB_YNPOINTS)
+        # self.numZ = dct_get(self.sp_db, SPDB_ZNPOINTS)
+        # self.numZZ = dct_get(self.sp_db, SPDB_ZZNPOINTS)
+        # self.numZX = dct_get(self.sp_db, SPDB_ZXNPOINTS)
+        # self.numZY = dct_get(self.sp_db, SPDB_ZYNPOINTS)
+        # self.numE = dct_get(self.sp_db, SPDB_EV_NPOINTS)
+        return self.numX * self.numZZ
+
     def configure_devs(self, dets):
         """
 

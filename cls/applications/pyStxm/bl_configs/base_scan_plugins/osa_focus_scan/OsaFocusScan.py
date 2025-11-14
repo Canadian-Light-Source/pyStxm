@@ -69,6 +69,16 @@ class BaseOsaFocusScanClass(BaseScan):
                 # use defaults of all args = False
                 d.set_row_change_index_points()
 
+    def get_num_progress_events(self):
+        """
+        over ride base class def
+        """
+        if self.is_lxl:
+            return self.zz_roi[NPOINTS]
+        else:
+            #point scan
+            return self.x_roi[NPOINTS] * self.zz_roi[NPOINTS]
+
     def get_num_points_in_scan(self):
         """
         overriddden by inheriting class

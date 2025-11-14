@@ -113,6 +113,8 @@ class MotorQt(EpicsMotor, QObject):
     raw_val = Cpt(EpicsSignal, ".RVAL", kind="omitted")
     foff = Cpt(EpicsSignal, ".FOFF", kind="omitted")
 
+    _emit_move = pyqtSignal(float, bool) # a signal to call move from a sig handler in a thread safe way
+
     # the following is here for compatability with e712_sample_motor
 
     def __init__(self, *args, **kwargs):
@@ -208,6 +210,18 @@ class MotorQt(EpicsMotor, QObject):
             self.msta_dct = motor_msta(self.ctrlr_status.get())
 
         self.add_callback('user_readback', self._on_pv_changed)
+
+        self._emit_move.connect(self.move)
+
+    def call_emit_move(self, position, wait=True, kwargs={}):
+        """
+        a thread safe way to call move from a signal handler
+        :param position:
+        :param wait:
+        :param kwargs:
+        :return:
+        """
+        self._emit_move.emit(position, wait)
 
     def is_connected(self):
         """

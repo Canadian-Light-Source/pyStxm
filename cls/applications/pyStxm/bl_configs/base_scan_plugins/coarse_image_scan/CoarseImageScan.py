@@ -281,7 +281,7 @@ class BaseCoarseImageScanClass(BaseScan):
                 for y_sp in self.y_roi['SETPOINTS']:
                     ACCEL_DISTANCE = self.x_roi["RANGE"] * accel_dist_prcnt_pv.get()
                     DECCEL_DISTANCE = self.x_roi["RANGE"] * deccel_dist_prcnt_pv.get()
-                    #print(f"CoarseImageScan: ACCEL_DISTANCE = {ACCEL_DISTANCE}, DECCEL_DISTANCE={DECCEL_DISTANCE}")
+                    print(f"CoarseImageScan: ACCEL_DISTANCE = {ACCEL_DISTANCE}, DECCEL_DISTANCE={DECCEL_DISTANCE}")
                     crs_x.velocity.put(self.scan_velo)
                     piezo_mtr.enable_marker_position(True)
                     for d in dets:

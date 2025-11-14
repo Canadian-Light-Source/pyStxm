@@ -378,7 +378,7 @@ class BaseSampleFineImageScanClass(BaseScan):
                 piezo_mtr_y = self.main_obj.get_sample_fine_positioner("Y")
                 self.is_fine_scan = False
                 accel_dist_prcnt_pv, deccel_dist_prcnt_pv = self.get_accel_deccel_pvs()
-                return_velo = 500.0
+
                 psmtr_x.set_piezo_power_on()
                 psmtr_y.set_piezo_power_on()
 
@@ -415,7 +415,6 @@ class BaseSampleFineImageScanClass(BaseScan):
                     yield from bps.wait('BB')
                     yield from bps.trigger_and_read(dets)
                     piezo_mtr_x.enable_marker_position(False)
-                    piezo_mtr_x.velocity.put(return_velo)
                     yield from bps.mv(piezo_mtr_x, self.x_roi['START'] - ACCEL_DISTANCE, piezo_mtr_y, y_sp, group='CC')
                     yield from bps.wait('CC')
 
@@ -461,20 +460,24 @@ class BaseSampleFineImageScanClass(BaseScan):
             psmtr_y = self.main_obj.device("DNM_SAMPLE_Y")
             psmtr_x.set_piezo_power_on()
             psmtr_y.set_piezo_power_on()
-            x_roi = self.sp_db["X"]
-            y_roi = self.sp_db["Y"]
-            mtr_x = self.main_obj.device(mtr_dct["fx_name"])
-            mtr_y = self.main_obj.device(mtr_dct["fy_name"])
+            piezo_mtr_x = self.main_obj.device(mtr_dct["fx_name"])
+            piezo_mtr_y = self.main_obj.device(mtr_dct["fy_name"])
+
             shutter = self.main_obj.device("DNM_SHUTTER")
             # the detector will be staged automatically by the grid_scan plan
             shutter.open()
 
-            for y_sp in y_roi['SETPOINTS']:
-                yield from bps.mv(mtr_y, y_sp)
-                for x_sp in x_roi['SETPOINTS']:
-                    yield from bps.mv(mtr_x, x_sp)
+            for y_sp in self.y_roi['SETPOINTS']:
+                yield from bps.mv(piezo_mtr_y, y_sp)
+
+                for x_sp in self.x_roi['SETPOINTS']:
+                    yield from bps.mv(piezo_mtr_x, x_sp, group='AA')
+                    yield from bps.wait('AA')
                     # yield from bps.sleep(0.002)  # small delay to allow detectors to settle
                     yield from bps.trigger_and_read(dets)
+
+                yield from bps.mv(piezo_mtr_x, self.x_roi["SETPOINTS"][0], group='AA')
+                yield from bps.sleep(0.8)
 
             shutter.close()
 

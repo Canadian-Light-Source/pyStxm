@@ -1,5 +1,5 @@
 
-SIM = True
+SIM = False
 dev_dct = {}
 dev_dct["POSITIONERS"] = [
     {
@@ -255,6 +255,12 @@ dev_dct["DETECTORS"] = [
 ]
 
 dev_dct["PVS"] = [
+    {
+        "name": "DNM_RETURN_VELO",
+        "class": "make_basedevice",
+        "cat": "PVS",
+        "dcs_nm": "SIM_SCAN:return_velo",
+    },
     {
         "name": "DNM_FINE_ACCEL_DIST_PRCNT",
         "class": "make_basedevice",

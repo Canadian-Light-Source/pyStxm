@@ -340,6 +340,7 @@ class FocusParams(BasePreference):
     def on_a0_changed(self):
         A0 = float(str(self.a0Fld.text()))
         MAIN_OBJ.device("DNM_A0").put(A0)
+        MAIN_OBJ.update_a0(A0)
         self.update_zp_data()
 
     def update_zp_selection(self, zp_idx=None):
@@ -425,6 +426,7 @@ class FocusParams(BasePreference):
 
         zp_defs = MAIN_OBJ.get_preset_section("ZP_DEFS")
         MAIN_OBJ.set_dcs_zoneplate_definitions(zp_defs)
+        MAIN_OBJ.set_zoneplate_definition(self._cur_sel_zp_def, A0)
 
 
     def get_cur_zp_def(self):

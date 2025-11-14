@@ -22,7 +22,7 @@ from cls.utils.roi_utils import (
     get_base_energy_roi,
     make_spatial_db_dict,
 )
-from cls.utils.calculations import focal_length
+from cls.utils.focus_calculations import focal_length
 from cls.types.stxmTypes import scan_types, spatial_type_prefix, OSA_FOCUS_MODE, SAMPLE_FOCUS_MODE, image_types
 from cls.plotWidgets.shape_restrictions import ROILimitObj, ROILimitDef
 from cls.plotWidgets.color_def import (
@@ -74,8 +74,14 @@ class BaseOsaFocusScanParam(ScanParamWidget):
         self.on_focus_scan_single_spatial_npoints_changed()
         self.init_loadscan_menu()
 
-        fl_val = 0.0 - math.fabs(focal_length(self.energy_mtr.get_position(), self.a1.get_position()))
-        self.set_parm(self.centerZPFld, fl_val)
+        energy = self.main_obj.device("DNM_ENERGY").get_position()
+        fl = self.main_obj.get_focal_length(energy)
+        a0_val = self.main_obj.get_a0()
+
+        self.set_parm(self.centerZPFld, fl)
+
+        # fl_val = 0.0 - math.fabs(focal_length(self.energy_mtr.get_position(), self.a1.get_position()))
+        # self.set_parm(self.centerZPFld, fl_val)
 
         self._zpz_fbk_timer.start(250)
 
@@ -388,15 +394,25 @@ class BaseOsaFocusScanParam(ScanParamWidget):
                 accept_str="OK",
             )
             return
-        self.reset_focus_btns()
-        mtrz = self.main_obj.device("DNM_ZONEPLATE_Z")
+
+        # mtrz = self.main_obj.device("DNM_ZONEPLATE_Z")
+        # mtrx = self.main_obj.device("DNM_OSA_X")
+        # mtry = self.main_obj.device("DNM_OSA_Y")
+        # # sflag 0 == Sample Focus, 1 == OSA focus
+        # sflag = self.main_obj.device("DNM_ZONEPLATE_SCAN_MODE")
+        # # mult by -1.0 so that it is always negative as zpz pos needs
+        # fl = -1.0 * math.fabs(self.main_obj.device("DNM_FOCAL_LENGTH").get_position())
+        # a0 = self.main_obj.device("DNM_A0").get_position()
+
+        sflag = self.main_obj.device("DNM_ZONEPLATE_SCAN_MODE")
+        mtr_zz = self.main_obj.device("DNM_ZONEPLATE_Z")
         mtrx = self.main_obj.device("DNM_OSA_X")
         mtry = self.main_obj.device("DNM_OSA_Y")
-        # sflag 0 == Sample Focus, 1 == OSA focus
-        sflag = self.main_obj.device("DNM_ZONEPLATE_SCAN_MODE")
-        # mult by -1.0 so that it is always negative as zpz pos needs
-        fl = -1.0 * math.fabs(self.main_obj.device("DNM_FOCAL_LENGTH").get_position())
-        a0 = self.main_obj.device("DNM_A0").get_position()
+        mtr_cz = self.main_obj.device("DNM_COARSE_Z")
+        cur_cz_pos = mtr_cz.get_position()
+        energy = self.main_obj.device("DNM_ENERGY").get_position()
+        fl = self.main_obj.get_focal_length(energy)
+        a0_val = self.main_obj.get_a0()
 
         if re.search(scanning_mode, 'COARSE_SAMPLEFINE', re.IGNORECASE):
 
@@ -406,26 +422,24 @@ class BaseOsaFocusScanParam(ScanParamWidget):
 
             zp_cent = float(self._new_zpz_pos)
 
-            #zp_cent = float(str(self.centerZPFld.text()))
-
             # support for DCS server motors that use offsets
-            if hasattr(mtrz, 'apply_delta_to_offset'):
+            if hasattr(mtr_zz, 'apply_delta_to_offset'):
                 delta = float(str(self.centerZPFld.text())) - zp_cent
-                mtrz.apply_delta_to_offset(delta)
+                mtr_zz.apply_delta_to_offset(delta)
             else:
-                mtrz.move(zp_cent)
+                mtr_zz.call_emit_move(zp_cent, wait=True)
 
-                if hasattr(mtrz, 'confirm_stopped'):
-                    mtrz.confirm_stopped()
-                if hasattr(mtrz, 'set_position'):
-                    mtrz.set_position(fl)
+                if hasattr(mtr_zz, 'confirm_stopped'):
+                    mtr_zz.confirm_stopped()
+                if hasattr(mtr_zz, 'set_position'):
+                    mtr_zz.set_position(fl)
 
-            mtrx.move(0.0)
-            mtry.move(0.0)
+            mtrx.call_emit_move(0.0, wait=False)
+            mtry.call_emit_move(0.0, wait=False)
 
             #now move to Sample Focus position which is == FL - A0
-            zpz_final_pos = -1.0 * (math.fabs(fl) - math.fabs(a0))
-            mtrz.move(zpz_final_pos)
+            zpz_final_pos = -1.0 * (math.fabs(fl) - math.fabs(a0_val))
+            mtr_zz.call_emit_move(zpz_final_pos, wait=False)
 
 
         elif re.search(scanning_mode, 'GONI_ZONEPLATE', re.IGNORECASE):
@@ -438,29 +452,30 @@ class BaseOsaFocusScanParam(ScanParamWidget):
 
             #zp_cent = float(str(self.centerZPFld.text()))
             zp_cent = float(self._new_zpz_pos)
-            # mtrz = self.main_obj.device('DNM_ZONEPLATE_Z')
+            # mtr_zz = self.main_obj.device('DNM_ZONEPLATE_Z')
 
             # support for DCS server motors that use offsets
-            if hasattr(mtrz, 'apply_delta_to_offset'):
+            if hasattr(mtr_zz, 'apply_delta_to_offset'):
                 delta = float(str(self.centerZPFld.text())) - zp_cent
-                mtrz.apply_delta_to_offset(delta)
+                mtr_zz.apply_delta_to_offset(delta)
             else:
-                mtrz.move(zp_cent)
-                mtrz.confirm_stopped()
+                mtr_zz.call_emit_move(zp_cent, wait=True)
+                mtr_zz.confirm_stopped()
 
-                mtrz.set_position(fl)
+                mtr_zz.set_position(fl)
 
-            mtrx.move(0.0)
-            mtry.move(0.0)
+            mtrx.call_emit_move(0.0, wait=False)
+            mtry.call_emit_move(0.0, wait=False)
             # now move to Sample Focus position which is == FL - A0
-            zpz_final_pos = -1.0 * (math.fabs(fl) - math.fabs(a0))
-            mtrz.move(zpz_final_pos)
+            zpz_final_pos = -1.0 * (math.fabs(fl) - math.fabs(a0_val))
+            mtr_zz.call_emit_move(zpz_final_pos, wait=False)
 
         elif re.search(scanning_mode, 'COARSE_ZONEPLATE', re.IGNORECASE):
             _logger.info("Setting focus for COARSE_ZONEPLATE currently not supported")
 
-        #have the plotter delete the focus image
-        self._parent.reset_image_plot()
+        # have the plotter delete the focus image
+        self._parent.reset_image_plot(shape_only=True)
+        self.reset_focus_btns()
 
     def set_roi(self, roi):
         """

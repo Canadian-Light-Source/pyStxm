@@ -5,6 +5,7 @@ Created on 2014-06-23
 """
 
 import atexit
+import math
 import os
 import queue
 import sys
@@ -21,6 +22,7 @@ from PyQt5 import QtCore, QtGui, uic, QtWidgets
 from plotpy.items import PolygonShape
 
 from cls.applications.pyStxm import abs_path_to_ini_file
+from cls.applications.pyStxm.bl_configs.device_names import DNM_ZPZ_POS
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
 
 from cls.applications.pyStxm.sm_user import usr_acct_manager
@@ -31,6 +33,7 @@ from cls.utils.log import (
     get_module_logger,
     log_to_qt_and_to_file,
 )
+
 from cls.utils.environment import get_environ_var
 from cls.utils.json_utils import dict_to_json
 from cls.utils.fileUtils import get_file_path_as_parts
@@ -74,7 +77,9 @@ from cls.types.stxmTypes import (
     spatial_type_prefix,
     sample_positioning_modes,
     scan_status_types,
-    SPEC_ROI_PREFIX
+    SPEC_ROI_PREFIX,
+    OSA_FOCUS_MODE,
+    SAMPLE_FOCUS_MODE
 )
 
 
@@ -103,6 +108,7 @@ from cls.applications.pyStxm.widgets.devDisplayPanel import DevsPanel
 from cls.applications.pyStxm.widgets.scan_queue_table import ScanQueueTableWidget
 from cls.applications.pyStxm.widgets.ioc_apps_panel import IOCAppsPanel
 from cls.applications.pyStxm.widgets.ptycho_viewer import PtychoDataViewerPanel
+from cls.utils.focus_calculations import focal_length
 
 from cls.types.beamline import BEAMLINE_IDS
 # from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
@@ -693,6 +699,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         if MAIN_OBJ.get_beamline_id() is BEAMLINE_IDS.STXM:
             zpz_scanflag = MAIN_OBJ.device("DNM_ZONEPLATE_SCAN_MODE")
             zpz_scanflag.put("user_setpoint", mode)
+            MAIN_OBJ.set_zp_focus_mode(mode)
 
     def allow_feedback(self):
         if hasattr(self, "esPosPanel"):
@@ -1236,6 +1243,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     off_str="OSA Focused",
                     on_str="Sample Focused",
                     toggle=True,
+                    cb=self.on_change_focus_mode
                 )
             # add zonplate in/out
 
@@ -1458,6 +1466,42 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.setup_select_detectors_frame()
 
         # self.check_if_pv_exists()
+
+    def on_change_focus_mode(self, val: bool=False):
+        """
+        change the zoneplate Z position based on the focus mode
+        :param val:
+        :return:
+        """
+
+        cmbo_btn = self.sender()
+        a1 = MAIN_OBJ.device("DNM_ZP_DEF_A")
+        a0 = MAIN_OBJ.device("DNM_A0")
+        energy_mtr = MAIN_OBJ.device("DNM_ENERGY")
+        zpz_dev = MAIN_OBJ.device("DNM_ZONEPLATE_Z")
+        push_value = False
+
+        if MAIN_OBJ.get_device_backend() == 'epics':
+            push_value = True
+
+        if not val:
+            # OSA focused so just set it to 0.0 - ABS(FL + A0)
+            if push_value:
+                new_zpz_pos = 0.0 - (math.fabs(focal_length(energy_mtr.get_position(), a1.get_position())))
+                zpz_dev.call_emit_move(new_zpz_pos, wait=False)
+
+            cmbo_btn.setChecked(False)
+            cmbo_btn.setText("OSA Focused")
+            MAIN_OBJ.set_zp_focus_mode(OSA_FOCUS_MODE)
+        else:
+            # sample focused so just set it to 0.0 - FL
+            if push_value:
+                new_zpz_pos = 0.0 - (
+                        math.fabs(focal_length(energy_mtr.get_position(), a1.get_position())) - a0.get_position())
+                zpz_dev.call_emit_move(new_zpz_pos, wait=False)
+            cmbo_btn.setChecked(True)
+            cmbo_btn.setText("Sample Focused")
+            MAIN_OBJ.set_zp_focus_mode(SAMPLE_FOCUS_MODE)
 
     def check_if_pv_exists(self):
         dev_obj = MAIN_OBJ.get_device_obj()

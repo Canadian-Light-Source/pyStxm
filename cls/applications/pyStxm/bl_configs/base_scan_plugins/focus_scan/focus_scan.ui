@@ -134,7 +134,7 @@
         <item>
          <widget class="QComboBox" name="scanTypeSelComboBox">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="font">
            <font>

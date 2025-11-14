@@ -199,38 +199,78 @@ class BaseFocusScanClass(BaseScan):
 
         return(True)
 
-    def configure_devs(self, dets):
-        """
-        configure_devs(): description
+    # def configure_devs(self, dets):
+    #     """
+    #     configure_devs(): description
+    #
+    #     :param dets: dets description
+    #     :type dets: dets type
+    #
+    #     :returns: None
+    #     """
+    #     super().configure_devs(dets)
+    #
+    #     for d in dets:
+    #         if hasattr(d, "set_dwell"):
+    #             d.set_dwell(self.dwell)
+    #         if hasattr(d, "set_config"):
+    #             if self.is_horiz_line:
+    #                 is_pxp_scan = False
+    #             else:
+    #                 is_pxp_scan = True
+    #             d.set_config(self.y_roi["NPOINTS"], self.x_roi["NPOINTS"], is_pxp_scan=is_pxp_scan)
+    #         if self.is_pxp:
+    #             if hasattr(d, "setup_for_software_triggered"):
+    #                 d.setup_for_software_triggered()
+    #             if hasattr(d, "set_row_change_index_points"):
+    #                 # use defaults of all args = False
+    #                 d.set_row_change_index_points()
+    #
+    #         else:
+    #             if hasattr(d, "setup_for_hdw_triggered"):
+    #                 d.setup_for_hdw_triggered()
+    #             if hasattr(d, "set_row_change_index_points"):
+    #                 d.set_row_change_index_points(remove_first_point=True)
 
-        :param dets: dets description
-        :type dets: dets type
-
-        :returns: None
-        """
-        super().configure_devs(dets)
-
+    def config_devs_for_line(self, dets):
+        '''
+        config devs for line scan
+        '''
         for d in dets:
             if hasattr(d, "set_dwell"):
                 d.set_dwell(self.dwell)
             if hasattr(d, "set_config"):
-                if self.is_horiz_line:
-                    is_pxp_scan = False
-                else:
-                    is_pxp_scan = True
-                d.set_config(self.y_roi["NPOINTS"], self.x_roi["NPOINTS"], is_pxp_scan=is_pxp_scan)
-            if self.is_pxp:
-                if hasattr(d, "setup_for_software_triggered"):
-                    d.setup_for_software_triggered()
-                if hasattr(d, "set_row_change_index_points"):
-                    # use defaults of all args = False
-                    d.set_row_change_index_points()
+                d.set_config(self.y_roi["NPOINTS"], self.x_roi["NPOINTS"], is_pxp_scan=self.is_pxp)
+            if hasattr(d, "setup_for_hdw_triggered"):
+                d.setup_for_hdw_triggered()
+            if hasattr(d, "set_row_change_index_points"):
+                d.set_row_change_index_points(remove_first_point=True)
 
-            else:
-                if hasattr(d, "setup_for_hdw_triggered"):
-                    d.setup_for_hdw_triggered()
-                if hasattr(d, "set_row_change_index_points"):
-                    d.set_row_change_index_points(remove_first_point=True)
+    def config_devs_for_point(self, dets):
+        '''
+        config devs for point scan
+        '''
+        for d in dets:
+            if hasattr(d, "set_dwell"):
+                d.set_dwell(self.dwell)
+            if hasattr(d, "set_config"):
+                d.set_config(self.y_roi["NPOINTS"], self.x_roi["NPOINTS"], is_pxp_scan=True)
+            if hasattr(d, "setup_for_software_triggered"):
+                d.setup_for_software_triggered()
+            if hasattr(d, "set_row_change_index_points"):
+                # use defaults of all args = False
+                d.set_row_change_index_points()
+
+    def configure_devs(self, dets):
+        """
+
+        """
+        super().configure_devs(dets)
+
+        if self.is_lxl:
+            self.config_devs_for_line(dets)
+        else:
+            self.config_devs_for_point(dets)
 
     def make_pxp_scan_plan(self, dets, md=None, bi_dir=False):
         """

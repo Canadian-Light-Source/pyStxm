@@ -3959,7 +3959,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 dat_ext="hdf5",
                 stack_dir=False,
                 num_desired_datafiles=1,
-                prefix_char=main_obj.get_datafile_prefix(),
+                prefix_char=MAIN_OBJ.get_datafile_prefix(),
                 dev_backend=MAIN_OBJ.get_device_backend(),
             )
             self.assign_datafile_names_to_sp_db(sp_db, master_seq_dct[0])
@@ -4645,10 +4645,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         scan_type = dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE)
 
         if self.executingScan.image_started == False:
-            if scan_type == scan_types.SAMPLE_FOCUS:
-                self.lineByLineImageDataWidget.set_autoscale(fill_plot_window=True)
-
-            elif scan_type == scan_types.OSA_FOCUS:
+            if scan_type in [scan_types.SAMPLE_FOCUS, scan_types.OSA_FOCUS]:
                 self.lineByLineImageDataWidget.set_autoscale(fill_plot_window=True)
 
             elif scan_type == scan_types.SAMPLE_LINE_SPECTRUM:

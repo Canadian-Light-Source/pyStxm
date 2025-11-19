@@ -38,6 +38,7 @@ class FocusCalculations(QtCore.QObject):
         :param a0: New a0 value
         """
         self.A0 = a0
+        self.update_delta_a0(0.0)
 
     def update_delta_a0(self, delta_a0: float):
         """
@@ -76,9 +77,17 @@ class FocusCalculations(QtCore.QObject):
         :param energy: Energy in eV
         :return: Change in focal length (delta_a0)
         """
-        current_focal_length = self.focal_length(energy)
-        delta_a0 = desired_focus_position - current_focal_length
-        return delta_a0
+        current_focal_length = 0.0 - (math.fabs(self.focal_length(energy)) - (self.A0 + self.delta_A0))
+        delta_focus_pos = desired_focus_position - current_focal_length
+        self.update_a0_for_focus(delta_focus_pos)
+        return delta_focus_pos
+
+    def update_a0_for_focus(self, new_a0: float):
+        """
+        Update the focal length (A0) to a new value, ensuring it is within allowable limits.
+        :param new_a0: New focal length (A0)
+        """
+        self.A0 += new_a0
 
     def calc_new_coarse_z_pos_for_focus(self, energy: float, cur_cz_pos: float, desired_focus_position: float) -> float:
         """
@@ -91,9 +100,9 @@ class FocusCalculations(QtCore.QObject):
         new_cz_pos = cur_cz_pos - delta_focus_pos
         return new_cz_pos
 
-    def calc_new_zoneplate_z_pos_for_focus(self, energy: float, a0: float, desired_focus_position: float) -> float:
+    def calc_new_zoneplate_z_pos_for_focus(self, energy: float) -> float:
         """
-        NOTE: Focal length is equal to OSA in focus
+        NOTE: Focal length is equal to OSA in focus, calc new zpz position for current energy, Ao and delta_A0
 
         Calculate the new zoneplate z position needed to achieve focus at the desired focal length for a given energy.
         :param focal_length: Desired focal length
@@ -102,8 +111,8 @@ class FocusCalculations(QtCore.QObject):
         :return: New zoneplate z position
         """
         focal_length = self.focal_length(energy)
-        delta_focus_pos = self.calc_delta_focus_position(energy, desired_focus_position)
-        new_zp_z_pos = 0.0 - ((math.fabs(focal_length) - a0) - (delta_focus_pos) + self.delta_A0)
+        new_zp_z_pos = 0.0 - (math.fabs(focal_length) - (self.A0 + self.delta_A0))
+        # new_zp_z_pos = 0.0 - ((math.fabs(focal_length) - self.A0) - (delta_focus_pos) + self.delta_A0)
         return new_zp_z_pos
 
 
@@ -126,13 +135,15 @@ if __name__ == '__main__':
     print(f"[a0={a0:.2f}] Focal length at {energy} eV: {fl} um")
     print("-----------------------------------------------")
 
-    for des_focus_pos in desired_focus_position:
-        print(f"[des_focus_pos: {des_focus_pos}] Cz = {fclass.calc_new_coarse_z_pos_for_focus(energy, cz, des_focus_pos):.2f} um")
-    print()
-    for des_focus_pos in desired_focus_position:
-        print(f"[des_focus_pos: {des_focus_pos}] ZPz = {fclass.calc_new_zoneplate_z_pos_for_focus(energy, a0, des_focus_pos):.2f} um")
+    # for des_focus_pos in desired_focus_position:
+    #     print(f"[des_focus_pos: {des_focus_pos}] Cz = {fclass.calc_new_coarse_z_pos_for_focus(energy, cz, des_focus_pos):.2f} um")
+    # print()
+    # for des_focus_pos in desired_focus_position:
+    #     print(f"[des_focus_pos: {des_focus_pos}] ZPz = {fclass.calc_new_zoneplate_z_pos_for_focus(energy, a0, des_focus_pos):.2f} um")
 
-
+    new_a0_offset = fclass.calc_delta_focus_position(395, -3476.8)
+    fclass.update_a0_for_focus(new_a0_offset)
+    fclass.calc_new_zoneplate_z_pos_for_focus(energy)
 
 
 

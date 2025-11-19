@@ -394,16 +394,6 @@ class BaseOsaFocusScanParam(ScanParamWidget):
                 accept_str="OK",
             )
             return
-
-        # mtrz = self.main_obj.device("DNM_ZONEPLATE_Z")
-        # mtrx = self.main_obj.device("DNM_OSA_X")
-        # mtry = self.main_obj.device("DNM_OSA_Y")
-        # # sflag 0 == Sample Focus, 1 == OSA focus
-        # sflag = self.main_obj.device("DNM_ZONEPLATE_SCAN_MODE")
-        # # mult by -1.0 so that it is always negative as zpz pos needs
-        # fl = -1.0 * math.fabs(self.main_obj.device("DNM_FOCAL_LENGTH").get_position())
-        # a0 = self.main_obj.device("DNM_A0").get_position()
-
         sflag = self.main_obj.device("DNM_ZONEPLATE_SCAN_MODE")
         mtr_zz = self.main_obj.device("DNM_ZONEPLATE_Z")
         mtrx = self.main_obj.device("DNM_OSA_X")
@@ -412,7 +402,7 @@ class BaseOsaFocusScanParam(ScanParamWidget):
         cur_cz_pos = mtr_cz.get_position()
         energy = self.main_obj.device("DNM_ENERGY").get_position()
         fl = self.main_obj.get_focal_length(energy)
-        a0_val = self.main_obj.get_a0()
+        # a0_val = self.main_obj.get_a0()
 
         if re.search(scanning_mode, 'COARSE_SAMPLEFINE', re.IGNORECASE):
 
@@ -429,17 +419,18 @@ class BaseOsaFocusScanParam(ScanParamWidget):
             else:
                 mtr_zz.call_emit_move(zp_cent, wait=True)
 
-                if hasattr(mtr_zz, 'confirm_stopped'):
-                    mtr_zz.confirm_stopped()
-                if hasattr(mtr_zz, 'set_position'):
-                    mtr_zz.set_position(fl)
+            if hasattr(mtr_zz, 'confirm_stopped'):
+                mtr_zz.confirm_stopped()
+            if hasattr(mtr_zz, 'set_position'):
+                mtr_zz.set_position(fl)
 
             mtrx.call_emit_move(0.0, wait=False)
             mtry.call_emit_move(0.0, wait=False)
 
             #now move to Sample Focus position which is == FL - A0
-            zpz_final_pos = -1.0 * (math.fabs(fl) - math.fabs(a0_val))
-            mtr_zz.call_emit_move(zpz_final_pos, wait=False)
+            # zpz_in_focus = -1.0 * (math.fabs(fl) - math.fabs(a0_val))
+            zpz_in_focus = self.main_obj.calc_new_zoneplate_z_pos_for_focus(energy)
+            mtr_zz.call_emit_move(zpz_in_focus, wait=False)
 
 
         elif re.search(scanning_mode, 'GONI_ZONEPLATE', re.IGNORECASE):

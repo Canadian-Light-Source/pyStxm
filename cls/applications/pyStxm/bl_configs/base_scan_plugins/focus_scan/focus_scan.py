@@ -641,7 +641,6 @@ class BaseFocusScanParam(ScanParamWidget):
         self._parent.reset_image_plot(shape_only=True)
         self.reset_focus_btns()
 
-
     def on_set_a0_to_cursor(self):
         """
         From document: Focusing procedures for CLS SM CryoStxm
@@ -652,16 +651,22 @@ class BaseFocusScanParam(ScanParamWidget):
            then A0 is updated, OSAz will not move and remain to be 0
 
         """
+        mtr_zz = self.main_obj.device("DNM_ZONEPLATE_Z")
         energy = self.main_obj.device("DNM_ENERGY").get_position()
-        fl = self.main_obj.get_focal_length(energy)
-        a0_val = self.main_obj.get_a0()
-        cur_delta_a0 = self.main_obj.get_delta_a0()
-        delta_zpz = (fl + a0_val) - self._desired_zpz_focus_pos - cur_delta_a0
-        new_a0 = a0_val - delta_zpz
-        self.main_obj.update_a0(new_a0)
 
-        # reset delta A0 to 0
-        self.main_obj.update_delta_a0(0.0)
+        # this call updates A0 in focusclass
+        self.main_obj.calc_delta_focus_position(energy, self._desired_zpz_focus_pos)
+        zpz_in_focus = self.main_obj.calc_new_zoneplate_z_pos_for_focus(energy)
+        # A0 might have changed, so get it to update the DNM_A0 device
+        self.main_obj.get_a0()
+
+        # now move ZpZ to the focus pos given A0 and delta A0
+        if mtr_zz.within_limits(zpz_in_focus):
+            mtr_zz.call_emit_move(zpz_in_focus, wait=False)
+        else:
+            _logger.error(
+                f"new Zp Z position [{zpz_in_focus:.2f} um] is outside the soft limits of Zp Z, skipping")
+            return
 
         self._parent.reset_image_plot(shape_only=True)
         self.reset_focus_btns()
@@ -676,14 +681,22 @@ class BaseFocusScanParam(ScanParamWidget):
            then A0 is updated, OSAz will not move and remain to be 0
 
         """
+        mtr_zz = self.main_obj.device("DNM_ZONEPLATE_Z")
         energy = self.main_obj.device("DNM_ENERGY").get_position()
         fl = self.main_obj.get_focal_length(energy)
         a0_val = self.main_obj.get_a0()
         cur_delta_a0 = self.main_obj.get_delta_a0()
         delta_zpz = self._desired_zpz_focus_pos - cur_delta_a0 - (fl + a0_val)
         self.main_obj.update_delta_a0(delta_zpz)
-        # sflag = self.main_obj.device('Zpz_scanModeFlag')
-        # sflag.put('user_setpoint', zp_focus_modes.A0MOD)
+        zpz_in_focus = self.main_obj.calc_new_zoneplate_z_pos_for_focus(energy)
+        # now move ZpZ to the focus pos given A0 and delta A0
+        if mtr_zz.within_limits(zpz_in_focus):
+            mtr_zz.call_emit_move(zpz_in_focus, wait=False)
+        else:
+            _logger.error(
+                f"new Zp Z position [{zpz_in_focus:.2f} um] is outside the soft limits of Zp Z, skipping")
+            return
+
         # have the plotter delete the focus image
         self._parent.reset_image_plot(shape_only=True)
         self.reset_focus_btns()

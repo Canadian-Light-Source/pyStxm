@@ -193,12 +193,12 @@ class FocusParams(BasePreference):
             osa_idx = 0
         self.osaToolBox.setCurrentIndex(osa_idx)
 
+        A0 = self.get_section("ZP_FOCUS_PARAMS.OSA_A0")
+        self.a0Fld.setText("%.2f" % A0)
+        self.on_a0_changed()
+
         self.update_zp_selection(zp_idx=zp_idx)
         self.update_osa_selection(osa_idx=osa_idx)
-
-        # A0 = self.get_section("ZP_FOCUS_PARAMS.OSA_A0")
-        # self.a0Fld.setText("%.2f" % A0)
-        # self.on_a0_changed()
 
         self.zpToolBox.currentChanged.connect(self.update_zp_selection)
         self.osaToolBox.currentChanged.connect(self.update_osa_selection)

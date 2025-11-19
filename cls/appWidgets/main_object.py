@@ -662,15 +662,44 @@ class main_object_base(QtCore.QObject):
         else:
             _logger.error(f"Focus calculation object has not been initialized: cannot update delta a0")
 
+    def calc_delta_focus_position(self, energy: float, desired_focus_position: float) -> float:
+        """
+        calculate delta focus position from the current zoneplate definition and the desired zpz focus position
+        :param energy:
+        :param desired_focus_position:
+        :return:
+        """
+        if self.focus_obj:
+            return self.focus_obj.calc_delta_focus_position(energy, desired_focus_position)
+        else:
+            _logger.error(f"Focus calculation object has not been initialized: cannot calculate delta focus position")
+            return None
+
+    def calc_new_zoneplate_z_pos_for_focus(self, energy: float) -> float:
+        """
+        calculate the new zoneplate z position needed to achieve focus at the desired focal length for a given energy.
+        :param energy:
+        :param a0:
+        :param desired_focus_position:
+        :return:
+        """
+        if self.focus_obj:
+            return self.focus_obj.calc_new_zoneplate_z_pos_for_focus(energy)
+        else:
+            _logger.error(
+                f"Focus calculation object has not been initialized: cannot calculate new zoneplate z pos for focus")
+            return None
+
     def get_a0(self) -> float:
         """
         calculate a0 from the current zoneplate definition
         :return:
         """
-        A0 = self.device("DNM_A0").get_position()
         if self.focus_obj:
-            self.focus_obj.update_a0(A0)
-            return A0
+            a0 = self.focus_obj.get_a0()
+            # update the device
+            self.device('DNM_A0').put(a0)
+            return a0
         else:
             _logger.error(f"Focus calculation object has not been initialized: cannot calculate a0")
             return None
@@ -680,10 +709,11 @@ class main_object_base(QtCore.QObject):
         get the current delta a0 from the focus calculation object
         :return:
         """
-        delta_a0 = self.device("DNM_DELTA_A0").get_position()
         if self.focus_obj:
-            self.focus_obj.update_delta_a0(delta_a0)
-            return self.focus_obj.get_delta_a0()
+            delta_a0 = self.focus_obj.get_delta_a0()
+            # update the device
+            self.device("DNM_DELTA_A0").put(delta_a0)
+            return delta_a0
         else:
             _logger.error(f"Focus calculation object has not been initialized: cannot get delta a0")
             return None
@@ -728,7 +758,7 @@ class main_object_base(QtCore.QObject):
                 f"Focus calculation object has not been initialized: cannot calculate new coarse z pos for focus")
             return None
 
-    def get_new_zoneplate_z_pos_for_focus(self, energy: float, a0: float, desired_focus_position: float) -> float:
+    def get_new_zoneplate_z_pos_for_focus(self, energy: float) -> float:
         """
         calculate the new zoneplate z position needed to achieve focus at the desired focal length for a given energy.
         :param energy:
@@ -737,7 +767,7 @@ class main_object_base(QtCore.QObject):
         :return:
         """
         if self.focus_obj:
-            return self.focus_obj.calc_new_zoneplate_z_pos_for_focus(energy, a0, desired_focus_position)
+            return self.focus_obj.calc_new_zoneplate_z_pos_for_focus(energy)
         else:
             _logger.error(
                 f"Focus calculation object has not been initialized: cannot calculate new zoneplate z pos for focus")

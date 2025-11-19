@@ -155,12 +155,12 @@ class BaseFocusScanClass(BaseScan):
         else:
             coarse_only = False
             
-        if not mtr_x.check_scan_limits(xstart, xstop, coarse_only=coarse_only):
-            _logger.error("Scan would violate soft limits of X motor")
-            return(False)
-        if not mtr_y.check_scan_limits(ystart, ystop, coarse_only=coarse_only):
-            _logger.error("Scan would violate soft limits of Y motor")
-            return(False)
+        # if not mtr_x.check_scan_limits(xstart, xstop, coarse_only=coarse_only):
+        #     _logger.error("Scan would violate soft limits of X motor")
+        #     return(False)
+        # if not mtr_y.check_scan_limits(ystart, ystop, coarse_only=coarse_only):
+        #     _logger.error("Scan would violate soft limits of Y motor")
+        #     return(False)
         if not mtr_z.check_scan_limits(zzstart, zzstop):
             _logger.error("Scan would violate soft limits of ZZ motor")
             return(False)

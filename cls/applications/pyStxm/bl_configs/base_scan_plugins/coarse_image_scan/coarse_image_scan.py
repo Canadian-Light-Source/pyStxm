@@ -399,15 +399,17 @@ class BaseCoarseImageScanParam(ScanParamWidget):
 
             if sp_db[SPDB_X][RANGE] != 0:
                 # only modify if larger than fine scans
-                if sp_db[SPDB_X][RANGE] > MAX_SCAN_RANGE_FINEX:
-                    self.sp_db[SPDB_X][RANGE] = sp_db[SPDB_X][RANGE]
+                # if sp_db[SPDB_X][RANGE] > MAX_SCAN_RANGE_FINEX:
+                #     self.sp_db[SPDB_X][RANGE] = sp_db[SPDB_X][RANGE]
+                self.sp_db[SPDB_X][RANGE] = sp_db[SPDB_X][RANGE]
 
             self.sp_db[SPDB_Y][CENTER] = sp_db[SPDB_Y][CENTER]
 
             if sp_db[SPDB_Y][RANGE] != 0:
                 # only modify if larger than fine scans
-                if sp_db[SPDB_Y][RANGE] > MAX_SCAN_RANGE_FINEY:
-                    self.sp_db[SPDB_Y][RANGE] = sp_db[SPDB_Y][RANGE]
+                # if sp_db[SPDB_Y][RANGE] > MAX_SCAN_RANGE_FINEY:
+                #     self.sp_db[SPDB_Y][RANGE] = sp_db[SPDB_Y][RANGE]
+                self.sp_db[SPDB_Y][RANGE] = sp_db[SPDB_Y][RANGE]
 
         x_roi = self.sp_db[SPDB_X]
         y_roi = self.sp_db[SPDB_Y]

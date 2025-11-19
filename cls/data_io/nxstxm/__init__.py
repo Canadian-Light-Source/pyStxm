@@ -1402,7 +1402,7 @@ class Serializer(event_model.DocumentRouter):
             # nothing to modify
             pass
 
-    def get_devname(self, lu_nm, do_warn=False):
+    def get_devname(self, lu_nm, do_warn=True):
         """
         get the device name using the reverse lookup dict
         :param lu_nm:
@@ -1414,9 +1414,9 @@ class Serializer(event_model.DocumentRouter):
         else:
             if do_warn:
                 _logger.warn(
-                    "nxstxm_primary: get_devname: cannot find [%s] in current scan metadata"
-                    % lu_nm
-                )
+                    f"nxstxm_primary: get_devname: cannot find [{lu_nm}] in current scan metadata"
+                    )
+                print(f"\n WARNING: nxstxm_primary: get_devname: cannot find [{lu_nm}] in current scan metadata\n")
             return lu_nm
 
     def get_baseline_start_data(self, src_nm):
@@ -1676,13 +1676,18 @@ class Serializer(event_model.DocumentRouter):
             ydata = np.array(dct_get(rois, SPDB_YSETPOINTS), dtype=np.float32)
             # make sure dwell is in seconds
             dwell = np.float32(self._cur_scan_md[doc["run_start"]]["dwell"]) * 0.001
-            if "SINGLE_LST" not in self._wdg_com.keys():
-                spid = list(self._wdg_com["SPATIAL_ROIS"].keys())[0]
-                ev_setpoints = []
-                for ev_roi in self._wdg_com["SPATIAL_ROIS"][spid]["EV_ROIS"]:
-                    ev_setpoints += ev_roi[SETPOINTS]
-            else:
-                ev_setpoints = self._wdg_com["SINGLE_LST"]["EV_ROIS"][SETPOINTS]
+            # if "SINGLE_LST" not in self._wdg_com.keys():
+            #     spid = list(self._wdg_com["SPATIAL_ROIS"].keys())[0]
+            #     ev_setpoints = []
+            #     for ev_roi in self._wdg_com["SPATIAL_ROIS"][spid]["EV_ROIS"]:
+            #         ev_setpoints += ev_roi[SETPOINTS]
+            # else:
+            #     ev_setpoints = self._wdg_com["SINGLE_LST"]["EV_ROIS"][SETPOINTS]
+
+            spid = list(self._wdg_com["SPATIAL_ROIS"].keys())[0]
+            ev_setpoints = []
+            for ev_roi in self._wdg_com["SPATIAL_ROIS"][spid]["EV_ROIS"]:
+                ev_setpoints += ev_roi[SETPOINTS]
 
             num_ev_points = len(ev_setpoints)
             if num_ev_points < 1:
@@ -1969,13 +1974,12 @@ class Serializer(event_model.DocumentRouter):
                     if len(shp) == 0:
                         #shp = [self._cur_scan_md[self._cur_uid]['num_points']]
                         do_reshape = False
-                    A_nans = self._data[strm_name][k][self._cur_uid]["data_full_shape"]
                     B_nums = self._data[strm_name][k][self._cur_uid]["data"]
-                    # data = self.add_arrays(A_nans, B_nums)
-                    # if do_reshape:
-                    #     data = np.reshape(data, shp)
-                    # self._data[strm_name][k][self._cur_uid]["data_full_shape"] = data
-                    self._data[strm_name][k][self._cur_uid]["data_full_shape"] = B_nums
+                    # If B_nums is a list of lists, flatten it
+                    if isinstance(B_nums, list) and any(isinstance(i, list) for i in B_nums):
+                        B_nums = [item for sublist in B_nums for item in sublist]
+                    # move the data that we have into the array of total expected size
+                    self._data[strm_name][k][self._cur_uid]["data_full_shape"][:len(B_nums)] = B_nums
 
             if has_baseline:
                 self.create_entry_structure(doc, scan_type=scan_type)

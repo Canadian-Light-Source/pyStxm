@@ -626,6 +626,17 @@ class main_object_base(QtCore.QObject):
         # update focus_class
         self.focus_obj = FocusCalculations(self._zp_def, a0)
 
+    def update_min_a0(self, val: float):
+        """
+        update the min a0 in the focus calculation object
+        :param val:
+        :return:
+        """
+        if self.focus_obj:
+            self.focus_obj.update_min_a0(val)
+        else:
+            _logger.error(f"Focus calculation object has not been initialized: cannot update min a0")
+
     def update_a0(self, a0: float):
         """
         update the a0 in the focus calculation object

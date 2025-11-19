@@ -12,6 +12,8 @@ from PyQt5 import uic
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
 from cls.devWidgets.ophydLabelWidget import assign_aiLabelWidget
 from cls.appWidgets.basePreference import BasePreference
+from cls.scanning.paramLineEdit import dblLineEditParamObj
+from cls.appWidgets.focus_class import ABS_MIN_A0, ABS_MAX_A0
 from cls.utils.log import get_module_logger
 
 widgetsUiDir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
@@ -201,6 +203,12 @@ class FocusParams(BasePreference):
         self.zpToolBox.currentChanged.connect(self.update_zp_selection)
         self.osaToolBox.currentChanged.connect(self.update_osa_selection)
 
+        self.minA0Fld.dpo = dblLineEditParamObj("minA0Fld", ABS_MIN_A0,  ABS_MAX_A0, 2, parent=self.minA0Fld)
+        # fld.dpo.valid_returnPressed.connect(self.update_data)
+        self.minA0Fld.dpo.valid_returnPressed.connect(
+            self.on_min_a0_changed
+        )
+
         scan_mode_dev = MAIN_OBJ.device("DNM_ZONEPLATE_SCAN_MODE")
         if scan_mode_dev:
             scan_mode_dev.put(1)
@@ -212,6 +220,14 @@ class FocusParams(BasePreference):
         self.add_section("ZP_FOCUS_PARAMS.OSA_A0", 1500.0)
         # init from saved
         self.reload()
+
+    def on_min_a0_changed(self):
+        """
+        handle when the min A0 field is changed
+        :return:
+        """
+        val = float(self.minA0Fld.text())
+        MAIN_OBJ.update_min_a0(val)
 
     def convert_section_to_dict(self, section_defs_dct):
         dct = {}

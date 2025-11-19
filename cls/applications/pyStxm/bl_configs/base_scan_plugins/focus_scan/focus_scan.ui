@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>445</width>
-    <height>644</height>
+    <height>650</height>
    </rect>
   </property>
   <property name="focusPolicy">
@@ -869,6 +869,16 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="setDeltaA0Btn">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Set Delta A0 to Cursor</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="verticalSpacer">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
@@ -886,6 +896,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../../../../../../../../../../../../../icons/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

@@ -2,6 +2,14 @@
 import math
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from cls.utils.log import get_module_logger
+
+_logger = get_module_logger(__name__)
+
+ABS_MIN_A0 = 100.0  # Minimum allowable A0
+ABS_MAX_A0 = 5000.0  # Maximum allowable A0
+
+
 class FocusCalculations(QtCore.QObject):
     """
     Class to handle focus calculations for zoneplates.
@@ -12,6 +20,17 @@ class FocusCalculations(QtCore.QObject):
         self.zoneplate_def = zoneplate_def
         self.A0 = A0
         self.delta_A0 = delta_A0
+        self.min_A0 = ABS_MIN_A0  # Minimum allowable A0
+
+    def update_min_a0(self, val: float):
+        """
+        Update the min_A0 value
+        :param val: New ,min_A0 value
+        """
+        if val < ABS_MIN_A0:
+            _logger.warn(f"Attempted to set min_A0 to {val}, which is below absolute minimum of {ABS_MIN_A0}. Setting to {ABS_MIN_A0}.")
+        else:
+            self.min_A0 = val
 
     def update_a0(self, a0: float):
         """

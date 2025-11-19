@@ -98,6 +98,7 @@ class BaseFocusScanParam(ScanParamWidget):
         self.selFocusBtn.clicked.connect(self.on_sel_focus_pos_btn)
         self.setZPtoFocusBtn.clicked.connect(self.adjust_coarse_z_to_focus)
         self.setA0toFocusBtn.clicked.connect(self.on_set_a0_to_cursor)
+        self.setDeltaA0Btn.clicked.connect(self.on_set_delta_a0_to_cursor)
         self.horizSelBtn.clicked.connect(self.on_horiz_line_sel_btn)
         self.arbSelBtn.clicked.connect(self.on_arbitrary_line_sel_btn)
 
@@ -110,6 +111,7 @@ class BaseFocusScanParam(ScanParamWidget):
         self.mtr_zpz = self.main_obj.device("DNM_ZONEPLATE_Z")
         self.fl = self.main_obj.device("DNM_FOCAL_LENGTH")
         self.A0 = self.main_obj.device("DNM_A0")
+        self.delta_A0 = self.main_obj.device("DNM_DELTA_A0")
         if self.fl is not None or self.A0 is not None:
             self._zpz_fbk_timer = QtCore.QTimer()
             self._zpz_fbk_timer.timeout.connect(self.on_update_zpz_fbk)
@@ -136,6 +138,8 @@ class BaseFocusScanParam(ScanParamWidget):
             self.fbk_enabled = True
             self._zpz_fbk_timer.start(250)
         # self.init_test_module()
+
+
 
     def on_subtype_changed(self, idx):
         """
@@ -242,11 +246,11 @@ class BaseFocusScanParam(ScanParamWidget):
         if self.fbk_enabled:
             fl_val = math.fabs(self.fl.get_position())
             a0_val = self.A0.get_position()
-            self.set_parm(self.centerZPFld, a0_val - fl_val)
+            delta_a0_val = self.delta_A0.get_position()
+            self.set_parm(self.centerZPFld, (a0_val + delta_a0_val) - fl_val)
 
     def on_reset_delta_a0(self):
-        a0 = self.main_obj.device("DNM_DELTA_A0")
-        a0.put(0.0)
+        self.delta_A0.put(0.0)
 
     def get_max_fine_scan_range(self):
         """to be implemented by inheriting class"""
@@ -541,8 +545,10 @@ class BaseFocusScanParam(ScanParamWidget):
         """
         self.setZPtoFocusBtn.setText(f"Set Focus to Cursor")
         self.setA0toFocusBtn.setText(f"Set A0 to Cursor")
+        self.setDeltaA0Btn.setText(f"Set Delta A0 to Cursor")
         self.setZPtoFocusBtn.setEnabled(False)
         self.setA0toFocusBtn.setEnabled(False)
+        self.setDeltaA0Btn.setEnabled(False)
 
     def enable_focus_btns(self):
         """
@@ -550,6 +556,7 @@ class BaseFocusScanParam(ScanParamWidget):
         """
         self.setZPtoFocusBtn.setEnabled(True)
         self.setA0toFocusBtn.setEnabled(True)
+        self.setDeltaA0Btn.setEnabled(True)
 
     def reset_focus_btns(self, deactivate_tool=True):
         """
@@ -565,9 +572,11 @@ class BaseFocusScanParam(ScanParamWidget):
         a handler for the plotters 'new_selected_position' signal
         that updates our new focus position to use for setting focus
         """
+
         self._desired_zpz_focus_pos = y
         self.setZPtoFocusBtn.setText(f"Set Focus to Cursor ({y:.2f} um)")
         self.setA0toFocusBtn.setText(f"Set A0 to Cursor ({y:.2f} um)")
+        self.setDeltaA0Btn.setText(f"Set Delta A0 to Cursor ({y:.2f} um)")
 
     def adjust_coarse_z_to_focus(self):
         """
@@ -588,25 +597,20 @@ class BaseFocusScanParam(ScanParamWidget):
             # sflag.put('user_setpoint', 0)
 
             #we use fl because it would have been set in the OSA focus scan
-            # delta_zpz = self.main_obj.get_delta_focus_position(energy, float(self._desired_zpz_focus_pos))
             delta_zpz = (fl + a0_val) - self._desired_zpz_focus_pos
             #move zpz to previous zpz pos via call to self.get_prev_zpz_pos()
-            #zpz_in_focus_at_cur_ev = self.main_obj.get_new_zoneplate_z_pos_for_focus(energy, a0_val, fl)
             zpz_in_focus_at_cur_ev = (fl + a0_val)
-            # new_cz_pos = self.main_obj.get_new_coarse_z_pos_for_focus(energy, cur_cz_pos, float(self._desired_zpz_focus_pos))
             new_cz_pos = cur_cz_pos + delta_zpz
 
             #move zpz back to theoretical focus position at current energy accounting for a0
             if mtr_zz.within_limits(zpz_in_focus_at_cur_ev):
                 mtr_zz.call_emit_move(zpz_in_focus_at_cur_ev, wait=False)
-                # mtr_zz.move(zpz_in_focus_at_cur_ev)
             else:
                 _logger.error(f"new Zp Z position [{zpz_in_focus_at_cur_ev:.2f} um] is outside the soft limits of Zp Z, skipping")
                 return
 
             if mtr_cz.within_limits(new_cz_pos):
                 mtr_cz.move(new_cz_pos)
-                #mtr_cz.call_emit_move(new_cz_pos, wait=True)
                 mtr_cz.confirm_stopped()
                 # reset delta a0
                 self.main_obj.update_delta_a0(0.0)
@@ -648,23 +652,36 @@ class BaseFocusScanParam(ScanParamWidget):
            then A0 is updated, OSAz will not move and remain to be 0
 
         """
-        #mtr_zz = self.main_obj.device("DNM_ZONEPLATE_Z")
-        # mtr_cz = self.main_obj.device("DNM_COARSE_Z")
-        #cur_cz_pos = mtr_cz.get_position()
         energy = self.main_obj.device("DNM_ENERGY").get_position()
         fl = self.main_obj.get_focal_length(energy)
         a0_val = self.main_obj.get_a0()
         cur_delta_a0 = self.main_obj.get_delta_a0()
+        delta_zpz = (fl + a0_val) - self._desired_zpz_focus_pos - cur_delta_a0
+        new_a0 = a0_val - delta_zpz
+        self.main_obj.update_a0(new_a0)
 
-        zp_cent = float(self._desired_zpz_focus_pos)
-        #delta_zpz = self.main_obj.get_delta_focus_position(energy, self._desired_zpz_focus_pos)
-        delta_zpz = (fl + a0_val) - self._desired_zpz_focus_pos + cur_delta_a0
-        # delta_zpz = (a0_val - math.fabs(fl)) - zp_cent
-        # self.main_obj.device("DNM_DELTA_A0").put(delta_zpz)
+        # reset delta A0 to 0
+        self.main_obj.update_delta_a0(0.0)
+
+        self._parent.reset_image_plot(shape_only=True)
+        self.reset_focus_btns()
+
+    def on_set_delta_a0_to_cursor(self):
+        """
+        From document: Focusing procedures for CLS SM CryoStxm
+            Auth: Adam Leontowich et al
+            Date: Jan , 2016
+
+           ...ZPz is moved to the value defined by the last cursor click
+           then A0 is updated, OSAz will not move and remain to be 0
+
+        """
+        energy = self.main_obj.device("DNM_ENERGY").get_position()
+        fl = self.main_obj.get_focal_length(energy)
+        a0_val = self.main_obj.get_a0()
+        cur_delta_a0 = self.main_obj.get_delta_a0()
+        delta_zpz = self._desired_zpz_focus_pos - cur_delta_a0 - (fl + a0_val)
         self.main_obj.update_delta_a0(delta_zpz)
-        # self.A0.put(a0_val - delta_zpz)
-        #have the plotter delete the focus image
-        # self._parent.reset_image_plot()
         # sflag = self.main_obj.device('Zpz_scanModeFlag')
         # sflag.put('user_setpoint', zp_focus_modes.A0MOD)
         # have the plotter delete the focus image

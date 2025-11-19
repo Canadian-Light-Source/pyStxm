@@ -58,7 +58,7 @@ from PyQt5 import QtCore, QtGui, uic
 
 from cls.utils.log import get_module_logger, log_to_console, log_to_qt
 from cls.appWidgets.dialogs import questionMessage, info
-from cls.appWidgets.enum import Enum
+from cls.appWidgets.enum_class import Enum
 
 from cls.utils.cfgparser import ConfigClass
 from cls.appWidgets.user_account.user_acct_utils import user_accnt_mgr

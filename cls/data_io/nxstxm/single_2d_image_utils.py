@@ -7,24 +7,11 @@ import numpy as np
 
 from cls.data_io.nxstxm.stxm_types import scan_types, two_posner_scans
 from cls.data_io.nxstxm.device_names import *
-
-# from cls.data_io.nxstxm.utils import dct_get, dct_put
 from cls.data_io.nxstxm.roi_dict_defs import *
-
-# from cls.data_io.nxstxm.nxstxm_utils import (make_signal, _dataset, _string_attr, _group, make_1d_array, \
-#                                           get_nx_standard_epu_mode, get_nx_standard_epu_harmonic_new, translate_pol_id_to_stokes_vector, \
-#                                           readin_base_classes, make_NXclass, remove_unused_NXsensor_fields)
 from cls.data_io.nxstxm.nxstxm_utils import _dataset, _string_attr, make_1d_array
-
 import cls.data_io.nxstxm.nx_key_defs as nxkd
 
-
 MARK_DATA = False
-
-
-#     parent.modify_2posner_ctrl_str_attrs(cntrl_nxgrp, doc)
-#     parent.modify_2posner_ctrl_data_grps(cntrl_nxgrp, doc)
-
 
 def modify_2posner_ctrl_data_grps(parent, nxgrp, doc, scan_type):
     """
@@ -46,8 +33,6 @@ def modify_2posner_ctrl_data_grps(parent, nxgrp, doc, scan_type):
     xnpoints = int(rois[SPDB_X][NPOINTS])
     ynpoints = int(rois[SPDB_Y][NPOINTS])
     ttlpnts = xnpoints * ynpoints
-    #prim_data_lst = parent.get_primary_all_data(x_src)
-    #if len(prim_data_lst) < ttlpnts:
     if x_src not in parent._data["primary"].keys():
         #resize_data = True
         # scan was aborted so use setpoint data here
@@ -156,24 +141,13 @@ def modify_base_2d_nxdata_group(parent, data_nxgrp, doc, scan_type):
         scan_types.OSA_IMAGE,
         scan_types.OSA_FOCUS,
         scan_types.SAMPLE_FOCUS,
+        scan_types.SAMPLE_IMAGE,
         scan_types.SAMPLE_IMAGE_STACK,
         scan_types.COARSE_IMAGE,
         scan_types.COARSE_GONI,
         scan_types.TOMOGRAPHY,
     ]
     if scan_types(scan_type) in three_d_scans:
-        # det_data = np.array(parent._data['primary'][det_nm]['data'], dtype=np.float32).reshape((1, ynpoints, xnpoints))
-        # if det_nm not in parent._data["primary"].keys():
-        #     # must be a flyer scan, only one detector in primary stream
-        #     det_data = np.array(
-        #         parent._data["baseline"][det_nm][uid]["data"][0], dtype=np.float32
-        #     )
-        # else:
-        #     # det name is in primary data stream
-        #     resize_data = False
-        #     det_data = np.array(
-        #         parent.get_primary_all_data(det_nm), dtype=np.float32
-        #     )
         resize_data = False
         det_data = np.array(parent.get_primary_all_data(det_nm), dtype=np.float32)
 
@@ -181,7 +155,8 @@ def modify_base_2d_nxdata_group(parent, data_nxgrp, doc, scan_type):
         #     det_data = parent.fix_aborted_data(det_data, ttlpnts)
         det_data = parent.fix_aborted_data(det_data, ttlpnts)
 
-        #for a line by line scan the data here (if say RING_CURRENT) we will only have 1 value per row, so we need to duplicate the single value for the entire row
+        # for a line by line scan the data here (if say RING_CURRENT) we will only have 1 value per row, so we need to
+        # duplicate the single value for the entire row
         cols = 0
         if det_data.ndim == 1:
             rws, = det_data.shape

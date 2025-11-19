@@ -5,6 +5,7 @@ Created on 2014-06-23
 """
 
 import atexit
+import math
 import os
 import queue
 import sys
@@ -21,6 +22,7 @@ from PyQt5 import QtCore, QtGui, uic, QtWidgets
 from plotpy.items import PolygonShape
 
 from cls.applications.pyStxm import abs_path_to_ini_file
+from cls.applications.pyStxm.bl_configs.device_names import DNM_ZPZ_POS
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
 
 from cls.applications.pyStxm.sm_user import usr_acct_manager
@@ -31,6 +33,7 @@ from cls.utils.log import (
     get_module_logger,
     log_to_qt_and_to_file,
 )
+
 from cls.utils.environment import get_environ_var
 from cls.utils.json_utils import dict_to_json
 from cls.utils.fileUtils import get_file_path_as_parts
@@ -74,7 +77,9 @@ from cls.types.stxmTypes import (
     spatial_type_prefix,
     sample_positioning_modes,
     scan_status_types,
-    SPEC_ROI_PREFIX
+    SPEC_ROI_PREFIX,
+    OSA_FOCUS_MODE,
+    SAMPLE_FOCUS_MODE
 )
 
 
@@ -93,16 +98,17 @@ from cls.appWidgets.dialogs import excepthook, notify as dialog_notify, warn as 
 # from cls.appWidgets.spyder_console import ShellWidget#, ShellDock
 from cls.appWidgets.thread_worker import Worker
 
-# from cls.applications.pyStxm.widgets.sampleSelector import SampleSelectorWidget
 from cls.applications.pyStxm.widgets.motorPanel import PositionersPanel
 
 from cls.applications.pyStxm.widgets.devDisplayPanel import DevsPanel
 
 from cls.applications.pyStxm.widgets.scan_queue_table import ScanQueueTableWidget
 from cls.applications.pyStxm.widgets.ptycho_viewer import PtychoDataViewerPanel
+
+from cls.utils.focus_calculations import focal_length
+
 from cls.types.beamline import BEAMLINE_IDS
 from cls.data_io.nxstxm import Serializer
-
 
 # read the ini file and load the default directories
 appConfig = ConfigClass(abs_path_to_ini_file)
@@ -601,6 +607,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         if MAIN_OBJ.get_beamline_id() is BEAMLINE_IDS.STXM:
             zpz_scanflag = MAIN_OBJ.device("DNM_ZONEPLATE_SCAN_MODE")
             zpz_scanflag.put("user_setpoint", mode)
+            MAIN_OBJ.set_zp_focus_mode(mode)
 
     def allow_feedback(self):
         if hasattr(self, "esPosPanel"):
@@ -718,12 +725,11 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             self.dcsServerWindow.setTextColor(clr)
         self.dcsServerWindow.append(str(msg))
 
-    def add_exporter_msg_to_log(self, msg_dct):
+    def add_exporter_msg_to_log(self, msg_str):
         """
         from the nx_server process
         """
-        # msg = str(msg_dct['status'])
-        msg = str(msg_dct)
+        msg = str(msg_str)
         clr = QtGui.QColor('#000000')
         if len(msg) < 50:
             self.add_to_log(clr, msg)
@@ -1145,6 +1151,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     off_str="OSA Focused",
                     on_str="Sample Focused",
                     toggle=True,
+                    cb=self.on_change_focus_mode
                 )
             # add zonplate in/out
 
@@ -1367,6 +1374,42 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.setup_select_detectors_frame()
 
         # self.check_if_pv_exists()
+
+    def on_change_focus_mode(self, val: bool=False):
+        """
+        change the zoneplate Z position based on the focus mode
+        :param val:
+        :return:
+        """
+
+        cmbo_btn = self.sender()
+        a1 = MAIN_OBJ.device("DNM_ZP_DEF_A")
+        a0 = MAIN_OBJ.device("DNM_A0")
+        energy_mtr = MAIN_OBJ.device("DNM_ENERGY")
+        zpz_dev = MAIN_OBJ.device("DNM_ZONEPLATE_Z")
+        push_value = False
+
+        if MAIN_OBJ.get_device_backend() == 'epics':
+            push_value = True
+
+        if not val:
+            # OSA focused so just set it to 0.0 - ABS(FL + A0)
+            if push_value:
+                new_zpz_pos = 0.0 - (math.fabs(focal_length(energy_mtr.get_position(), a1.get_position())))
+                zpz_dev.call_emit_move(new_zpz_pos, wait=False)
+
+            cmbo_btn.setChecked(False)
+            cmbo_btn.setText("OSA Focused")
+            MAIN_OBJ.set_zp_focus_mode(OSA_FOCUS_MODE)
+        else:
+            # sample focused so just set it to 0.0 - FL
+            if push_value:
+                new_zpz_pos = 0.0 - (
+                        math.fabs(focal_length(energy_mtr.get_position(), a1.get_position())) - a0.get_position())
+                zpz_dev.call_emit_move(new_zpz_pos, wait=False)
+            cmbo_btn.setChecked(True)
+            cmbo_btn.setText("Sample Focused")
+            MAIN_OBJ.set_zp_focus_mode(SAMPLE_FOCUS_MODE)
 
     def check_if_pv_exists(self):
         dev_obj = MAIN_OBJ.get_device_obj()
@@ -3391,8 +3434,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         # if its a point scan make sure to include the DNM_RING_CURRENT
         # only add Ring current if device exists
-        if MAIN_OBJ.device("DNM_RING_CURRENT"):
-            dets.append(MAIN_OBJ.device("DNM_RING_CURRENT").get_ophyd_device())
+        # if MAIN_OBJ.device("DNM_RING_CURRENT"):
+        #     dets.append(MAIN_OBJ.device("DNM_RING_CURRENT").get_ophyd_device())
 
         if len(sel_dets_lst) == 0:
             _logger.error('No detector selected')
@@ -3917,7 +3960,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 dat_ext="hdf5",
                 stack_dir=False,
                 num_desired_datafiles=1,
-                prefix_char=main_obj.get_datafile_prefix(),
+                prefix_char=MAIN_OBJ.get_datafile_prefix(),
                 dev_backend=MAIN_OBJ.get_device_backend(),
             )
             self.assign_datafile_names_to_sp_db(sp_db, master_seq_dct[0])
@@ -4238,6 +4281,9 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         data_dir = self.active_user.get_data_dir()
         fprefix = str(MAIN_OBJ.get_datafile_prefix()) + str(
             get_next_file_num_in_seq(data_dir, extension="hdf5"))
+        
+        if 0 in MAIN_OBJ.nx_server_master_seq_dct.keys():
+            data_dir = MAIN_OBJ.nx_server_master_seq_dct[0]['data_dir']
 
         scan_type = self.get_cur_scan_type()
         first_uid = run_uids[0]
@@ -4248,32 +4294,41 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             # we only want the information in the main
             # first_uid = run_uids[4]
             # run_uids = [first_uid]
-            pass
+
+            # pass
+            return
 
         if scan_type in [scan_types.SAMPLE_IMAGE_STACK, scan_types.TOMOGRAPHY]:
+            print(f"do_data_export: scan_type = {scan_type} is in [scan_types.SAMPLE_IMAGE_STACK, scan_types.TOMOGRAPHY]")
             # could also just be multiple rois on a single energy
+            print(f"do_data_export: data_dir={data_dir} fprefix={fprefix}")
             data_dir = os.path.join(data_dir, fprefix)
+            print(f"do_data_export: final data_dir={data_dir} ")
+            
             is_stack = True
             if not os.path.exists(data_dir):
                 os.makedirs(data_dir)
-            MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
+            ret_msg =  MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
                                    verbose=False)
 
         elif scan_type in [scan_types.PTYCHOGRAPHY]:
+            print(f"do_data_export: scan_type = {scan_type} is in [scan_types.PTYCHOGRAPHY]")
             nx_app_def = "nxptycho"
             data_dir = self.executingScan.get_current_scan_data_dir()
             fprefix = data_dir.split("\\")[-1]
-            MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost',
+            ret_msg = MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost',
                                    port='5555', verbose=False)
             return
 
         # elif(scan_type is scan_types.SAMPLE_POINT_SPECTRUM):
         elif scan_type in spectra_type_scans:
-            MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
+            print(f"do_data_export: scan_type = {scan_type} is in spectra_type_scans")
+            ret_msg = MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
                                    verbose=False)
 
         else:
-            MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
+            print(f"do_data_export: scan_type = {scan_type} in CATCH ALL else block")
+            ret_msg = MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
                                    verbose=False)
 
         if self.validate_saved_files["doit"]:
@@ -4285,6 +4340,13 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             )
             # # Execute
             self._threadpool.start(worker)
+
+        if isinstance(ret_msg, str):
+            if ret_msg.find('nxstxm:') > -1:
+                lines = ret_msg.split("nxstxm:")
+                _logger.info(lines[-1])
+            else:
+                _logger.info(ret_msg)
 
     def get_counter_from_table(self, tbl, prime_cntr):
         for k in list(tbl.keys()):
@@ -4584,10 +4646,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         scan_type = dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE)
 
         if self.executingScan.image_started == False:
-            if scan_type == scan_types.SAMPLE_FOCUS:
-                self.lineByLineImageDataWidget.set_autoscale(fill_plot_window=True)
-
-            elif scan_type == scan_types.OSA_FOCUS:
+            if scan_type in [scan_types.SAMPLE_FOCUS, scan_types.OSA_FOCUS]:
                 self.lineByLineImageDataWidget.set_autoscale(fill_plot_window=True)
 
             elif scan_type == scan_types.SAMPLE_LINE_SPECTRUM:

@@ -25,8 +25,10 @@ from cls.utils.environment import get_environ_var
 from cls.types.stxmTypes import (
     sample_fine_positioning_modes,
     sample_positioning_modes,
+    SAMPLE_FOCUS_MODE,
+    OSA_FOCUS_MODE
 )
-
+from cls.appWidgets.focus_class import FocusCalculations
 from cls.scan_engine.bluesky.qt_run_engine import EngineWidget, ZMQEngineWidget
 
 from bcm.devices import BACKEND
@@ -135,7 +137,11 @@ class main_object_base(QtCore.QObject):
         self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
         self.data_sub_context = zmq.Context()
-
+        self.nx_server_master_seq_dct = None
+        self._zp_focus_mode = SAMPLE_FOCUS_MODE #OSA_FOCUS_MODE = 0 SAMPLE_FOCUS_MODE = 1
+        self._zp_def = None
+        self.focus_obj = None
+         
         if DATA_SERVER_HOST is None:
             _logger.error("DATA_SERVER_HOST environment variable is not set, cannot continue")
             raise Exception("ERROR: DATA_SERVER_HOST environment variable is not set, cannot continue")
@@ -429,7 +435,7 @@ class main_object_base(QtCore.QObject):
                     new_stack_dir=new_stack_dir,
                     prefix_char=prefix_char,
                     dev_backend=dev_backend)
-
+        self.nx_server_master_seq_dct = master_seq_dct
         return master_seq_dct
 
     def nx_server_load_data_directory(self, data_dir: str=None, *, extension: str='.hdf5') -> None:
@@ -602,6 +608,173 @@ class main_object_base(QtCore.QObject):
         """
         if self.get_device_backend() == 'zmq':
             self.engine_widget.engine.set_osa_definitions(osa_defs)
+
+    def set_zoneplate_definition(self, zp_def: dict, a0: float):
+        """
+        set the zoneplate definition dict used for focus calculations
+        :param zp_def:
+        :return:
+        """
+        self._zp_def = zp_def
+        # update focus_class
+        self.focus_obj = FocusCalculations(self._zp_def, a0)
+
+    def update_min_a0(self, val: float):
+        """
+        update the min a0 in the focus calculation object
+        :param val:
+        :return:
+        """
+        if self.focus_obj:
+            self.focus_obj.update_min_a0(val)
+        else:
+            _logger.error(f"Focus calculation object has not been initialized: cannot update min a0")
+
+    def update_a0(self, a0: float):
+        """
+        update the a0 in the focus calculation object
+        :param a0:
+        :return:
+        """
+        self.device("DNM_A0").put(a0)
+        if self.focus_obj:
+            self.focus_obj.update_a0(a0)
+        else:
+            _logger.error(f"Focus calculation object has not been initialized: cannot update a0")
+
+    def update_delta_a0(self, delta_a0: float):
+        """
+        update the delta a0 in the focus calculation object
+        :param delta_a0:
+        :return:
+        """
+        # update the device/PV
+        self.device("DNM_DELTA_A0").put(delta_a0)
+        if self.focus_obj:
+            self.focus_obj.update_delta_a0(delta_a0)
+        else:
+            _logger.error(f"Focus calculation object has not been initialized: cannot update delta a0")
+
+    def calc_delta_focus_position(self, energy: float, desired_focus_position: float) -> float:
+        """
+        calculate delta focus position from the current zoneplate definition and the desired zpz focus position
+        :param energy:
+        :param desired_focus_position:
+        :return:
+        """
+        if self.focus_obj:
+            return self.focus_obj.calc_delta_focus_position(energy, desired_focus_position)
+        else:
+            _logger.error(f"Focus calculation object has not been initialized: cannot calculate delta focus position")
+            return None
+
+    def calc_new_zoneplate_z_pos_for_focus(self, energy: float) -> float:
+        """
+        calculate the new zoneplate z position needed to achieve focus at the desired focal length for a given energy.
+        :param energy:
+        :param a0:
+        :param desired_focus_position:
+        :return:
+        """
+        if self.focus_obj:
+            return self.focus_obj.calc_new_zoneplate_z_pos_for_focus(energy)
+        else:
+            _logger.error(
+                f"Focus calculation object has not been initialized: cannot calculate new zoneplate z pos for focus")
+            return None
+
+    def get_a0(self) -> float:
+        """
+        calculate a0 from the current zoneplate definition
+        :return:
+        """
+        if self.focus_obj:
+            a0 = self.focus_obj.get_a0()
+            # update the device
+            self.device('DNM_A0').put(a0)
+            return a0
+        else:
+            _logger.error(f"Focus calculation object has not been initialized: cannot calculate a0")
+            return None
+
+    def get_delta_a0(self):
+        """
+        get the current delta a0 from the focus calculation object
+        :return:
+        """
+        if self.focus_obj:
+            delta_a0 = self.focus_obj.get_delta_a0()
+            # update the device
+            self.device("DNM_DELTA_A0").put(delta_a0)
+            return delta_a0
+        else:
+            _logger.error(f"Focus calculation object has not been initialized: cannot get delta a0")
+            return None
+
+    def get_delta_focus_position(self, energy: float, desired_focus_position: float) -> float:
+        """
+        calculate delta focus position from the current zoneplate definition and the desired zpz focus position
+        :param energy:
+        :param desired_focus_position:
+        :return:
+        """
+        if self.focus_obj:
+            return self.focus_obj.calc_delta_focus_position(energy, desired_focus_position)
+        else:
+            _logger.error(f"Focus calculation object has not been initialized: cannot calculate delta focus position")
+            return None
+
+    def get_focal_length(self, energy: float) -> float:
+        """
+        calculate the focal length for a given energy
+        :param energy:
+        :return:
+        """
+        if self.focus_obj:
+            return self.focus_obj.focal_length(energy)
+        else:
+            _logger.error(f"Focus calculation object has not been initialized: cannot calculate focal length")
+            return None
+
+    def get_new_coarse_z_pos_for_focus(self, energy, cur_cz_pos, desired_focus_position) -> float:
+        """
+        calculate the new coarse z position needed to achieve focus at the desired focal length for a given energy.
+        :param energy:
+        :param cur_cz_pos:
+        :param desired_focus_position:
+        :return:
+        """
+        if self.focus_obj:
+            return self.focus_obj.calc_new_coarse_z_pos_for_focus(energy, cur_cz_pos, desired_focus_position)
+        else:
+            _logger.error(
+                f"Focus calculation object has not been initialized: cannot calculate new coarse z pos for focus")
+            return None
+
+    def get_new_zoneplate_z_pos_for_focus(self, energy: float) -> float:
+        """
+        calculate the new zoneplate z position needed to achieve focus at the desired focal length for a given energy.
+        :param energy:
+        :param a0:
+        :param desired_focus_position:
+        :return:
+        """
+        if self.focus_obj:
+            return self.focus_obj.calc_new_zoneplate_z_pos_for_focus(energy)
+        else:
+            _logger.error(
+                f"Focus calculation object has not been initialized: cannot calculate new zoneplate z pos for focus")
+            return None
+
+    def get_zp_focus_mode(self):
+        return self._zp_focus_mode
+
+    def set_zp_focus_mode(self, mode):
+        if mode in (OSA_FOCUS_MODE, SAMPLE_FOCUS_MODE):
+            self._zp_focus_mode = mode
+        else:
+            _logger.error(f"Invalid zoneplate focus mode: {mode}")
+            raise ValueError(f"Invalid zoneplate focus mode: {mode}")
 
     def get_detectors(self) -> dict:
         """

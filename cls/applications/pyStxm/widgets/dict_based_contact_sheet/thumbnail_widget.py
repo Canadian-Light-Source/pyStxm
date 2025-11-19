@@ -620,6 +620,13 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         return QtCore.QRectF(0, 0, utils.THUMB_WIDTH, utils.THUMB_HEIGHT)
 
     def paint(self, painter, option, widget):
+        # Draw data image with minimal margins
+        if self.pixmap is None:
+            e_str = "self.pixmap is None in paint()"
+            print(e_str)
+            _logger.error(e_str)
+            return
+        
         # Draw border
         if self.is_selected:
             #print(f"ThumbnailWidget: {self.filename} is selected")
@@ -647,12 +654,6 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         text_height = 16  # Height for text line
         spacing = 2  # Small spacing between elements
 
-        # Draw data image with minimal margins
-        if self.pixmap is None:
-            e_str = "self.pixmap is None in paint()"
-            print(e_str)
-            _logger.error(e_str)
-            return
         img_x = int((utils.THUMB_WIDTH - self.pixmap.width()) / 2)
         img_y = spacing  # Very small top margin
         painter.drawPixmap(img_x, img_y, self.pixmap)

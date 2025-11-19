@@ -8,7 +8,7 @@ from datetime import datetime
 
 from cls.utils.cfgparser import ConfigClass
 from cls.appWidgets.user_account.sample_holder_object import sample_holder_obj
-from cls.appWidgets.enum import Enum
+from cls.appWidgets.enum_class import Enum
 from cls.appWidgets.bl_config_loader import load_beamline_preset
 
 ACCESS_LVLS = Enum(["GUEST", "USER", "STAFF", "ADMIN"])

@@ -183,7 +183,7 @@ def modify_focus_nxdata_group(parent, data_nxgrp, doc, scan_type):
     #prim_arr = np.array(prim_data_arr)
     if prim_arr.ndim  == 1:
         resize_data = True
-        prim_arr = parent.interpolate_data_from_endpoints(prim_arr, ttlpnts)
+
     elif prim_arr.ndim  == 2:
         rows, cols = prim_arr.shape
         if cols < xnpoints:

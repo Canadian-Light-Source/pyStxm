@@ -127,10 +127,10 @@ class BaseCoarseImageScanClass(BaseScan):
 
         # check if beyond soft limits
         # if the soft limits would be violated then return False else continue and return True
-        if not mtr_x.check_scan_limits(xstart, xstop):
+        if not mtr_x.check_scan_limits(xstart, xstop, coarse_only=True):
             _logger.error("Scan would violate soft limits of X motor")
             return (False)
-        if not mtr_y.check_scan_limits(ystart, ystop):
+        if not mtr_y.check_scan_limits(ystart, ystop, coarse_only=True):
             _logger.error("Scan would violate soft limits of Y motor")
             return (False)
 
@@ -264,7 +264,6 @@ class BaseCoarseImageScanClass(BaseScan):
                 DECCEL_DISTANCE = self.x_roi["RANGE"] * deccel_dist_prcnt_pv.get()
 
                 #scan_velo = self.x_roi["RANGE"] / ((self.x_roi["NPOINTS"] * self.dwell) * 0.001)
-                sisdev = dets[0]
                 piezo_mtr.scan_start.put(self.x_roi['START'] - ACCEL_DISTANCE)
                 #piezo_mtr.scan_stop.put(self.x_roi['STOP'] + ACCEL_DISTANCE)
                 piezo_mtr.scan_stop.put(self.x_roi['STOP'] + DECCEL_DISTANCE)
@@ -273,11 +272,6 @@ class BaseCoarseImageScanClass(BaseScan):
                 piezo_mtr.marker_stop.put(self.x_roi['STOP'])
                 piezo_mtr.set_marker.put(self.x_roi['START'])
                 piezo_mtr.set_marker_position(self.x_roi['START'])
-                #hack to soret out why trigs need to be opposite sign for positions
-                # piezo_mtr.marker_start.put(self.x_roi['START'] * -1.0)
-                # piezo_mtr.marker_stop.put(self.x_roi['STOP'] * -1.0)
-                # piezo_mtr.set_marker.put(self.x_roi['START'] * -1.0)
-                # piezo_mtr.set_marker_position(self.x_roi['START'] * -1.0)
 
                 # move to scan start
                 yield from bps.mv(crs_x, self.x_roi['START'] - ACCEL_DISTANCE, group='BB')
@@ -287,10 +281,12 @@ class BaseCoarseImageScanClass(BaseScan):
                 for y_sp in self.y_roi['SETPOINTS']:
                     ACCEL_DISTANCE = self.x_roi["RANGE"] * accel_dist_prcnt_pv.get()
                     DECCEL_DISTANCE = self.x_roi["RANGE"] * deccel_dist_prcnt_pv.get()
-                    #print(f"CoarseImageScan: ACCEL_DISTANCE = {ACCEL_DISTANCE}, DECCEL_DISTANCE={DECCEL_DISTANCE}")
+                    print(f"CoarseImageScan: ACCEL_DISTANCE = {ACCEL_DISTANCE}, DECCEL_DISTANCE={DECCEL_DISTANCE}")
                     crs_x.velocity.put(self.scan_velo)
                     piezo_mtr.enable_marker_position(True)
-                    yield from bps.mv(sisdev.run, 1, group='SIS3820')
+                    for d in dets:
+                        if hasattr(d, 'run'):
+                            yield from bps.mv(d.run, 1, group='SIS3820')
                     # yield from bps.mv(crs_y, y_sp)
                     yield from bps.mv(crs_x, self.x_roi['STOP'] + DECCEL_DISTANCE, group='BB')
                     yield from bps.wait('BB')
@@ -301,10 +297,7 @@ class BaseCoarseImageScanClass(BaseScan):
                     yield from bps.wait('CC')
 
                 shutter.close()
-                # print("CoarseSampleImageScanClass LxL: make_scan_plan Leaving")
-            # except NameError as ne:
-            #     # Code to handle NameError
-            #     print(ne)
+
             except LimitError as le:
                 _logger.error(f"There was a problem involving a motor setpoint being larger than valid range: [{le}]")
 

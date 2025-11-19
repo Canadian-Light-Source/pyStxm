@@ -13,14 +13,14 @@
     },
     "OSA_AMBIENT": {
         "CENTER": [
-            -751.771980942837,
-            -2501.8349350484177
+            752.0579577241338,
+            -1997.4087980034396
         ],
         "RECT": [
-            -2001.7719809428395,
-            498.16506495157427,
-            498.2280190571655,
-            -5501.8349350484095
+            -497.94204227586874,
+            1002.5912019965515,
+            2002.0579577241363,
+            -4997.408798003431
         ]
     },
     "OSA_CRYO": {
@@ -74,5 +74,5 @@
             -2000
         ]
     },
-    "fpath": "C:\\controls\\git_sandbox\\branches\\pystxm\\zeromq_testing\\pyStxm3\\cls\\plotWidgets\\amb_bl10ID1_settings.json"
+    "fpath": "/mnt/srv-unix-home/sm-user/git_sandbox/branches/40/pyStxm/cls/plotWidgets/amb_bl10ID1_settings.json"
 }

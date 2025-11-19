@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 
 from bcm.devices.zmq.zmq_device import ZMQBaseDevice, ZMQSignal
 from bcm.devices.zmq.pixelator.positioner_defines import MAX_DELTA_FINE_RANGE_UM
@@ -72,6 +72,7 @@ class ZMQMotor(ZMQBaseDevice):
     """
     A basic device that offers a positioner interface
     """
+    emit_move = pyqtSignal(float, bool)  # a signal to call move from a sig handler in a thread safe way
 
     def __init__(self, dcs_name, name, **kwargs):
         super().__init__(dcs_name, name, **kwargs)

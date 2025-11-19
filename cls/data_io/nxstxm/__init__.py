@@ -24,32 +24,7 @@ import copy
 
 import suitcase.utils
 
-# from cls.data_io.nxstxm.utils import *
-# from cls.data_io.nxstxm.device_names import *
-# from cls.data_io.nxstxm.stxm_types import scan_types, single_entry_scans, single_2d_scans, single_image_scans, \
-#         stack_type_scans, spectra_type_scans, line_spec_scans, focus_scans, sample_image_filetypes
-#
-# from cls.data_io.nxstxm.nxstxm_utils import (_dataset, _string_attr, _group, make_1d_array, \
-#                     get_nx_standard_epu_mode, get_nx_standard_epu_harmonic_new, translate_pol_id_to_stokes_vector, \
-#                     readin_base_classes, make_NXclass, remove_unused_NXsensor_fields)
-#
-# from cls.data_io.nxstxm.generic_scan_utils import modify_generic_scan_nxdata_group, modify_generic_scan_ctrl_data_grps, \
-#                                                 modify_generic_scan_instrument_group
-# from cls.data_io.nxstxm.single_2d_image_utils import modify_base_2d_nxdata_group, modify_2posner_ctrl_data_grps, \
-#                                                 modify_base_2d_instrument_group
-# from cls.data_io.nxstxm.focus_image_utils import modify_focus_nxdata_group, modify_focus_ctrl_data_grps, \
-#                                                 modify_focus_instrument_group
-# from cls.data_io.nxstxm.single_image_utils import modify_single_image_nxdata_group, modify_single_image_ctrl_data_grps, \
-#                                                 modify_single_image_instrument_group
-#
-# from cls.data_io.nxstxm.stack_image_utils import modify_stack_nxdata_group, modify_stack_ctrl_data_grps
-# from cls.data_io.nxstxm.spectra_utils import modify_spectra_nxdata_group, modify_spectra_ctrl_data_grps, \
-#                                                 modify_spectra_instrument_group
-#
-# from cls.data_io.nxstxm.linespec_utils import modify_line_spectra_nxdata_group, modify_line_spectra_ctrl_data_grps, \
-#                                                 modify_line_spectra_instrument_group
-#
-# import cls.data_io.nxstxm.nx_key_defs as nxkd
+
 from cls.data_io.nxstxm.utils import *
 from cls.data_io.nxstxm.device_names import *
 from cls.data_io.nxstxm.stxm_types import (
@@ -503,23 +478,23 @@ class Serializer(event_model.DocumentRouter):
         """
 
         if len(shp) == 1:
-            init_dat = np.empty((shp[0]))
+            init_dat = np.full((shp[0]), np.nan)
         elif len(shp) == 2:
             if self._scan_subtype == IS_PXP:
-                init_dat = np.empty((shp[0] * shp[1]))
+                init_dat = np.full((shp[0] * shp[1]), np.nan)
             else:
-                init_dat = np.empty((shp[0] , shp[1]))
+                init_dat = np.full((shp[0] , shp[1]), np.nan)
         elif len(shp) == 3:
             if self._scan_subtype == IS_PXP:
-                init_dat = np.empty((shp[0] * shp[1] * shp[2]))
+                init_dat = np.full((shp[0] * shp[1] * shp[2]), np.nan)
             else:
-                init_dat = np.empty((shp[0], shp[1], shp[2]))
+                init_dat = np.full((shp[0], shp[1], shp[2]), np.nan)
         else:
             #most likely this is a baseline stream detector so give it 2 values for start and stop values
-            init_dat = np.empty((2))
+            init_dat = np.full((2), np.nan)
 
         #init_dat[:] = np.nan
-        init_dat[:] = -1
+        # init_dat[:] = -1
 
         return list(init_dat)
 
@@ -608,7 +583,8 @@ class Serializer(event_model.DocumentRouter):
                     #     self._data[strm_name][ch_dct['chan_nm']][self._cur_uid][
                     #         "data_full_shape"] = self.return_initialized_data(v['shape'])
                     # else:
-                    self._data[strm_name][ch_dct['chan_nm']][self._cur_uid]["data_full_shape"] = self.return_initialized_data(v['shape'])
+                    #self._data[strm_name][ch_dct['chan_nm']][self._cur_uid]["data_full_shape"] = self.return_initialized_data(v['shape'])
+                    self._data[strm_name][ch_dct['chan_nm']][self._cur_uid]["data_full_shape"] = self.return_initialized_data(num_pnts_shape)
             else:
 
                 self._data[strm_name][k] = {}
@@ -683,7 +659,6 @@ class Serializer(event_model.DocumentRouter):
             self._det_strm_map = {}
 
         seq_num = doc['seq_num'][0] - 1
-        strm_name = self._streamnames[doc["descriptor"]]
         strm_name = self._streamnames[doc["descriptor"]]
         for k in doc["data"].keys():
             if k in self._data[strm_name].keys() or k.find('SIS3820') > -1:
@@ -815,7 +790,8 @@ class Serializer(event_model.DocumentRouter):
             inst_nxgrp = self.create_base_instrument_group(entry_nxgrp, doc, scan_type)
             self.specific_scan_funcs["mod_nxinst"](self, inst_nxgrp, doc, scan_type)
             for det_nm in self._detector_names:
-                self.create_base_instrument_detector(inst_nxgrp, det_nm, doc)
+                if det_nm not in inst_nxgrp.keys():
+                    self.create_base_instrument_detector(inst_nxgrp, det_nm, doc)
 
             self.create_base_sample_group(entry_nxgrp, doc, scan_type)
 
@@ -1426,7 +1402,7 @@ class Serializer(event_model.DocumentRouter):
             # nothing to modify
             pass
 
-    def get_devname(self, lu_nm, do_warn=False):
+    def get_devname(self, lu_nm, do_warn=True):
         """
         get the device name using the reverse lookup dict
         :param lu_nm:
@@ -1438,9 +1414,9 @@ class Serializer(event_model.DocumentRouter):
         else:
             if do_warn:
                 _logger.warn(
-                    "nxstxm_primary: get_devname: cannot find [%s] in current scan metadata"
-                    % lu_nm
-                )
+                    f"nxstxm_primary: get_devname: cannot find [{lu_nm}] in current scan metadata"
+                    )
+                print(f"\n WARNING: nxstxm_primary: get_devname: cannot find [{lu_nm}] in current scan metadata\n")
             return lu_nm
 
     def get_baseline_start_data(self, src_nm):
@@ -1700,13 +1676,18 @@ class Serializer(event_model.DocumentRouter):
             ydata = np.array(dct_get(rois, SPDB_YSETPOINTS), dtype=np.float32)
             # make sure dwell is in seconds
             dwell = np.float32(self._cur_scan_md[doc["run_start"]]["dwell"]) * 0.001
-            if "SINGLE_LST" not in self._wdg_com.keys():
-                spid = list(self._wdg_com["SPATIAL_ROIS"].keys())[0]
-                ev_setpoints = []
-                for ev_roi in self._wdg_com["SPATIAL_ROIS"][spid]["EV_ROIS"]:
-                    ev_setpoints += ev_roi[SETPOINTS]
-            else:
-                ev_setpoints = self._wdg_com["SINGLE_LST"]["EV_ROIS"]
+            # if "SINGLE_LST" not in self._wdg_com.keys():
+            #     spid = list(self._wdg_com["SPATIAL_ROIS"].keys())[0]
+            #     ev_setpoints = []
+            #     for ev_roi in self._wdg_com["SPATIAL_ROIS"][spid]["EV_ROIS"]:
+            #         ev_setpoints += ev_roi[SETPOINTS]
+            # else:
+            #     ev_setpoints = self._wdg_com["SINGLE_LST"]["EV_ROIS"][SETPOINTS]
+
+            spid = list(self._wdg_com["SPATIAL_ROIS"].keys())[0]
+            ev_setpoints = []
+            for ev_roi in self._wdg_com["SPATIAL_ROIS"][spid]["EV_ROIS"]:
+                ev_setpoints += ev_roi[SETPOINTS]
 
             num_ev_points = len(ev_setpoints)
             if num_ev_points < 1:
@@ -1993,13 +1974,12 @@ class Serializer(event_model.DocumentRouter):
                     if len(shp) == 0:
                         #shp = [self._cur_scan_md[self._cur_uid]['num_points']]
                         do_reshape = False
-                    A_nans = self._data[strm_name][k][self._cur_uid]["data_full_shape"]
                     B_nums = self._data[strm_name][k][self._cur_uid]["data"]
-                    # data = self.add_arrays(A_nans, B_nums)
-                    # if do_reshape:
-                    #     data = np.reshape(data, shp)
-                    # self._data[strm_name][k][self._cur_uid]["data_full_shape"] = data
-                    self._data[strm_name][k][self._cur_uid]["data_full_shape"] = B_nums
+                    # If B_nums is a list of lists, flatten it
+                    if isinstance(B_nums, list) and any(isinstance(i, list) for i in B_nums):
+                        B_nums = [item for sublist in B_nums for item in sublist]
+                    # move the data that we have into the array of total expected size
+                    self._data[strm_name][k][self._cur_uid]["data_full_shape"][:len(B_nums)] = B_nums
 
             if has_baseline:
                 self.create_entry_structure(doc, scan_type=scan_type)
@@ -2063,7 +2043,8 @@ class Serializer(event_model.DocumentRouter):
             nf.close()
 
         except:
-            _logger.error("Problem modifying data in [%s]" % self._tmp_fname)
+            _logger.error(f"Problem modifying data in [{self._tmp_fname}], creating an error file")
+            print(f"Problem modifying data in [{self._tmp_fname}], creating an error file")
             if nf is not None:
                 nf.close()
             os.rename(self._tmp_fname, self._tmp_fname + ".err")

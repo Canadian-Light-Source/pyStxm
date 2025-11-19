@@ -54,7 +54,7 @@ class clsHorizSelectPositionTool(HCursorTool):
 
     def activate(self):
         """Activate tool"""
-        # if(self.action.isChecked()):
+
         if self._my_checked_state:
             self.deactivate()
             return
@@ -62,11 +62,13 @@ class clsHorizSelectPositionTool(HCursorTool):
         for baseplot, start_state in list(self.start_state.items()):
             baseplot.filter.set_state(start_state, None)
 
+        self.action.blockSignals(True)
         self.action.setChecked(True)
         self.manager.set_active_tool(self)
         if self.shape is not None:
             self.shape.setVisible(True)
         self._my_checked_state = True
+        self.action.blockSignals(False)
 
     def deactivate(self):
         """Deactivate tool"""

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>445</width>
-    <height>644</height>
+    <height>650</height>
    </rect>
   </property>
   <property name="focusPolicy">
@@ -130,7 +130,39 @@
        </widget>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_34">
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <item>
+         <widget class="QComboBox" name="scanTypeSelComboBox">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="layoutDirection">
+           <enum>Qt::LeftToRight</enum>
+          </property>
+          <property name="currentIndex">
+           <number>1</number>
+          </property>
+          <property name="maxVisibleItems">
+           <number>2</number>
+          </property>
+          <item>
+           <property name="text">
+            <string>Point by Point</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Line by Line</string>
+           </property>
+          </item>
+         </widget>
+        </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_35">
           <item>
@@ -182,19 +214,6 @@
            </size>
           </property>
          </spacer>
-        </item>
-        <item>
-         <widget class="QPushButton" name="testBtn">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Test</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_36"/>
         </item>
        </layout>
       </item>
@@ -850,6 +869,16 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="setDeltaA0Btn">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Set Delta A0 to Cursor</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="verticalSpacer">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
@@ -867,6 +896,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../../../../../../../../../../../../../icons/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

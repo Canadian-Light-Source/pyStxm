@@ -24,10 +24,10 @@ def create_thumbnail(h5_file_dct, is_folder=False, data=None, energy=None, ev_id
         # change the filename sp that in the location of the filename the energy value of this stack widget is shown
         th_wdg = ThumbnailWidget(h5_file_dct, f'{energy:.2f} eV', is_folder=is_folder, data=data, energy=energy)
 
-    if th_wdg:
+    if th_wdg.valid_file:
         s, jstr = dict_based_build_image_params(h5_file_dct, energy=energy, ev_idx=ev_idx, ev_pnt=ev_pnt, pol_idx=pol_idx,
                                                 stack_idx=stack_idx)
         th_wdg.info_jstr = jstr
         th_wdg.setToolTip(s)
-
-    return th_wdg
+        return th_wdg
+    return None

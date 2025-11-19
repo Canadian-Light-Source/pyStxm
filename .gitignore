@@ -133,3 +133,5 @@ docs/
 cls/stylesheets/ssheet.txt
 
 bcm/backend.py
+
+**/scan_time_data/

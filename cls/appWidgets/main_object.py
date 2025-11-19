@@ -15,7 +15,7 @@ from nx_server.nx_server import NX_SERVER_CMNDS, NX_SERVER_REPONSES
 from cls.utils.arrays import nulls_to_nans
 from cls.utils.dict_utils import dct_put, dct_get, dct_merge, find_key_in_dict
 from cls.utils.version import get_version
-from cls.utils.process_utils import check_windows_procs_running
+
 from cls.data_io.zmq_utils import send_to_server
 from cls.utils.roi_dict_defs import *
 from cls.utils.log import get_module_logger
@@ -46,8 +46,7 @@ USE_ZMQ = False
 
 devq = Query()
 
-NX_SERVER_DATA_SUB_PORT = os.getenv('NX_SERVER_DATA_SUB_PORT', 56566)
-PIX_DATA_SUB_PORT = os.getenv('PIX_DATA_SUB_PORT', 55563)
+DATA_SUB_PORT = os.getenv('DATA_SUB_PORT', None)
 DATA_SERVER_HOST = os.getenv('DATA_SERVER_HOST', None)
 
 _logger = get_module_logger(__name__)
@@ -135,8 +134,7 @@ class main_object_base(QtCore.QObject):
         self.device_backend = BACKEND #default
         self.zmq_dev_mgr = None
         self.dcs_settings = None
-        self.win_data_dir = self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
-        self.linux_data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['linux_data_dir']
+        self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
         self.data_sub_context = zmq.Context()
         self.nx_server_master_seq_dct = None
@@ -153,29 +151,27 @@ class main_object_base(QtCore.QObject):
             self.mongo_db_nm = None
             self.nx_server_host = None
             self.nx_server_port = None
-            self.nx_server_is_windows = None
             # SUB socket: Subscribing to the publisher
-            print(f"Connecting to data server at tcp://{DATA_SERVER_HOST}:{PIX_DATA_SUB_PORT}")
+            print(f"Connecting to data server at tcp://{DATA_SERVER_HOST}:{DATA_SUB_PORT}")
             self.data_sub_socket = self.data_sub_context.socket(zmq.SUB)
-            self.data_sub_socket.connect(f"tcp://{DATA_SERVER_HOST}:{PIX_DATA_SUB_PORT}")  # Connect to the PUB socket
+            self.data_sub_socket.connect(f"tcp://{DATA_SERVER_HOST}:{DATA_SUB_PORT}")  # Connect to the PUB socket
             self.data_sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
 
         else:
             # SUB socket: Subscribing to the publisher
             self.data_sub_socket = self.data_sub_context.socket(zmq.SUB)
-            print(f"Connecting to data server at tcp://{DATA_SERVER_HOST}:{NX_SERVER_DATA_SUB_PORT}")
-            self.data_sub_socket.connect(f"tcp://{DATA_SERVER_HOST}:{NX_SERVER_DATA_SUB_PORT}")  # Connect to the PUB socket
+            print(f"Connecting to data server at tcp://{DATA_SERVER_HOST}:{DATA_SUB_PORT}")
+            self.data_sub_socket.connect(f"tcp://{DATA_SERVER_HOST}:{DATA_SUB_PORT}")  # Connect to the PUB socket
             self.data_sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")  # Subscribe to all messages
 
             if main_cfg:
                 self.mongo_db_nm = main_cfg.get_value("MAIN", "mongo_db_nm")
-                self.nx_server_host = main_cfg.get_value("MAIN", "nx_server_host")
+                self.nx_server_host = DATA_SERVER_HOST
                 self.nx_server_port = main_cfg.get_value("MAIN", "nx_server_port")
             else:
                 self.mongo_db_nm = 'mongo_databroker'
                 self.nx_server_host = 'localhost'
                 self.nx_server_port = 5555
-            self.nx_server_is_windows = self.check_is_nx_server_windows()
 
         ver_dct = get_version()
 
@@ -347,11 +343,11 @@ class main_object_base(QtCore.QObject):
                 #update the dcs server
                 # self.engine_widget.engine.set_data_directory(self.data_dir)
 
-            if int(settings['dataPublisherPort']) != int(PIX_DATA_SUB_PORT):
-                _logger.error(f"Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{PIX_DATA_SUB_PORT}]")
-                print(f"ERROR: Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{PIX_DATA_SUB_PORT}]")
+            if int(settings['dataPublisherPort']) != int(DATA_SUB_PORT):
+                _logger.error(f"Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{DATA_SUB_PORT}]")
+                print(f"ERROR: Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{DATA_SUB_PORT}]")
                 #update the dcs server
-                #self.engine_widget.engine.set_data_publisher_port(PIX_DATA_SUB_PORT)
+                #self.engine_widget.engine.set_data_publisher_port(DATA_SUB_PORT)
 
             if int(settings['publisherPort']) != DCS_SUB_PORT:
                 _logger.error(f"Command publisher port in DCS server [{settings['publisherPort']}] does not match the one in the GUI [{DCS_SUB_PORT}]")
@@ -373,9 +369,6 @@ class main_object_base(QtCore.QObject):
         """
         if data_dir is None:
             return
-
-        if not self.nx_server_is_windows:
-            data_dir = self.make_linux_data_dir(data_dir)
 
         if data_dir is None:
             data_dir = self.data_dir
@@ -838,14 +831,6 @@ class main_object_base(QtCore.QObject):
             return False
 
 
-    def make_linux_data_dir(self, data_dir: str) -> str:
-        """
-        translate the data_dir from windows to linux
-        """
-        data_dir = data_dir.replace(self.win_data_dir, self.linux_data_dir)
-        data_dir = data_dir.replace("\\", "/")
-        return data_dir
-
     def send_to_nx_server(self, cmnd, run_uids=[], fprefix='', data_dir='', nx_app_def=None, fpaths=[],
                           host='localhost', port=5555, verbose=False, cmd_args={}):
         """
@@ -887,9 +872,6 @@ class main_object_base(QtCore.QObject):
         """
         makes calls to save a scan file(s)
         """
-        if not self.nx_server_is_windows:
-            data_dir = self.make_linux_data_dir(data_dir)
-
         res = self.send_to_nx_server(NX_SERVER_CMNDS.SAVE_FILES, run_uids, fprefix, data_dir, nx_app_def=nx_app_def,
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=verbose)
@@ -905,9 +887,6 @@ class main_object_base(QtCore.QObject):
         makes calls to save a scan file(s)
         """
         final_paths = fpaths
-        if not self.nx_server_is_windows:
-            data_dir = self.make_linux_data_dir(data_dir)
-
         res = self.send_to_nx_server(NX_SERVER_CMNDS.REMOVE_FILES, data_dir=data_dir, fpaths=final_paths,
                                      host=self.nx_server_host, port=self.nx_server_port, verbose=verbose)
         return res['status']
@@ -939,14 +918,7 @@ class main_object_base(QtCore.QObject):
         that nx_server is running, the MAIN_OBJ has already determined if the process is running on windows
         or linux
         """
-        if self.nx_server_is_windows:
-            return check_windows_procs_running(procs_to_check={
-                "DataRecorder Process": ("python.exe", "nx_server.py"),
-                "MongoDB": ("mongod.exe", None),
-            })
-        else:
-            # linux
-            return self.check_linux_nx_server_running()
+        return self.check_linux_nx_server_running()
 
     def check_linux_nx_server_running(self):
         '''

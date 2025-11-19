@@ -104,6 +104,7 @@ from cls.applications.pyStxm.widgets.devDisplayPanel import DevsPanel
 
 from cls.applications.pyStxm.widgets.scan_queue_table import ScanQueueTableWidget
 from cls.applications.pyStxm.widgets.ptycho_viewer import PtychoDataViewerPanel
+
 from cls.utils.focus_calculations import focal_length
 
 from cls.types.beamline import BEAMLINE_IDS

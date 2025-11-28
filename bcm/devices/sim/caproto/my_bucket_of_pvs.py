@@ -2,10 +2,8 @@
 import os
 from caproto.server import pvproperty, PVGroup, template_arg_parser, run
 from cls.utils.dirlist import dirlist
-from cls.utils.json_utils import json_to_dict, file_to_json, dict_to_json, json_to_file
+from cls.utils.json_utils import json_to_dict, file_to_json
 import json
-from epics import PV, dbr
-import time
 
 
 def get_populated_motor_dict(field_path=None):
@@ -302,8 +300,6 @@ def load_json_files():
 
 
 if __name__ == "__main__":
-    from bcm.sim.caproto.txt_to_json import rd_txt_gen_json_files
-
     # rd_txt_gen_json_files()
 
     parser, split_args = template_arg_parser(

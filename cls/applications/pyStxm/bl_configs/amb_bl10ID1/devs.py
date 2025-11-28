@@ -1,5 +1,5 @@
 
-SIM = False
+SIM = True
 dev_dct = {}
 dev_dct["POSITIONERS"] = [
     {
@@ -129,6 +129,8 @@ dev_dct["POSITIONERS"] = [
         "abstract_mtr": True,
         "pos_type": "POS_TYPE_BL",
     },
+
+
     {
         "name": "DNM_SLIT_X",
         "desc": "Slit_X",
@@ -195,6 +197,7 @@ dev_dct["POSITIONERS"] = [
         "abstract_mtr": True,
         "pos_type": "POS_TYPE_BL",
     },
+
 ]
 # if the sig_name is not itself a PV but is only a prefix, profide the con_chk_nm field
 dev_dct["DIO"] = [
@@ -286,12 +289,6 @@ dev_dct["PVS"] = [
         "dcs_nm": "SIM_COARSEIMAGE:DECCEL_DIST_PRCNT",
     },
     {
-        "name": "DNM_CALCD_ZPZ",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "ASTXM1610:bl_api:zp:fbk:tr.I",
-    },
-    {
         "name": "DNM_RESET_INTERFERS",
         "class": "Bo",
         "cat": "PVS",
@@ -309,77 +306,114 @@ dev_dct["PVS"] = [
         "cat": "PVS",
         "dcs_nm": "PZAC1610-3-I12-41:AutoZero",
     },
-    {
-        "name": "DNM_ZPZ_ADJUST",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "ASTXM1610:bl_api:zp:adjust_zpz",
-    },
-    {
-        "name": "DNM_ZONEPLATE_SCAN_MODE",
-        "class": "Mbbo",
-        "dcs_nm": "ASTXM1610:bl_api:zp:scanselflag",
-    },
-    {
-        "name": "DNM_ZONEPLATE_SCAN_MODE_RBV",
-        "class": "Mbbo",
-        "dcs_nm": "ASTXM1610:bl_api:zp:scanselflag",
-    },
-    # used to control which value gets sent to Zpz, fl or fl - A0
+# used to control which value gets sent to Zpz, fl or fl - A0
     # {'name': 'DNM_ZONEPLATE_INOUT', 'class': 'Bo', 'dcs_nm': 'BL1610-I12:zp_inout'},
     # {'name': 'DNM_ZONEPLATE_INOUT_FBK', 'class': 'Mbbi', 'dcs_nm': 'ASTXM1610:bl_api:zp_inout:fbk'},
     # used to convieniently move zp z in and out
-    {
-        "name": "DNM_DELTA_A0",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "ASTXM1610:bl_api:delta_A0",
-    },
-    {
-        "name": "DNM_IDEAL_A0",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "ASTXM1610:bl_api:zp:fbk:tr.K",
-    },
+
     {
         "name": "DNM_CALCD_ZPZ",
-        "class": "make_basedevice",
+        "class": "make_base_simdevice",
         "cat": "PVS",
         "dcs_nm": "ASTXM1610:bl_api:zp:fbk:tr.I",
     },
     {
         "name": "DNM_ZPZ_ADJUST",
-        "class": "make_basedevice",
+        "class": "make_base_simdevice",
+        "cat": "PVS",
+        "dcs_nm": "ASTXM1610:bl_api:zp:adjust_zpz",
+    },
+    {
+        "name": "DNM_ZONEPLATE_SCAN_MODE",
+        "class": "SimMbbo",
+        "dcs_nm": "ASTXM1610:bl_api:zp:scanselflag",
+    },
+    {
+        "name": "DNM_ZONEPLATE_SCAN_MODE_RBV",
+        "class": "SimMbbo",
+        "dcs_nm": "ASTXM1610:bl_api:zp:scanselflag",
+    },
+
+    {
+        "name": "DNM_DELTA_A0",
+        "class": "make_base_simdevice",
+        "cat": "PVS",
+        "dcs_nm": "ASTXM1610:bl_api:delta_A0",
+    },
+    {
+        "name": "DNM_IDEAL_A0",
+        "class": "make_base_simdevice",
+        "cat": "PVS",
+        "dcs_nm": "ASTXM1610:bl_api:zp:fbk:tr.K",
+    },
+    {
+        "name": "DNM_CALCD_ZPZ",
+        "class": "make_base_simdevice",
+        "cat": "PVS",
+        "dcs_nm": "ASTXM1610:bl_api:zp:fbk:tr.I",
+    },
+    {
+        "name": "DNM_ZPZ_ADJUST",
+        "class": "make_base_simdevice",
         "cat": "PVS",
         "dcs_nm": "ASTXM1610:bl_api:zp:adjust_zpz",
     },
     {
         "name": "DNM_FOCAL_LENGTH",
-        "class": "make_basedevice",
+        "class": "make_base_simdevice",
         "cat": "PVS",
         "dcs_nm": "ASTXM1610:bl_api:zp:FL",
         "units": "um",
     },
     {
         "name": "DNM_A0",
-        "class": "make_basedevice",
+        "class": "make_base_simdevice",
         "cat": "PVS",
         "dcs_nm": "ASTXM1610:bl_api:A0",
     },
     {
         "name": "DNM_A0MAX",
-        "class": "make_basedevice",
+        "class": "make_base_simdevice",
         "cat": "PVS",
         "dcs_nm": "ASTXM1610:bl_api:A0Max",
     },
-    # {'name': 'DNM_A0_FOR_CALC', 'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'ASTXM1610:bl_api:A0:for_calc'},
     {
         "name": "DNM_ZPZ_POS",
-        "class": "make_basedevice",
+        "class": "make_base_simdevice",
         "cat": "PVS",
         "dcs_nm": "ASTXM1610:bl_api:zp:zpz_pos",
     },
-    {"name": "DNM_ENERGY_ENABLE", "class": "Bo", "dcs_nm": "ASTXM1610:bl_api:enabled"},
+    {
+        "name": "DNM_BEAM_DEFOCUS",
+        "class": "make_base_simdevice",
+        "cat": "PVS",
+        "dcs_nm": "ASTXM1610:bl_api:zp:defocus",
+        "units": "um",
+    },
+    {
+        "name": "DNM_ZP_A1",
+        "class": "make_base_simdevice",
+        "cat": "PVS",
+        "dcs_nm": "ASTXM1610:bl_api:zp:def.A",
+    },
+    {
+        "name": "DNM_ZP_DEF",
+        "class": "SimTransform",
+        "cat": "PVS",
+        "dcs_nm": "ASTXM1610:bl_api:zp:def",
+    },
+    {
+        "name": "DNM_OSA_DEF",
+        "class": "SimTransform",
+        "cat": "PVS",
+        "dcs_nm": "ASTXM1610:bl_api:osa:def",
+    },
+
+    {
+        "name": "DNM_ENERGY_ENABLE",
+        "class": "SimBo",
+        "dcs_nm": "ASTXM1610:bl_api:enabled"
+    },
     {
         "name": "DNM_ENERGY_RBV",
         "class": "make_basedevice",
@@ -394,24 +428,7 @@ dev_dct["PVS"] = [
         "dcs_nm": "SMTR1610-3-I12-51.RBV",
         "units": "um",
     },
-    {
-        "name": "DNM_ZP_DEF_A",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "ASTXM1610:bl_api:zp:def.A",
-    },
-    {
-        "name": "DNM_ZP_DEF",
-        "class": "Transform",
-        "cat": "PVS",
-        "dcs_nm": "ASTXM1610:bl_api:zp:def",
-    },
-    {
-        "name": "DNM_OSA_DEF",
-        "class": "Transform",
-        "cat": "PVS",
-        "dcs_nm": "ASTXM1610:bl_api:osa:def",
-    },
+
     {
         "name": "DNM_SYSTEM_MODE_FBK",
         "class": "make_basedevice",
@@ -424,18 +441,6 @@ dev_dct["PVS"] = [
         "cat": "PVS",
         "dcs_nm": "SRStatus:shutters",
     },
-    # {'name': 'DNM_EPU_POL_FBK',  'class': 'Mbbo', 'dcs_nm': 'BL1610-I12UND1410-01:polarization'},
-    # {'name': 'DNM_EPU_POL_ANGLE',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'BL1610-I12:UND1410-01:polarAngle', 'units': 'udeg'},
-    # {'name': 'DNM_EPU_GAP_FBK',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'BL1610-I12:UND1410-01:gap:mm:fbk', 'units': 'mm'},
-    # {'name': 'DNM_EPU_GAP_OFFSET',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'BL1610-I12:UND1410-01:gap:offset', 'units': 'mm'},
-    # {'name': 'DNM_EPU_HARMONIC_PV',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'BL1610-I12:UND1410-01:harmonic'},
-    # {'name': 'DNM_SYSTEM_MODE_FBK',  'class': 'Mbbi', 'dcs_nm': 'BL1610-I12SYSTEM:mode:fbk'},
-    # {'name': 'DNM_EPU_POL_FBK',  'class': 'make_basedevice', 'dcs_nm': 'SIM_VBL1610-I12:epuPolarization.RBV', 'rd_only': True},
-    # {'name': 'DNM_EPU_POL_ANGLE',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'BLUND1410-01:polarAngle', 'units': 'udeg'},
-    # {'name': 'DNM_EPU_GAP_FBK',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'SIM_VBL1610-I12:epuGap', 'units': 'mm', 'rd_only': True},
-    # {'name': 'DNM_EPU_GAP_OFFSET',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'SIM_VBL1610-I12:epuOffset', 'units': 'mm'},
-    # {'name': 'DNM_EPU_HARMONIC_PV',  'class': 'make_basedevice', 'cat': 'PVS', 'dcs_nm': 'SIM_VBL1610-I12:epuHarmonic'},
-    #    {'name': 'DNM_SYSTEM_MODE_FBK',  'class': 'Mbbi', 'dcs_nm': 'BL1610-I12SYSTEM:mode:fbk'},
     {
         "name": "DNM_MONO_EV_FBK",
         "class": "make_basedevice",
@@ -445,13 +450,7 @@ dev_dct["PVS"] = [
         "units": "eV",
         "rd_only": True,
     },
-    {
-        "name": "DNM_BEAM_DEFOCUS",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "ASTXM1610:bl_api:zp:defocus",
-        "units": "um",
-    },
+
     {
         "name": "DNM_AX1_INTERFER_VOLTS",
         "class": "make_basedevice",
@@ -501,6 +500,19 @@ dev_dct["PVS"] = [
         "dcs_nm": "MCS1610-310-01:mcs:delay",
     },
     # _pv: BaseDevice('BL1610-I12:MONO1610-I10-01:grating:select:fbk'}, _pv.get_position: _pv.get_enum_str_as_int[{'name': 'Mono_grating_fbk',  'class': _pv
+
+]
+dev_dct["ENERGY_DEV"] = [
+    {
+        "name": "DNM_ENERGY_DEVICE",
+        "desc": "Energy device that includes focussing",
+        "class": "EnergyDevice",
+        "dcs_nm": "SIM_VBL1610-I12:ENERGY" if SIM else "BL1610-I10:ENERGY",
+        "energy_nm": "DNM_ENERGY",
+        "zz_nm": "DNM_ZONEPLATE_Z",
+        "cz_nm": "DNM_COARSE_Z",
+        "pos_type": "POS_TYPE_BL",
+    },
 ]
 
 dev_dct["PVS_DONT_RECORD"] = [

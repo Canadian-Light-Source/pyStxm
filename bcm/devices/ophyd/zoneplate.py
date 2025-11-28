@@ -98,45 +98,10 @@ class Zoneplate(Device):
         st.set_finished()
         return st
 
-    # def calc_new_zpz_pos(self):
-    #     A = self.energy.get()
-    #     # "Delta zpz frm focus"
-    #     B = 0 #self.delta_zpz_from_focus.get()
-    #     #"scantype flag"
-    #     C = 1 #self.scantype_flag.get()
-    #     # "A1"
-    #     D = self.a1.get()
-    #     #"Defocus (um)"
-    #     E = 0 #self.defocus.get()
-    #     # "A0 setpoint"
-    #     F = 1000 #self.ao_setpoint.get()
-    #     # "delta A0"
-    #     G = 0 #self.delta_a0.get()
-    #     # "theo FL"
-    #     H = 0 #self.theoretical_fl.get()
-    #     # "adjust zpz"
-    #     I = 0 #self.adjust_zpz.get()
-    #
-    #     # "new osaz"
-    #     K = new_osa_z = ((-1.0*F)-E)+G
-    #     # "FL mode0"
-    #     L = FL_mode_0 = ((A*D)-abs(F))+G-I
-    #     # "FL mode1"
-    #     M = FL_mode_1 = ((A*D)-E)+G-I
-    #
-    #     # "Zpz MTR OUT"
-    #     if C == 0:
-    #         N = new_zpz = L
-    #     else:
-    #         N = new_zpz = M
-    #     # "set clcd FL"
-    #     O = new_fl = A*D
-    #
-    #     self.zpz_posner.put('user_setpoint', new_zpz)
 
     def calc_new_zpz_pos(self):
         A = self.energy.get()
-        print("A energy = %.2f" % A)
+        print("A energy = %.2f:" % A)
         # "Delta zpz frm focus"
         B = 0  # self.delta_zpz_from_focus.get()
         # "scantype flag"
@@ -156,24 +121,24 @@ class Zoneplate(Device):
 
         # "new osaz"
         K = new_osa_z = ((-1.0 * F) - E) + G
-        print("K new osa Z: %.2f" % K)
+        print("\tK new osa Z: %.2f" % K)
         # "FL mode0"
         L = FL_mode_0 = ((A * D) - abs(F)) + G - I
-        print("L new FL mode0: %.2f" % L)
+        print("\tL new FL mode0 (OSA Focused): %.2f" % L)
         # "FL mode1"
         M = FL_mode_1 = ((A * D) - E) + G - I
-        print("M new FL mode1: %.2f" % M)
+        print("\tM new FL mode1 (Sample Focussed): %.2f" % M)
 
         # "set clcd FL"
         O = new_fl = A * D
-        print("N new FL: %.2f" % O)
+        print("\tN new FL: %.2f" % O)
 
         # "Zpz MTR OUT"
         if C == 0:
             N = new_zpz = L
         else:
             N = new_zpz = M
-        print("N new ZPZ pos: %.2f" % N)
+        print("\tN new ZPZ pos: %.2f\n\n" % N)
         self.zpz_posner.put("user_setpoint", new_zpz)
 
     def put(self, val):
@@ -212,7 +177,7 @@ if __name__ == "__main__":
     bec = BestEffortCallback()
 
     # Send all metadata/data captured to the BestEffortCallback.
-    RE.subscribe(bec)
+    # RE.subscribe(bec)
     from databroker import Broker
 
     db = Broker.named("pystxm_amb_bl10ID1")
@@ -222,19 +187,30 @@ if __name__ == "__main__":
 
     # install_kicker()
 
-    zpz = MotorQt("SIM_IOC:m704", name="SIM_IOC:m704")
-    energy = MotorQt("SIM_VBL1610-I10:AMB:ENERGY", name="SIM_VBL1610-I10:AMB:ENERGY")
+    #cz = MotorQt("SMTR1610-3-I12:47", name="DNM_COARSE_Z")
+    # zpz = MotorQt("SMTR1610-3-I12:51", name="DNM_ZONEPLATE_Z")
+    zpz = MotorQt("SIM_VBL1610-I12:slitX", name="DNM_ZONEPLATE_Z")
+    energy = MotorQt("SIM_VBL1610-I12:ENERGY", name="SIM_VBL1610-I12:ENERGY")
 
-    zp1 = Zoneplate("MYZONER", "zp1", zpz, -4.839514, 100, 45, 60)
-    zp2 = Zoneplate("MYZONER", "zp2", zpz, -6.791682, 240, 90, 35)
-    zp3 = Zoneplate("MYZONER", "zp3", zpz, -7.76662, 240, 90, 40)
-    zp4 = Zoneplate("MYZONER", "zp4", zpz, -4.524239, 140, 60, 40)
-    zp5 = Zoneplate("MYZONER", "zp5", zpz, -4.85874, 240, 95, 25)
-    zp6 = Zoneplate("MYZONER", "zp6", zpz, -4.85874, 240, 95, 25)
-    zp7 = Zoneplate("MYZONER", "zp7", zpz, -5.0665680, 250, 100, 25)
-    zp8 = Zoneplate("MYZONER", "zp8", zpz, 0, 240, 100, 63.79)
+    zoneplate_lst = [
+        {'name': 'ZonePlate 0', 'zp_id': 0, 'a1': -4.840, 'D': 100.0, 'CsD': 45.0, 'OZone': 60.0},
+        {'name': 'ZonePlate 1', 'zp_id': 1, 'a1': -6.792, 'D': 240.0, 'CsD': 90.0, 'OZone': 35.0},
+        {'name': 'ZonePlate 2', 'zp_id': 2, 'a1': -7.767, 'D': 240.0, 'CsD': 90.0, 'OZone': 40.0},
+        {'name': 'ZonePlate 3', 'zp_id': 3, 'a1': -4.524, 'D': 140.0, 'CsD': 60.0, 'OZone': 40.0},
+        {'name': 'ZonePlate 4', 'zp_id': 4, 'a1': -4.859, 'D': 240.0, 'CsD': 95.0, 'OZone': 25.0},
+        {'name': 'ZonePlate 5', 'zp_id': 5, 'a1': -4.857, 'D': 240.0, 'CsD': 95.0, 'OZone': 25.0},
+        {'name': 'ZonePlate 6', 'zp_id': 6, 'a1': -5.067, 'D': 250.0, 'CsD': 100.0, 'OZone': 25.0},
+        {'name': 'ZonePlate 7', 'zp_id': 7, 'a1': -6.789, 'D': 159.0, 'CsD': 111.0, 'OZone': 35.0},
+        {'name': 'ZonePlate 8', 'zp_id': 8, 'a1': -35.835, 'D': 5000.0, 'CsD': 111.0, 'OZone': 35.0},
+        {'name': 'ZonePlate 9', 'zp_id': 9, 'a1': -11.358981, 'D': 280.0, 'CsD': 100.0, 'OZone': 50.0},
+    ]
+
+    zp_objs = []
+    for i, zp_def in enumerate(zoneplate_lst):
+        zp_objs.append(Zoneplate("MYZONER", f"zp{zp_def['zp_id']}", zpz,  zp_def['a1'],  zp_def['D'],  zp_def['CsD'],  zp_def['OZone']))
 
     # zp1.set_energy(465)
     dets = [det1, det2, zpz]  # just one in this case, but it could be more than one
-    RE(count(dets))
-    RE(scan(dets, zp2, 260, 360, 10))
+    # RE(count(dets))
+    #RE(scan(dets, zp_objs[9], 395, 450, 3))
+    RE(scan(dets, energy, 395, 450, 3))

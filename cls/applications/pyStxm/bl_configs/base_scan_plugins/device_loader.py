@@ -20,6 +20,13 @@ from bcm.devices import MotorQt
 from bcm.devices import Counter
 from bcm.devices import sample_abstract_motor
 
+from bcm.devices.sim.sim_base_object import BaseSimObject
+from bcm.devices.sim.sim_base_device import BaseSimDevice
+from bcm.devices.sim.sim_binary_out import SimBo
+from bcm.devices.sim.sim_multi_bit_binary_out import SimMbbo
+from bcm.devices.sim.sim_transform import SimTransform
+
+
 if BACKEND == 'epics':
     from bcm.devices.ophyd.stxm_sample_mtr import e712_sample_motor
     from bcm.devices.ophyd.pi_e712 import E712WGDevice
@@ -36,6 +43,7 @@ if BACKEND == 'epics':
     from bcm.devices.ophyd.sis3820_scalar import SIS3820ScalarDevice
     from bcm.devices.ophyd.qt.daqmx_counter_output import GateDevice
     from bcm.devices.ophyd.camera import camera
+    from bcm.devices.ophyd.energy_dev import EnergyDevice
 
 else:
     from bcm.devices import MultiSelectable
@@ -55,7 +63,7 @@ from cls.types.stxmTypes import (
 )
 from cls.utils.cfgparser import ConfigClass
 from cls.utils.log import get_module_logger
-from cls.applications.pyStxm.bl_configs.utils import make_basedevice
+from cls.applications.pyStxm.bl_configs.utils import make_basedevice, make_base_simdevice
 
 _logger = get_module_logger(__name__)
 
@@ -219,6 +227,36 @@ class device_config(dev_config_base):
             d = noisy_det
             d.name = dct["name"]
 
+        elif dct['class'] == 'EnergyDevice':
+            # get all of the positioners needed for this device
+            a0_dev = self.devices["PVS"]["DNM_A0"]
+            delta_a0_dev = self.devices["PVS"]["DNM_DELTA_A0"]
+            zpz_adjust_dev = self.devices["PVS"]["DNM_ZPZ_ADJUST"]
+            defocus_beam_dev = self.devices["PVS"]["DNM_BEAM_DEFOCUS"]
+            focal_len_dev = self.devices["PVS"]["DNM_FOCAL_LENGTH"]
+            zp_a1_dev = self.devices["PVS"]["DNM_ZP_A1"]
+            a0_max_dev = self.devices["PVS"]["DNM_A0MAX"]
+            calcd_zpz_dev = self.devices["PVS"]["DNM_CALCD_ZPZ"]
+
+            energy_posner = self.devices["POSITIONERS"][dct["energy_nm"]]
+            zpz_posner = self.devices["POSITIONERS"][dct["zz_nm"]]
+            cz_posner = self.devices["POSITIONERS"][dct["cz_nm"]]
+
+            energy_dev_dict = {
+                "a0_dev": a0_dev,
+                "delta_a0_dev": delta_a0_dev,
+                "zpz_adjust_dev": zpz_adjust_dev,
+                "defocus_beam_dev": defocus_beam_dev,
+                "energy_posner": energy_posner,
+                "zpz_posner": zpz_posner,
+                "cz_posner": cz_posner,
+                "focal_len_dev": focal_len_dev,
+                "zp_a1_dev": zp_a1_dev,
+                "a0_max_dev": a0_max_dev,
+                "calcd_zpz_dev": calcd_zpz_dev,
+            }
+            d = EnergyDevice(dct['dcs_nm'], name=dct['name'], energy_dev_dict=energy_dev_dict)
+
         elif dct["class"] == "e712_sample_motor":
             d = e712_sample_motor(
                 dct["dcs_nm"], name=dct["dcs_nm"]
@@ -295,13 +333,23 @@ class device_config(dev_config_base):
         elif dct["class"] == "Bo":
             d = Bo(base_signal_name=dct["dcs_nm"], desc=dct["desc"])
 
+        elif dct["class"] == "SimBo":
+            d = SimBo(base_signal_name=dct["dcs_nm"], desc=dct["desc"])
+
         elif dct["class"] == "Mbbo":
             d = Mbbo(dct["dcs_nm"])
+
+        elif dct["class"] == "SimMbbo":
+            d = SimMbbo(dct["dcs_nm"])
 
         elif dct["class"] == "Mbbi":
             d = Mbbi(dct["dcs_nm"])
         elif dct["class"] == "Transform":
             d = Transform(dct["dcs_nm"], name=dct["name"])
+        elif dct["class"] == "SimTransform":
+            d = SimTransform(dct["dcs_nm"], name=dct["name"])
+
+
         elif dct["class"] == "E712WGDevice":
             d = E712WGDevice(dct["dcs_nm"], name=dct["name"])
         elif dct["class"] == "E712ControlWidget":
@@ -350,14 +398,37 @@ class device_config(dev_config_base):
                 backend=BACKEND,
                 devcfg=self,
             )
-            if dct['name'].find("DNM_RING_CURRENT") > -1:
-                # hack, need ring current to appear to be a detector but not in DETECTORS category because
-                # the read() will be looking for an attribute called det.id
-                category = "DETECTORS"
+
+
+        elif dct["class"] == "make_base_simdevice":
+            if "units" not in dct.keys():
+                dct["units"] = ""
+            if "desc" not in dct.keys():
+                dct["desc"] = "No description in config"
+            if "rd_only" not in dct.keys():
+                dct["rd_only"] = False
+            # if "backend" not in dct.keys():
+            #     dct["backend"] = "epics"
+            d = make_base_simdevice(
+                cat=category,
+                sig_nm=dct["dcs_nm"],
+                name=dct["name"],
+                desc=dct["desc"],
+                units=dct["units"],
+                rd_only=dct["rd_only"],
+                backend=BACKEND,
+                devcfg=self,
+            )
 
         else:
             print("Unknown category [%s]" % dct["class"])
             d = None
+
+        if dct['name'].find("DNM_RING_CURRENT") > -1:
+            # hack, need ring current to appear to be a detector but not in DETECTORS category because
+            # the read() will be looking for an attribute called det.id
+            category = "DETECTORS"
+
         if category.find("DETECTORS") > -1:
             # assign a unique id to each detector that will be used later in the code to reference its data
             d.det_id = self.det_id_counter

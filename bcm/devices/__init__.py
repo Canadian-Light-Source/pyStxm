@@ -70,6 +70,13 @@ def print_flds(slf, _attrs, _attr_lst=None):
     f.close()
 
 
+# make sure sim devices are available
+from bcm.devices.sim.sim_base_device import BaseSimDevice
+from bcm.devices.sim.sim_base_object import BaseSimObject
+from bcm.devices.sim.sim_binary_out import SimBo
+from bcm.devices.sim.sim_multi_bit_binary_out import SimMbbo
+
+
 if USE_EPICS:
     from .epics.base import BaseDevice
     from .epics.aio import basedevice as basedevice
@@ -121,6 +128,7 @@ elif USE_OPHYD_EPICS:
     from .ophyd.area_detectors import GreatEyesCCD, SimGreatEyesCCD
     from .ophyd.sis3820_scalar import SIS3820ScalarDevice
     from .ophyd.ad_tucsen import TucsenDetector
+    from .ophyd.energy_dev import EnergyDevice
 
     #this is a placeholder for zmq testing when I jump back and forth to test
     from .ophyd.sis3820_scalar import SIS3820ScalarDevice as Counter

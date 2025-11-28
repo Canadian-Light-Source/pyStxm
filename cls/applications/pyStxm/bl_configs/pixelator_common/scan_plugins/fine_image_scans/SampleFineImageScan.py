@@ -9,7 +9,7 @@ import copy
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
 
 from cls.applications.pyStxm.bl_configs.base_scan_plugins.fine_image_scans.SampleFineImageScan import (
-    BaseFineSampleImageScanClass,
+    BaseSampleFineImageScanClass,
 )
 from cls.utils.roi_dict_defs import *
 from cls.utils.log import get_module_logger
@@ -22,7 +22,7 @@ _logger = get_module_logger(__name__)
 ACCEL_DISTANCE = MAIN_OBJ.get_preset_as_float("fine_accel_distance")
 
 
-class FineSampleImageScanClass(BaseFineSampleImageScanClass):
+class FineSampleImageScanClass(BaseSampleFineImageScanClass):
     """
     This class is used to implement Coarse scans for conventional mode scanning
     """

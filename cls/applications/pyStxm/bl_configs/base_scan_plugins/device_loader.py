@@ -19,9 +19,6 @@ from bcm.devices import MotorQt
 from bcm.devices import Counter
 from bcm.devices import sample_abstract_motor
 
-from bcm.devices.sim.sim_binary_out import SimBo
-from bcm.devices.sim.sim_multi_bit_binary_out import SimMbbo
-from bcm.devices.sim.sim_transform import SimTransform
 from bcm.devices.sim.energy_dev import EnergyDevice
 
 if BACKEND == 'epics':
@@ -330,22 +327,13 @@ class device_config(dev_config_base):
         elif dct["class"] == "Bo":
             d = Bo(base_signal_name=dct["dcs_nm"], desc=dct["desc"])
 
-        elif dct["class"] == "SimBo":
-            d = SimBo(base_signal_name=dct["dcs_nm"], desc=dct["desc"])
-
         elif dct["class"] == "Mbbo":
             d = Mbbo(dct["dcs_nm"])
-
-        elif dct["class"] == "SimMbbo":
-            d = SimMbbo(dct["dcs_nm"])
 
         elif dct["class"] == "Mbbi":
             d = Mbbi(dct["dcs_nm"])
         elif dct["class"] == "Transform":
             d = Transform(dct["dcs_nm"], name=dct["name"])
-        elif dct["class"] == "SimTransform":
-            d = SimTransform(dct["dcs_nm"], name=dct["name"])
-
 
         elif dct["class"] == "E712WGDevice":
             d = E712WGDevice(dct["dcs_nm"], name=dct["name"])

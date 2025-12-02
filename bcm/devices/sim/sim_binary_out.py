@@ -26,7 +26,7 @@ class SimBo(BaseSimObject):
         super(SimBo, self).__init__(
             base_signal_name, write_pv=base_signal_name + ".VAL", **cb_kwargs
         )
-
+        self.dcs_name = base_signal_name
         self.attrs = ("VAL", "OUT", "NAME", "DESC", "ZNAM", "ONAM")
         self.main_dev = self.add_device(base_signal_name)
         self.changed = self.main_dev.changed
@@ -38,6 +38,7 @@ class SimBo(BaseSimObject):
             # sig_name = self.base_signal_name + self._delim + '%s' % _attr
             # self.add_device(sig_name, write_pv=sig_name)
             self.add_device(_attr, is_dev_attr=True)
+
         report_fields(self)
 
     def get_position(self):

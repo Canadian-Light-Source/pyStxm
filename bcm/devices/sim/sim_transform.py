@@ -36,7 +36,7 @@ class SimTransform(BaseSimObject):
             base_signal_name = base_signal_name[:-1]
 
         super(SimTransform, self).__init__(base_signal_name)
-
+        self.dcs_name = base_signal_name
         self.main_dev = self.add_device(base_signal_name)
         self.changed = self.main_dev.changed
         self.on_connect = self.main_dev.on_connect

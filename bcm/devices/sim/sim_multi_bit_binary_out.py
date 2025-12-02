@@ -28,6 +28,7 @@ class SimMbbo(BaseSimObject):
         super(SimMbbo, self).__init__(
             base_signal_name, write_pv=base_signal_name, **cb_kwargs
         )
+        self.dcs_name = base_signal_name
 
         if DO_SIM:
             self.attrs = ("VAL", "OUT", "NAME", "DESC")

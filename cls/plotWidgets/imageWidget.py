@@ -6528,8 +6528,6 @@ class ImageWidgetPlot(PlotDialog):
                 # can update the scan param widgets.
                 self.blockSignals(False)
 
-            self.scan_loaded.emit(wdg_com)
-
             if self.show_image_params:
                 self.display_image_params(fprefix, sp_db)
             else:

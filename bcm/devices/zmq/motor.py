@@ -72,8 +72,7 @@ class ZMQMotor(ZMQBaseDevice):
     """
     A basic device that offers a positioner interface
     """
-    emit_move = pyqtSignal(float, bool)  # a signal to call move from a sig handler in a thread safe way
-
+    _emit_move = pyqtSignal(float, bool)  # a signal to call move from a sig handler in a thread safe way
     def __init__(self, dcs_name, name, **kwargs):
         super().__init__(dcs_name, name, **kwargs)
         self._low_limit = -10000
@@ -120,6 +119,17 @@ class ZMQMotor(ZMQBaseDevice):
         # are set by the coarse motors for an e712 motor because it needs to be able to use setpoint values that are
         # in the range of the coarse motor, scanable range is the actual physical range of the piezo stage and will
         # come from the max_fine_x and max_fine_y declarations in the bealmline config file
+        self._emit_move.connect(self.move)
+
+    def call_emit_move(self, position, wait=True, kwargs={}):
+        """
+        a thread safe way to call move from a signal handler
+        :param position:
+        :param wait:
+        :param kwargs:
+        :return:
+        """
+        self._emit_move.emit(position, wait)
 
     def set_max_scanable_range(self, rng: float) -> None:
         self.scanable_range = rng

@@ -570,141 +570,6 @@ class MotorQt(EpicsMotor, QObject):
         return (val <= self.get(hl_name) and val >= self.get(ll_name))
 
     # def move(self, position=None, relative=False, wait=False, timeout=300.0,
-    #                    dial=False, step=False, raw=False,
-    #                    ignore_limits=False, confirm_move=False):
-    #     """
-    #     arguments:
-    #     ==========
-    #      val            value to move to (float) [Must be provided]
-    #      relative       move relative to current position    (T/F) [F]
-    #      wait           whether to wait for move to complete (T/F) [F]
-    #      dial           use dial coordinates                 (T/F) [F]
-    #      raw            use raw coordinates                  (T/F) [F]
-    #      step           use raw coordinates (backward compat)(T/F) [F]
-    #      ignore_limits  try move without regard to limits    (T/F) [F]
-    #      confirm_move   try to confirm that move has begun   (T/F) [F]
-    #      timeout        max time for move to complete (in seconds) [300]
-    #
-    #     return values:
-    #       -13 : invalid value (cannot convert to float).  Move not attempted.
-    #       -12 : target value outside soft limits.         Move not attempted.
-    #       -11 : drive PV is not connected:                Move not attempted.
-    #        -8 : move started, but timed-out.
-    #        -7 : move started, timed-out, but appears done.
-    #        -5 : move started, unexpected return value from PV.put()
-    #        -4 : move-with-wait finished, soft limit violation seen
-    #        -3 : move-with-wait finished, hard limit violation seen
-    #         0 : move-with-wait finish OK.
-    #         0 : move-without-wait executed, not cpmfirmed
-    #         1 : move-without-wait executed, move confirmed
-    #         3 : move-without-wait finished, hard limit violation seen
-    #         4 : move-without-wait finished, soft limit violation seen
-    #     """
-    #     if self.within_limits(position):
-    #         super().move(position, wait=wait)#, wait=wait, timeout=timeout,
-    #         #            dial=dial, step=step, raw=raw,
-    #         #            ignore_limits=ignore_limits, confirm_move=confirm_move)
-    #         return 0
-    #     else:
-    #         _logger.error(f"{self.name}: Move to [{position}] would violate the limits")
-    #         return -12
-
-
-    #
-    # def move(self, val=None, relative=False, wait=False, timeout=300.0,
-    #          dial=False, step=False, raw=False,
-    #          ignore_limits=False, confirm_move=False):
-    #     """ moves motor drive to position
-    #
-    #     arguments:
-    #     ==========
-    #      val            value to move to (float) [Must be provided]
-    #      relative       move relative to current position    (T/F) [F]
-    #      wait           whether to wait for move to complete (T/F) [F]
-    #      dial           use dial coordinates                 (T/F) [F]
-    #      raw            use raw coordinates                  (T/F) [F]
-    #      step           use raw coordinates (backward compat)(T/F) [F]
-    #      ignore_limits  try move without regard to limits    (T/F) [F]
-    #      confirm_move   try to confirm that move has begun   (T/F) [F]
-    #      timeout        max time for move to complete (in seconds) [300]
-    #
-    #     return values:
-    #       -13 : invalid value (cannot convert to float).  Move not attempted.
-    #       -12 : target value outside soft limits.         Move not attempted.
-    #       -11 : drive PV is not connected:                Move not attempted.
-    #        -8 : move started, but timed-out.
-    #        -7 : move started, timed-out, but appears done.
-    #        -5 : move started, unexpected return value from PV.put()
-    #        -4 : move-with-wait finished, soft limit violation seen
-    #        -3 : move-with-wait finished, hard limit violation seen
-    #         0 : move-with-wait finish OK.
-    #         0 : move-without-wait executed, not cpmfirmed
-    #         1 : move-without-wait executed, move confirmed
-    #         3 : move-without-wait finished, hard limit violation seen
-    #         4 : move-without-wait finished, soft limit violation seen
-    #
-    #     """
-    #     step = step or raw
-    #
-    #     NONFLOAT, OUTSIDE_LIMITS, UNCONNECTED = -13, -12, -11
-    #     TIMEOUT, TIMEOUT_BUTDONE = -8, -7
-    #     UNKNOWN_ERROR = -5
-    #     DONEW_SOFTLIM, DONEW_HARDLIM = -4, -3
-    #     DONE_OK = 0
-    #     MOVE_BEGUN, MOVE_BEGUN_CONFIRMED = 0, 1
-    #     NOWAIT_SOFTLIM, NOWAIT_HARDLIM = 4, 3
-    #     try:
-    #         val = float(val)
-    #     except TypeError:
-    #         return NONFLOAT
-    #
-    #     drv, rbv = ('setpoint', 'readback')
-    #
-    #     if relative:
-    #         val += self.get(drv)
-    #
-    #     # Check for limit violations
-    #     if not ignore_limits and not step:
-    #         if not self.within_limits(val):
-    #             return OUTSIDE_LIMITS
-    #
-    #     if (self._collision_support):
-    #         stat = self.put('check_tr.A', val, wait=wait, timeout=timeout)
-    #     else:
-    #         stat = self.put(drv, val, wait=wait, timeout=timeout)
-    #
-    #     if stat is None:
-    #         return UNCONNECTED
-    #
-    #     if wait and stat == -1:  # move started, exceeded timeout
-    #         if self.get('DMOV') == 0:
-    #             return TIMEOUT
-    #         return TIMEOUT_BUTDONE
-    #     if 1 == stat:
-    #         if wait:  # ... and finished OK
-    #             if 1 == self.get('soft_limit'):
-    #                 return DONEW_SOFTLIM
-    #             elif 1 == self.get('high_limit_set') or 1 == self.get('low_limit_set'):
-    #                 return DONEW_HARDLIM
-    #             return DONE_OK
-    #         else:
-    #             if 1 == self.get('soft_limit') or confirm_move:
-    #                 ca.poll(evt=1.e-2)
-    #             moving = False
-    #             if confirm_move:
-    #                 t0 = time.time()
-    #                 while self.get('MOVN') == 0:
-    #                     ca.poll(evt=1.e-3)
-    #                     if time.time() - t0 > 0.25: break
-    #             if 1 == self.get('MOVN'):
-    #                 return MOVE_BEGUN_CONFIRMED
-    #             elif 1 == self.get('soft_limit'):
-    #                 return NOWAIT_SOFTLIM
-    #             elif 1 == self.get('high_limit_set') or 1 == self.get('low_limit_set'):
-    #                 return NOWAIT_HARDLIM
-    #             else:
-    #                 return MOVE_BEGUN
-    #     return UNKNOWN_ERROR
     #
     def confirm_stopped(self):
         t = 0
@@ -744,14 +609,7 @@ class MotorQt(EpicsMotor, QObject):
         self.set_position(0.0)
         # print '%s setting zero' % self.signal_name
 
-    # def move_and_set_position(self, pos, setpos):
-    #     self.move(pos)
-    #     # print 'waiting for %s to stop' % self.signal_name
-    #     self.confirm_stopped()
-    #     # print '%s has now stopped' % self.signal_name
-    #     self.set_position(setpos)
-    #     # print '%s setting zero' % self.signal_name
-    #
+
 
 
 class MotorLimitException(Exception):
@@ -776,7 +634,8 @@ class MotorException(Exception):
         return str(self.msg)
 
 
-class EnergyMotor(EpicsMotor):
+# class EnergyMotor(EpicsMotor):
+class EnergyMotor(MotorQt):
     """just a convienience class so that PVs can be configured in the beamline configuration file
     and used as if they were other devices, making the rest of the code cleaner
     """
@@ -863,8 +722,8 @@ if __name__ == "__main__":
     # app = QtWidgets.QApplication(sys.argv)
 
     # m = Motor_Qt('SIM_IOC:m704', name='m704', pos_set=1, collision_support=False, report_fields= True )
-    zpz = MotorQt("SIM_IOC:m704", name="zpz_mtr")
-    zp1 = Zoneplate("MYZONER", "zp1", zpz, -4.839514, 100, 45, 60)
+    #zpz = MotorQt("SIM_IOC:m704", name="zpz_mtr")
+    zp1 = Zoneplate("MYZONER", "zp1", "a1", -4.839514, 100, 45, 60)
     zp2 = Zoneplate("MYZONER", "zp2", zpz, -6.791682, 240, 90, 35)
     zp3 = Zoneplate("MYZONER", "zp3", zpz, -7.76662, 240, 90, 40)
     zp4 = Zoneplate("MYZONER", "zp4", zpz, -4.524239, 140, 60, 40)

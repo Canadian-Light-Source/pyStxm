@@ -44,18 +44,6 @@ def modify_generic_scan_ctrl_data_grps(parent, nxgrp, doc, scan_type):
 
     _dataset(nxgrp, x_posnr_nm, xdata, "NX_FLOAT")
 
-    # this should be an array the same shape as the 'data' group in NXdata filled with the storagering current
-    # sr_data = np.array(
-    #     parent._data["primary"][parent.get_devname("DNM_RING_CURRENT")][uid]["data"],
-    #     dtype=np.float32,
-    # )
-    sr_data = parent.get_primary_all_data("DNM_RING_CURRENT")
-
-    if resize_data:
-        sr_data = np.resize(sr_data, (ttlpnts,))
-
-    _dataset(nxgrp, "data", sr_data, "NX_NUMBER")
-
     modify_generic_scan_ctrl_str_attrs(parent, nxgrp, doc)
 
 

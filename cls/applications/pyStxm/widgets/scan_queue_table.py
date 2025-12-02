@@ -28,20 +28,19 @@ iconsDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons", "pn
 # setup module logger with a default do-nothing handler
 _logger = get_module_logger(__name__)
 
-HDR_FONT_SIZE = 8
-TABLE_FONT_SIZE = 8
-
+HDR_FONT_SIZE = 11
+TABLE_FONT_SIZE = 11
 
 DEFAULT_PIXMAP_COLUMN = 5
 DEFAULT_PROGESS_BAR_COLUMN = 6
 
 # table column width definitions
-FILENAME_WIDTH = dpi_scaled(120)
-STACK_FILENAME_WIDTH = dpi_scaled(170)
-EV_WIDTH = dpi_scaled(60)
-START_WIDTH = dpi_scaled(100)
-POLARITY_WIDTH = dpi_scaled(80)
-CENTER_WIDTH = dpi_scaled(150)
+FILENAME_WIDTH = dpi_scaled(170)
+STACK_FILENAME_WIDTH = dpi_scaled(210)
+EV_WIDTH = dpi_scaled(80)
+START_WIDTH = dpi_scaled(120)
+POLARITY_WIDTH = dpi_scaled(100)
+CENTER_WIDTH = dpi_scaled(170)
 NPOINTS_WIDTH = dpi_scaled(80)
 PMAP_WIDTH = dpi_scaled(8)
 PROGRESS_WIDTH = dpi_scaled(150)

@@ -630,6 +630,9 @@ class Serializer(event_model.DocumentRouter):
 
         return False
 
+    def is_list_of_lists(self, dat):
+        return isinstance(dat, list) and all(isinstance(item, list) for item in dat)
+
     def event_page(self, doc):
         """Add event page document information to a ".csv" file.
 
@@ -674,7 +677,12 @@ class Serializer(event_model.DocumentRouter):
                             if len(dat) == 1:
                                 #dereference this single value instead of appending a list of a single value
                                 dat = dat[0]
-                            self._data[strm_name][k][self._cur_uid]["data"].append(dat)
+                            #self._data[strm_name][k][self._cur_uid]["data"].append(dat)
+                            if self.is_list_of_lists(dat):
+                                for sublist in dat:
+                                    self._data[strm_name][k][self._cur_uid]["data"].extend(sublist)
+                            else:
+                                self._data[strm_name][k][self._cur_uid]["data"].append(dat)
                             # init_val = self._data[strm_name][k][self._cur_uid]["data_full_shape"][seq_num]
                             # self._data[strm_name][k][self._cur_uid]["data_full_shape"][seq_num] = self.add_with_nan_handling(init_val, dat[0])
 

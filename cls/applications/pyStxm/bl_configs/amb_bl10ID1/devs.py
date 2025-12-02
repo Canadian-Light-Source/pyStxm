@@ -1,5 +1,5 @@
 
-SIM = True
+SIM = False
 dev_dct = {}
 dev_dct["POSITIONERS"] = [
     {
@@ -324,13 +324,13 @@ dev_dct["PVS"] = [
         "dcs_nm": "ASTXM1610:bl_api:zp:adjust_zpz",
     },
     {
-        "name": "DNM_ZONEPLATE_SCAN_MODE",
-        "class": "SimMbbo",
+        "name": "DNM_ZONEPLATE_FOCUS_MODE",
+        "class": "make_base_simdevice",
         "dcs_nm": "ASTXM1610:bl_api:zp:scanselflag",
     },
     {
         "name": "DNM_ZONEPLATE_SCAN_MODE_RBV",
-        "class": "SimMbbo",
+        "class": "make_base_simdevice",
         "dcs_nm": "ASTXM1610:bl_api:zp:scanselflag",
     },
 
@@ -398,20 +398,20 @@ dev_dct["PVS"] = [
     },
     {
         "name": "DNM_ZP_DEF",
-        "class": "SimTransform",
+        "class": "make_base_simdevice",
         "cat": "PVS",
         "dcs_nm": "ASTXM1610:bl_api:zp:def",
     },
     {
         "name": "DNM_OSA_DEF",
-        "class": "SimTransform",
+        "class": "make_base_simdevice",
         "cat": "PVS",
         "dcs_nm": "ASTXM1610:bl_api:osa:def",
     },
 
     {
         "name": "DNM_ENERGY_ENABLE",
-        "class": "SimBo",
+        "class": "make_base_simdevice",
         "dcs_nm": "ASTXM1610:bl_api:enabled"
     },
     {

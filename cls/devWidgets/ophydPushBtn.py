@@ -64,11 +64,11 @@ class ophydPushBtn(QtWidgets.QPushButton):
         toggle=False,
     ):
         super(ophydPushBtn, self).__init__(off_str)
-        if (not isinstance(device, Bo)) and (not isinstance(device, Mbbo)):
-            _logger.error(
-                "ophydPushBtn: Invalid device type: requires device to be of type Bo or Mbbo"
-            )
-            return
+        # if (not isinstance(device, Bo)) and (not isinstance(device, Mbbo)):
+        #     _logger.error(
+        #         "ophydPushBtn: Invalid device type: requires device to be of type Bo or Mbbo"
+        #     )
+        #     return
 
         if btn is not None:
             # the user has passed in a different button for us to use so clone it
@@ -240,11 +240,11 @@ class ophydPushBtnWithFbk(QtWidgets.QPushButton):
         toggle=True,
     ):
         super(ophydPushBtnWithFbk, self).__init__(off_str)
-        if (not isinstance(device, Bo)) and (not isinstance(device, Mbbo)):
-            _logger.error(
-                "ophydPushBtnWithFbk: Invalid device type: requires device to be of type Bo"
-            )
-            return
+        # if (not isinstance(device, Bo)) and (not isinstance(device, Mbbo)):
+        #     _logger.error(
+        #         "ophydPushBtnWithFbk: Invalid device type: requires device to be of type Bo"
+        #     )
+        #     return
         if btn is not None:
             # the user has passed in a different button for us to use so clone it
             # skiplist = ['staticMetaObject', '__weakref__', 'parent', 'parentWidget']
@@ -351,11 +351,16 @@ class ophydPushBtnWithFbk(QtWidgets.QPushButton):
         return val_str
 
     def make_checked(self, chkd):
-        # if self.toggle:
-        #     # skip it
-        #     return
-
         self.btn.setChecked(chkd)
+
+        if chkd:
+            s = self.on_str
+            val = self.on_val
+        else:
+            s = self.off_str
+            val = self.off_val
+        self.btn.setText(s)
+        self.btn.device.put(val)
 
     def on_connect(self, pvname=None, conn=None, pv=None):
         # print 'ca_aiLabelWidget: on_connect has been called'

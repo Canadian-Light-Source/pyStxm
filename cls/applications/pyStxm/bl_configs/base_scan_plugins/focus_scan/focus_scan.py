@@ -108,16 +108,11 @@ class BaseFocusScanParam(ScanParamWidget):
         #self.testBtn.clicked.connect(self.do_test)
         self.resetDeltaA0Btn.clicked.connect(self.on_reset_delta_a0)
 
+        self.energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
+        self.energy_dev.focus_params_changed.connect(self.on_update_focus_params)
         self.mtr_zpz = self.main_obj.device("DNM_ZONEPLATE_Z")
-        self.fl = self.main_obj.device("DNM_FOCAL_LENGTH")
-        self.A0 = self.main_obj.device("DNM_A0")
-        self.delta_A0 = self.main_obj.device("DNM_DELTA_A0")
-        if self.fl is not None or self.A0 is not None:
-            self._zpz_fbk_timer = QtCore.QTimer()
-            self._zpz_fbk_timer.timeout.connect(self.on_update_zpz_fbk)
 
         # instanciate both because the non-E712 version is used for coarse scans
-
         # #self.scan_class_coarse = FocusScanClass(main_obj=self.main_obj)
         # self.scan_class_coarse = self.instanciate_scan_class(__file__, 'FocusScan', 'FocusScanClass')
         # #set the e712 class to the coarse scan class in case there is no e712 support
@@ -134,12 +129,6 @@ class BaseFocusScanParam(ScanParamWidget):
         self.connect_paramfield_signals()
         self.on_single_spatial_npoints_changed()
         self.init_loadscan_menu()
-        if self.fl is not None or self.A0 is not None:
-            self.fbk_enabled = True
-            self._zpz_fbk_timer.start(250)
-        # self.init_test_module()
-
-
 
     def on_subtype_changed(self, idx):
         """
@@ -152,6 +141,15 @@ class BaseFocusScanParam(ScanParamWidget):
         else:
             self.sub_type = scan_sub_types.LINE_UNIDIR
 
+    def on_update_focus_params(self, focus_dct: dict):
+        """
+        Update the ZP center label
+        """
+
+        # update the ZP center
+        # print(focus_dct)
+        zpz_pos = focus_dct["zpz_for_sample_focussed"]
+        self.set_parm(self.centerZPFld, zpz_pos)
 
     def on_plugin_focus(self):
         """
@@ -166,6 +164,11 @@ class BaseFocusScanParam(ScanParamWidget):
                 self.enable_line_select_btns(False)
             self.update_est_time()
             self._desired_zpz_focus_pos = None
+
+            self.energy_dev.set_focus_mode("SAMPLE")
+            zpz_focus_pos = self.energy_dev.calc_new_zpz_pos()
+            self.set_parm(self.centerZPFld, zpz_focus_pos)
+
 
     def on_plugin_defocus(self):
         """
@@ -244,13 +247,13 @@ class BaseFocusScanParam(ScanParamWidget):
 
         """
         if self.fbk_enabled:
-            fl_val = math.fabs(self.fl.get_position())
-            a0_val = self.A0.get_position()
-            delta_a0_val = self.delta_A0.get_position()
-            self.set_parm(self.centerZPFld, (a0_val + delta_a0_val) - fl_val)
+            fl_val = self.energy_dev.get_focal_length()
+            a0_val = self.energy_dev.get_a0()
+            delta_a0_val = self.energy_dev.get_delta_a0()
+            self.set_parm(self.centerZPFld, self.energy_dev.calc_new_zpz_pos("SAMPLE"))
 
     def on_reset_delta_a0(self):
-        self.delta_A0.put(0.0)
+        self.energy_dev.update_delta_a0(0.0)
 
     def get_max_fine_scan_range(self):
         """to be implemented by inheriting class"""
@@ -587,21 +590,13 @@ class BaseFocusScanParam(ScanParamWidget):
         mtr_cz = self.main_obj.device("DNM_COARSE_Z")
         cur_cz_pos = mtr_cz.get_position()
         energy = self.main_obj.device("DNM_ENERGY").get_position()
-        fl = self.main_obj.get_focal_length(energy)
-        a0_val = self.main_obj.get_a0()
+        # fl = self.energy_dev.get_focal_length()
+        # a0_val = self.energy_dev.get_a0()
 
         if re.search(scanning_mode, 'COARSE_SAMPLEFINE', re.IGNORECASE):
 
-            # sflag = self.main_obj.device('Zpz_scanModeFlag')
-            # 1 for OSA focus scan 0 for anything else
-            # sflag.put('user_setpoint', 0)
-
-            #we use fl because it would have been set in the OSA focus scan
-            delta_zpz = (fl + a0_val) - self._desired_zpz_focus_pos
-            #move zpz to previous zpz pos via call to self.get_prev_zpz_pos()
-            zpz_in_focus_at_cur_ev = (fl + a0_val)
-            new_cz_pos = cur_cz_pos + delta_zpz
-
+            new_cz_pos = self.energy_dev.calc_new_coarse_z_pos_for_focus(energy, cur_cz_pos, self._desired_zpz_focus_pos)
+            zpz_in_focus_at_cur_ev = self.energy_dev.calc_new_zoneplate_z_pos_for_focus(energy)
             #move zpz back to theoretical focus position at current energy accounting for a0
             if mtr_zz.within_limits(zpz_in_focus_at_cur_ev):
                 mtr_zz.call_emit_move(zpz_in_focus_at_cur_ev, wait=False)
@@ -613,7 +608,7 @@ class BaseFocusScanParam(ScanParamWidget):
                 mtr_cz.move(new_cz_pos)
                 mtr_cz.confirm_stopped()
                 # reset delta a0
-                self.main_obj.update_delta_a0(0.0)
+                # self.main_obj.update_delta_a0(0.0)
             else:
                 _logger.error(f"new Coarse Z position [{cz_cur_pos + delta_zpz:.2f} um] is outside the soft limits of Coarse Z, skipping")
 
@@ -654,11 +649,9 @@ class BaseFocusScanParam(ScanParamWidget):
         mtr_zz = self.main_obj.device("DNM_ZONEPLATE_Z")
         energy = self.main_obj.device("DNM_ENERGY").get_position()
 
-        # this call updates A0 in focusclass
-        self.main_obj.calc_delta_focus_position(energy, self._desired_zpz_focus_pos)
-        zpz_in_focus = self.main_obj.calc_new_zoneplate_z_pos_for_focus(energy)
-        # A0 might have changed, so get it to update the DNM_A0 device
-        self.main_obj.get_a0()
+        delta_focus_pos = self.energy_dev.calc_delta_focus_position(energy, self._desired_zpz_focus_pos)
+        self.energy_dev.update_a0_for_focus(delta_focus_pos)
+        zpz_in_focus = self.energy_dev.calc_new_zoneplate_z_pos_for_focus(energy)
 
         # now move ZpZ to the focus pos given A0 and delta A0
         if mtr_zz.within_limits(zpz_in_focus):
@@ -683,12 +676,12 @@ class BaseFocusScanParam(ScanParamWidget):
         """
         mtr_zz = self.main_obj.device("DNM_ZONEPLATE_Z")
         energy = self.main_obj.device("DNM_ENERGY").get_position()
-        fl = self.main_obj.get_focal_length(energy)
-        a0_val = self.main_obj.get_a0()
-        cur_delta_a0 = self.main_obj.get_delta_a0()
-        delta_zpz = self._desired_zpz_focus_pos - cur_delta_a0 - (fl + a0_val)
-        self.main_obj.update_delta_a0(delta_zpz)
-        zpz_in_focus = self.main_obj.calc_new_zoneplate_z_pos_for_focus(energy)
+
+        # this call updates A0 in focusclass
+        delta_focus_pos = self.energy_dev.calc_delta_focus_position(energy, self._desired_zpz_focus_pos)
+        self.energy_dev.update_delta_a0(delta_focus_pos)
+        zpz_in_focus = self.energy_dev.calc_new_zoneplate_z_pos_for_focus(energy)
+
         # now move ZpZ to the focus pos given A0 and delta A0
         if mtr_zz.within_limits(zpz_in_focus):
             mtr_zz.call_emit_move(zpz_in_focus, wait=False)
@@ -697,7 +690,6 @@ class BaseFocusScanParam(ScanParamWidget):
                 f"new Zp Z position [{zpz_in_focus:.2f} um] is outside the soft limits of Zp Z, skipping")
             return
 
-        # have the plotter delete the focus image
         self._parent.reset_image_plot(shape_only=True)
         self.reset_focus_btns()
 

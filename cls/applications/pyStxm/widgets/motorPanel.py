@@ -484,6 +484,8 @@ class PositionersPanel(QtWidgets.QWidget):
 
         self.append_widget_to_positioner_layout(widg)
 
+        return pBtn
+
     def append_combobox_device(self,
         name,
         desc,

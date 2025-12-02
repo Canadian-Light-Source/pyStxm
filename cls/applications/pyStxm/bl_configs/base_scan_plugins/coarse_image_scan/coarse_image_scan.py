@@ -78,6 +78,7 @@ class BaseCoarseImageScanParam(ScanParamWidget):
 
             # does this exist?????self.scanTypeSelComboBox.currentIndexChanged.connect(self.scan_type_changed)
 
+            self.energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
             self.data = {}
             self.sp_db = None
             self.load_from_defaults()
@@ -125,6 +126,7 @@ class BaseCoarseImageScanParam(ScanParamWidget):
         :return:
         """
         if self.isEnabled():
+            self.energy_dev.set_focus_mode("SAMPLE")
             self.update_est_time()
 
     def on_plugin_defocus(self):

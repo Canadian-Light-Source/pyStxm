@@ -413,7 +413,7 @@
            </font>
           </property>
           <property name="text">
-           <string>Expected Positions for current energy</string>
+           <string>Expected Positions for SAMPLE_FOCUS at current energy</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>

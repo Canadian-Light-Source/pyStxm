@@ -605,7 +605,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         this function is called when the user switches to a new scan in the scans toolbox
         """
         if MAIN_OBJ.get_beamline_id() is BEAMLINE_IDS.STXM:
-            zpz_scanflag = MAIN_OBJ.device("DNM_ZONEPLATE_SCAN_MODE")
+            zpz_scanflag = MAIN_OBJ.device("DNM_ZONEPLATE_FOCUS_MODE")
             zpz_scanflag.put("user_setpoint", mode)
             MAIN_OBJ.set_zp_focus_mode(mode)
 
@@ -1210,7 +1210,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 btn.make_checked(True)
 
             # add the Focusing Mode
-            self.foc_mode_dev = dev_obj.device("DNM_ZONEPLATE_SCAN_MODE")
+            self.foc_mode_dev = dev_obj.device("DNM_ZONEPLATE_FOCUS_MODE")
 
             if self.foc_mode_dev:
                 btn = self.esPosPanel.append_toggle_btn_device(
@@ -2728,6 +2728,19 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 ophyd_aiRangeLabelWidget(
                     MAIN_OBJ.device("DNM_A0"),
                     hdrText="A0",
+                    egu="um",
+                    title_color=status_title_color,
+                    var_clr=status_fbk_color,
+                    alarm=(-10000, 10000),
+                    warn=(-9999, 9999),
+                )
+            )
+
+        if MAIN_OBJ.device("DNM_DELTA_A0"):
+            self.status_list.append(
+                ophyd_aiRangeLabelWidget(
+                    MAIN_OBJ.device("DNM_DELTA_A0"),
+                    hdrText="Delta A0",
                     egu="um",
                     title_color=status_title_color,
                     var_clr=status_fbk_color,

@@ -5,6 +5,7 @@ from bcm.devices.sim.sim_base_device import BaseSimDevice
 
 
 class BaseSimObject(QtCore.QObject):
+
     def __init__(
         self, name, write_pv=None, val_only=False, val_kw="value", backend="epics"
     ):
@@ -23,8 +24,8 @@ class BaseSimObject(QtCore.QObject):
         """
         return self.name
 
-    def on_change(self, val):
-        self.changed.emit(val)
+    # def on_change(self, val):
+    #     self.changed.emit(val)
 
     def add_device(
         self,

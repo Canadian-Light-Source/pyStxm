@@ -142,15 +142,20 @@ class ZMQRunEngine(QObject):
                 #connect device signals
                 if hasattr(dev, 'attrs'):
                     for _attr in dev.attrs:
-                        a = getattr(dev, _attr)
-                        # print(f"zmqDevMgr: connecting signal do_put for attribute {a.name}")
-                        a.do_put.connect(self.on_dev_put)
-                        a.do_get.connect(self.on_dev_get)
-
-                # print(f"zmqDevMgr: connecting signal do_put for device {dev.name}")
-                dev.do_put.connect(self.on_dev_put)
-                dev.do_get.connect(self.on_dev_get)
-                dev.on_connect.connect(self.on_dev_connect)
+                        attr_exists = False
+                        if hasattr(dev, _attr):
+                            attr_exists = True
+                            a = getattr(dev, _attr)
+                            # print(f"zmqDevMgr: connecting signal do_put for attribute {a.name}")
+                            a.do_put.connect(self.on_dev_put)
+                            a.do_get.connect(self.on_dev_get)
+                        if not attr_exists:
+                            continue
+                if hasattr(dev, 'do_put'):
+                    # print(f"zmqDevMgr: connecting signal do_put for device {dev.name}")
+                    dev.do_put.connect(self.on_dev_put)
+                    dev.do_get.connect(self.on_dev_get)
+                    dev.on_connect.connect(self.on_dev_connect)
 
         # must set the device name maps after all devices have been added
         self.dcs_server_api.set_device_name_maps(self.app_to_dcsname_map, self.dcs_to_appname_map)

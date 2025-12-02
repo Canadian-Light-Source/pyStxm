@@ -29,40 +29,41 @@ class OsaFocusScanParam(BaseOsaFocusScanParam):
         init_scan_req_member_vars(self)
 
 
-    def on_set_focus_btn(self):
-        """
-        set focus
-        """
-        if self._new_zpz_pos == None:
-            _logger.info("You must first select a position before you can set focus")
-            notify(
-                "Unable to set focus",
-                "You must first select a position before you can set focus",
-                accept_str="OK",
-            )
-            return
-        self.reset_focus_btns()
-        mtrz = self.main_obj.device("DNM_ZONEPLATE_Z")
-        mtrx = self.main_obj.device("DNM_OSA_X")
-        mtry = self.main_obj.device("DNM_OSA_Y")
-        # mult by -1.0 so that it is always negative as zpz pos needs
-        fl = -1.0 * math.fabs(self.main_obj.device("DNM_FOCAL_LENGTH").get_position())
-        a0 = self.main_obj.device("DNM_A0").get_position()
-        zp_cent = float(self._new_zpz_pos)
-
-        # support for DCS server motors that use offsets
-        if hasattr(mtrz, 'apply_delta_to_offset'):
-            delta = zp_cent - float(str(self.centerZPFld.text()))
-            mtrz.apply_delta_to_offset(delta)
-
-        mtrx.move(0.0)
-        mtry.move(0.0)
-
-        #now move to Sample Focus position which is == FL - A0
-        #zpz_final_pos = -1.0 * (math.fabs(fl) - math.fabs(a0))
-        # for now just move to the focal length position
-        zpz_final_pos = -1.0 * (math.fabs(fl))
-        mtrz.move(zpz_final_pos)
-
-        #have the plotter delete the focus image
-        self._parent.reset_image_plot()
+    # def on_set_focus_btn(self):
+    #     """
+    #     set focus
+    #     """
+    #     if self._new_zpz_pos == None:
+    #         _logger.info("You must first select a position before you can set focus")
+    #         notify(
+    #             "Unable to set focus",
+    #             "You must first select a position before you can set focus",
+    #             accept_str="OK",
+    #         )
+    #         return
+    #     self.reset_focus_btns()
+    #     mtrz = self.main_obj.device("DNM_ZONEPLATE_Z")
+    #     mtrx = self.main_obj.device("DNM_OSA_X")
+    #     mtry = self.main_obj.device("DNM_OSA_Y")
+    #     # mult by -1.0 so that it is always negative as zpz pos needs
+    #     # fl = -1.0 * math.fabs(self.main_obj.device("DNM_FOCAL_LENGTH").get_position())
+    #     fl_as_zpz_pos = self.energy_dev.get_focal_length_as_zpz_position()
+    #     zp_cent = float(self._new_zpz_pos)
+    #
+    #     # support for DCS server motors that use offsets
+    #     if hasattr(mtrz, 'apply_delta_to_offset'):
+    #         delta = zp_cent - float(str(self.centerZPFld.text()))
+    #         mtrz.apply_delta_to_offset(delta)
+    #
+    #     # recenter OSA
+    #     mtrx.move(0.0)
+    #     mtry.move(0.0)
+    #
+    #     #now move to Sample Focus position which is == FL - A0
+    #     #zpz_final_pos = -1.0 * (math.fabs(fl) - math.fabs(a0))
+    #     # for now just move to the focal length position
+    #     # zpz_final_pos = -1.0 * (math.fabs(fl))
+    #     mtrz.move(fl_as_zpz_pos)
+    #
+    #     #have the plotter delete the focus image
+    #     self._parent.reset_image_plot()

@@ -4,7 +4,6 @@ Created on April 11 2022
 @author: bergr
 """
 
-import os
 import pathlib
 
 from ophyd.epics_motor import EpicsMotor
@@ -20,12 +19,10 @@ from bcm.devices import MotorQt
 from bcm.devices import Counter
 from bcm.devices import sample_abstract_motor
 
-from bcm.devices.sim.sim_base_object import BaseSimObject
-from bcm.devices.sim.sim_base_device import BaseSimDevice
 from bcm.devices.sim.sim_binary_out import SimBo
 from bcm.devices.sim.sim_multi_bit_binary_out import SimMbbo
 from bcm.devices.sim.sim_transform import SimTransform
-
+from bcm.devices.sim.energy_dev import EnergyDevice
 
 if BACKEND == 'epics':
     from bcm.devices.ophyd.stxm_sample_mtr import e712_sample_motor
@@ -43,25 +40,23 @@ if BACKEND == 'epics':
     from bcm.devices.ophyd.sis3820_scalar import SIS3820ScalarDevice
     from bcm.devices.ophyd.qt.daqmx_counter_output import GateDevice
     from bcm.devices.ophyd.camera import camera
-    from bcm.devices.ophyd.energy_dev import EnergyDevice
+
 
 else:
     from bcm.devices import MultiSelectable
     from bcm.devices import Command
 
 #from bcm.devices import BaseOphydGate
-from bcm.devices import DCSShutter, init_pv_report_file
+from bcm.devices import DCSShutter
 
-from cls.appWidgets.main_object import dev_config_base, POS_TYPE_BL, POS_TYPE_ES
+from cls.appWidgets.main_object import dev_config_base
 
 from cls.appWidgets.splashScreen import get_splash
-from cls.applications.pyStxm import abs_path_to_ini_file
 from cls.types.stxmTypes import (
     sample_positioning_modes,
     sample_fine_positioning_modes,
     endstation_id_types,
 )
-from cls.utils.cfgparser import ConfigClass
 from cls.utils.log import get_module_logger
 from cls.applications.pyStxm.bl_configs.utils import make_basedevice, make_base_simdevice
 
@@ -237,6 +232,7 @@ class device_config(dev_config_base):
             zp_a1_dev = self.devices["PVS"]["DNM_ZP_A1"]
             a0_max_dev = self.devices["PVS"]["DNM_A0MAX"]
             calcd_zpz_dev = self.devices["PVS"]["DNM_CALCD_ZPZ"]
+            zp_focus_mode_dev = self.devices["PVS"]["DNM_ZONEPLATE_FOCUS_MODE"]
 
             energy_posner = self.devices["POSITIONERS"][dct["energy_nm"]]
             zpz_posner = self.devices["POSITIONERS"][dct["zz_nm"]]
@@ -254,6 +250,7 @@ class device_config(dev_config_base):
                 "zp_a1_dev": zp_a1_dev,
                 "a0_max_dev": a0_max_dev,
                 "calcd_zpz_dev": calcd_zpz_dev,
+                "zp_focus_mode_dev": zp_focus_mode_dev,
             }
             d = EnergyDevice(dct['dcs_nm'], name=dct['name'], energy_dev_dict=energy_dev_dict)
 

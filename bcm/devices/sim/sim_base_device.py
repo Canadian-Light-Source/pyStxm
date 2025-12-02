@@ -99,7 +99,6 @@ class BaseSimDevice(Device, QtCore.QObject):
     changed = QtCore.pyqtSignal(object)
     on_connect = QtCore.pyqtSignal(object)
 
-    # def __init__(self, sig_name, write_pv=None, val_only=False, val_kw='value', backend='epics', **kwargs):
     def __init__(
         self,
         sig_name,
@@ -114,7 +113,7 @@ class BaseSimDevice(Device, QtCore.QObject):
     ):
         super(BaseSimDevice, self).__init__(name=name, prefix=sig_name)
         # name here for compatability
-        #self.name = sig_name
+        self.dcs_name = sig_name
         self.name = name
         # name here for compatability
         self.prefix = sig_name
@@ -295,7 +294,6 @@ class BaseSimDevice(Device, QtCore.QObject):
         :param kwargs:
         :return:
         """
-
         self.info["called"] = True
         self.info["kw"] = kwargs
         if self.val_only:

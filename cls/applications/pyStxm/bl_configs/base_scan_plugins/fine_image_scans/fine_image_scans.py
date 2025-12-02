@@ -86,6 +86,8 @@ class BaseFineImageScansParam(MultiRegionScanParamBase):
         if self.main_obj.is_device_supported("DNM_GONI_X"):
             self.goni_supported = True
 
+        self.energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
+
         if self.sample_positioning_mode == sample_positioning_modes.GONIOMETER:
             x_cntr = self.main_obj.device("DNM_GONI_X").get_position()
             y_cntr = self.main_obj.device("DNM_GONI_Y").get_position()
@@ -200,6 +202,7 @@ class BaseFineImageScansParam(MultiRegionScanParamBase):
         :return:
         """
         if self.isEnabled():
+            self.energy_dev.set_focus_mode("SAMPLE")
             self.update_est_time()
             # call the standard init_base_values function for scan param widgets that contain a multiRegionWidget
             self.on_multiregion_widget_focus_init_base_values()

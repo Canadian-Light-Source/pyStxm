@@ -23,6 +23,7 @@ from cls.applications.pyStxm.widgets.print_stxm_thumbnail import (
 from cls.utils.log import get_module_logger
 import cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils as utils
 
+FILENAME_FONT_SIZE = 9
 
 _logger = get_module_logger(__name__)
 
@@ -647,7 +648,7 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         # Set font for text
         painter.setPen(QtCore.Qt.black)
         font = painter.font()
-        font.setPointSize(6)
+        font.setPointSize(FILENAME_FONT_SIZE)
         painter.setFont(font)
 
         # Reserve minimal space for text

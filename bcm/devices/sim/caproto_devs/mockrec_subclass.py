@@ -8,7 +8,7 @@ from caproto.server.records import register_record, MotorFields
 
 
 # Subclass the motor fields here. It's important to use this 'register_record'
-# decorator to tell caproto where to find this record:
+# decorator to tell caproto_devs where to find this record:
 @register_record
 class CustomMotorFields(MotorFields):
     # The custom fields are identified by this string, which is overridden from

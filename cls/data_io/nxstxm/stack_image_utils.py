@@ -125,7 +125,14 @@ def modify_stack_nxdata_group(parent, data_nxgrp, doc, scan_type):
         rows = 1
         (cols,) = prim_data_arr.shape
     else:
-        if prim_data_arr.ndim == 2:
+        if prim_data_arr.ndim == 1:
+            if len(prim_data_arr) == ttlpnts:
+                rows = ynpoints
+                cols = xnpoints
+                # make it a 2D array
+                prim_data_arr = np.reshape(prim_data_arr, (rows,cols))
+
+        elif prim_data_arr.ndim == 2:
             rows, cols = prim_data_arr.shape
         else:
             dud_evidx, rows, cols = prim_data_arr.shape

@@ -730,12 +730,15 @@ class Serializer(event_model.DocumentRouter):
 
         _logger.info("creating [%s]" % self._entry_nm)
         if scan_types(scan_type) in single_entry_scans:
+            print("nxstxm: saving single entry scan")
             self.save_single_entry_scan(doc, scan_type)
         # elif scan_types(scan_type) in spectra_type_scans:
         #     self.save_point_spec_entry_scan(doc, scan_type)
         elif scan_types(scan_type) is scan_types.SAMPLE_POINT_SPECTRUM:
+            print("nxstxm: saving sample point spectrum scan")
             self.save_point_spec_entry_scan(doc, scan_type)
         else:
+            print("nxstxm: saving multi entry scan")
             self.save_multi_entry_scan(doc, scan_type)
 
     def create_file_attrs(self):
@@ -1999,6 +2002,19 @@ class Serializer(event_model.DocumentRouter):
                 if len(self._detector_names) > 0:
                     for det_nm in self._detector_names:
                         dat_arr = np.array(self._data["primary"][det_nm][uid]["data"])
+
+                        if dat_arr.ndim == 1:
+                            # reshape to 2D if needed
+                            rois = self.get_rois_from_current_md(doc["run_start"])
+                            xnpoints = int(dct_get(rois, SPDB_XNPOINTS))
+                            ynpoints = int(dct_get(rois, SPDB_YNPOINTS))
+                            expected_size = xnpoints * ynpoints
+                            if dat_arr.size < expected_size:
+                                # scan was aborted so fix the data array
+                                dat_arr = self.fix_aborted_data(dat_arr, expected_size)
+                            dat_arr = dat_arr.reshape((ynpoints, xnpoints))
+
+
                         # now place it in correct entry/counter/data
                         self.modify_entry_data(self._entry_nm, det_nm, dat_arr)
 

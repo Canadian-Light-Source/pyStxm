@@ -70,6 +70,8 @@ class BaseSampleFineImageScanClass(BaseScan):
                 d.setup_for_hdw_triggered()
             if hasattr(d, "set_row_change_index_points"):
                 d.set_row_change_index_points(remove_first_point=True)
+            if hasattr(d, "set_sequence_map"):
+                d.set_sequence_map(self.seq_map_dct)
 
     def config_devs_for_point(self, dets):
         '''
@@ -85,6 +87,8 @@ class BaseSampleFineImageScanClass(BaseScan):
             if hasattr(d, "set_row_change_index_points"):
                 # use defaults of all args = False
                 d.set_row_change_index_points()
+            if hasattr(d, "set_sequence_map"):
+                d.set_sequence_map(self.seq_map_dct)
 
     def configure_devs(self, dets):
         """
@@ -209,7 +213,7 @@ class BaseSampleFineImageScanClass(BaseScan):
             stagers.append(d)
 
         def do_scan():
-            ev_mtr = self.main_obj.device("DNM_ENERGY")
+            energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
             pol_mtr = self.main_obj.device("DNM_EPU_POLARIZATION")
             off_mtr = self.main_obj.device("DNM_EPU_OFFSET")
             ang_mtr = self.main_obj.device("DNM_EPU_ANGLE")
@@ -235,7 +239,7 @@ class BaseSampleFineImageScanClass(BaseScan):
                     yield from bps.mv(ang_mtr, ang)
                 # switch to new energy
                 for ev_sp in self.ev_setpoints:
-                    yield from bps.mv(ev_mtr, ev_sp)
+                    yield from bps.mv(energy_dev, ev_sp)
                     # self.dwell = ev_roi[DWELL]
                     self.dwell = self.setpointsDwell
 
@@ -363,6 +367,7 @@ class BaseSampleFineImageScanClass(BaseScan):
             }
         print(f"RUSS:make_lxl_scan_plan: self.scan_type={self.scan_type}")
         @conditional_decorator(bpp.baseline_decorator(self.dev_list), do_baseline)
+        @bpp.stage_decorator(dets)
         @bpp.run_decorator(md=md)
         def do_scan():
             try:
@@ -621,9 +626,9 @@ class BaseSampleFineImageScanClass(BaseScan):
         self.move_osaxy_to_its_center()
 
         self.seq_map_dct = self.generate_2d_seq_image_map(
-            num_evs=1, num_pols=1, nypnts=self.y_roi[NPOINTS], nxpnts=self.x_roi[NPOINTS], lxl=self.is_lxl
+            num_evs=self.numE, num_pols=self.numEPU, nypnts=self.y_roi[NPOINTS], nxpnts=self.x_roi[NPOINTS], lxl=self.is_lxl
         )
-
+         
         # THIS must be the last call
         self.finish_setup()
         # self.new_spatial_start.emit(sp_id)

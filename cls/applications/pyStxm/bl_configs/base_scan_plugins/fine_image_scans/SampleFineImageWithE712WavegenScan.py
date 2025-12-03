@@ -432,7 +432,8 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
             stagers.append(d)
 
         def do_scan():
-            ev_mtr = self.main_obj.device("DNM_ENERGY")
+            # ev_mtr = self.main_obj.device("DNM_ENERGY")
+            energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
             pol_mtr = self.main_obj.device("DNM_EPU_POLARIZATION")
             off_mtr = self.main_obj.device("DNM_EPU_OFFSET")
             ang_mtr = self.main_obj.device("DNM_EPU_ANGLE")
@@ -458,7 +459,8 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
                     yield from bps.mv(ang_mtr, ang)
                 # switch to new energy
                 for ev_sp in self.ev_setpoints:
-                    yield from bps.mv(ev_mtr, ev_sp)
+                    #yield from bps.mv(ev_mtr, ev_sp)
+                    yield from bps.mv(energy_dev, ev_sp)
                     # self.dwell = ev_roi[DWELL]
                     self.dwell = self.setpointsDwell
 

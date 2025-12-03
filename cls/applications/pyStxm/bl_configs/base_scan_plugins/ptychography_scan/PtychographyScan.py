@@ -624,7 +624,7 @@ class BasePtychographyScanClass(BaseSampleFineImageWithE712WavegenScanClass):
         self.outer_pnts = []
         self.dwell_setpoints_ms = []
 
-        energy_dev = self.main_obj.device("DNM_ENERGY")
+        energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
         epu_pol_dev = self.main_obj.device("DNM_EPU_POLARIZATION")
         epu_offset_dev = self.main_obj.device("DNM_EPU_OFFSET")
         epu_angle_dev = self.main_obj.device("DNM_EPU_ANGLE")

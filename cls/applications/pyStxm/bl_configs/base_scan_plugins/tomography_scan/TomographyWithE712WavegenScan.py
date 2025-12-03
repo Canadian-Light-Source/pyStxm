@@ -123,7 +123,7 @@ class BaseTomographyWithE712WavegenScanClass(BaseScan):
 
         def do_scan():
             # yield from bps.open_run(md)
-            ev_mtr = self.main_obj.device("DNM_ENERGY")
+            energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
             pol_mtr = self.main_obj.device("DNM_EPU_POLARIZATION")
             off_mtr = self.main_obj.device("DNM_EPU_OFFSET")
             ang_mtr = self.main_obj.device("DNM_EPU_ANGLE")
@@ -178,7 +178,7 @@ class BaseTomographyWithE712WavegenScanClass(BaseScan):
 
                     # switch to new energy
                     for ev_sp in self.ev_setpoints:
-                        yield from bps.mv(ev_mtr, ev_sp)
+                        yield from bps.mv(energy_dev, ev_sp)
                         # self.dwell = ev_roi[DWELL]
                         self.dwell = self.setpointsDwell
                             # take a single image that will be saved with its own run scan id

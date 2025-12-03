@@ -440,6 +440,18 @@ class main_object_base(QtCore.QObject):
         This function loads the data directory from the DCS server and updates the remote file system info.
         It is used to load the data directory from the DCS server.
         """
+
+        def get_sorted_hdf5_files(dct):
+            """
+            Combine 'files' and directory-based hdf5 files, return sorted list.
+            """
+            files = dct['directories']['files']
+            dirs = dct['directories']['directories']
+            # Each directory contains a file named <dirname>.hdf5
+            dir_files = [f"{dirname}/{dirname}.hdf5" for dirname in dirs]
+            all_files = files + dir_files
+            return sorted(all_files, reverse=True)
+
         if data_dir is None:
             data_dir = self.data_dir
         #file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
@@ -449,18 +461,13 @@ class main_object_base(QtCore.QObject):
         res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_DIRECTORY, [], '', data_dir, nx_app_def='nxstxm',
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=False, cmd_args=cmd_args)
-        if 'directories' in res_dct.keys():
-            file_lst = res_dct['directories']['files']
+
+        file_lst = get_sorted_hdf5_files(res_dct)
+
+        if len(file_lst) > 0:
             if isinstance(file_lst, list):
                 self.nx_server_load_files(data_dir, file_lst=file_lst)
 
-            subdir_lst = res_dct['directories']['directories']
-            if isinstance(subdir_lst, list):
-                for subdir in subdir_lst:
-                    #self.nx_server_load_file(data_dir, fname)
-                    # cause a directory data thumbnail to be created
-                    fname = subdir + extension
-                    self.nx_server_load_file(os.path.join(data_dir, subdir), fname, extension=extension)
 
     def nx_server_load_file(self, data_dir: str=None, fname: str=None, extension: str='.hdf5') -> None:
         """

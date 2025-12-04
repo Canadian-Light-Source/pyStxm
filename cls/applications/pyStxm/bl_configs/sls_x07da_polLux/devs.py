@@ -1055,11 +1055,6 @@ dev_dct["PVS"] = [
         "dcs_nm": "PIXELATOR_ZONEPLATE_FOCUS_MODE",
     },
     {
-        "name": "DNM_ENERGY_ENABLE",
-        "class": "make_base_simdevice",
-        "dcs_nm": "PIXELATOR_ENERGY_ENABLE"
-    },
-    {
         "name": "DNM_APD_VOLTAGE",
         "class": "make_basedevice",
         "cat": "PVS",
@@ -1309,7 +1304,8 @@ dev_dct["ENERGY_DEV"] = [
         "name": "DNM_ENERGY_DEVICE",
         "desc": "Energy device that includes focussing",
         "class": "EnergyDevice",
-        "dcs_nm": "SIM_VBL1610-I12:ENERGY" if SIM else "BL1610-I10:ENERGY",
+        #"dcs_nm": "SIM_VBL1610-I12:ENERGY" if SIM else "BL1610-I10:ENERGY",
+        "dcs_nm": "SIM_VBLFAKE:ENERGY" if SIM else "BLFAKE:ENERGY",
         "energy_nm": "DNM_ENERGY",
         "zz_nm": "DNM_ZONEPLATE_Z",
         "cz_nm": "DNM_COARSE_Z",

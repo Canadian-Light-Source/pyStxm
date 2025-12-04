@@ -328,11 +328,11 @@ dev_dct["PVS"] = [
         "class": "make_base_simdevice",
         "dcs_nm": "ASTXM1610:bl_api:zp:scanselflag",
     },
-    {
-        "name": "DNM_ZONEPLATE_SCAN_MODE_RBV",
-        "class": "make_base_simdevice",
-        "dcs_nm": "ASTXM1610:bl_api:zp:scanselflag",
-    },
+    # {
+    #     "name": "DNM_ZONEPLATE_SCAN_MODE_RBV",
+    #     "class": "make_base_simdevice",
+    #     "dcs_nm": "ASTXM1610:bl_api:zp:scanselflag",
+    # },
 
     {
         "name": "DNM_DELTA_A0",
@@ -408,12 +408,16 @@ dev_dct["PVS"] = [
         "cat": "PVS",
         "dcs_nm": "ASTXM1610:bl_api:osa:def",
     },
-
     {
         "name": "DNM_ENERGY_ENABLE",
         "class": "make_base_simdevice",
         "dcs_nm": "ASTXM1610:bl_api:enabled"
     },
+    # {
+    #     "name": "DNM_FOCUS_MODE",
+    #     "class": "make_base_simdevice",
+    #     "dcs_nm": "ASTXM1610:bl_api:enabled"
+    # },
     {
         "name": "DNM_ENERGY_RBV",
         "class": "make_basedevice",

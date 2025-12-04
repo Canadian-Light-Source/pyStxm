@@ -6,24 +6,25 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 from ophyd import Component as Cpt, Device
 from ophyd.signal import Signal
+from ophyd.status import DeviceStatus
+
 
 ABS_MIN_A0 = 100.0  # Minimum allowable A0
 ABS_MAX_A0 = 5000.0  # Maximum allowable A0
 
 
-# class Sigs(QtCore.QObject):
-#     focus_params_changed = QtCore.pyqtSignal(dict)
-#
+class Sigs(QtCore.QObject):
+    focus_params_changed = QtCore.pyqtSignal(dict)
 
 
-class FocusCalculations(QtCore.QObject):
+class FocusCalculations(object):
     """
     Class to handle focus calculations for zoneplates.
     """
-    focus_params_changed = QtCore.pyqtSignal(dict)
-
     def __init__(self, prefix, name='', parent=None):
         super().__init__(parent, name=name)
+        self._sigs = Sigs()
+        self.focus_params_changed = self._sigs.focus_params_changed
         self.zoneplate_def = {}
         self.osa_def = {}
         self.A0 = ABS_MAX_A0
@@ -69,6 +70,7 @@ class FocusCalculations(QtCore.QObject):
         """
         f = A1 * E
         """
+
         if energy and self.zoneplate_def:
             if 'zpA1' in self.zoneplate_def:
                 # ignore the sign of A1
@@ -191,6 +193,8 @@ class EnergyDevice(FocusCalculations, Device):
             if attr.startswith('_') or (attr in skip_lst):
                 continue
             val = getattr(self.energy_posner, attr)
+            if attr.find("parent") > -1:
+                continue
             if callable(val):
                 setattr(self, attr, val)
 
@@ -416,56 +420,7 @@ class EnergyDevice(FocusCalculations, Device):
                 self.max_A0 = float((osa_D * fl) / zp_diam)
                 return self.max_A0
         return None
-    # def calc_new_zpz_pos(self, focus_mode=None):
-    #     # self.report_params()
-    #     if focus_mode is None:
-    #         focus_mode = self.focus_mode
-    #
-    #     energy_val = self.energy_posner.get()
-    #     # print(f"energy = {energy_val:.2f}:")
-    #     FL = self.calc_focal_length(energy_val)
-    #     # print(f"\tnew FL: {FL:.2f}")
-    #     # "Delta zpz frm focus"
-    #     B = 0  # self.delta_zpz_from_focus.get()
-    #     # "scantype flag"
-    #     C = 0  # self.scantype_flag.get()
-    #     # "Defocus (um)"
-    #     defocus_um = self._defocus_um
-    #     # "A0 setpoint"
-    #     A0 = self.A0
-    #     # "delta A0"
-    #     delta_A0 = self.delta_A0
-    #     # "new osaz"
-    #     new_osa_z = ((-1.0 * A0) - defocus_um) + delta_A0
-    #     # print(f"\tnew osa Z: {new_osa_z:.2f}")
-    #     # "FL mode0"
-    #     new_zpz_for_osa_focussed = self.calc_new_zpz_for_osa_focussed(energy_val)
-    #     # print(f"\tnew FL mode0 (OSA Focused): {new_zpz_for_osa_focussed:.2f}")
-    #     self.FLMode_0 = new_zpz_for_osa_focussed
-    #     # "FL mode1"
-    #     new_zpz_for_sample_focussed = self.calc_new_zoneplate_z_pos_for_focus(energy_val)
-    #     # print(f"\tnew FL mode1 (Sample Focussed): {new_zpz_for_sample_focussed:.2f}")
-    #     self.FLMode_1 = new_zpz_for_sample_focussed
-    #
-    #     # if self._enable_fl_change_on_energy_change:
-    #     #     if self.focus_mode == 'OSA':
-    #     #         new_zpz = new_zpz_for_osa_focussed
-    #     #     else:
-    #     #         new_zpz = new_zpz_for_sample_focussed
-    #     #     print(f"Setting ZPZ to new position: {new_zpz:.2f} based on focus mode: {self.focus_mode}\n")
-    #     #
-    #     #     #self.zpz_posner.put("user_setpoint", new_zpz)
-    #     #     # self.zpz_posner.move(new_zpz)
-    #     #     self.zpz_posner.call_emit_move(new_zpz, wait=False)
-    #     # else:
-    #     #     print("FL change on energy change is disabled.\n")
-    #     if focus_mode == 'OSA':
-    #         new_zpz = new_zpz_for_osa_focussed
-    #     else:
-    #         new_zpz = new_zpz_for_sample_focussed
-    #
-    #     # print(f"Calculated new ZPZ position: {new_zpz:.2f} based on focus mode: {self.focus_mode}\n")
-    #     return new_zpz
+
     def calc_new_zpz_pos(self, focus_mode=None):
         # self.report_params()
         if focus_mode is None:
@@ -501,7 +456,7 @@ class EnergyDevice(FocusCalculations, Device):
             energy_val = self.energy_posner.get()
 
         new_zpz = self.calc_new_zpz_for_osa_focussed(energy_val)
-        print(f"Moving ZPZ to OSA focused position: {new_zpz:.2f}\n")
+        # print(f"Moving ZPZ to OSA focused position: {new_zpz:.2f}\n")
         #self.zpz_posner.put("user_setpoint", new_zpz)
         self.zpz_posner.call_emit_move(new_zpz, wait=False)
 
@@ -514,7 +469,7 @@ class EnergyDevice(FocusCalculations, Device):
         else:
             energy_val = self.energy_posner.get()
         new_zpz = self.calc_new_zoneplate_z_pos_for_focus(energy_val)
-        print(f"Moving ZPZ to Sample focused position: {new_zpz:.2f}\n")
+        # print(f"Moving ZPZ to Sample focused position: {new_zpz:.2f}\n")
         # self.zpz_posner.put("user_setpoint", new_zpz)
         self.zpz_posner.call_emit_move(new_zpz, wait=False)
 
@@ -527,16 +482,17 @@ class EnergyDevice(FocusCalculations, Device):
             else:
                 self.move_to_sample_focussed(energy_sp=val)
 
-    def put(self, val):
+    def put(self, energy_sp):
         # print("EnergyDevice [put] called with val: ", val)
-        self.energy_posner.move(val)
-        # if self._enable_fl_change_on_energy_change:
-        #     self.calc_new_zpz_pos()
+        # move the zoneplate z positioner to the correct position based on focus mode
         if self._enable_fl_change_on_energy_change:
             if self.focus_mode == 'OSA':
-                self.move_to_osa_focussed()
+                self.move_to_osa_focussed(energy_sp)
             else:
-                self.move_to_sample_focussed()
+                self.move_to_sample_focussed(energy_sp)
+        # now move energy
+        self.energy_posner.move(energy_sp)
+
 
     def set(self, val):
         """
@@ -565,6 +521,7 @@ if __name__ == "__main__":
     from bluesky.plans import scan, count
     from ophyd.sim import det1, det2
     from epics import PV
+    from cls.applications.pyStxm.bl_configs.utils import make_basedevice, make_base_simdevice
 
     # Make plots update live while scans run.
     from bluesky.utils import install_kicker
@@ -575,6 +532,19 @@ if __name__ == "__main__":
         #     print(f"\t{key}: {value}")
         # print("")
         pass
+
+    def mdev(dcs_name, name):
+        d = make_base_simdevice(
+            cat="PVS",
+            sig_nm=dcs_name,
+            name=name,
+            desc="",
+            units="",
+            rd_only=False,
+            backend="epics",
+            devcfg=None,
+        )
+        return d
 
     RE = RunEngine({})
     from bluesky.callbacks.best_effort import BestEffortCallback
@@ -598,21 +568,43 @@ if __name__ == "__main__":
 
     time.sleep(1.0)  # give motors time to connect
 
+    edct = {}
+    edct["energy_posner"] = energy_mtr
+    edct["zpz_posner"] = zpz_mtr
+    edct["cz_posner"] = cz_mtr
 
-    energy_device = EnergyDevice("SIM_VBL1610-I12:ENERGY", name="ENERGY_DEVICE", energy_posner=energy_mtr,
-                           zpz_posner=zpz_mtr, cz_posner=cz_mtr)
+    edct["a0_dev"] = mdev("DNM_A0", "DNM_A0")
+    edct["delta_a0_dev"] = mdev("DNM_DELTA_A0", "DNM_DELTA_A0")
+    edct["zpz_adjust_dev"] = mdev("DNM_ZPZ_ADJUST", "DNM_ZPZ_ADJUST")
+    edct["defocus_beam_dev"] = mdev("DNM_BEAM_DEFOCUS", "DNM_BEAM_DEFOCUS")
+    edct["focal_len_dev"] = mdev("DNM_FOCAL_LENGTH", "DNM_FOCAL_LENGTH")
+    edct["zp_a1_dev"] = mdev("DNM_ZP_A1", "DNM_ZP_A1")
+    edct["a0_max_dev"] = mdev("DNM_A0MAX", "DNM_A0MAX")
+    edct["calcd_zpz_dev"] = mdev("DNM_CALCD_ZPZ", "DNM_CALCD_ZPZ")
+    edct["zp_focus_mode_dev"] = mdev("DNM_ZONEPLATE_FOCUS_MODE", "DNM_ZONEPLATE_FOCUS_MODE")
+
+    edct["a0_dev"].put(1000.0)
+    edct["delta_a0_dev"].put(0.0)
+    edct["zpz_adjust_dev"].put(0.0)
+    edct["defocus_beam_dev"].put(0.0)
+    edct["zp_a1_dev"].put(11.358981)
+    edct["a0_max_dev"].put(500)
+    #edct["calcd_zpz_dev"].put(0.0)
+    edct["zp_focus_mode_dev"].put(1)
+
+    energy_device = EnergyDevice("SIM_VBL1610-I12:ENERGY", name="ENERGY_DEVICE", energy_dev_dict=edct)
     energy_device.focus_params_changed.connect(on_focus_parms_changed)
 
-    zp0 = {'name': 'ZonePlate 0', 'zp_id': 0, 'zpA1': 4.840, 'D': 100.0, 'CsD': 45.0, 'zpOZone': 60.0}
-    zp1 = {'name': 'ZonePlate 1', 'zp_id': 1, 'zpA1': 6.792, 'D': 240.0, 'CsD': 90.0, 'zpOZone': 35.0}
-    zp2 = {'name': 'ZonePlate 2', 'zp_id': 2, 'zpA1': 7.767, 'D': 240.0, 'CsD': 90.0, 'zpOZone': 40.0}
-    zp3 = {'name': 'ZonePlate 3', 'zp_id': 3, 'zpA1': 4.524, 'D': 140.0, 'CsD': 60.0, 'zpOZone': 40.0}
-    zp4 = {'name': 'ZonePlate 4', 'zp_id': 4, 'zpA1': 4.859, 'D': 240.0, 'CsD': 95.0, 'zpOZone': 25.0}
-    zp5 = {'name': 'ZonePlate 5', 'zp_id': 5, 'zpA1': 4.857, 'D': 240.0, 'CsD': 95.0, 'zpOZone': 25.0}
-    zp6 = {'name': 'ZonePlate 6', 'zp_id': 6, 'zpA1': 5.067, 'D': 250.0, 'CsD': 100.0, 'zpOZone': 25.0}
-    zp7 = {'name': 'ZonePlate 7', 'zp_id': 7, 'zpA1': 6.789, 'D': 159.0, 'CsD': 111.0, 'zpOZone': 35.0}
-    zp8 = {'name': 'ZonePlate 8', 'zp_id': 8, 'zpA1': 35.835, 'D': 5000.0, 'CsD': 111.0, 'zpOZone': 35.0}
-    zp9 = {'name': 'ZonePlate 9', 'zp_id': 9, 'zpA1': 11.358981, 'D': 280.0, 'CsD': 100.0, 'zpOZone': 50.0}
+    zp0 = {'name': 'ZonePlate 0', 'zp_id': 0, 'zpA1': 4.840, 'zpD': 100.0, 'CsD': 45.0, 'zpOZone': 60.0}
+    zp1 = {'name': 'ZonePlate 1', 'zp_id': 1, 'zpA1': 6.792, 'zpD': 240.0, 'CsD': 90.0, 'zpOZone': 35.0}
+    zp2 = {'name': 'ZonePlate 2', 'zp_id': 2, 'zpA1': 7.767, 'zpD': 240.0, 'CsD': 90.0, 'zpOZone': 40.0}
+    zp3 = {'name': 'ZonePlate 3', 'zp_id': 3, 'zpA1': 4.524, 'zpD': 140.0, 'CsD': 60.0, 'zpOZone': 40.0}
+    zp4 = {'name': 'ZonePlate 4', 'zp_id': 4, 'zpA1': 4.859, 'zpD': 240.0, 'CsD': 95.0, 'zpOZone': 25.0}
+    zp5 = {'name': 'ZonePlate 5', 'zp_id': 5, 'zpA1': 4.857, 'zpD': 240.0, 'CsD': 95.0, 'zpOZone': 25.0}
+    zp6 = {'name': 'ZonePlate 6', 'zp_id': 6, 'zpA1': 5.067, 'zpD': 250.0, 'CsD': 100.0, 'zpOZone': 25.0}
+    zp7 = {'name': 'ZonePlate 7', 'zp_id': 7, 'zpA1': 6.789, 'zpD': 159.0, 'CsD': 111.0, 'zpOZone': 35.0}
+    zp8 = {'name': 'ZonePlate 8', 'zp_id': 8, 'zpA1': 35.835, 'zpD': 5000.0, 'CsD': 111.0, 'zpOZone': 35.0}
+    zp9 = {'name': 'ZonePlate 9', 'zp_id': 9, 'zpA1': 11.358981, 'zpD': 280.0, 'CsD': 100.0, 'zpOZone': 50.0}
 
     osa0 = {'name': 'OSA 0', 'osa_id': 0, 'D': 30.0}
     osa1 = {'name': 'OSA 1', 'osa_id': 1, 'D': 50.0}
@@ -624,17 +616,17 @@ if __name__ == "__main__":
     osa7 = {'name': 'OSA 7', 'osa_id': 7, 'D': 63.0}
     osa8 = {'name': 'OSA 8', 'osa_id': 8, 'D': 74.0}
 
-    dets = [det1, det2, zpz_mtr]  # just one in this case, but it could be more than one
+    dets = [det1]  # just one in this case, but it could be more than one
     # RE(count(dets))
 
     energy_val = energy_mtr.get_position()
-    delta_a0_val = PV("ASTXM1610:bl_api:delta_A0").get()
-    a0_val = PV("ASTXM1610:bl_api:A0").get()
-    defocus_val = PV("ASTXM1610:bl_api:zp:defocus").get()
-    adjust_val = PV("ASTXM1610:bl_api:zp:adjust_zpz").get()
-
-    FLMode0_val = PV("ASTXM1610:bl_api:zp:mode:setter.L").get()
-    FLMode1_val = PV("ASTXM1610:bl_api:zp:mode:setter.M").get()
+    # delta_a0_val = PV("ASTXM1610:bl_api:delta_A0").get()
+    # a0_val = PV("ASTXM1610:bl_api:A0").get()
+    # defocus_val = PV("ASTXM1610:bl_api:zp:defocus").get()
+    # adjust_val = PV("ASTXM1610:bl_api:zp:adjust_zpz").get()
+    #
+    # FLMode0_val = PV("ASTXM1610:bl_api:zp:mode:setter.L").get()
+    # FLMode1_val = PV("ASTXM1610:bl_api:zp:mode:setter.M").get()
 
 
 
@@ -642,10 +634,10 @@ if __name__ == "__main__":
     energy_device.set_zp_def(zp9)
     energy_device.calc_focal_length(energy_val)
     energy_device.set_osa_def(osa1)
-    energy_device.update_a0(a0_val)
-    energy_device.update_delta_a0(delta_a0_val)
-    energy_device.adjust_zpz(adjust_val)
-    energy_device.defocus_beam(defocus_val)
+    energy_device.update_a0(1000)
+    energy_device.update_delta_a0(0)
+    energy_device.adjust_zpz(0)
+    energy_device.defocus_beam(0)
     energy_device.set_focus_mode("SAMPLE")
 
     # if energy_device.FLMode_0 != FLMode0_val:

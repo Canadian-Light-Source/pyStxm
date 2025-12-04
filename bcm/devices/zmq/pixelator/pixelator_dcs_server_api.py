@@ -1025,6 +1025,12 @@ class DcsServerApi(BaseDcsServerApi):
                             positioner_dct['lowerSoftLimit'] = -7000
                             positioner_dct['upperSoftLimit'] = 7000
 
+                        if app_devname in ["DNM_ENERGY"]:
+                            # set the value to something reasonable if it is currently 0.0 (noHardware)
+                            if dev.get_position() == 0.0:
+                                dev.move(700.0)
+
+
                         dev.set_positioner_dct(positioner_dct)
 
                         if hasattr(dev, 'set_low_limit'):

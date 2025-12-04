@@ -33,13 +33,21 @@ from cls.applications.pyStxm.widgets.dict_based_contact_sheet.remote_directory_s
 
 _logger = get_module_logger(__name__)
 
-class ThumbnailSceneManager:
+MAX_DIRNAME_LENGTH = 70
+
+
+class ThumbnailSceneManager(QtCore.QObject):
+
     def __init__(self, image_graphics_view, spec_graphics_view):
         self.image_graphics_view = image_graphics_view
         self.spec_graphics_view = spec_graphics_view
         self.scenes = {}  # Maps directory name to (image_scene, spec_scene)
         self.history = []  # Browser-like history of directories
         self.current_index = -1
+
+    def scene_exists(self, directory):
+        """Check if a scene for the given directory exists."""
+        return directory in self.scenes.keys()
 
     def get_current_scene_directory(self):
         """Return the current scene's directory or None if no scenes exist."""
@@ -119,12 +127,14 @@ class ContactSheet(QtWidgets.QWidget):
 
     def __init__(self, main_obj=None, data_dir=None, data_io=None, base_data_dir='/tmp', parent=None):
         super(ContactSheet, self).__init__(parent)
-
-        self.dir_sel_wdg = RemoteDirectorySelectorWidget(main_obj, base_data_dir, data_dir)
+        self.data_dir = data_dir
+        self.base_data_dir = base_data_dir
+        data_dir_display_name = self.get_directory_display_name(self.data_dir)
+        self.dir_sel_wdg = RemoteDirectorySelectorWidget(main_obj, base_data_dir, self.data_dir)
         self.dir_sel_wdg.create_scenes.connect(self.create_new_scenes)
         self.dir_sel_wdg.loading_data.connect(self.on_loading_data)
+        self.dir_sel_wdg.new_data_dir.connect(self.on_new_data_dir)
 
-        self.data_dir = data_dir
         self.image_win = self.create_image_viewer()
         self.spec_win = self.create_spectra_viewer()
         self.ptnw = PrintSTXMThumbnailWidget()
@@ -134,11 +144,15 @@ class ContactSheet(QtWidgets.QWidget):
 
         # Directory label
         self.dir_label = QtWidgets.QLabel(self.data_dir)
-        self.dir_label.setAlignment(QtCore.Qt.AlignRight)
-        self.dir_label.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
-        self.dir_label.setFixedWidth(680)  # Set to desired width
-        self.dir_label.setStyleSheet("background-color: #555555; color: #FFFFFF;")
-        main_layout.addWidget(self.dir_label)
+
+        self.dir_combo_box = QtWidgets.QComboBox()
+        self.dir_combo_box.setEditable(False)
+        self.dir_combo_box.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        # self.dir_combo_box.setStyleSheet("background-color: #555555; color: #FFFFFF;")
+        self.dir_combo_box.addItem(data_dir_display_name)
+        self.dir_combo_box.setCurrentIndex(0)
+        self.dir_combo_box.currentIndexChanged.connect(self.on_combo_sel_changed)
+        main_layout.addWidget(self.dir_combo_box)
 
         # Toolbar layout with buttons
         toolbar_layout = QtWidgets.QHBoxLayout()
@@ -188,7 +202,8 @@ class ContactSheet(QtWidgets.QWidget):
         self.tab_widget.addTab(spectra_tab, "Spectra")
 
         self._scene_mgr = ThumbnailSceneManager(self.images_view, self.spectra_view)
-        self.images_scene, self.spectra_scene = self._scene_mgr.create_scenes(self.data_dir)
+        # the scenes are kept in a dict using the shortened directory name as the key
+        self.images_scene, self.spectra_scene = self._scene_mgr.create_scenes(data_dir_display_name)
 
         nav_layout = QtWidgets.QHBoxLayout()
 
@@ -198,7 +213,7 @@ class ContactSheet(QtWidgets.QWidget):
         self.backBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_ArrowBack))
         self.backBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
         self.backBtn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
-        nav_layout.addWidget(self.backBtn)
+        # nav_layout.addWidget(self.backBtn)
 
         nav_layout.addWidget(self.tab_widget)
 
@@ -208,13 +223,13 @@ class ContactSheet(QtWidgets.QWidget):
         self.forwardBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_ArrowForward))
         self.forwardBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
         self.forwardBtn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
-        nav_layout.addWidget(self.forwardBtn)
+        # nav_layout.addWidget(self.forwardBtn)
 
         main_layout.addLayout(nav_layout)
 
         # Connect signals
-        # self.backBtn.clicked.connect(lambda: self.navigate_scene(-1))
-        # self.forwardBtn.clicked.connect(lambda: self.navigate_scene(1))
+        self.backBtn.clicked.connect(lambda: self.navigate_scene(-1))
+        self.forwardBtn.clicked.connect(lambda: self.navigate_scene(1))
         self.backBtn.clicked.connect(self.navigate_scene)
         self.forwardBtn.clicked.connect(self.navigate_scene)
 
@@ -225,6 +240,30 @@ class ContactSheet(QtWidgets.QWidget):
         # Set window properties
         self.setWindowTitle("Contact Sheet Viewer")
         self.resize(800, 600)
+
+    def on_new_data_dir(self, directory: str):
+        """
+        when a new data directory is selected in the directory selector widget
+        """
+        if directory != self.base_data_dir:
+            # skip the base data directory
+            self.add_directory_to_combo(directory)
+
+
+    def on_combo_sel_changed(self, idx: int):
+        """
+        when a user selects a different directory from the combo box load that scene
+        """
+        dir_name = self.dir_combo_box.itemText(idx)
+        if self._scene_mgr.scene_exists(dir_name):
+            result = self._scene_mgr.switch_to_scene(dir_name)
+            if result:
+                self.set_directory_label(dir_name)
+                # Update navigation buttons
+                self.backBtn.setEnabled(self._scene_mgr.current_index > 0)
+                last_dir = self._scene_mgr.get_last_scene_directory()
+                self.forwardBtn.setEnabled(dir_name != self._scene_mgr.scenes[last_dir])
+
 
     def navigate_scene(self):
         """
@@ -290,9 +329,15 @@ class ContactSheet(QtWidgets.QWidget):
         return spectra_win
 
     def set_drag_enabled(self, val):
+        """
+        set whether drag is enabled
+        """
         self.drag_enabled = val
 
     def get_drag_enabled(self):
+        """
+        return whether drag is enabled
+        """
         return self.drag_enabled
 
     def create_folder_thumbnail(self):
@@ -314,7 +359,7 @@ class ContactSheet(QtWidgets.QWidget):
         if directory is None or directory == "":
             _logger.warning("on_create_new_scenes: directory cannot be None or empty")
             return
-
+        directory = self.get_directory_display_name(directory)
         self.images_scene, self.spectra_scene = self._scene_mgr.create_scenes(directory, force_new=force_new)
         self.set_directory_label(directory)
 
@@ -323,6 +368,10 @@ class ContactSheet(QtWidgets.QWidget):
         signal handler for when the refresh button is clicked.
         """
         self.dir_sel_wdg.data_dir = self._scene_mgr.get_current_scene_directory()
+        if self.dir_sel_wdg.data_dir.find(".hdf5") > -1:
+            # skip reloading stacks as it requires the original thumbnail widget, maybe be implmented ;ater
+            return
+
         self.create_new_scenes(self.dir_sel_wdg.data_dir, force_new=True)
 
         # Reload the directory and change the mouse cursor while reloading
@@ -434,13 +483,37 @@ class ContactSheet(QtWidgets.QWidget):
         """
         if thumb.scan_type == scan_types.SAMPLE_IMAGE_STACK:
             # grab current scene
-            filename = os.path.join(thumb.directory, thumb.filename)
-            result = self._scene_mgr.switch_to_scene(filename)
+            path_name = os.path.join(thumb.directory, thumb.filename)
+            display_name = self.get_directory_display_name(path_name)
+            result = self._scene_mgr.switch_to_scene(display_name)
             if not result:
-                self.images_scene, self.spectra_scene = self._scene_mgr.create_scenes(filename)
-                self.set_directory_label(filename)
+                self.images_scene, self.spectra_scene = self._scene_mgr.create_scenes(display_name)
+                self.set_directory_label(display_name)
                 self.on_loading_data(False)
                 self.create_stack_thumbnails_from_thumbwidget(thumb)
+            self.add_directory_to_combo(path_name)
+            self.dir_combo_box.setCurrentText(display_name)
+            self.dir_combo_box.setToolTip(f"Full path:\n {str(path_name)}")
+
+    def get_directory_display_name(self, path_name: str) -> str:
+        """
+        get_directory_display_name(): the display name only has so many characters, this function standardizes the
+        path names that will be displayed in the directory combo box
+        """
+        #return path_name[-MAX_DIRNAME_LENGTH:] if len(path_name) > MAX_DIRNAME_LENGTH else path_name
+        return path_name
+
+    def add_directory_to_combo(self, path_name: str) -> None:
+        """
+        add_directory_to_combo(): adds a new directory name to the combo box if its not already present
+        """
+        display_name = self.get_directory_display_name(path_name)
+        items = [self.dir_combo_box.itemText(i) for i in range(self.dir_combo_box.count())]
+        if display_name not in items:
+            # self.dir_combo_box.addItem(str(filename))
+            self.dir_combo_box.addItem(str(display_name))
+        self.dir_combo_box.setCurrentText(display_name)
+        self.dir_combo_box.setToolTip(path_name)
 
     def update_scene_layout(self):
         """

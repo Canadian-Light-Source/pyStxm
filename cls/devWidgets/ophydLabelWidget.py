@@ -43,11 +43,17 @@ class BaseLabel(QtWidgets.QLabel):
             title_color="black",
             var_clr="blue",
             sig_change_kw="value",
+            font=None,
     ):
         super(BaseLabel, self).__init__()
         if signal is None:
             _logger.error("Error: BaseLabel was passed device object set to [None]")
             return
+
+        if font is not None:
+            # f = QtGui.QFont( "Arial", 18, QtGui.QFont.Bold)
+            self.setFont(font)
+
         self.enum_strs = []
         self.setAutoFillBackground(True)
         self.fbk_enabled = False
@@ -232,10 +238,8 @@ class ophyd_aiLabelWidget(BaseLabel):
             var_clr=var_clr,
             warn=warn,
             alarm=alarm,
+            font=font
         )
-        if font is not None:
-            # f = QtGui.QFont( "Arial", 18, QtGui.QFont.Bold)
-            self.setFont(font)
         self.setContentsMargins(0, 0, 0, 0)
 
         self.signal = signal
@@ -330,10 +334,8 @@ class ophyd_aiRangeLabelWidget(BaseLabel):
             var_clr=var_clr,
             warn=warn,  # is a tuple
             alarm=alarm,  # is a tuple
+            font=font,
         )
-        if font is not None:
-            # f = QtGui.QFont( "Arial", 18, QtGui.QFont.Bold)
-            self.setFont(font)
         self.setContentsMargins(0, 0, 0, 0)
 
         self.signal = signal

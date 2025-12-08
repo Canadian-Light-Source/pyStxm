@@ -533,7 +533,7 @@ class PositionersPanel(QtWidgets.QWidget):
         """
         cmbo = self.sender()
         # if there is a callback provided call it, else set the device value
-        if cmbo.cb:
+        if hasattr(cmbo, 'cb') and cmbo.cb:
             cmbo.cb(pos)
         else:
             dev = cmbo._device

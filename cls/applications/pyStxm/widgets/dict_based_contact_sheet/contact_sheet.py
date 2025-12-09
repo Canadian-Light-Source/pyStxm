@@ -424,15 +424,14 @@ class ContactSheet(QtWidgets.QWidget):
         scene.addItem(thumbnail)
         self.update_scene_layout()
 
-    def create_stack_thumbnails_from_thumbwidget(self,  thumb: ThumbnailWidget) -> None:
+    def create_stack_thumbnails_from_thumbwidget(self, thumb: ThumbnailWidget) -> None:
         """
-        Take a data_dct and create a thumbnail widget from it, adding it to the bottom of the scene.
+        Create and add thumbnails to the scene in the order of energy values.
         """
         if thumb is None:
             _logger.warning("create_stack_thumbnails_from_thumbwidget: thumb cannot be None")
             return
 
-        self.image_thumbs = []
         energies = thumb.h5_file_dct[thumb.h5_file_dct['default']]['sp_db_dct']['energy']
         entry_key = thumb.h5_file_dct['default']
         entry_dct = thumb.h5_file_dct[entry_key]
@@ -442,39 +441,46 @@ class ContactSheet(QtWidgets.QWidget):
 
         num_ev_rois = len(sp_db[EV_ROIS])
         data_idx = 0
+        y_offset = 0
+
+        total_points = sum(len(sp_db[EV_ROIS][ev_idx][SETPOINTS]) for ev_idx in range(num_ev_rois))
+        flat_index = 0
         for ev_idx in range(num_ev_rois):
-            for ev_pnt in range(len(sp_db[EV_ROIS][ev_idx][SETPOINTS])):
+            num_setpoints = len(sp_db[EV_ROIS][ev_idx][SETPOINTS])
+            for ev_pnt in reversed(range(num_setpoints)):
                 e_pnt = sp_db[EV_ROIS][ev_idx][SETPOINTS][ev_pnt]
+                data_idx = total_points - flat_index - 1
                 data = thumb.data[data_idx]
-                thumbnail = create_thumbnail(thumb.h5_file_dct, data=data, energy=e_pnt, ev_idx=ev_idx, ev_pnt=ev_pnt,
-                                             pol_idx=0, stack_idx=0)
+                thumbnail = create_thumbnail(
+                    thumb.h5_file_dct, data=data, energy=e_pnt, ev_idx=ev_idx, ev_pnt=ev_pnt,
+                    pol_idx=0, stack_idx=0
+                )
                 if thumbnail is None:
                     _logger.warning("create_stack_thumbnails_from_thumbwidget: thumbnail creation failed")
+                    data_idx += 1
                     continue
                 if thumbnail.is_valid():
                     thumbnail.select.connect(self.do_select)
                     thumbnail.launch_viewer.connect(self.launch_viewer)
-                    #thumbnail.print_thumb.connect(self.print_thumbnail)
-                    #thumbnail.preview_thumb.connect(self.preview_thumbnail)
-                    #thumbnail.dbl_clicked.connect(self.on_thumbnail_dblclicked)
-                    #if thumbnail.draggable:
-                    #    thumbnail.drag.connect(self.on_drag)
 
-                self.image_thumbs.insert(0, thumbnail)
+                # Find the bottom-most y position for each new thumbnail
+                items = [item for item in self.images_scene.items() if isinstance(item, QtWidgets.QGraphicsWidget)]
+                items = sorted(items, key=lambda item: item.pos().y())
+                if items:
+                    max_y = max(item.pos().y() + item.boundingRect().height() for item in items)
+                else:
+                    max_y = 0
+                thumbnail.setPos(0, max_y + 10)  # 10 px margin
+                self.images_scene.addItem(thumbnail)
+
                 data_idx += 1
+                flat_index += 1
+                self.update_scene_layout()
 
-        for item in self.image_thumbs:
-            # Find the bottom-most y position
-            items = [item for item in self.images_scene.items() if isinstance(item, QtWidgets.QGraphicsWidget)]
-            items = sorted(items, key=lambda item: item.pos().y())
-            if items:
-                max_y = max(item.pos().y() + item.boundingRect().height() for item in items)
-            else:
-                max_y = 0
-            item.setPos(0, max_y + 10)  # 10 px margin
-            self.images_scene.addItem(item)
+                # call this every 5 thumbnails to keep the UI responsive
+                if data_idx % 5 == 0:
+                    QtWidgets.QApplication.processEvents()
 
-        self.update_scene_layout()
         self.on_loading_data(True)
 
     def on_thumbnail_dblclicked(self, thumb: ThumbnailWidget) -> None:

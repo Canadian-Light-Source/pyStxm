@@ -65,7 +65,7 @@ class BaseOsaFocusScanParam(ScanParamWidget):
         #self.fl = self.main_obj.device("DNM_FOCAL_LENGTH")
         self.energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
         self.energy_dev.focus_params_changed.connect(self.on_update_focus_params)
-        self.a1 = self.main_obj.device("DNM_ZP_DEF_A")
+        self.a1 = self.main_obj.device("DNM_ZP_A1")
         self.energy_mtr = self.main_obj.device("DNM_ENERGY")
         self.sp_db = None
         self.load_from_defaults()

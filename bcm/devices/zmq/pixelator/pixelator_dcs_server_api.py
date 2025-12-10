@@ -1093,9 +1093,9 @@ class DcsServerApi(BaseDcsServerApi):
             # DNM_FOCAL_LENGTH = Energy * A1
             # DNM_ZP_DEF_A = A1
             appdevs = {'DNM_ENERGY': 650,
-                       'DNM_ZP_DEF_A': -11.359,
+                       'DNM_ZP_A1': 11.359,
                        'DNM_A0MAX': 1300,
-                       'DNM_FOCAL_LENGTH': 650 * -11.359}
+                       'DNM_FOCAL_LENGTH': 650 * 11.359}
             for app_devname, val in appdevs.items():
                 if app_devname in list(self.parent.devs.keys()):
                     dev = self.parent.devs[app_devname]['dev']

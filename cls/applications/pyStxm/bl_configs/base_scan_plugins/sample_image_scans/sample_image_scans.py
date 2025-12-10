@@ -68,7 +68,7 @@ MAX_SCAN_RANGE_Y = MAIN_OBJ.get_preset_as_float("max_coarse_y")
 USE_E712_HDW_ACCEL = MAIN_OBJ.get_preset_as_bool("USE_E712_HDW_ACCEL", "BL_CFG_MAIN")
 
 
-class BaseFineImageScansParam(MultiRegionScanParamBase):
+class BaseSampleImageScansParam(MultiRegionScanParamBase):
     def __init__(
         self, parent=None, main_obj=MAIN_OBJ, data_io=STXMDataIo, dflts=DEFAULTS, ui_path=os.path.dirname(__file__)
     ):

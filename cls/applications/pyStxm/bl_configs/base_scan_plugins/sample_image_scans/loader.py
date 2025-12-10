@@ -5,5 +5,5 @@ requirements are that the following must be defined:
     mod_classname = 'CoarseImageScanParam'      the class in the mod_file that has all the UI stuff
 
 """
-mod_file = "coarse_image_scan.py"
-mod_classname = "CoarseImageScanParam"
+mod_file = "sample_image_scans.py"
+mod_classname = "BaseSampleImageScansParam"

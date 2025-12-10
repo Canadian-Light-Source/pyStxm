@@ -1,5 +1,5 @@
 """
-Created on 04/11/2022
+Created on 08/12/2025
 
 @author: bergr
 """
@@ -8,15 +8,14 @@ from cls.applications.pyStxm.bl_configs.base_scan_plugins.fine_image_scans.Sampl
     BaseSampleFineImageWithE712WavegenScanClass,
 )
 
+
 _logger = get_module_logger(__name__)
 
 
-class SampleFineImageWithE712WavegenScanClass(
-    BaseSampleFineImageWithE712WavegenScanClass
-):
-    """a scan for executing a SampleFineImageWithE712Wavegen scan
+class SampleFineImageWithE712WavegenScanClass(BaseSampleFineImageWithE712WavegenScanClass):
+    """a scan for executing a Sample Fine scan with Hardware acceleration
 
-    This class is stubbed in here in case you would like to orverride the base implementation, if you want to use
+    This class is stubbed in here in case you would like to override the base implementation, if you want to use
     as is there is no need to do anything else just leave as is
 
     """
@@ -28,3 +27,4 @@ class SampleFineImageWithE712WavegenScanClass(
         :returns: None
         """
         super().__init__(main_obj=main_obj)
+

@@ -10,19 +10,6 @@ def flip_data_upsdown(data):
     _data = np.flipud(data).copy()
     return _data
 
-
-# def resize_1d_array(a, b):
-#     bb = np.zeros(len(b))
-#     if len(a) < len(bb):
-#         c = bb.copy()
-#         c[:len(a)] += a
-#     else:
-#         c = a.copy()
-#         c[:len(bb)] += bb
-#
-#     return(c)
-
-
 def resize_1d_array(a, b):
     """
     resize a to be length of b
@@ -85,28 +72,17 @@ def nulls_to_nans(obj):
         return obj
 
 def convert_numpy_to_python(obj):
-    """Convert numpy types to standard Python types for JSON serialization, replacing NaN with None. Handles tuples."""
-    import numpy as np
-
     if isinstance(obj, np.ndarray):
-        arr = obj.tolist()
-        return [
-            convert_numpy_to_python(x) if not (isinstance(x, float) and np.isnan(x)) else None
-            for x in arr
-        ]
+        # Efficiently replace NaN with None
+        arr = obj.astype(float)
+        arr = np.where(np.isnan(arr), None, arr)
+        return arr.tolist()
     elif isinstance(obj, dict):
         return {k: convert_numpy_to_python(v) for k, v in obj.items()}
     elif isinstance(obj, list):
-        return [
-            convert_numpy_to_python(x) if not (isinstance(x, float) and np.isnan(x)) else None
-            for x in obj
-        ]
+        return [convert_numpy_to_python(x) for x in obj]
     elif isinstance(obj, tuple):
-        # Convert tuple to list and handle NaN
-        return [
-            convert_numpy_to_python(x) if not (isinstance(x, float) and np.isnan(x)) else None
-            for x in obj
-        ]
+        return [convert_numpy_to_python(x) for x in obj]
     elif isinstance(obj, np.integer):
         return int(obj)
     elif isinstance(obj, np.floating):
@@ -119,8 +95,14 @@ def convert_numpy_to_python(obj):
 def clean_nans(obj):
     if isinstance(obj, dict):
         return {k: clean_nans(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [clean_nans(v) for v in obj]
+    elif isinstance(obj, (list, tuple)):
+        # Try fast NumPy conversion for flat lists
+        try:
+            arr = np.array(obj, dtype=float)
+            arr = np.where(np.isnan(arr), None, arr)
+            return arr.tolist()
+        except Exception:
+            return [clean_nans(x) for x in obj]
     elif isinstance(obj, float) and np.isnan(obj):
         return None
     else:

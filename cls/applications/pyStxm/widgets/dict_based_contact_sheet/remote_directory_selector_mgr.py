@@ -32,7 +32,7 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
         self.layout = QtWidgets.QVBoxLayout(self)
 
         self.dir_label = QtWidgets.QLabel(data_dir)
-        # self.layout.addWidget(self.dir_label)
+        self.layout.addWidget(self.dir_label)
 
         self.subdir_list_wdg = QtWidgets.QListWidget()
         self.subdir_list_wdg.itemClicked.connect(self.on_subdir_selected)
@@ -90,6 +90,7 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
         items = ['..']
         if sub_dirs:
             items += [f"{d['sub_dir']} \t({d['num_h5_files']} h5 files)" for d in sub_dirs]
+            items.sort()
         self.subdir_list_wdg.addItems(items)
 
     def on_subdir_selected(self, selected):
@@ -101,15 +102,24 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
         """
         do_hide = True
         if selected:
+            sel_txt = selected.text()
             subdir_name = selected.text().split('\t')[0].strip()
-            if subdir_name == '..':
-                # if self.data_dir == self.base_data_dir:
-                #     # if we are at the base directory, request the subdirs from the main_obj
-                #     # this is to avoid an infinite loop of going up to the base dir
-                #     return
+            if subdir_name == '..' or sel_txt.find("(0 h5 files)") > -1:
 
-                _new_data_dir = os.path.dirname(self.data_dir)
+                #_new_data_dir = os.path.dirname(self.data_dir)
+                if subdir_name == '..':
+                    _new_data_dir = os.path.dirname(self.data_dir)
+                else:
+                    _new_data_dir = os.path.join(self.data_dir, subdir_name)
                 do_hide = False
+                self.subdir_list_wdg.clear()
+                sub_dirs = self.main_obj.request_data_dir_list(base_dir=_new_data_dir)
+                self.list_subdirectories(sub_dirs)
+                self.update_data_dir(_new_data_dir)
+            elif sel_txt.find("h5 files") > -1:
+                #_new_data_dir = os.path.dirname(self.data_dir)
+                _new_data_dir = os.path.join(self.data_dir, subdir_name)
+                do_hide = True
                 self.subdir_list_wdg.clear()
                 sub_dirs = self.main_obj.request_data_dir_list(base_dir=_new_data_dir)
                 self.list_subdirectories(sub_dirs)

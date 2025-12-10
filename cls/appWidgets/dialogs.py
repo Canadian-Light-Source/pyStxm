@@ -411,13 +411,18 @@ def notify(title, msg, accept_str, ss=None, posn=None):
         dialog.setGeometry(
             QtCore.QRect(posn[0], posn[1], dialog.width(), dialog.height())
         )
+    else:
+        screen = QtWidgets.QApplication.primaryScreen()
+        screen_geometry = screen.availableGeometry()
+        x = (screen_geometry.width() - dialog.width()) // 2
+        y = (screen_geometry.height() - dialog.height()) // 2
+        dialog.move(x, y)
 
     if ss:
         dialog.setStyleSheet(ss)
 
     ret = dialog.notifyMessage(title, msg, accept_str)
     return ret
-
 
 def warn(title, msg, accept_str, reject_str, ss=None, posn=None):
     dialog = Dialog()

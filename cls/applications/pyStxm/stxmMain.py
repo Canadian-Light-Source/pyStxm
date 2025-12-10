@@ -848,34 +848,24 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         # devices = MAIN_OBJ.get_devices()
         # ev_en = devices['PVS'][DNM_ENERGY_ENABLE]
         ev_en = MAIN_OBJ.device("DNM_ENERGY_ENABLE")
-        zpz = MAIN_OBJ.device("DNM_ZONEPLATE_Z")
+        # todo: this is a hassle during commissioning, uncomment when done commissioning
+        # zpz = MAIN_OBJ.device("DNM_ZONEPLATE_Z")
+        #
+        # if ev_en:
+        #     if en:
+        #         ev_en.put(1)
+        #         # enable Zoneplate Z servo
+        #         if zpz:
+        #             zpz.put("use_torque", 1)
+        #             zpz.put("disabled", 0)  # GO
+        #     else:
+        #         # park energy change enabled
+        #         ev_en.put(0)
+        #         # disable Zoneplate Z servo
+        #         if zpz:
+        #             zpz.put("use_torque", 0)
+        #             zpz.put("disabled", 1)  # STOP
 
-        if ev_en:
-            if en:
-                ev_en.put(1)
-                # enable Zoneplate Z servo
-                if zpz:
-                    zpz.put("use_torque", 1)
-                    zpz.put("disabled", 0)  # GO
-            else:
-                # park energy change enabled
-                ev_en.put(0)
-                # disable Zoneplate Z servo
-                if zpz:
-                    zpz.put("use_torque", 0)
-                    zpz.put("disabled", 1)  # STOP
-
-    # def on_edit_zp_params(self):
-    #     """
-    #     on_edit_zp_params(): description
-    #
-    #     :returns: None
-    #     """
-    #
-    #     #self.fpForm.show()
-    #     self.fpForm = FocusParams(self)
-    #     self.apply_stylesheet(self.fpForm, self.qssheet)
-    #     self.fpForm.show()
 
     def on_about_pystxm(self):
         self.aboutForm = uic.loadUi(os.path.join(uiDir, "pyStxm_about.ui"))
@@ -1193,7 +1183,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             self.esPosPanel.append_widget_to_positioner_layout(hline)
 
             # add Zpz change on energy button
-            self.ev_en_dev = dev_obj.device("DNM_ENERGY_ENABLE")
+            self.ev_en_dev = dev_obj.device("DNM_ENERGY_ENABLE", do_warn=False)
             if self.ev_en_dev:
                 btn = self.esPosPanel.append_toggle_btn_device(
                     "  FL change with Energy  ",
@@ -1209,8 +1199,19 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 # set checked and text to True values
                 btn.make_checked(True)
 
+            fcs_mode_dev = MAIN_OBJ.device('DNM_FOCUS_MODE', do_warn=False)
+            if fcs_mode_dev:
+                self.esPosPanel.append_combobox_device(
+                    "  Focus  ",
+                    fcs_mode_dev.desc,
+                    fcs_mode_dev,
+                    fcs_mode_dev.fbk_enum_strs,
+                    fcs_mode_dev.fbk_enum_values,
+                    cb=None
+                )
+
             # add the Focusing Mode
-            self.foc_mode_dev = dev_obj.device("DNM_ZONEPLATE_FOCUS_MODE")
+            self.foc_mode_dev = dev_obj.device("DNM_ZONEPLATE_FOCUS_MODE", do_warn=False)
 
             if self.foc_mode_dev:
                 btn = self.esPosPanel.append_toggle_btn_device(
@@ -1229,7 +1230,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 btn.make_checked(False)
 
             # add the beam defocus device
-            defoc_dev = dev_obj.device("DNM_BEAM_DEFOCUS")
+            defoc_dev = dev_obj.device("DNM_BEAM_DEFOCUS", do_warn=False)
             if defoc_dev:
                 _min = 0.0
                 _max = 5000
@@ -1244,7 +1245,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 )
 
             # add the OSA vertical tracking device
-            osay_track_dev = dev_obj.device("DNM_OSAY_TRACKING")
+            osay_track_dev = dev_obj.device("DNM_OSAY_TRACKING", do_warn=False)
             if osay_track_dev:
                 self.esPosPanel.append_toggle_btn_device(
                     "  OSA vertical tracking  ",
@@ -1259,7 +1260,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
             # add zonplate in/out
 
-            zp_inout_dev = dev_obj.device("DNM_ZONEPLATE_INOUT")
+            zp_inout_dev = dev_obj.device("DNM_ZONEPLATE_INOUT", do_warn=False)
             if zp_inout_dev:
                 zp_inout_dev_fbk = dev_obj.device("DNM_ZONEPLATE_INOUT_FBK")
                 self.esPosPanel.append_toggle_btn_device(
@@ -1274,7 +1275,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     toggle=True,
                 )
 
-            osa_inout_dev = dev_obj.device("DNM_OSA_INOUT")
+            osa_inout_dev = dev_obj.device("DNM_OSA_INOUT", do_warn=False)
             if osa_inout_dev:
                 osa_inout_dev_fbk = dev_obj.device("DNM_OSA_INOUT_FBK")
                 self.esPosPanel.append_toggle_btn_device(
@@ -1289,7 +1290,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     toggle=True,
                 )
 
-            sample_out_dev = dev_obj.device("DNM_SAMPLE_OUT")
+            sample_out_dev = dev_obj.device("DNM_SAMPLE_OUT", do_warn=False)
             if sample_out_dev:
                 sample_out_dev_fbk = dev_obj.device("DNM_SAMPLE_OUT")
                 self.esPosPanel.append_toggle_btn_device(
@@ -1303,45 +1304,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     toggle=False,
                 )
 
-            rset_intfer_dev = dev_obj.device("DNM_RESET_INTERFERS")
-            if rset_intfer_dev:
-                self.esPosPanel.append_toggle_btn_device(
-                    "  Reset Interferometers  ",
-                    "Reset Interferometer positions to coarse positions",
-                    rset_intfer_dev,
-                    off_val=0,
-                    on_val=1,
-                    off_str="Start",
-                    on_str="Start",
-                    toggle=False,
-                )
-
-            atz_sfx_dev = dev_obj.device("DNM_SFX_AUTOZERO")
-            if atz_sfx_dev:
-                self.esPosPanel.append_toggle_btn_device(
-                    "  ATZ fx  ",
-                    "AutoZero Sample Fine X",
-                    atz_sfx_dev,
-                    off_val=0,
-                    on_val=1,
-                    off_str="Start",
-                    on_str="Stop",
-                    toggle=False,
-                )
-            atz_sfy_dev = dev_obj.device("DNM_SFY_AUTOZERO")
-            if atz_sfy_dev:
-                self.esPosPanel.append_toggle_btn_device(
-                    "  ATZ fy  ",
-                    "AutoZero Sample Fine Y",
-                    atz_sfy_dev,
-                    off_val=0,
-                    on_val=1,
-                    off_str="Start",
-                    on_str="Stop",
-                    toggle=False,
-                )
-
-            gating_dev = MAIN_OBJ.device('DNM_GATING')
+            gating_dev = MAIN_OBJ.device('DNM_GATING', do_warn=False)
             if gating_dev:
                 self.esPosPanel.append_combobox_device(
                     "  Gating  ",
@@ -1352,16 +1315,25 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     cb=None
                 )
 
-            fcs_mode_dev = MAIN_OBJ.device('DNM_FOCUS_MODE')
-            if fcs_mode_dev:
-                self.esPosPanel.append_combobox_device(
-                    "  Focus  ",
-                    fcs_mode_dev.desc,
-                    fcs_mode_dev,
-                    fcs_mode_dev.fbk_enum_strs,
-                    fcs_mode_dev.fbk_enum_values,
-                    cb=None
+            cb = None
+            if MAIN_OBJ.get_device_backend() == "epics":
+                cb = self.on_autozero_piezos_set_coarse_position
+
+            rset_intfer_dev = dev_obj.device("DNM_RESET_INTERFERS", do_warn=False)
+            if rset_intfer_dev:
+                self.esPosPanel.append_toggle_btn_device(
+                    "  AutoZero and Reset Interferometers  ",
+                    "Reset Interferometer positions to coarse positions",
+                    rset_intfer_dev,
+                    off_val=0,
+                    on_val=1,
+                    off_str="Start",
+                    on_str="Start",
+                    toggle=False,
+                    cb=cb
                 )
+
+
             self.endstationPositionersFrame.setLayout(vbox3)
 
         # self.load_dir_view()
@@ -1391,6 +1363,23 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.setup_select_detectors_frame()
 
         # self.check_if_pv_exists()
+
+    def on_autozero_piezos_set_coarse_position(self):
+        """
+        a very specific got_to_start function for scans that involve the fine motor in the scan
+        """
+        if MAIN_OBJ.get_device_backend() == "epics":
+            mtr_x = MAIN_OBJ.device("DNM_SAMPLE_X")
+            mtr_y = MAIN_OBJ.device("DNM_SAMPLE_Y")
+
+            mtr_x.do_autozero()
+            mtr_y.do_autozero()
+
+            mtr_x.reset_interferometers()
+            mtr_y.reset_interferometers()
+
+            mtr_x.set_piezo_power_on()
+            mtr_y.set_piezo_power_on()
 
     def on_enable_fl_change_with_energy(self, chkd: bool=False):
         """
@@ -2984,7 +2973,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         :returns: None
         """
-        # print(f'add_line_to_plot: {counter_to_plotter_com_dct}')
+        # print(f'add_line_to_plot: plot_dct={counter_to_plotter_com_dct}')
         # return
         # det_id = counter_to_plotter_com_dct[CNTR2PLOT_DETID]
         row = int(counter_to_plotter_com_dct[CNTR2PLOT_ROW])
@@ -3022,6 +3011,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 # added to support SLS Pixelator
                 data = val[det_name]
                 if (col == 0) and (row == 0):
+                    # print(f"reset_item_data 1:[{det_name}] col == {col} & row == {row}")
                     self.do_roi_update(det_name, prog_dct)
                     self.lineByLineImageDataWidget.reset_item_data(det_name)
                 self.lineByLineImageDataWidget.add_vertical_line(det_name, col, data, True)
@@ -3029,7 +3019,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         elif det_name is not None:
             # added to support SLS Pixelator
             if (col == 0) and (row == 0):
-                # print(f"reset_item_data: col == {col} & row == {row}")
+                # print(f"reset_item_data 2:[{det_name}] col == {col} & row == {row}")
                 self.do_roi_update(det_name, prog_dct)
                 self.lineByLineImageDataWidget.reset_item_data(det_name)
             data = val[det_name]
@@ -3049,30 +3039,12 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     update_plot = True
 
                 keys = list(val.keys())
-                # cur_ev = MAIN_OBJ.device("DNM_ENERGY_RBV").get_position()
                 for det_name in keys:
                     data = val[det_name]
                     if row == 0:
                         # # new image starting, have plotter emit a signal with image and rois
-                        # plot_data = self.lineByLineImageDataWidget.get_data(det_name)
-                        # if not np.isnan(plot_data).any():
-                        #     dct = {}
-                        #     dct['img_idx'] = prog_dct['PROG']['CUR_IMG_IDX']
-                        #     dct['det_name'] = det_name
-                        #     dct['plot_data'] = plot_data
-                        #     img_idx = dct['img_idx'] - 1
-                        #     if img_idx < 0:
-                        #         img_idx = 0
-                        #     img_idx_key = str(img_idx)
-                        #     img_dct = self.executingScan.img_idx_map[img_idx_key]
-                        #     e_idx = img_dct['e_idx']
-                        #     cur_ev = self.executingScan.ev_setpoints[e_idx]
-                        #     #print(self.executingScan.img_idx_map)
-                        #     dct['cur_ev'] = cur_ev
-                        #     self.update_rois.emit(dct)
-                        #     emit_do_integrations = True
-                        #     # print(f"add_line_to_plot: [{img_idx}] {det_name} {plot_data.sum()} {cur_ev}")
                         self.do_roi_update(det_name, prog_dct)
+                        # print(f"reset_item_data 3:[{det_name}] col == {col} & row == {row}")
                         self.lineByLineImageDataWidget.reset_item_data(det_name)
 
                     self.lineByLineImageDataWidget.addLine(det_name, row, data, update_plot)
@@ -3087,27 +3059,46 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
     def do_roi_update(self, det_name, prog_dct):
         """
-         new image starting, have plotter emit a signal with image and rois
+        Update the ROI data for a given detector.
+
+        This method retrieves the current plot data for the specified detector,
+        checks for valid (non-NaN) data, and prepares a dictionary containing
+        the image index, detector name, plot data, and current energy value.
+        It then emits the `update_rois` signal with this dictionary and triggers
+        integration by emitting the `integrate` signal.
+
+        Parameters
+        ----------
+        det_name : str
+            The name of the detector for which ROI data is being updated.
+        prog_dct : dict
+            A dictionary containing scan progress information, including the current image index.
+
+        Returns
+        -------
+        None
         """
-        plot_data = self.lineByLineImageDataWidget.get_data(det_name)
-        if not np.isnan(plot_data).any():
-            dct = {}
-            dct['img_idx'] = prog_dct['PROG']['CUR_IMG_IDX']
-            dct['det_name'] = det_name
-            dct['plot_data'] = plot_data
-            img_idx = dct['img_idx'] - 1
-            if img_idx < 0:
-                img_idx = 0
-            img_idx_key = str(img_idx)
-            img_dct = self.executingScan.img_idx_map[img_idx_key]
-            e_idx = img_dct['e_idx']
-            cur_ev = self.executingScan.ev_setpoints[e_idx]
-            # print(self.executingScan.img_idx_map)
-            dct['cur_ev'] = cur_ev
-            self.update_rois.emit(dct)
-            # emit_do_integrations = True
-            # print(f"add_line_to_plot: [{img_idx}] {det_name} {plot_data.sum()} {cur_ev}")
-            self.integrate.emit()
+        print(f"do_roi_update: det_name=[{det_name}] prog_dict={prog_dct}")
+
+        # plot_data = self.lineByLineImageDataWidget.get_data(det_name)
+        # if not np.isnan(plot_data).any():
+        #     dct = {}
+        #     dct['img_idx'] = prog_dct['PROG']['CUR_IMG_IDX']
+        #     dct['det_name'] = det_name
+        #     dct['plot_data'] = plot_data
+        #     img_idx = dct['img_idx'] - 1
+        #     if img_idx < 0:
+        #         img_idx = 0
+        #     img_idx_key = str(img_idx)
+        #     img_dct = self.executingScan.img_idx_map[img_idx_key]
+        #     e_idx = img_dct['e_idx']
+        #     cur_ev = self.executingScan.ev_setpoints[e_idx]
+        #     # print(self.executingScan.img_idx_map)
+        #     dct['cur_ev'] = cur_ev
+        #     self.update_rois.emit(dct)
+        #     # emit_do_integrations = True
+        #     # print(f"add_line_to_plot: [{img_idx}] {det_name} {plot_data.sum()} {cur_ev}")
+        #     self.integrate.emit()
 
 
     def add_point_to_plot(self, counter_to_plotter_com_dct):
@@ -3939,8 +3930,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                         #scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_point_to_plot, dets)
                         plotting_func = self.add_point_to_plot
                 else:
-                    scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_line_to_plot, dets)
-                    plotting_func = self.add_point_to_plot
+                    #scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_line_to_plot, dets)
+                    plotting_func = self.add_line_to_plot
 
             if plotting_func:
                 scan_class.init_subscriptions(MAIN_OBJ.engine_widget, plotting_func, dets)
@@ -4303,6 +4294,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         data_dir = self.active_user.get_data_dir()
         fprefix = str(MAIN_OBJ.get_datafile_prefix()) + str(
             get_next_file_num_in_seq(data_dir, extension="hdf5"))
+        print("fprefix={fprefix}")
         
         if 0 in MAIN_OBJ.nx_server_master_seq_dct.keys():
             data_dir = MAIN_OBJ.nx_server_master_seq_dct[0]['data_dir']

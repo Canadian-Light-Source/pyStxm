@@ -1093,7 +1093,7 @@ class main_object_base(QtCore.QObject):
             dev = self.main_obj["DEVICES"].devices[cat][name]
         if dev is None:
             if do_warn:
-                _logger.warn("Warning: dev [%s] does not exist in master object" % name)
+                _logger.warn(f"device [{name}] does not exist in master device dictionary or device name database")
         return dev
 
     def get_device_obj(self):

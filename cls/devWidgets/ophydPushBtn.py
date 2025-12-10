@@ -340,13 +340,10 @@ class ophydPushBtnWithFbk(QtWidgets.QPushButton):
             elif val == 1:
                 val_str = str(self.fbk_dev.get("ONST"))
         else:
-            wrn_msg = f"Feedback device is of an unsupported type, setting to OFF_STR"
             if val == self.on_val:
                 val_str = self.on_str
-                wrn_msg = f"Feedback device is of an unsupported type, setting to ON_STR"
             else:
                 val_str = self.off_str
-            _logger.warn(wrn_msg)
 
         return val_str
 

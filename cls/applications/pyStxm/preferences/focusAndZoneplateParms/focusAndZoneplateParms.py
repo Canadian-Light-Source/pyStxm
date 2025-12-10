@@ -213,7 +213,7 @@ class FocusParams(BasePreference):
             self.on_min_a0_changed
         )
 
-        scan_mode_dev = MAIN_OBJ.device("DNM_ZONEPLATE_SCAN_MODE")
+        scan_mode_dev = MAIN_OBJ.device("DNM_ZONEPLATE_SCAN_MODE", do_warn=False)
         if scan_mode_dev:
             scan_mode_dev.put(1)
 

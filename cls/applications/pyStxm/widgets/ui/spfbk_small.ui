@@ -715,6 +715,9 @@
       </item>
       <item>
        <widget class="QToolButton" name="detailsBtn">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="maximumSize">
          <size>
           <width>20</width>

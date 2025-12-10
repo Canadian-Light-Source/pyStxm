@@ -37,9 +37,11 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
     update_view = QtCore.pyqtSignal()
     select = QtCore.pyqtSignal(object)
 
-    def __init__(self, h5_file_dct, filename, is_folder=False, data=None, energy=None, parent=None):
+    def __init__(self, h5_file_dct, filename, is_folder=False, data=None, energy=None, is_stack=False, parent=None):
         super().__init__(parent)
+        self.is_stack = is_stack
         self.h5_file_dct = h5_file_dct
+
         self.filename = filename
         self.sp_db_dct = utils.get_sp_db_dct_from_h5_file_dct(h5_file_dct)
         if self.sp_db_dct is None:
@@ -88,6 +90,23 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         self.sp_db_dct = self.entry_dct.get('sp_db_dct', {})
         self.scan_type = self.sp_db_dct.get('pystxm_enum_scan_type', 'Unknown')
 
+        if is_stack:
+            # create a draggable h5_file_dct for stacks
+            self.drag_h5_file_dct = {}
+            ekey = utils.get_first_entry_key(h5_file_dct)
+            self.drag_h5_file_dct['default'] = ekey
+            self.drag_h5_file_dct[ekey] = {}
+            self.drag_h5_file_dct[ekey]['WDG_COM'] = h5_file_dct[ekey]['WDG_COM']
+            self.drag_h5_file_dct[ekey]['sp_db_dct'] = {}
+            skip_lst = ['nxdata']
+            for k in h5_file_dct[ekey]['sp_db_dct'].keys():
+                if k in skip_lst:
+                    continue
+                self.drag_h5_file_dct[ekey]['sp_db_dct'][k] = h5_file_dct[ekey]['sp_db_dct'][k]
+
+            self.drag_h5_file_dct[ekey]['sp_db_dct']['nxdata'] = {}
+            #self.drag_h5_file_dct[ekey]['sp_db_dct']['nxdata'][self.default_counter] = self.counter_data[0]
+            self.drag_h5_file_dct[ekey]['sp_db_dct']['nxdata'][self.default_counter] = None
 
         if self.scan_type in focus_scans:
             self.draggable = False
@@ -294,7 +313,11 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         dct["stack_index"] = stack_index
         dct["path"] = self.filepath
         dct["sp_db"] = sp_db
-        dct["h5_file_dct"] = self.h5_file_dct
+        if self.is_stack:
+            dct["h5_file_dct"] = self.drag_h5_file_dct
+        else:
+            dct["h5_file_dct"] = self.h5_file_dct
+
         dct['scan_type_str'] = dct_get(sp_db, roi_defs.SPDB_SCAN_PLUGIN_SECTION_ID)
         dct["scan_type"] = self.scan_type
         dct["xlabel"] = dct_get(sp_db, roi_defs.SPDB_XPOSITIONER)

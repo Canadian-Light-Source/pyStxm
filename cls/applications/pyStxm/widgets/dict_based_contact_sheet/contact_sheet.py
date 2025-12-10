@@ -387,11 +387,13 @@ class ContactSheet(QtWidgets.QWidget):
 
         _scan_type = h5_file_dct[h5_file_dct['default']]['sp_db_dct']['pystxm_enum_scan_type']
         is_folder = False
+        is_stack = False
         if _scan_type == scan_types.SAMPLE_IMAGE_STACK:
             # so that it can be identified as a stack
             is_folder = True
+            is_stack = True
         # h5_file_dct['entry1']['sp_db_dct']['file_path']
-        thumbnail = create_thumbnail(h5_file_dct, is_folder=is_folder)
+        thumbnail = create_thumbnail(h5_file_dct, is_folder=is_folder, is_stack=is_stack)
         if thumbnail is None:
             return
 
@@ -403,7 +405,6 @@ class ContactSheet(QtWidgets.QWidget):
             thumbnail.dbl_clicked.connect(self.on_thumbnail_dblclicked)
             if thumbnail.draggable:
                 thumbnail.drag.connect(self.on_drag)
-
 
         if _scan_type in spectra_type_scans:
             scene = self.spectra_scene
@@ -428,6 +429,8 @@ class ContactSheet(QtWidgets.QWidget):
         """
         Create and add thumbnails to the scene in the order of energy values.
         """
+        import timeit
+
         if thumb is None:
             _logger.warning("create_stack_thumbnails_from_thumbwidget: thumb cannot be None")
             return
@@ -438,26 +441,26 @@ class ContactSheet(QtWidgets.QWidget):
         sp_db_dct = entry_dct['sp_db_dct']
         sp_key = list(entry_dct['WDG_COM']['SPATIAL_ROIS'].keys())[0]
         sp_db = entry_dct['WDG_COM']['SPATIAL_ROIS'][sp_key]
-
         num_ev_rois = len(sp_db[EV_ROIS])
-        data_idx = 0
-        y_offset = 0
-
         total_points = sum(len(sp_db[EV_ROIS][ev_idx][SETPOINTS]) for ev_idx in range(num_ev_rois))
-        flat_index = 0
-        for ev_idx in range(num_ev_rois):
+        data_index = total_points -1
+        # load the stack in reverse so that it is displayed in ascending order of energy from top to bottom
+        for ev_idx in reversed(range(num_ev_rois)):
             num_setpoints = len(sp_db[EV_ROIS][ev_idx][SETPOINTS])
             for ev_pnt in reversed(range(num_setpoints)):
                 e_pnt = sp_db[EV_ROIS][ev_idx][SETPOINTS][ev_pnt]
-                data_idx = total_points - flat_index - 1
-                data = thumb.data[data_idx]
+                if data_index > -1:
+                    data = thumb.data[data_index]
+                else:
+                    _logger.error("create_stack_thumbnails_from_thumbwidget: data_index out of range: < -1")
+                    return
                 thumbnail = create_thumbnail(
                     thumb.h5_file_dct, data=data, energy=e_pnt, ev_idx=ev_idx, ev_pnt=ev_pnt,
                     pol_idx=0, stack_idx=0
                 )
+
                 if thumbnail is None:
                     _logger.warning("create_stack_thumbnails_from_thumbwidget: thumbnail creation failed")
-                    data_idx += 1
                     continue
                 if thumbnail.is_valid():
                     thumbnail.select.connect(self.do_select)
@@ -473,12 +476,11 @@ class ContactSheet(QtWidgets.QWidget):
                 thumbnail.setPos(0, max_y + 10)  # 10 px margin
                 self.images_scene.addItem(thumbnail)
 
-                data_idx += 1
-                flat_index += 1
+                data_index -= 1
                 self.update_scene_layout()
 
                 # call this every 5 thumbnails to keep the UI responsive
-                if data_idx % 5 == 0:
+                if ev_pnt % 5 == 0:
                     QtWidgets.QApplication.processEvents()
 
         self.on_loading_data(True)
@@ -568,6 +570,10 @@ class ContactSheet(QtWidgets.QWidget):
 
         :returns: None
         """
+        import orjson
+        import timeit
+
+        print("on_drag: Entered.")
         event.accept()
 
         if self.get_drag_enabled():
@@ -580,25 +586,59 @@ class ContactSheet(QtWidgets.QWidget):
             else:
                 format = "application/dict-based-imageplot-stxmscan"
                 dct = obj.get_standard_image_launch_viewer_dct()
+            print("\n")
+            start = timeit.default_timer()
+            #jstr = json.dumps(convert_numpy_to_python(dct), cls=NumpyAwareJSONEncoder)
+            py_dict = convert_numpy_to_python(dct)
+            end = timeit.default_timer()
+            print(f"\tconvert_numpy_to_python: Elapsed: {end - start} seconds")
 
-            jstr = json.dumps(convert_numpy_to_python(dct), cls=NumpyAwareJSONEncoder)
+            start = timeit.default_timer()
+            jstr_bytes = orjson.dumps(py_dict)
+            end = timeit.default_timer()
+            print(f"\torjson.dumps: Elapsed: {end - start} seconds")
 
             itemData = QtCore.QByteArray()
             dataStream = QtCore.QDataStream(itemData, QtCore.QIODevice.WriteOnly)
+
+            start = timeit.default_timer()
+            if obj.is_stack:
+                # if its a stack we only need 1 images worth of data
+                print("\ton_drag: Stack detected, using first image data only.")
+                #data_bytes = obj.data[0].tobytes()
+                data_bytes = b''
+            else:
+                print("\ton_drag: Single image detected, using full data.")
+                data_bytes = obj.data.tobytes()
+            end = timeit.default_timer()
+            print(f"\ttobytes(): Elapsed: {end - start} seconds")
+
+            start = timeit.default_timer()
             (
-                dataStream
-                << QtCore.QByteArray(bytearray(jstr.encode()))
-                << QtCore.QByteArray(obj.data.tobytes())
-                << (event.pos() - obj.rect().topLeft())
+                    dataStream
+                    << QtCore.QByteArray(bytearray(jstr_bytes))
+                    << QtCore.QByteArray(data_bytes)
+                    << (event.pos() - obj.rect().topLeft())
             )
+            end = timeit.default_timer()
+            print(f"\tdataStream << << << : Elapsed: {end - start} seconds")
+
+            start = timeit.default_timer()
             mimeData = QtCore.QMimeData()
             mimeData.setData(format, itemData)
             mimeData.setText(obj.info_jstr)
+            end = timeit.default_timer()
+            print(f"\tmimeData : Elapsed: {end - start} seconds")
 
+            start = timeit.default_timer()
             drag = QtGui.QDrag(self)
             drag.setMimeData(mimeData)
             pos = event.pos() - obj.rect().topLeft()
             drag.setHotSpot(QtCore.QPoint(int(pos.x()), int(pos.y())))
+
+            end = timeit.default_timer()
+            print(f"\tdrag.setHotSpot : Elapsed: {end - start} seconds")
+
             if obj.pixmap is not None:
                 drag.setPixmap(obj.pixmap)
 
@@ -611,6 +651,7 @@ class ContactSheet(QtWidgets.QWidget):
                 pass
             else:
                 pass
+        print("on_drag: Leaving.")
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

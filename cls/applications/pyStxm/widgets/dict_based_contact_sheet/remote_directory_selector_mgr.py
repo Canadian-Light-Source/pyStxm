@@ -32,11 +32,11 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
         self.layout = QtWidgets.QVBoxLayout(self)
 
         self.dir_label = QtWidgets.QLabel(data_dir)
-        self.layout.addWidget(self.dir_label)
+        # self.layout.addWidget(self.dir_label)
 
-        self.subdir_list = QtWidgets.QListWidget()
-        self.subdir_list.itemClicked.connect(self.on_subdir_selected)
-        self.layout.addWidget(self.subdir_list)
+        self.subdir_list_wdg = QtWidgets.QListWidget()
+        self.subdir_list_wdg.itemClicked.connect(self.on_subdir_selected)
+        self.layout.addWidget(self.subdir_list_wdg)
 
         if self.main_obj:
             sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
@@ -86,11 +86,11 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
         Args:
             sub_dirs: List of subdirectory names to display.
         """
-        self.subdir_list.clear()
+        self.subdir_list_wdg.clear()
         items = ['..']
         if sub_dirs:
             items += [f"{d['sub_dir']} \t({d['num_h5_files']} h5 files)" for d in sub_dirs]
-        self.subdir_list.addItems(items)
+        self.subdir_list_wdg.addItems(items)
 
     def on_subdir_selected(self, selected):
         """
@@ -108,22 +108,22 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
                 #     # this is to avoid an infinite loop of going up to the base dir
                 #     return
 
-                new_data_dir = os.path.dirname(self.data_dir)
+                _new_data_dir = os.path.dirname(self.data_dir)
                 do_hide = False
-                self.subdir_list.clear()
-                sub_dirs = self.main_obj.request_data_dir_list(base_dir=new_data_dir)
+                self.subdir_list_wdg.clear()
+                sub_dirs = self.main_obj.request_data_dir_list(base_dir=_new_data_dir)
                 self.list_subdirectories(sub_dirs)
-                self.update_data_dir(new_data_dir)
+                self.update_data_dir(_new_data_dir)
 
             else:
-                new_data_dir = os.path.join(self.data_dir, subdir_name)
+                _new_data_dir = os.path.join(self.data_dir, subdir_name)
 
             if do_hide:
                 # request that the image and spec graphic scenes be cleared
-                self.create_scenes.emit(new_data_dir)
+                self.create_scenes.emit(_new_data_dir)
 
-                self.reload_directory(new_data_dir)
-                self.update_data_dir(new_data_dir)
+                self.reload_directory(_new_data_dir)
+                self.update_data_dir(_new_data_dir)
 
                 # update the current list of sub dirs
                 sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)

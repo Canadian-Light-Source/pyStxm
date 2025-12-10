@@ -118,7 +118,8 @@ cls/data_io/suitcase_nxstxm_TODEL/
 
 cls/scan_engine/bluesky/tests/tst_output/
 
-version.json
+**/version.json
+
 /sphinx/_build/
 /sphinx/_build/
 

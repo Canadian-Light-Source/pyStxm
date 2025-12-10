@@ -240,8 +240,8 @@ if __name__ == '__main__':
 # scan_nm_map['osa_focus'] = 'osa_focus_scan'
 # scan_nm_map['osa_image'] = 'osa_scan'
 # scan_nm_map['sample_focus'] = 'focus_scan'
-# scan_nm_map['sample_image'] = 'fine_image_scans'
-# scan_nm_map['sample_image_stack'] = 'fine_image_scans'
+# scan_nm_map['sample_image'] = 'sample_image_scans'
+# scan_nm_map['sample_image_stack'] = 'sample_image_scans'
 
 pprint.pprint(scan_type_dct)
 #model_dir = pathlib.PurePath.joinpath(pathlib.Path(__file__).parent, "models")

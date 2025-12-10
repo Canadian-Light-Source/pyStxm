@@ -188,7 +188,7 @@ class PreferencesParams(QtWidgets.QWidget):
         )
         self.a1FbkLbl = assign_aiLabelWidget(
             self.a1FbkLbl,
-            MAIN_OBJ.device("DNM_ZP_DEF_A"),
+            MAIN_OBJ.device("DNM_ZP_A1"),
             hdrText="A1",
             egu="",
             title_color="white",

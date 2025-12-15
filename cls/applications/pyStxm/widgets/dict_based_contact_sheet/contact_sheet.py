@@ -172,7 +172,7 @@ class ContactSheet(QtWidgets.QWidget):
 
         # Change directory button
         self.loadDirBtn = QtWidgets.QToolButton()
-        self.loadDirBtn.setToolTip("Load Directory")
+        self.loadDirBtn.setToolTip("Load a Directory")
         self.loadDirBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DirIcon))
         self.loadDirBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
         self.loadDirBtn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)

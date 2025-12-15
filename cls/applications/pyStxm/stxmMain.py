@@ -1241,7 +1241,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     defoc_dev,
                     _min,
                     _max,
-                    prec=2
+                    prec=2,
+                    cb=self.on_defocus_beam
                 )
 
             # add the OSA vertical tracking device
@@ -1408,6 +1409,15 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 ev_dev.set_focus_mode("OSA")
                 cmbo_btn.setText(cmbo_btn.off_str)
 
+    def on_defocus_beam(self):
+        """
+        callback when the user changes the beam defocus value
+        """
+        fld = self.sender()
+        val = fld.cur_val
+        dev = MAIN_OBJ.device('DNM_ENERGY_DEVICE')
+        if dev:
+            dev.defocus_beam(val)
 
     def check_if_pv_exists(self):
         dev_obj = MAIN_OBJ.get_device_obj()
@@ -4077,29 +4087,29 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.start_time = time.time()
         self.cur_dets = dets
 
-        # set start time and start elapsed timer that updates at 1 sec intervals
-        self.executingScan.set_scan_as_aborted(False)
-        self.start_time = time.time()
-        self.scan_elapsed_timer.start(1000)
-
-        #########################################################
-        if MAIN_OBJ.get_device_backend().find("zmq") > -1:
-            dct_put(self.executingScan.wdg_com, "SCAN_REQUEST", self.executingScan.ui_module.get_scan_request())
-            scan_params = [
-                    json.dumps({'command': 'scanRequest'}),  # First part (JSON-encoded)
-                    dict_to_json(self.executingScan.wdg_com)
-                ]
-            MAIN_OBJ.engine_widget.engine.send_scan_request(scan_params)
-
-        else:
-            # running Bluesky engine
-            # Start the RunEngine
-            # assign the scan plan to the engine
-            MAIN_OBJ.engine_widget.engine.plan_creator = lambda: scan_plan
-
-            # MAIN_OBJ.engine_widget.engine.md["user"] = "guest"
-            # MAIN_OBJ.engine_widget.engine.md["host"] = "myNotebook"
-            MAIN_OBJ.engine_widget.control.state_widgets["start"].clicked.emit()
+        # # set start time and start elapsed timer that updates at 1 sec intervals
+        # self.executingScan.set_scan_as_aborted(False)
+        # self.start_time = time.time()
+        # self.scan_elapsed_timer.start(1000)
+        #
+        # #########################################################
+        # if MAIN_OBJ.get_device_backend().find("zmq") > -1:
+        #     dct_put(self.executingScan.wdg_com, "SCAN_REQUEST", self.executingScan.ui_module.get_scan_request())
+        #     scan_params = [
+        #             json.dumps({'command': 'scanRequest'}),  # First part (JSON-encoded)
+        #             dict_to_json(self.executingScan.wdg_com)
+        #         ]
+        #     MAIN_OBJ.engine_widget.engine.send_scan_request(scan_params)
+        #
+        # else:
+        #     # running Bluesky engine
+        #     # Start the RunEngine
+        #     # assign the scan plan to the engine
+        #     MAIN_OBJ.engine_widget.engine.plan_creator = lambda: scan_plan
+        #
+        #     # MAIN_OBJ.engine_widget.engine.md["user"] = "guest"
+        #     # MAIN_OBJ.engine_widget.engine.md["host"] = "myNotebook"
+        #     MAIN_OBJ.engine_widget.control.state_widgets["start"].clicked.emit()
 
     def on_show_dcs_server_msgs(self, chkd):
         """

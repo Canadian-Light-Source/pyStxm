@@ -10,7 +10,8 @@ from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
 from cls.data_io.stxm_data_io import STXMDataIo
 from cls.utils.log import get_module_logger
 from cls.utils.dict_utils import dct_get
-from cls.utils.roi_dict_defs import WDGCOM_SPATIAL_ROIS, SPDB_XRANGE, SPDB_YRANGE
+from cls.utils.roi_dict_defs import (WDGCOM_SPATIAL_ROIS, SPDB_XSETPOINTS, SPDB_YSETPOINTS,
+                        SPDB_XRANGE, SPDB_YRANGE)
 from cls.utils.cfgparser import ConfigClass
 
 from cls.applications.pyStxm.bl_configs.base_scan_plugins.sample_image_scans.sample_image_scans import (
@@ -89,3 +90,37 @@ class SampleImageScanParam(BaseSampleImageScansParam):
             return self.scan_class_hdw
         else:
             return self.scan_class_soft
+
+
+    def check_scan_limits(self):
+        """a function to be implemented by the scan pluggin that
+        checks the scan parameters against the soft limits of the
+        positioners, if all is well return true else false
+
+        This function should provide an explicit error log msg to aide the user
+        """
+        wdg_com = self.update_data()
+        sp_rois = wdg_com[WDGCOM_SPATIAL_ROIS]
+        sp_ids = list(sp_rois.keys())
+        sp_id = sp_ids[0]
+        sp_db = sp_rois[sp_id]
+        x_spts = dct_get(sp_db, SPDB_XSETPOINTS)
+        y_spts = dct_get(sp_db, SPDB_YSETPOINTS)
+
+        # check the range against the coarse stages only
+        mtrx = self.main_obj.device("DNM_COARSE_X")
+        mtry = self.main_obj.device("DNM_COARSE_Y")
+
+        if (
+                x_spts[0] < mtrx.get_low_limit()
+                or x_spts[-1] > mtrx.get_high_limit()
+                or y_spts[0] < mtry.get_low_limit()
+                or y_spts[-1] > mtry.get_high_limit()
+        ):
+            _logger.error(
+                "Requested scan range is outside the limits of the coarse stage(s). "
+                "Please adjust the scan range."
+            )
+            return False
+
+        return True

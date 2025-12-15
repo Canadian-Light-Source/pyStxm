@@ -101,7 +101,7 @@ class BaseSampleImageScansParam(MultiRegionScanParamBase):
             enable_multi_spatial=self.enable_multi_region,
             single_ev_model=True,
             single_pol_model=True,
-            max_range=MAX_SCAN_RANGE_FINEX,
+            max_range=MAX_SCAN_RANGE_X,
             min_sp_rois=1,
             x_cntr=x_cntr,
             y_cntr=y_cntr,
@@ -255,10 +255,10 @@ class BaseSampleImageScansParam(MultiRegionScanParamBase):
             yllm = mtr_sy.get_low_limit()
             yhlm = mtr_sy.get_high_limit()
 
-            fxllm = center_x - (MAX_SCAN_RANGE_FINEX * 0.5)
-            fxhlm = center_x + (MAX_SCAN_RANGE_FINEX * 0.5)
-            fyllm = center_y - (MAX_SCAN_RANGE_FINEY * 0.5)
-            fyhlm = center_y + (MAX_SCAN_RANGE_FINEY * 0.5)
+            fxllm = center_x - (MAX_SCAN_RANGE_X * 0.5)
+            fxhlm = center_x + (MAX_SCAN_RANGE_X * 0.5)
+            fyllm = center_y - (MAX_SCAN_RANGE_Y * 0.5)
+            fyhlm = center_y + (MAX_SCAN_RANGE_Y * 0.5)
 
             bounding_qrect = QtCore.QRectF(
                 QtCore.QPointF(xllm, yhlm), QtCore.QPointF(xhlm, yllm)

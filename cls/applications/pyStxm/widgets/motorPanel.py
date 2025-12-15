@@ -346,7 +346,7 @@ class PositionersPanel(QtWidgets.QWidget):
     def append_widget_to_positioner_layout(self, widg):
         self.vbox.addWidget(widg)
 
-    def append_setpoint_device(self, name, desc, units, dev, _min, _max, prec=0, min_mtrfld_nm_width=MIN_MTR_FLD_NM_WIDTH):
+    def append_setpoint_device(self, name, desc, units, dev, _min, _max, prec=0, cb=None, min_mtrfld_nm_width=MIN_MTR_FLD_NM_WIDTH):
         widg = QtWidgets.QWidget()
         dev_ui = sp_small()
         dev_ui.setupUi(widg)
@@ -368,7 +368,11 @@ class PositionersPanel(QtWidgets.QWidget):
             dev.get_name(), _min, _max, prec, parent=dev_ui.setPosFld
         )
         # dev_ui.setPosFld.dpo.valid_returnPressed.connect(on_changed_cb)
-        dev_ui.setPosFld.dpo.valid_returnPressed.connect(self.on_setpoint_dev_changed)
+        # if the user passed a callback call it when return is pressed instead of the default handler
+        if cb:
+            dev_ui.setPosFld.dpo.valid_returnPressed.connect(cb)
+        else:
+            dev_ui.setPosFld.dpo.valid_returnPressed.connect(self.on_setpoint_dev_changed)
 
         self.mtr_dict[dev.get_name()] = {"dev": dev, "dev_ui": dev_ui}
 

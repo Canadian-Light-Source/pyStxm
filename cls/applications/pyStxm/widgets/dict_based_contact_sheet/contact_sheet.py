@@ -171,12 +171,12 @@ class ContactSheet(QtWidgets.QWidget):
                                                      QtWidgets.QSizePolicy.Minimum))
 
         # Change directory button
-        self.changeDirBtn = QtWidgets.QToolButton()
-        self.changeDirBtn.setToolTip("Change Directory")
-        self.changeDirBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DirIcon))
-        self.changeDirBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
-        self.changeDirBtn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
-        toolbar_layout.addWidget(self.changeDirBtn)
+        self.loadDirBtn = QtWidgets.QToolButton()
+        self.loadDirBtn.setToolTip("Load Directory")
+        self.loadDirBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DirIcon))
+        self.loadDirBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
+        self.loadDirBtn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
+        toolbar_layout.addWidget(self.loadDirBtn)
 
         main_layout.addLayout(toolbar_layout)
 
@@ -235,7 +235,7 @@ class ContactSheet(QtWidgets.QWidget):
 
         # Connect signals
         self.reloadBtn.clicked.connect(self.on_reload_clicked)
-        self.changeDirBtn.clicked.connect(self.on_change_dir_clicked)
+        self.loadDirBtn.clicked.connect(self.on_change_dir_clicked)
 
         # Set window properties
         self.setWindowTitle("Contact Sheet Viewer")
@@ -369,7 +369,7 @@ class ContactSheet(QtWidgets.QWidget):
         """
         self.dir_sel_wdg.data_dir = self._scene_mgr.get_current_scene_directory()
         if self.dir_sel_wdg.data_dir.find(".hdf5") > -1:
-            # skip reloading stacks as it requires the original thumbnail widget, maybe be implmented ;ater
+            # skip reloading stacks as it requires the original thumbnail widget, maybe be implmented later
             return
 
         self.create_new_scenes(self.dir_sel_wdg.data_dir, force_new=True)

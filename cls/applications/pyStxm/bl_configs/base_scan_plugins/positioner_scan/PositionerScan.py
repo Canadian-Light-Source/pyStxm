@@ -141,6 +141,7 @@ class BasePositionerScanClass(BaseScan):
 
 
         @bpp.baseline_decorator(dev_list)
+        @bpp.run_decorator(md=md)
         def do_scan():
 
             mtr_x = self.main_obj.device(self.x_roi[POSITIONER])
@@ -151,14 +152,21 @@ class BasePositionerScanClass(BaseScan):
                 if hasattr(d, "set_spid"):
                     d.set_spid(self._master_sp_id_list[0])
 
-            yield from scan(
-                dets,
-                mtr_x,
-                self.x_roi[START],
-                self.x_roi[STOP],
-                self.x_roi[NPOINTS],
-                md=md,
-            )
+            # yield from scan(
+            #     dets,
+            #     mtr_x,
+            #     self.x_roi[START],
+            #     self.x_roi[STOP],
+            #     self.x_roi[NPOINTS],
+            #     md=md,
+            # )
+            # a scan with N events
+            for x_sp in self.x_roi['SETPOINTS']:
+                yield from bps.mv(mtr_x, x_sp, group='BB')
+                # yield from bps.wait('BB')
+                #yield from bps.trigger_and_read(dets)
+                yield from bps.trigger_and_read(dets + [mtr_x])
+
 
             shutter.close()
             for d in dets:

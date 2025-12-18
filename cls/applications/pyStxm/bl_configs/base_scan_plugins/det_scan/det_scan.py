@@ -14,8 +14,6 @@ import pathlib
 
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
 
-# from cls.applications.pyStxm.bl_configs.amb_bl10ID1.device_names import *
-
 from cls.data_io.stxm_data_io import STXMDataIo
 from cls.data_io.utils import (
     test_eq,
@@ -53,6 +51,8 @@ from cls.utils.log import get_module_logger
 
 # from cls.applications.pyStxm.scan_plugins.det_scan_tester import test_sp_db
 
+
+OSA_OUT_POSITION = MAIN_OBJ.get_preset_as_float("osa_out_position")
 
 _logger = get_module_logger(__name__)
 
@@ -390,20 +390,15 @@ class BaseDetectorScanParam(ScanParamWidget):
 
     def on_osa_out(self, chkd):
         """
-        to that limit
+        move it to the out position specified in the bl config .ini file
         """
         osa_mtr = self.main_obj.device("DNM_OSA_X")
         # use as the out position: current max High level Lim - 10um
         if chkd:
-            self.osaOutBtn.setText("Move OSA In")
-            if self.osa_out_limit == "low":
-                lm = osa_mtr.get_low_limit() + 10.0
-            else:
-                lm = osa_mtr.get_high_limit() - 10.0
-
-            osa_mtr.move(lm, wait=False)
+            self.osaOutBtn.setText("  Move OSA In  ")
+            osa_mtr.move(OSA_OUT_POSITION, wait=False)
         else:
-            self.osaOutBtn.setText("Move OSA Out")
+            self.osaOutBtn.setText("  Move OSA Out  ")
             osa_mtr.move(0.0, wait=False)
 
     def on_do_scribbler(self, checked):

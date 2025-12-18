@@ -71,18 +71,6 @@ class BasePointSpecScanClass(BaseScan):
         super().fine_scan_go_to_scan_start()
         return(True)
 
-    def add_spids_xy_setpoints(self, md={}):
-        md["sp_id_setpoints"] = {}
-        dct = {}
-        for sp_id in self._master_sp_id_list:
-            # get x and y setpoints
-            x_sp = self.sp_rois[sp_id]["X"]["CENTER"]
-            y_sp = self.sp_rois[sp_id]["Y"]["CENTER"]
-            # these are used by the nxstxm suitcase to record the correct SAMPLE_X and SAMPLE_Y positions for the spectra
-            dct[sp_id] = {"x_sp": x_sp, "y_sp": y_sp}
-        md["sp_id_setpoints"] = dict_to_json(dct)
-        return md
-
     def init_subscriptions(self, ew, func, det_lst):
         """
         Base init_subscriptions is used by most scans

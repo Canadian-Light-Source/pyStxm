@@ -1,48 +1,14 @@
-# from PyQt5 import QtWidgets
-#
-# from cls.utils.save_settings import SaveSettings
-# from cls.stylesheets import master_colors, get_style
-# from cls.plotWidgets.stxm_osa_dflt_settings import (
-#     make_dflt_stxm_osa_smplholder_settings_dct,
-# )
-
 from plotpy.builder import make
 #from plotpy.builder import make
 
 import os
-#from cls.utils.dict_utils import dct_put
+
 
 curDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "/")
 
 MIN_SHAPE_Z = 1001
 
 shape_cntr = MIN_SHAPE_Z
-# def make_dflt_stxm_osa_smplholder_settings_dct(fpath):
-# 	dct = {}
-# 	dct_put(dct, "OSA.CENTER", (0,0))
-# 	dct_put(dct, "OSA.RECT", (-1250,500,1250,-5500))
-# 	dct_put(dct, "OSA_AMBIENT.CENTER", ( -1247.7022682879685, -1595.9402372900463))
-# 	dct_put(dct, "OSA_AMBIENT.RECT", (-2497.7022682879715, 1404.0597627099448, 2.2977317120344196, -4595.9402372900377))
-# 	dct_put(dct, "OSA_CRYO.CENTER", ( -1187.5421670895232, -1000.5925262721269 ))
-# 	dct_put(dct, "OSA_CRYO.RECT", ( -4187.5421670895175, 249.5951432086572, 1812.457832910471, -2250.780195752911))
-# 	dct_put(dct, "SAMPLE_GONI.CENTER", (320.4466858789624, -651.6853932584269 ))
-# 	dct_put(dct, "SAMPLE_GONI.RADIUS", 1000)
-# 	dct_put(dct, "SAMPLE_GONI.RECT",( -494.5533141210376, -511.68539325842687, 1135.4466858789624, -791.6853932584269))
-# 	dct_put(dct, "SAMPLE_STANDARD.CENTER",(-2550.3974645796065, 2707.6956184038504))
-# 	dct_put(dct, "SAMPLE_STANDARD.RADIUS", 1000)
-# 	dct_put(dct, "SAMPLE_STANDARD.RECT", ( -3365.3974645796065, 2847.6956184038504, -1735.3974645796065, 2567.6956184038504 ))
-# 	dct_put(dct, "SMPL_HLDR.CENTER", ( 0, 2500.0 ))
-# 	dct_put(dct, "SMPL_HLDR.RADIUS", 1000)
-# 	dct_put(dct, "SMPL_HLDR.RECT", (  -7000, 7000, 7000, -2000 ))
-# 	dct_put(dct, "fpath", fpath)
-# 	return(dct)
-
-
-# class ShapeUtilsClass(QtWidgets.QObject):
-#     """Simple canvas with a sine plot."""
-#     def __init__(self, xdata, ydatas, width=5, height=4, dpi=100, axes_bgrnd_color=AXES_BACKGROUND_COLOR):
-#         super(ShapeUtilsClass, self).__init__(width=width, height=height, dpi=dpi)
-
 
 def create_segment(
     rect,
@@ -97,6 +63,51 @@ def create_segment(
     return (r, z)
 
 
+def create_polygon(x_pts, y_pts, title="None", plot=None):
+    """
+    self explanatory
+    :param rect:
+    :param xc:
+    :param yc:
+    :param title:
+    :return:
+    """
+
+    pts = []
+    for i in range(len(x_pts)):
+        pts.append((x_pts[i], y_pts[i]))
+
+    r = make.polygon(
+        x_pts,
+        y_pts,
+        closed=True,
+        title=title,
+    )
+    sh = r.shapeparam
+
+    r.set_resizable(False)
+    sh._title = title
+    sh.fill.alpha = 0.2
+    sh.sel_fill.alpha = 0.2
+    sh.symbol.alpha = 0.2
+    sh.sel_symbol.alpha = 0.2
+    sh.line._style = "SolidLine"
+    sh.line._color = "#ff5555"
+
+    sh.symbol.marker = "NoSymbol"
+    sh.sel_symbol.marker = "NoSymbol"
+
+    r.set_item_parameters({"ShapeParam": sh})
+
+    global shape_cntr
+    shape_cntr += 1
+    z = shape_cntr
+    if plot:
+        plot.add_item(r, z)
+
+    return (r, z)
+
+
 def create_rect_centerd_at(rect, xc, yc, title, plot=None):
     """
     self explanatory
@@ -109,12 +120,7 @@ def create_rect_centerd_at(rect, xc, yc, title, plot=None):
 
     dx = (rect[2] - rect[0]) * 0.5
     dy = (rect[1] - rect[3]) * 0.5
-    r, z = create_rectangle((xc - dx, yc + dy, xc + dx, yc - dy), title=title)
-    # z = 999999999
-
-    if plot:
-        plot.add_item(r, z)
-
+    r, z = create_rectangle((xc - dx, yc + dy, xc + dx, yc - dy), title=title, plot=plot)
     return (r, z)
 
 

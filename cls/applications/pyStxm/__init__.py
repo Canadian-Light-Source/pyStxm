@@ -72,7 +72,8 @@ def gen_version_json():
     os.chdir(wd)
 
     js = dict_to_json(dct)
-    json_to_file("version.json", js)
+    ver_path = os.path.join(abs_path_to_top, "version.json")
+    json_to_file(ver_path, js)
 
 
 gen_version_json()

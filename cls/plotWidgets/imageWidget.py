@@ -19,6 +19,7 @@ import qwt as Qwt
 import simplejson as json
 import numpy as np
 
+from cls.plotWidgets.cfg_mgr import ShapeConfigManager
 from cls.utils.roi_utils import make_base_wdg_com, widget_com_cmnd_types
 from cls.types.stxmTypes import SPEC_ROI_PREFIX, scan_types
 from plotpy.plot import PlotOptions
@@ -34,7 +35,7 @@ from plotpy.styles import (
 )
 
 from cls.plotWidgets.config import _, DEFAULTS
-
+from cls.plotWidgets.shapes import *
 from plotpy.items import shape
 from plotpy.items import ImageItem, TrImageItem, LabelItem, HistogramItem
 
@@ -206,6 +207,8 @@ SAMPLE_STANDARD = "SAMPLE_STANDARD"
 FILTER_STRING = "*.hdf5;*.png;*.jpg"
 
 MAX_IMAGE_Z = 1000
+sample_holder_counter = 0
+osa_holder_counter = 0
 # setup module logger with a default do-nothing handler
 _logger = get_module_logger(__name__)
 
@@ -356,7 +359,7 @@ class ImageWidgetPlot(PlotDialog):
         type="basic",
         sample_pos_mode=None,
         options=None,
-        settings_fname="settings.json",
+        #settings_fname="shape_settings.json",
     ):
         """
         __init__(): description
@@ -474,16 +477,16 @@ class ImageWidgetPlot(PlotDialog):
             title="", toolbar=True, edit=False, options=options
         )
         self.setObjectName("ImageWidgetPlot")
-        self.settings_fname = os.path.join(plotDir, settings_fname)
-        if not os.path.exists(self.settings_fname):
-            osa_smplhldr_dct = make_dflt_stxm_osa_smplholder_settings_dct(
-                self.settings_fname
-            )
-
-        else:
-            osa_smplhldr_dct = file_to_json(self.settings_fname)
-
-        self.ss = SaveSettings(self.settings_fname, dct_template=osa_smplhldr_dct)
+        # self.settings_fname = os.path.join(plotDir, settings_fname)
+        # if not os.path.exists(self.settings_fname):
+        #     osa_smplhldr_dct = make_dflt_stxm_osa_smplholder_settings_dct(
+        #         self.settings_fname
+        #     )
+        #
+        # else:
+        #     osa_smplhldr_dct = file_to_json(self.settings_fname)
+        #
+        # self.ss = SaveSettings(self.settings_fname, dct_template=osa_smplhldr_dct)
 
         contrast_pnl = self.get_contrast_panel()
         gpplot = contrast_pnl.get_plot()
@@ -611,6 +614,13 @@ class ImageWidgetPlot(PlotDialog):
             _cpnl.histogram.range.shapeparam.sel_symbol.facecolor = "yellow"
             _cpnl.histogram.range.shapeparam.fill = "yellow"
             _cpnl.histogram.range.shapeparam.shade = 0.15
+
+        self.standard_sample_holder = None
+        self.osa_holder = None
+
+        shape_cfg = ShapeConfigManager()
+        self.sample_holder_class_name = shape_cfg.get_setting("BL_CFG_MAIN", "sample_holder_shape_class")
+        self.osa_holder_shape_class_name = shape_cfg.get_setting("BL_CFG_MAIN", "osa_holder_shape_class")
 
 
     def get_xcs_panel(self):
@@ -1362,6 +1372,35 @@ class ImageWidgetPlot(PlotDialog):
                 tool.activate()
 
 
+    # def register_osa_and_samplehldr_tool(
+    #     self, sample_pos_mode=types.sample_positioning_modes.COARSE
+    # ):
+    #     """
+    #     register_osa_and_samplehldr_tool(): register the osa and sample holder tools
+    #
+    #     :returns: None
+    #     """
+    #     global sample_holder_counter
+    #     self.standard_sample_holder = Standard6HoleHolderShape(self, shp_id=sample_holder_counter)
+    #     sht = self.add_tool(tools.StxmShowSampleHolderTool)
+    #     sample_holder_counter += 1
+    #
+    #     osat = self.add_tool(tools.StxmShowOSATool)
+    #
+    #     if sample_pos_mode == types.sample_positioning_modes.GONIOMETER:
+    #         self.osa_holder = OSALaddPtychoHolderShape(self)
+    #         osat.changed.connect(self.create_uhv_osa)
+    #         self.osa_type = OSA_CRYO
+    #         sht.changed.connect(self.create_goni_sample_holder)
+    #         self.sample_hldr_type = SAMPLE_GONI
+    #
+    #     else:
+    #         self.osa_type = OSA_AMBIENT
+    #         self.osa_holder = OSAHorizontalRowHolderShape(self)
+    #         osat.changed.connect(self.create_osa)
+    #         sht.changed.connect(self.create_stdrd_sample_holder)
+    #         self.sample_hldr_type = SAMPLE_STANDARD
+
     def register_osa_and_samplehldr_tool(
         self, sample_pos_mode=types.sample_positioning_modes.COARSE
     ):
@@ -1370,20 +1409,33 @@ class ImageWidgetPlot(PlotDialog):
 
         :returns: None
         """
+        global sample_holder_counter, osa_holder_counter
+
+        #self.standard_sample_holder = Standard6HoleHolderShape(self, shp_id=sample_holder_counter)
+        self.sample_holder = globals()[self.sample_holder_class_name](self, shp_id=sample_holder_counter)
         sht = self.add_tool(tools.StxmShowSampleHolderTool)
+        sht.changed.connect(self.create_sample_holder)
+        sample_holder_counter += 1
+
         osat = self.add_tool(tools.StxmShowOSATool)
+        self.osa_holder = globals()[self.osa_holder_shape_class_name](self, shp_id=osa_holder_counter)
+        osat.changed.connect(self.create_osa)
+        osa_holder_counter += 1
 
         if sample_pos_mode == types.sample_positioning_modes.GONIOMETER:
-            osat.changed.connect(self.create_uhv_osa)
+            #self.osa_holder = OSALaddPtychoHolderShape(self)
+            #osat.changed.connect(self.create_uhv_osa)
             self.osa_type = OSA_CRYO
-            sht.changed.connect(self.create_goni_sample_holder)
+            #sht.changed.connect(self.create_goni_sample_holder)
             self.sample_hldr_type = SAMPLE_GONI
 
         else:
             self.osa_type = OSA_AMBIENT
+            # self.osa_holder = OSAHorizontalRowHolderShape(self)
             osat.changed.connect(self.create_osa)
             sht.changed.connect(self.create_stdrd_sample_holder)
             self.sample_hldr_type = SAMPLE_STANDARD
+
 
     def register_samplehldr_tool(
         self, sample_pos_mode=types.sample_positioning_modes.COARSE
@@ -1393,14 +1445,21 @@ class ImageWidgetPlot(PlotDialog):
 
         :returns: None
         """
+        global sample_holder_counter
+        # self.standard_sample_holder = Standard6HoleHolderShape(self, shp_id=sample_holder_counter)
+        # sht = self.add_tool(tools.StxmShowSampleHolderTool)
+        # sample_holder_counter += 1
+        self.sample_holder = globals()[self.sample_holder_class_name](self, shp_id=sample_holder_counter)
         sht = self.add_tool(tools.StxmShowSampleHolderTool)
+        sht.changed.connect(self.create_sample_holder)
+        sample_holder_counter += 1
 
         if sample_pos_mode == types.sample_positioning_modes.GONIOMETER:
-            sht.changed.connect(self.create_goni_sample_holder)
+            #sht.changed.connect(self.create_goni_sample_holder)
             self.sample_hldr_type = SAMPLE_GONI
 
         else:
-            sht.changed.connect(self.create_stdrd_sample_holder)
+            #sht.changed.connect(self.create_stdrd_sample_holder)
             self.sample_hldr_type = SAMPLE_STANDARD
 
     def register_osa_tool(self, sample_pos_mode=types.sample_positioning_modes.COARSE):
@@ -1409,10 +1468,18 @@ class ImageWidgetPlot(PlotDialog):
 
         :returns: None
         """
+        global osa_holder_counter
+        # self.osa_holder = OSAHorizontalRowHolderShape(self, shp_id=osa_holder_counter)
+        # osat = self.add_tool(tools.StxmShowOSATool)
+        # osa_holder_counter += 1
         osat = self.add_tool(tools.StxmShowOSATool)
+        self.osa_holder = globals()[self.osa_holder_shape_class_name](self, shp_id=osa_holder_counter)
+        osat.changed.connect(self.create_osa)
+        osa_holder_counter += 1
 
         if sample_pos_mode == types.sample_positioning_modes.GONIOMETER:
-            osat.changed.connect(self.create_uhv_osa)
+            #self.osa_holder = OSALaddPtychoHolderShape(self)
+            #osat.changed.connect(self.create_uhv_osa)
             self.osa_type = OSA_CRYO
 
         else:
@@ -1702,7 +1769,7 @@ class ImageWidgetPlot(PlotDialog):
 
         elif toolstr == "tools.StxmShowSampleHolderTool":
             tool = self.add_tool(tools.StxmShowSampleHolderTool)
-            if sample_pos_mode == types.sample_positioning_modes.GONIOMETER:
+            if self.sample_pos_mode == types.sample_positioning_modes.GONIOMETER:
                 tool.changed.connect(self.create_goni_sample_holder)
                 self.sample_hldr_type = SAMPLE_GONI
             else:
@@ -1711,7 +1778,7 @@ class ImageWidgetPlot(PlotDialog):
 
         elif toolstr == "tools.StxmShowOSATool":
             tool = self.add_tool(tools.StxmShowOSATool)
-            if sample_pos_mode == types.sample_positioning_modes.GONIOMETER:
+            if self.sample_pos_mode == types.sample_positioning_modes.GONIOMETER:
                 tool.changed.connect(self.create_uhv_osa)
                 self.osa_type = OSA_CRYO
 
@@ -2383,50 +2450,6 @@ class ImageWidgetPlot(PlotDialog):
         circ.shape.set_item_parameters({"ShapeParam": circ.shape.shapeparam})
         self.plot.add_item(circ, z=999999999)
 
-    def create_osa(self, do_it=True):
-        """
-        create_osa(): description
-
-        :returns: None
-        """
-        if do_it:
-            # rad = 1000
-            # xc = -1230
-            # xc = 0.0
-            # yc = 0.0
-            # rect = (-1250, 500, 1250, -5500)
-
-            xc, yc = self.ss.get("OSA_AMBIENT.CENTER")
-            rect = self.ss.get("OSA_AMBIENT.RECT")
-
-            create_rectangle(rect, title="osa_rect", plot=self.plot)
-
-            create_simple_circle(
-                rect[0] + 500, rect[1] - 500, 20, title="osa_1", plot=self.plot
-            )
-            create_simple_circle(
-                rect[0] + 1000, rect[1] - 500, 25, title="osa_2", plot=self.plot
-            )
-            create_simple_circle(
-                rect[0] + 1500, rect[1] - 500, 30, title="osa_3", plot=self.plot
-            )
-            create_simple_circle(
-                rect[0] + 2000, rect[1] - 500, 35, title="osa_4", plot=self.plot
-            )
-
-        else:
-            # remove the sample_holder
-            self.blockSignals(True)
-            shapes = self.plot.get_items(item_type=IShapeItemType)
-            for shape in shapes:
-                if hasattr(shape, "shapeparam"):
-                    s = shape.shapeparam
-                    title = s._title
-                    if title.find("osa_") > -1:
-                        self.delPlotItem(shape)
-            self.blockSignals(False)
-        self.plot.replot()
-
     def create_beam_spot(self, xc, yc, size=0.5):
         """
         a function to create a beam spot shape that will show the current position of the beam on the plot
@@ -2452,40 +2475,34 @@ class ImageWidgetPlot(PlotDialog):
 
         self.plot.replot()
 
+    def create_osa(self, do_it=True):
+        """
+        create_osa(): description
+
+        :returns: None
+        """
+        self.osa_holder.create_shape(do_it)
+        self.plot.replot()
+
     def create_uhv_osa(self, do_it=True):
         """
         create_osa(): description
 
         :returns: None
         """
-        if do_it:
-            xc, yc = self.ss.get("OSA_CRYO.CENTER")
-            rect = self.ss.get("OSA_CRYO.RECT")
-            x2 = rect[2]
-            y1 = rect[1]
-            create_rectangle(rect, title="osa_rect", plot=self.plot)
-            # from outboard to inboard
-            create_simple_circle(x2 - 250, y1 - 250, 35, title="osa_1", plot=self.plot)
-            create_simple_circle(x2 - 250, y1 - 2250, 35, title="osa_2", plot=self.plot)
-
-        else:
-            # remove the sample_holder
-
-            self.blockSignals(True)
-            shapes = self.plot.get_items(item_type=IShapeItemType)
-
-            for shape in shapes:
-                title = ""
-                if hasattr(shape, "annotationparam"):
-                    title = shape.annotationparam._title
-                elif hasattr(shape, "shapeparam"):
-                    title = shape.shapeparam._title
-
-                if title.find("osa_") > -1:
-                    self.delPlotItem(shape)
-
-            self.blockSignals(False)
+        self.osa_holder.create_shape(do_it)
         self.plot.replot()
+
+
+    def create_sample_holder(self, do_it=True):
+        """
+        create_sample_holder(): description
+
+        :returns: None
+        """
+        self.sample_holder.create_shape(do_it)
+        self.plot.replot()
+
 
     def create_stdrd_sample_holder(self, do_it=True):
         """
@@ -2493,41 +2510,7 @@ class ImageWidgetPlot(PlotDialog):
 
         :returns: None
         """
-        HOLE_DIAMETER = 2500
-        if do_it:
-            rad = self.ss.get("%s.RADIUS" % SAMPLE_STANDARD)
-            rect = self.ss.get("%s.RECT" % SAMPLE_STANDARD)
-            xc = (rect[0] + rect[2]) * 0.5
-            yc = (rect[1] + rect[3] - 5000) * 0.5
-
-            create_rectangle(rect, title="sh_rect")
-
-            create_simple_circle(xc - 5000, yc, rad, title="sh_1", plot=self.plot)
-            create_simple_circle(xc, yc, rad, title="sh_2", plot=self.plot)
-            create_simple_circle(xc + 5000, yc, rad, title="sh_3", plot=self.plot)
-
-            create_simple_circle(
-                xc - 5000, yc + 5000, rad, title="sh_4", plot=self.plot
-            )
-            create_simple_circle(xc, yc + 5000, rad, title="sh_5", plot=self.plot)
-            create_simple_circle(
-                xc + 5000, yc + 5000, rad, title="sh_6", plot=self.plot
-            )
-        else:
-            # remove the sample_holder
-            self.blockSignals(True)
-            shapes = self.plot.get_items(item_type=IShapeItemType)
-            for shape in shapes:
-                title = ""
-                if hasattr(shape, "annotationparam"):
-                    title = shape.annotationparam._title
-                elif hasattr(shape, "shapeparam"):
-                    title = shape.shapeparam._title
-                # s = shape.shapeparam
-                # title = s._title
-                if title.find("sh_") > -1:
-                    self.delPlotItem(shape)
-            self.blockSignals(False)
+        self.sample_holder.create_shape(do_it)
         self.plot.replot()
 
     def create_goni_sample_holder(self, do_it=True):
@@ -2536,58 +2519,61 @@ class ImageWidgetPlot(PlotDialog):
 
         :returns: None
         """
-        if do_it:
-            rad = self.ss.get("%s.RADIUS" % SAMPLE_GONI)
-            rect = self.ss.get("%s.RECT" % SAMPLE_GONI)
-            xc, yc = self.ss.get("%s.CENTER" % SAMPLE_GONI)
-            # xc = (rect[0] + rect[2]) * 0.5
-            # yc = (rect[1] + rect[3] - 5000) * 0.5
-            frame = (0.0, 600.0, 3000.0, -600.0)
-            frame_outbrd_edge = xc - ((frame[0] + frame[2]) / 2.0)
-
-            hole = (-100, 400, 100, -400)
-
-            # self.create_rectangle(new_rect, title='sh_rect')
-            create_rect_centerd_at(frame, xc, yc, title="sh_rect", plot=self.plot)
-            create_rect_centerd_at(
-                hole, frame_outbrd_edge + 385.0, yc, title="sh_1", plot=self.plot
-            )
-            create_rect_centerd_at(
-                hole, frame_outbrd_edge + 660.0, yc, title="sh_1", plot=self.plot
-            )
-            create_rect_centerd_at(
-                hole, frame_outbrd_edge + 935.0, yc, title="sh_2", plot=self.plot
-            )
-            create_rect_centerd_at(
-                hole, frame_outbrd_edge + 1210.0, yc, title="sh_3", plot=self.plot
-            )
-            create_rect_centerd_at(
-                hole, frame_outbrd_edge + 1485.0, yc, title="sh_4", plot=self.plot
-            )
-            create_rect_centerd_at(
-                hole, frame_outbrd_edge + 1760.0, yc, title="sh_5", plot=self.plot
-            )
-            create_rect_centerd_at(
-                hole, frame_outbrd_edge + 2035.0, yc, title="sh_6", plot=self.plot
-            )
-            # self.create_rect_centerd_at(hole, frame_outbrd_edge + 1945.0, yc , title='sh_7')
-            # self.create_rect_centerd_at(hole, frame_outbrd_edge + 100.0, yc , title='sh_8')
-
-        else:
-            #        else:
-            # remove the sample_holder
-            self.blockSignals(True)
-            shapes = self.plot.get_items(item_type=IShapeItemType)
-            for shape in shapes:
-                title = ""
-                if hasattr(shape, "annotationparam"):
-                    title = shape.annotationparam._title
-                elif hasattr(shape, "shapeparam"):
-                    title = shape.shapeparam._title
-                if title.find("sh_") > -1:
-                    self.delPlotItem(shape)
-            self.blockSignals(False)
+        self.sample_holder.create_shape(do_it)
         self.plot.replot()
+
+        # if do_it:
+        #     rad = self.ss.get("%s.RADIUS" % SAMPLE_GONI)
+        #     rect = self.ss.get("%s.RECT" % SAMPLE_GONI)
+        #     xc, yc = self.ss.get("%s.CENTER" % SAMPLE_GONI)
+        #     # xc = (rect[0] + rect[2]) * 0.5
+        #     # yc = (rect[1] + rect[3] - 5000) * 0.5
+        #     frame = (0.0, 600.0, 3000.0, -600.0)
+        #     frame_outbrd_edge = xc - ((frame[0] + frame[2]) / 2.0)
+        #
+        #     hole = (-100, 400, 100, -400)
+        #
+        #     # self.create_rectangle(new_rect, title='sh_rect')
+        #     create_rect_centerd_at(frame, xc, yc, title="sh_rect", plot=self.plot)
+        #     create_rect_centerd_at(
+        #         hole, frame_outbrd_edge + 385.0, yc, title="sh_1", plot=self.plot
+        #     )
+        #     create_rect_centerd_at(
+        #         hole, frame_outbrd_edge + 660.0, yc, title="sh_1", plot=self.plot
+        #     )
+        #     create_rect_centerd_at(
+        #         hole, frame_outbrd_edge + 935.0, yc, title="sh_2", plot=self.plot
+        #     )
+        #     create_rect_centerd_at(
+        #         hole, frame_outbrd_edge + 1210.0, yc, title="sh_3", plot=self.plot
+        #     )
+        #     create_rect_centerd_at(
+        #         hole, frame_outbrd_edge + 1485.0, yc, title="sh_4", plot=self.plot
+        #     )
+        #     create_rect_centerd_at(
+        #         hole, frame_outbrd_edge + 1760.0, yc, title="sh_5", plot=self.plot
+        #     )
+        #     create_rect_centerd_at(
+        #         hole, frame_outbrd_edge + 2035.0, yc, title="sh_6", plot=self.plot
+        #     )
+        #     # self.create_rect_centerd_at(hole, frame_outbrd_edge + 1945.0, yc , title='sh_7')
+        #     # self.create_rect_centerd_at(hole, frame_outbrd_edge + 100.0, yc , title='sh_8')
+        #
+        # else:
+        #     #        else:
+        #     # remove the sample_holder
+        #     self.blockSignals(True)
+        #     shapes = self.plot.get_items(item_type=IShapeItemType)
+        #     for shape in shapes:
+        #         title = ""
+        #         if hasattr(shape, "annotationparam"):
+        #             title = shape.annotationparam._title
+        #         elif hasattr(shape, "shapeparam"):
+        #             title = shape.shapeparam._title
+        #         if title.find("sh_") > -1:
+        #             self.delPlotItem(shape)
+        #     self.blockSignals(False)
+        # self.plot.replot()
 
     def show_pattern(self, xc=None, yc=None, pad_size=1.0, do_show=True):
         # passing self will allow the pattern to be added to the plotter
@@ -2853,10 +2839,11 @@ class ImageWidgetPlot(PlotDialog):
             # else:
             #     main_rect = main_rect.united(qrect)
             else:
-                print(
-                    "select_main_rect_of_shape: the shape title [%s] didnt match [%s]"
-                    % (title, _title)
-                )
+                # print(
+                #     "select_main_rect_of_shape: the shape title [%s] didnt match [%s]"
+                #     % (title, _title)
+                # )
+                pass
         if len(selected_shapes) > 0:
             selected_shapes.reverse()
             for sh in selected_shapes:
@@ -3088,6 +3075,7 @@ class ImageWidgetPlot(PlotDialog):
 
         :returns: None
         """
+        title = ""
         if type(item) == TrImageItem:
             #user moved an image they loaded so emit new center
             self.inputState.keyisPressed[Qt.Key_Alt] = True
@@ -3113,6 +3101,9 @@ class ImageWidgetPlot(PlotDialog):
             else:
                 if self.inputState.keyisPressed[Qt.Key_Alt]:
                     self._emit_new_roi(self.image_type)
+        elif hasattr(item, "_shape_object"):
+            # update the shape objects coordinates
+            item._shape_object.set_center_position(item.get_center())
 
         elif hasattr(item, "shapeparam"):
             shape = item.shapeparam
@@ -3130,25 +3121,24 @@ class ImageWidgetPlot(PlotDialog):
         if title.find("osa_") > -1:
             shape = self.get_shape_with_this_title("osa_rect")
             if shape:
-                self.ss.set("%s.CENTER" % self.osa_type, shape.get_center())
-                self.ss.set("%s.RECT" % self.osa_type, shape.get_rect())
-                self.ss.update()
+                #self.ss.set("%s.RECT" % self.osa_type, shape.get_rect())
+                #self.ss.update()
+                shape._shape_object.set_center_position(shape.get_center())
+                shape._shape_object.set_rect(shape.get_rect())
 
         if title.find("sh_") > -1:
             shape = self.get_shape_with_this_title("sh_rect")
             if shape:
-                self.ss.set("%s.CENTER" % self.sample_hldr_type, shape.get_center())
-                self.ss.set("%s.RECT" % self.sample_hldr_type, shape.get_rect())
-                self.ss.update()
+                shape._shape_object.set_center_position(shape.get_center())
+                shape._shape_object.set_rect(shape.get_rect())
 
         regd_shape = self.get_shape_from_registry(title)
         if regd_shape:
             # only look at first 5 chars
             if title.find(regd_shape["shape_title"][0:5]) > -1:
                 cntr = item.get_center()
-                self.ss.set("%s.CENTER" % regd_shape["shape_title"].upper(), cntr)
-                # self.ss.set('%s.RECT' % regd_shape['shape_title'].upper(), shape.get_rect())
-                self.ss.update()
+                # self.ss.set("%s.CENTER" % regd_shape["shape_title"].upper(), cntr)
+                # self.ss.update()
                 self._emit_new_roi(self.image_type)
 
         else:
@@ -5704,7 +5694,6 @@ class ImageWidgetPlot(PlotDialog):
     def get_shape_item_types(self, item):
         if isinstance(item, AnnotatedRectangle):
             return {
-                "shape_type": AnnotatedRectangle,
                 "spatial_type": types.spatial_type_prefix.ROI,
             }
 
@@ -5738,20 +5727,15 @@ class ImageWidgetPlot(PlotDialog):
 
         :returns: None
         """
-        # Don't delete the base image
-        # if(item.title().text() != 'Image #1'):
         if not isinstance(item, ICSImageItemType):
             title = str(item.title().text())
             # print 'deleting %s'  % title
             self.region_deleted.emit(title)
             self.plot.del_item(item)
-            # print 'deleteing [%s] with unique_id [%d]' % (str(item.title().text()), item.unique_id)
-            # print 'id(item)=%d, unique=%d' % (id(item), item.unique_id)
             if hasattr(item, "_parent_tool"):
                 item._parent_tool.re_init_unique_id()
             del item
             # signal to anyone listening that we are deleting this item
-            # print 'delPlotItem: emitting_new_roi with cmnd=DEL_ROI'
             self._emit_new_roi(None, cmnd=widget_com_cmnd_types.DEL_ROI)
 
             if replot:
@@ -5790,11 +5774,16 @@ class ImageWidgetPlot(PlotDialog):
         """
         items = self.plot.get_items(item_type=IShapeItemType)
         for item in items:
+            if hasattr(item, "shape_item"):
+                # delete the shape object fo rsample or osa holder
+                item.shape_item = None
             if not exclude_rois:
                 if hasattr(item, "title"):
                     if item.title().text().find(SPEC_ROI_PREFIX) == -1:
+                        print(f"deleting shape item 1: {item.title().text()} or type {type(item)}")
                         self.delShapePlotItem(item, replot=False)
             else:
+                print(f"deleting shape item 2: {item.title().text()} or type {type(item)}")
                 self.delShapePlotItem(item, replot=False)
 
         self.plot.replot()

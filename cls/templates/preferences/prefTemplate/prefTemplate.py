@@ -490,10 +490,10 @@ if __name__ == "__main__":
     import sys
 
     # zps = get_zp_dct()
-    # osas = get_osa_dct()
+    # osa_holders = get_osa_dct()
 
     # DEFAULTS.add_section('PRESETS.ZP_PARAMS', zps)
-    # DEFAULTS.add_section('PRESETS.OSA_PARAMS',osas)
+    # DEFAULTS.add_section('PRESETS.OSA_PARAMS',osa_holders)
     # 	DEFAULTS.add_section('PRESETS.ZP_FOCUS_PARAMS',{})
     # 	DEFAULTS.add_section('PRESETS.ZP_FOCUS_PARAMS.ZP_IDX', 0)
     # 	DEFAULTS.add_section('PRESETS.ZP_FOCUS_PARAMS.ZP_A1', 0)

@@ -292,7 +292,7 @@ class ophydPushBtnWithFbk(QtWidgets.QPushButton):
                     self.btn.setChecked(False)
                     self.btn_state = False
                 self.btn.blockSignals(False)
-                self.change_btn_color(val)
+                # self.change_btn_color(val)
 
         else:
             self.fdevice.changed.connect(self._dev_fbk_changed)
@@ -421,26 +421,21 @@ class ophydPushBtnWithFbk(QtWidgets.QPushButton):
 
         # txt_str = val
         self.btn.setText(txt_str)
-        # if(val.find(self.on_str) > -1):
-        #     self.make_checked(True)
-        # else:
-        #     self.make_checked(False)
-
         self.btn.blockSignals(False)
-        self.change_btn_color(dct["value"])
+        # self.change_btn_color(dct["value"])
 
-    def change_btn_color(self, val):
-
-        if val == 0:
-            # in=0
-            s = format_btn(title_color="white", bgcolor=master_colors["app_medgray"]["rgb_str"])
-        elif val == 1:
-            # out =1
-            s = format_btn(title_color="white", bgcolor=master_colors["app_ltblue"]["rgb_str"])
-        else:
-            # moving
-            s = format_btn(title_color="black", bgcolor=master_colors["fbk_moving_ylw"]["rgb_str"])
-        self.btn.setStyleSheet(s)
+    # def change_btn_color(self, val):
+    #     pass
+    #     # if val == 0:
+    #     #     # in=0
+    #     #     s = format_btn(title_color="white", bgcolor=master_colors["app_medgray"]["rgb_str"])
+    #     # elif val == 1:
+    #     #     # out =1
+    #     #     s = format_btn(title_color="white", bgcolor=master_colors["app_ltblue"]["rgb_str"])
+    #     # else:
+    #     #     # moving
+    #     #     s = format_btn(title_color="black", bgcolor=master_colors["fbk_moving_ylw"]["rgb_str"])
+    #     # self.btn.setStyleSheet(s)
 
     def on_released(self):
         pass

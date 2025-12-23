@@ -1194,10 +1194,11 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     fbk_dev=self.ev_en_dev,
                     off_str="Disabled",
                     on_str="Enabled",
+                    toggle=True,
                     cb=self.on_enable_fl_change_with_energy
                 )
-                # set checked and text to True values
-                btn.make_checked(True)
+                # set checked and text to True values, startup it should be disabled
+                btn.make_checked(False)
 
             fcs_mode_dev = MAIN_OBJ.device('DNM_FOCUS_MODE', do_warn=False)
             if fcs_mode_dev:

@@ -99,6 +99,12 @@ class sample_abstract_motor(MotorQt):
     #     self._coarse_scanable_range = coarse
     #     self._fine_scanable_range = fine
 
+    def stop(self):
+        """Stop both coarse and fine motors"""
+        if self._coarse_mtr is not None:
+            self._coarse_mtr.stop()
+        if self._fine_mtr is not None:
+            self._fine_mtr.stop()
 
     @property
     def max_fine_range(self) -> float:

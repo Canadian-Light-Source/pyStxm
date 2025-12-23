@@ -8,19 +8,18 @@ from functools import partial
 import sys
 import os
 import timeit
-from typing import Dict, Optional, Tuple, Union
-from PyQt5 import QtGui, QtWidgets
+from typing import Dict, Optional
+from PyQt5 import QtGui
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal, QObject, QTimer, QPointF, QRectF, Qt
 from PyQt5 import uic
 
-import copy
 import qwt as Qwt
 import simplejson as json
 import numpy as np
 
-from cls.plotWidgets.cfg_mgr import ShapeConfigManager
-from cls.utils.roi_utils import make_base_wdg_com, widget_com_cmnd_types
+from cls.utils.bl_config_reader import BeamlineConfigReader
+from cls.utils.roi_utils import make_base_wdg_com
 from cls.types.stxmTypes import SPEC_ROI_PREFIX, scan_types
 from plotpy.plot import PlotOptions
 from plotpy.mathutils.colormap import get_cmap, register_extra_colormap
@@ -31,17 +30,14 @@ from plotpy.styles import (
     ImageParam,
     ImageAxesParam,
     GridParam,
-    CurveParam,
 )
 
-from cls.plotWidgets.config import _, DEFAULTS
-from cls.plotWidgets.shapes import *
+from cls.plotWidgets.config import _
 from plotpy.items import shape
 from plotpy.items import ImageItem, TrImageItem, LabelItem, HistogramItem
 
 from guidata.qthelpers import add_actions
 from guidata.configtools import get_icon
-from guidata.config import CONF
 
 
 def _nanmin(data):
@@ -64,9 +60,7 @@ def _nanmax(data):
 
 from plotpy.interfaces import (
     ICSImageItemType,
-    IPanel,
     IBasePlotItem,
-    ICurveItemType,
     IShapeItemType,
     IDecoratorItemType,
 )
@@ -96,9 +90,6 @@ from guidata.dataset import update_dataset
 
 from cls.plotWidgets.tools.annotatedHorizontalSegment import AnnotatedHorizontalSegment
 
-from cls.plotWidgets.stxm_osa_dflt_settings import (
-    make_dflt_stxm_osa_smplholder_settings_dct,
-)
 from cls.plotWidgets.tools import ROITool, clsSquareAspectRatioTool
 from cls.utils.excepthook import exception
 from cls.utils.nextFactor import nextFactor
@@ -106,12 +97,10 @@ from cls.utils.angles import calcRectPoints
 from cls.utils.fileUtils import get_file_path_as_parts
 from cls.utils.log import get_module_logger
 from cls.utils.dict_utils import dct_get, dct_put
-from cls.utils.json_utils import file_to_json
-from cls.utils.cfgparser import ConfigClass
 from cls.utils.time_utils import datetime_string_to_seconds
 
 from cls.stylesheets import master_colors
-from cls.appWidgets.dialogs import excepthook, errorMessage
+from cls.appWidgets.dialogs import excepthook
 from cls.plotWidgets import tools
 from cls.plotWidgets.shape_restrictions import ROILimitObj, ROILimitDef, ROI_STATE_ALARM
 from cls.utils.roi_utils import (
@@ -122,7 +111,6 @@ from cls.utils.roi_utils import (
     is_unique_roi_id_in_list,
     get_current_unique_id,
     set_current_unique_id,
-    delete_unique_id,
 )
 from cls.utils.roi_dict_defs import *
 from cls.plotWidgets.color_def import (
@@ -137,9 +125,6 @@ from cls.plotWidgets.shapes.pattern_gen import add_pattern_to_plot
 
 import cls.types.stxmTypes as types
 
-from cls.utils.save_settings import SaveSettings
-from cls.utils.json_threadsave import mime_to_dct
-
 from cls.data_io.stxm_data_io import STXMDataIo
 from cls.scanning.dataRecorder import DataIo
 #from cls.plotWidgets.CLSPlotItemBuilder import clsPlotItemBuilder
@@ -147,9 +132,7 @@ from cls.scanning.dataRecorder import DataIo
 from cls.utils.threaded_image_loader import ThreadpoolImageLoader
 
 from cls.plotWidgets.shapes.utils import (
-    create_rect_centerd_at,
     create_rectangle,
-    create_simple_circle,
 )
 
 
@@ -618,9 +601,10 @@ class ImageWidgetPlot(PlotDialog):
         self.standard_sample_holder = None
         self.osa_holder = None
 
-        shape_cfg = ShapeConfigManager()
-        self.sample_holder_class_name = shape_cfg.get_setting("BL_CFG_MAIN", "sample_holder_shape_class")
-        self.osa_holder_shape_class_name = shape_cfg.get_setting("BL_CFG_MAIN", "osa_holder_shape_class")
+        # will pull the current beamline configuration specified in app.ini
+        bl_cfg = BeamlineConfigReader()
+        self.sample_holder_class_name = bl_cfg.get_setting("BL_CFG_MAIN", "sample_holder_shape_class")
+        self.osa_holder_shape_class_name = bl_cfg.get_setting("BL_CFG_MAIN", "osa_holder_shape_class")
 
 
     def get_xcs_panel(self):
@@ -2431,7 +2415,6 @@ class ImageWidgetPlot(PlotDialog):
 
         :returns: None
         """
-        from plotpy.styles import ShapeParam
 
         # circ = make.annotated_circle(x0, y0, x1, y1, ratio, title, subtitle)
         rad = val / 2.0
@@ -7083,8 +7066,6 @@ def make_default_stand_alone_stxm_imagewidget(
     #     global win
     #     print 'on_new_beamspot_fbk: (%.2f, %.2f)' % (cx, cy)
     #     win.move_beam_spot(cx, cy)
-    from cls.utils.cfgparser import ConfigClass
-    from cls.applications.pyStxm import abs_path_to_ini_file
 
     # appConfig = ConfigClass(abs_path_to_ini_file)
     # scan_mode = MAIN_OBJ.get_sample_scanning_mode_string()
@@ -7568,8 +7549,6 @@ def go():
     app.exec_()
 
 def astxm_lineplot_test():
-    from cls.utils.roi_utils import on_centerxy_changed
-
     ss = get_style()
     app = guidata.qapplication()
     sys.excepthook = excepthook
@@ -7785,7 +7764,6 @@ if __name__ == "__main__":
     from cls.stylesheets import get_style
     from bcm.devices import MotorQt as apsMotor
     from PyQt5.QtCore import pyqtSignal, QObject
-    from cls.utils.profiling import determine_profile_bias_val, profile_it
 
     # profile_it('go', bias_val=7.40181638985e-07)
     # go()

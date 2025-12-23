@@ -1,0 +1,285 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scan Control and Status &mdash; pyStxm 3.00 Manual 3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme_overrides.css?v=1e529003" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=110ea713"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/js/version_switch.js?v=21d7c133"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Data Visualization" href="data_visualization/index.html" />
+    <link rel="prev" title="Counts" href="counts.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            pyStxm 3.00 Manual
+              <img src="../../_static/pyStxmSplash.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">User Interface</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#pystxm-main-screen">pySTXM Main Screen</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="counts.html">Counts</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Scan Control and Status</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scan-control-and-status-widgets">Scan control and status widgets</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="data_visualization/index.html">Data Visualization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../splash.html">Splash Screen</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tools/tools_2d.html">2D Selection Tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tools/tools_lines.html">Line Selection Tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tools/tools_point.html">Point Selection Tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="data/index.html">Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ioc_apps.html">IOC Applications</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ioc_apps/index.html">IOC Application Status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="prefs/index.html">Preferences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="regions.html">Regions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="regions.html#counts">Counts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scan_plugin_prefs.html">Scan plugin and preferences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scan_plugins/index.html">Scan Plugins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scan_plugins/tools/2d_sel.html">2D Selection Tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="scan_plugins/tools/index.html">Tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="session_info.html">Session Info</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../configuration/index.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../scanning/index.html">Scan Plugins</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data/index.html">Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_prefs/index.html">Preferences</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sts_bar/index.html">Status Bar</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../devices/index.html">Devices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../info/index.html">Information</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../trouble_shooting/index.html">Trouble Shooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../developers_guide/index.html">Developers Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rst_examples.html">RST Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyStxm 3.00 Manual</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">User Interface</a></li>
+      <li class="breadcrumb-item active">Scan Control and Status</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/interface/window_system/scan_ctrl.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="scan-control-and-status">
+<h1>Scan Control and Status<a class="headerlink" href="#scan-control-and-status" title="Link to this heading"></a></h1>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="../../_images/scan_ctrl_startup.png"><img alt="../../_images/scan_ctrl_startup.png" src="../../_images/scan_ctrl_startup.png" style="width: 823.5px; height: 197.25px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Scan control panel at startup</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The Scan Control and Status pane is where the user controls the scan and monitors its progress and current status.
+It is comprised of several label widgets and buttons as well as a table that indicates the current scans file name(s)
+as well as some meta data and current progress.</p>
+<section id="scan-control-and-status-widgets">
+<h2>Scan control and status widgets<a class="headerlink" href="#scan-control-and-status-widgets" title="Link to this heading"></a></h2>
+<section id="scan-status-label">
+<h3>Scan Status Label<a class="headerlink" href="#scan-status-label" title="Link to this heading"></a></h3>
+<p>The Scan status label indicates the current state of a scan, and will dynamically change its message to reflect
+what is currently happening (scan wise).</p>
+<div class="tocdescr docutils container">
+<div class="descr docutils container">
+<figure class="align-default" id="id2">
+<a class="reference internal image-reference" href="../../_images/scan_ctrl_sts_lbl.png"><img alt="../../_images/scan_ctrl_sts_lbl.png" src="../../_images/scan_ctrl_sts_lbl.png" style="width: 205.0px; height: 25.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Status label when scan is not running</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</div>
+<div class="descr docutils container">
+<figure class="align-default" id="id3">
+<a class="reference internal image-reference" href="../../_images/scan_ctrl_sts_lbl_active.png"><img alt="../../_images/scan_ctrl_sts_lbl_active.png" src="../../_images/scan_ctrl_sts_lbl_active.png" style="width: 203.0px; height: 24.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Status label during an active scan</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</div>
+</div>
+<figure class="align-center" id="id4">
+<a class="reference internal image-reference" href="../../_images/scan_ctrl_sts_lbl_paused.png"><img alt="../../_images/scan_ctrl_sts_lbl_paused.png" src="../../_images/scan_ctrl_sts_lbl_paused.png" style="width: 208.0px; height: 26.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Status label when scan is paused</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="scan-control-buttons">
+<h3>Scan Control Buttons<a class="headerlink" href="#scan-control-buttons" title="Link to this heading"></a></h3>
+<figure class="align-center" id="id5">
+<a class="reference internal image-reference" href="../../_images/scan_ctrl_ctrl_btns.png"><img alt="../../_images/scan_ctrl_ctrl_btns.png" src="../../_images/scan_ctrl_ctrl_btns.png" style="width: 307.0px; height: 25.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Scan control buttons with Pause currently disabled</span><a class="headerlink" href="#id5" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>Pretty straight forward, they are buttons and they control the scan, depending on the current state of the scan a
+button maybe enabled or disabled depending. For example, when a user clicks <strong>Start</strong> the Start button will be
+disabled and the Pause button will be enabled, the Start button will not become enabled again until the scan
+has completed or been Stopped by the user.</p>
+</section>
+<section id="start-a-scan">
+<h3>Start a scan<a class="headerlink" href="#start-a-scan" title="Link to this heading"></a></h3>
+<figure class="align-center" id="id6">
+<a class="reference internal image-reference" href="../../_images/scan_ctrl_active.png"><img alt="../../_images/scan_ctrl_active.png" src="../../_images/scan_ctrl_active.png" style="width: 823.5px; height: 101.25px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Scan control panel when scan is active</span><a class="headerlink" href="#id6" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>To start a scan that has been configured simply click the <strong>Start</strong> button on the
+scan control and status panel. Once the scan is active, the status changes from <strong>idle</strong> to <strong>Scanning…</strong>
+and remains that status until completed. When the scan is running the Start button will be disabled
+along with the fields in the <strong>Scans</strong> tab this is so that a user cannot inadvertantly try to
+start another scan while one is already running. Only 1 scan can be executed at a time.</p>
+</section>
+<section id="pause-a-scan">
+<h3>Pause a scan<a class="headerlink" href="#pause-a-scan" title="Link to this heading"></a></h3>
+<figure class="align-center" id="id7">
+<a class="reference internal image-reference" href="../../_images/scan_ctrl_paused.png"><img alt="../../_images/scan_ctrl_paused.png" src="../../_images/scan_ctrl_paused.png" style="width: 823.5px; height: 99.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Scan control panel when scan has been paused</span><a class="headerlink" href="#id7" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>To pause an active scan click the <strong>Pause</strong> button, the pause button will then show that it is depressed,
+a scan can only be paused right before it starts a new iteration of the scan which is not always the same
+for each scan so expect a short delay after pressing pause to wait for the scan to pause. The scan can be
+resumed by again pressing the pause button</p>
+</section>
+<section id="stop-a-scan">
+<h3>Stop a scan<a class="headerlink" href="#stop-a-scan" title="Link to this heading"></a></h3>
+<figure class="align-center" id="id8">
+<a class="reference internal image-reference" href="../../_images/scan_ctrl_done.png"><img alt="../../_images/scan_ctrl_done.png" src="../../_images/scan_ctrl_done.png" style="width: 824.25px; height: 101.25px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Scan control panel when scan completed</span><a class="headerlink" href="#id8" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>To stop a scan click the <strong>Stop</strong> button, depending on how elaborate the scan is it may
+take several seconds for it to completely stop and the status to show <strong>idle</strong>.</p>
+</section>
+<section id="scan-time-indicators">
+<h3>Scan Time Indicators<a class="headerlink" href="#scan-time-indicators" title="Link to this heading"></a></h3>
+<figure class="align-center" id="id9">
+<a class="reference internal image-reference" href="../../_images/scan_ctrl_sts_time.png"><img alt="../../_images/scan_ctrl_sts_time.png" src="../../_images/scan_ctrl_sts_time.png" style="width: 322.0px; height: 25.0px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Elapsed and Estemated time labels</span><a class="headerlink" href="#id9" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The Elapsed time will begin counting up from 00:00 once the scan has been started and will stop when it is completed.
+The Estimated time label will indicate based on the current scan parameters approximately how long the scan should take.</p>
+</section>
+<section id="individual-scan-progress">
+<h3>Individual Scan Progress<a class="headerlink" href="#individual-scan-progress" title="Link to this heading"></a></h3>
+<figure class="align-center" id="id10">
+<a class="reference internal image-reference" href="../../_images/scan_ctrl_sts_indivscan.png"><img alt="../../_images/scan_ctrl_sts_indivscan.png" src="../../_images/scan_ctrl_sts_indivscan.png" style="width: 822.75px; height: 31.5px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Each scan gets its own detail, filename, current progress</span><a class="headerlink" href="#id10" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>When the user clicks <strong>Start</strong> on a new scan, a filename will be generated and added to the Individual scan progress table.
+The current state of the scan will change to active and the progress of the scan will be tracked by a progress bar on the same
+line in the table. For a stack or multi spatial fine image scan this table will show the progress of each frame of data as
+it is acquired.</p>
+<figure class="align-center" id="id11">
+<a class="reference internal image-reference" href="../../_images/scan_ctrl_sts_stack.png"><img alt="../../_images/scan_ctrl_sts_stack.png" src="../../_images/scan_ctrl_sts_stack.png" style="width: 716.95px; height: 173.55px;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Status while executing a 40 eV stack</span><a class="headerlink" href="#id11" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="counts.html" class="btn btn-neutral float-left" title="Counts" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="data_visualization/index.html" class="btn btn-neutral float-right" title="Data Visualization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Canadian Lightsource.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

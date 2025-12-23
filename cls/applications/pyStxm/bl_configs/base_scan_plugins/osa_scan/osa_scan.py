@@ -81,6 +81,7 @@ class BaseOsaScanParam(ScanParamWidget):
             self.osay_trcking_was = None
             self.osa_tracking_enabled = False
 
+        self.energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
         self.sp_db = None
         self.load_from_defaults()
         self.init_sp_db()
@@ -126,6 +127,7 @@ class BaseOsaScanParam(ScanParamWidget):
         :return:
         """
         if self.isEnabled():
+            self.energy_dev.set_focus_mode("OSA")
             # make sure that the OSA vertical tracking is off if it is on
             self.update_est_time()
             if self.osa_tracking_enabled:

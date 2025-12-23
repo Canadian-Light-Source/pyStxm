@@ -22,7 +22,7 @@ from cls.utils.roi_utils import (
     get_base_energy_roi,
     make_spatial_db_dict,
 )
-from cls.utils.calculations import focal_length
+from cls.utils.focus_calculations import focal_length
 from cls.types.stxmTypes import scan_types, spatial_type_prefix, OSA_FOCUS_MODE, SAMPLE_FOCUS_MODE, image_types
 from cls.plotWidgets.shape_restrictions import ROILimitObj, ROILimitDef
 from cls.plotWidgets.color_def import (
@@ -63,17 +63,20 @@ class BaseOsaFocusScanParam(ScanParamWidget):
         )
 
         #self.fl = self.main_obj.device("DNM_FOCAL_LENGTH")
-        self.a1 = self.main_obj.device("DNM_ZP_DEF_A")
+        self.energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
+        self.energy_dev.focus_params_changed.connect(self.on_update_focus_params)
+        self.a1 = self.main_obj.device("DNM_ZP_A1")
         self.energy_mtr = self.main_obj.device("DNM_ENERGY")
-        self._zpz_fbk_timer = QtCore.QTimer()
-        # RUSS SEPT 10 2024 self._zpz_fbk_timer.timeout.connect(self.on_update_zpz_fbk)
         self.sp_db = None
         self.load_from_defaults()
         self.init_sp_db()
         self.connect_paramfield_signals()
         self.on_focus_scan_single_spatial_npoints_changed()
         self.init_loadscan_menu()
-        self._zpz_fbk_timer.start(250)
+
+
+        zpz_pos = self.energy_dev.get_new_zpz_for_osa_focussed()
+        self.set_parm(self.centerZPFld, zpz_pos)
 
     def init_plugin(self):
         """
@@ -111,6 +114,16 @@ class BaseOsaFocusScanParam(ScanParamWidget):
         # self._help_html_fpath = os.path.join('interface', 'window_system', 'scan_plugins', 'detector.html')
         self._help_ttip = "OSA Focus scan documentation and instructions"
 
+    def on_update_focus_params(self, focus_dct: dict):
+        """
+        Update the ZP center label
+        """
+
+        # update the ZP center
+        # print(focus_dct)
+        zpz_pos = focus_dct["zpz_for_osa_focussed"]
+        self.set_parm(self.centerZPFld, zpz_pos)
+
     def on_plugin_focus(self):
         """
         This is a function that is called when the plugin first receives focus from the main GUI
@@ -123,6 +136,8 @@ class BaseOsaFocusScanParam(ScanParamWidget):
                 self.enable_line_select_btns(False)
 
             self.update_est_time()
+            self.energy_dev.set_focus_mode("OSA")
+
             self._new_zpz_pos = None
             if self.main_obj.device("DNM_OSAY_TRACKING", do_warn=False):
                 # make sure that the OSA vertical tracking is off if it is on
@@ -167,28 +182,6 @@ class BaseOsaFocusScanParam(ScanParamWidget):
         lim_dct["ZP"] = {"llm": zllm, "hlm": zhlm, "rng": rz}
 
         self.connect_param_flds_to_validator(lim_dct)
-
-    def on_update_zpz_fbk(self):
-        """
-        FL on
-
-        """
-        if re.search(scanning_mode, 'COARSE_SAMPLEFINE', re.IGNORECASE):
-            A0 = 0.0
-            fl_val = A0 - math.fabs(focal_length(self.energy_mtr.get_position(), self.a1.get_position()))
-            #fl_val = A0 - math.fabs(self.fl.get_position())
-            self.set_parm(self.centerZPFld, fl_val)
-
-        elif re.search(scanning_mode, 'GONI_ZONEPLATE', re.IGNORECASE):
-            #needs testing
-            A0 = 0.0
-            #fl_val = A0 - math.fabs(self.fl.get_position())
-            fl_val = A0 - math.fabs(focal_length(self.energy_mtr.get_position(), self.a1.get_position()))
-            self.set_parm(self.centerZPFld, fl_val)
-
-        elif re.search(scanning_mode, 'COARSE_ZONEPLATE', re.IGNORECASE):
-            pass
-            #_logger.info("Setting focus for COARSE_ZONEPLATE currently not supported")
 
     def enable_line_select_btns(self, en):
         """
@@ -383,44 +376,47 @@ class BaseOsaFocusScanParam(ScanParamWidget):
                 accept_str="OK",
             )
             return
-        self.reset_focus_btns()
-        mtrz = self.main_obj.device("DNM_ZONEPLATE_Z")
+        sflag = self.main_obj.device("DNM_ZONEPLATE_SCAN_MODE")
+        mtr_zz = self.main_obj.device("DNM_ZONEPLATE_Z")
         mtrx = self.main_obj.device("DNM_OSA_X")
         mtry = self.main_obj.device("DNM_OSA_Y")
-        # sflag 0 == Sample Focus, 1 == OSA focus
-        sflag = self.main_obj.device("DNM_ZONEPLATE_SCAN_MODE")
-        # mult by -1.0 so that it is always negative as zpz pos needs
-        fl = -1.0 * math.fabs(self.main_obj.device("DNM_FOCAL_LENGTH").get_position())
-        a0 = self.main_obj.device("DNM_A0").get_position()
+        # mtr_cz = self.main_obj.device("DNM_COARSE_Z")
+        # cur_cz_pos = mtr_cz.get_position()
+        # energy = self.main_obj.device("DNM_ENERGY").get_position()
+        # fl = self.main_obj.get_focal_length(energy)
+        fl_as_zpz_pos = self.energy_dev.get_focal_length_as_zpz_position()
+        # zpz_in_focus = self.energy_dev.calc_new_zoneplate_z_pos_for_focus(energy)
+        # a0_val = self.main_obj.get_a0()
 
         if re.search(scanning_mode, 'COARSE_SAMPLEFINE', re.IGNORECASE):
 
             # 0 for OSA focus scan 1 for Sample Focus
-            if sflag:
-                sflag.put(SAMPLE_FOCUS_MODE)
+            # if sflag:
+            #     sflag.put(SAMPLE_FOCUS_MODE)
 
             zp_cent = float(self._new_zpz_pos)
 
-            #zp_cent = float(str(self.centerZPFld.text()))
-
             # support for DCS server motors that use offsets
-            if hasattr(mtrz, 'apply_delta_to_offset'):
+            if hasattr(mtr_zz, 'apply_delta_to_offset'):
                 delta = float(str(self.centerZPFld.text())) - zp_cent
-                mtrz.apply_delta_to_offset(delta)
+                mtr_zz.apply_delta_to_offset(delta)
             else:
-                mtrz.move(zp_cent)
+                mtr_zz.call_emit_move(zp_cent, wait=True)
 
-                if hasattr(mtrz, 'confirm_stopped'):
-                    mtrz.confirm_stopped()
-                if hasattr(mtrz, 'set_position'):
-                    mtrz.set_position(fl)
+            if hasattr(mtr_zz, 'confirm_stopped'):
+                mtr_zz.confirm_stopped()
+            if hasattr(mtr_zz, 'set_position'):
+                mtr_zz.set_position(fl_as_zpz_pos)
 
-            mtrx.move(0.0)
-            mtry.move(0.0)
+            mtrx.call_emit_move(0.0, wait=False)
+            mtry.call_emit_move(0.0, wait=False)
 
             #now move to Sample Focus position which is == FL - A0
-            zpz_final_pos = -1.0 * (math.fabs(fl) - math.fabs(a0))
-            mtrz.move(zpz_final_pos)
+            # zpz_in_focus = -1.0 * (math.fabs(fl) - math.fabs(a0_val))
+            #zpz_in_focus = self.main_obj.calc_new_zoneplate_z_pos_for_focus(energy)
+
+            #mtr_zz.call_emit_move(fl_as_zpz_pos, wait=False)
+            self.energy_dev.move_to_osa_focussed()
 
 
         elif re.search(scanning_mode, 'GONI_ZONEPLATE', re.IGNORECASE):
@@ -433,29 +429,31 @@ class BaseOsaFocusScanParam(ScanParamWidget):
 
             #zp_cent = float(str(self.centerZPFld.text()))
             zp_cent = float(self._new_zpz_pos)
-            # mtrz = self.main_obj.device('DNM_ZONEPLATE_Z')
+            # mtr_zz = self.main_obj.device('DNM_ZONEPLATE_Z')
 
             # support for DCS server motors that use offsets
-            if hasattr(mtrz, 'apply_delta_to_offset'):
+            if hasattr(mtr_zz, 'apply_delta_to_offset'):
                 delta = float(str(self.centerZPFld.text())) - zp_cent
-                mtrz.apply_delta_to_offset(delta)
+                mtr_zz.apply_delta_to_offset(delta)
             else:
-                mtrz.move(zp_cent)
-                mtrz.confirm_stopped()
+                mtr_zz.call_emit_move(zp_cent, wait=True)
+                mtr_zz.confirm_stopped()
 
-                mtrz.set_position(fl)
+                mtr_zz.set_position(fl_as_zpz_pos)
 
-            mtrx.move(0.0)
-            mtry.move(0.0)
+            mtrx.call_emit_move(0.0, wait=False)
+            mtry.call_emit_move(0.0, wait=False)
             # now move to Sample Focus position which is == FL - A0
-            zpz_final_pos = -1.0 * (math.fabs(fl) - math.fabs(a0))
-            mtrz.move(zpz_final_pos)
+            # zpz_final_pos = -1.0 * (math.fabs(fl) - math.fabs(a0_val))
+            # mtr_zz.call_emit_move(zpz_final_pos, wait=False)
+            self.energy_dev.move_to_sample_focussed()
 
         elif re.search(scanning_mode, 'COARSE_ZONEPLATE', re.IGNORECASE):
             _logger.info("Setting focus for COARSE_ZONEPLATE currently not supported")
 
-        #have the plotter delete the focus image
-        self._parent.reset_image_plot()
+        # have the plotter delete the focus image
+        self._parent.reset_image_plot(shape_only=True)
+        self.reset_focus_btns()
 
     def set_roi(self, roi):
         """
@@ -484,8 +482,8 @@ class BaseOsaFocusScanParam(ScanParamWidget):
         self.set_parm(self.startYFld, sy)
 
         # we want the ZP center to always be the current Zpz pozition
-        zpz_pos = self.main_obj.device("DNM_ZONEPLATE_Z").get_position()
-        self.set_parm(self.centerZPFld, zpz_pos)
+        # zpz_pos = self.main_obj.device("DNM_ZONEPLATE_Z").get_position()
+        # self.set_parm(self.centerZPFld, zpz_pos)
 
         if ex != None:
             self.set_parm(self.endXFld, ex)

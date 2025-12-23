@@ -66,6 +66,13 @@ QLabel#stripToolFbkLbl{
 
 }
 
+QLabel#stripToolCountsFbkLbl{
+
+  color: black;
+  font: bold 24px "MS Shell Dlg 2";
+
+}
+
 
 
 

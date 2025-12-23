@@ -25,8 +25,10 @@ from cls.utils.environment import get_environ_var
 from cls.types.stxmTypes import (
     sample_fine_positioning_modes,
     sample_positioning_modes,
+    SAMPLE_FOCUS_MODE,
+    OSA_FOCUS_MODE
 )
-
+from cls.appWidgets.focus_class import FocusCalculations
 from cls.scan_engine.bluesky.qt_run_engine import EngineWidget, ZMQEngineWidget
 
 from bcm.devices import BACKEND
@@ -135,6 +137,7 @@ class main_object_base(QtCore.QObject):
         self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
         self.data_sub_context = zmq.Context()
+        self.nx_server_master_seq_dct = None
 
         if DATA_SERVER_HOST is None:
             _logger.error("DATA_SERVER_HOST environment variable is not set, cannot continue")
@@ -429,7 +432,7 @@ class main_object_base(QtCore.QObject):
                     new_stack_dir=new_stack_dir,
                     prefix_char=prefix_char,
                     dev_backend=dev_backend)
-
+        self.nx_server_master_seq_dct = master_seq_dct
         return master_seq_dct
 
     def nx_server_load_data_directory(self, data_dir: str=None, *, extension: str='.hdf5') -> None:
@@ -437,6 +440,18 @@ class main_object_base(QtCore.QObject):
         This function loads the data directory from the DCS server and updates the remote file system info.
         It is used to load the data directory from the DCS server.
         """
+
+        def get_sorted_hdf5_files(dct):
+            """
+            Combine 'files' and directory-based hdf5 files, return sorted list.
+            """
+            files = dct['directories']['files']
+            dirs = dct['directories']['directories']
+            # Each directory contains a file named <dirname>.hdf5
+            dir_files = [f"{dirname}/{dirname}.hdf5" for dirname in dirs]
+            all_files = files + dir_files
+            return sorted(all_files, reverse=True)
+
         if data_dir is None:
             data_dir = self.data_dir
         #file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
@@ -446,18 +461,13 @@ class main_object_base(QtCore.QObject):
         res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_DIRECTORY, [], '', data_dir, nx_app_def='nxstxm',
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=False, cmd_args=cmd_args)
-        if 'directories' in res_dct.keys():
-            file_lst = res_dct['directories']['files']
+
+        file_lst = get_sorted_hdf5_files(res_dct)
+
+        if len(file_lst) > 0:
             if isinstance(file_lst, list):
                 self.nx_server_load_files(data_dir, file_lst=file_lst)
 
-            subdir_lst = res_dct['directories']['directories']
-            if isinstance(subdir_lst, list):
-                for subdir in subdir_lst:
-                    #self.nx_server_load_file(data_dir, fname)
-                    # cause a directory data thumbnail to be created
-                    fname = subdir + extension
-                    self.nx_server_load_file(os.path.join(data_dir, subdir), fname, extension=extension)
 
     def nx_server_load_file(self, data_dir: str=None, fname: str=None, extension: str='.hdf5') -> None:
         """
@@ -1083,7 +1093,7 @@ class main_object_base(QtCore.QObject):
             dev = self.main_obj["DEVICES"].devices[cat][name]
         if dev is None:
             if do_warn:
-                _logger.warn("Warning: dev [%s] does not exist in master object" % name)
+                _logger.warn(f"device [{name}] does not exist in master device dictionary or device name database")
         return dev
 
     def get_device_obj(self):

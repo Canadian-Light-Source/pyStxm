@@ -1778,7 +1778,7 @@ class ScanParamWidget(QtWidgets.QFrame):
         self.data_file_pfx = self.main_obj.get_datafile_prefix()
         fname = getOpenFileName(
             "Load Scan",
-            filter_str="Scan Files (%s*.hdf5; *.json)" % self.data_file_pfx,
+            filter_str=f"Scan Files ({self.data_file_pfx}*.hdf5);; Scan Config Files (*.json)",
             search_path=datadir,
         )
         if fname is None or len(fname) < 1:
@@ -1870,7 +1870,7 @@ class ScanParamWidget(QtWidgets.QFrame):
         # self.data_file_pfx = self.main_obj.get_datafile_prefix()
         fname = getOpenFileName(
             "Load Scan Definition",
-            filter_str="Scan Def Files (*.hdf5;*.json)",
+            filter_str="Scan Data Files (*.hdf5); Scan Config Files(*.json)",
             search_path=scanDefs_dir,
         )
 
@@ -1910,7 +1910,7 @@ class ScanParamWidget(QtWidgets.QFrame):
             return
         if not ev_only:
             self.clear_params()
-            # tell the parent to clear the slate (plotteer)
+            # tell the parent to clear the slate (plotter)
             self.clear_all_sig.emit()
             reset_unique_roi_id()
 
@@ -1926,100 +1926,23 @@ class ScanParamWidget(QtWidgets.QFrame):
 
         data_io = self.data_io_class(data_dir, fprefix, options)
 
-        # if(not ev_only):
-        #     #tell the parent to clear the slate (plotteer)
-        #     self.clear_all_sig.emit()
-
-        entry_dct = data_io.load()
-        if entry_dct is None:
+        h5_file_dct = data_io.load()
+        if h5_file_dct is None:
+            _logger.error(f"openfile: Failed to load data from file [{fname}]")
             return
-        # use this counter to control if to append or not when loading entries
-        i = 0
-        ekeys = list(entry_dct.keys())
-        ekeys.sort()
 
-        # for now ignore the default attribute by removing it, mmy use it properly in future
-        if 'default' in ekeys:
-            ekeys.remove('default')
+        ekey = h5_file_dct['default']
+        default_counter = h5_file_dct[ekey]['default']
+        # create a dictionary that loks like the mime data dict so that we can reuse the load_dict_based_data function
+        dct = {}
+        dct['h5_file_dct'] = h5_file_dct
+        dct['path'] = fname
+        dct['data'] = h5_file_dct[ekey]['sp_db_dct']['nxdata'][default_counter]
+        dct['wdg_com'] = h5_file_dct[ekey]['WDG_COM']
 
-        for ekey in ekeys:
-            # ekey = entry_dct.keys()[0]
-            if load_image_data:
-                nx_datas = data_io.get_NXdatas_from_entry(entry_dct, ekey)
-                # currently only support 1 counter
-                counter_name = data_io.get_default_detector_from_entry(entry_dct)
-                data = data_io.get_signal_data_from_NXdata(nx_datas, counter_name)
-            wdg_com = data_io.get_wdg_com_from_entry(entry_dct, ekey)
-            sp_db = get_first_sp_db_from_wdg_com(wdg_com)
+        # now treat it like the file was dropped on the scan plugin
+        self.load_dict_based_data(dct)
 
-            if data is None:
-                _logger.warn(f"there apparently was no data in the file [{fname}]")
-
-            loaded_scan_type = dct_get(sp_db, SPDB_SCAN_PLUGIN_SECTION_ID)
-
-            if (
-                ev_only
-                or (loaded_scan_type == self.section_id)
-                or (
-                    (self.section_id == "TOMO")
-                    and (loaded_scan_type in allow_load_in_tomo_type)
-                )
-            ):
-
-                dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
-                dct_put(sp_db, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
-                if i == 0:
-                    self.load_roi(
-                        wdg_com, append=False, ev_only=ev_only, sp_only=sp_only
-                    )
-                else:
-                    self.load_roi(
-                        wdg_com, append=True, ev_only=ev_only, sp_only=sp_only
-                    )
-                i += 1
-
-                if not ev_only:
-                    # THIS CALL IS VERY IMPORTANT IN ORDER TO KEEP TEHPLOT AND TABLES IN SYNC
-                    add_to_unique_roi_id_list(sp_db[SPDB_ID_VAL])
-
-                if not load_image_data:
-                    return
-
-                acceptable_2dimages_list = [scan_types.COARSE_IMAGE, scan_types.SAMPLE_IMAGE, scan_types.COARSE_GONI, scan_types.PATTERN_GEN]
-
-                if (dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_POINT_SPECTRUM ):
-                    valid_data_dim = 1
-
-                #elif dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_IMAGE:
-                elif dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) in acceptable_2dimages_list:
-                    valid_data_dim = 2
-
-                elif (dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE) == scan_types.SAMPLE_IMAGE_STACK ):
-                    valid_data_dim = 3
-                else:
-                    valid_data_dim = 2
-
-                if data.ndim == 3:
-                    data = data[0]
-
-                if data.ndim is not valid_data_dim:
-                    _logger.error(
-                        "Data in file [%s] is of wrong dimension, is [%d] should be [%d]"
-                        % (fname, data.ndim, valid_data_dim)
-                    )
-                    print(
-                        "Data in file [%s] is of wrong dimension, is [%d] should be [%d]"
-                        % (fname, data.ndim, valid_data_dim)
-                    )
-                    return
-                # signal the main GUI that there is data to plot but only if is is a single image, ignore stack or point spectra scans
-                if len(list(entry_dct.keys())) == 1:
-                    if data is not None:
-                        self.plot_data.emit((fname, wdg_com, data))
-                    _logger.debug("[%s] scan loaded" % self.section_id)
-            else:
-                _logger.error("unable to load scan, wrong scan type")
-                break
 
     @exception
     def load_config(self, fname, ev_only=False, sp_only=False):
@@ -2207,9 +2130,9 @@ class ScanParamWidget(QtWidgets.QFrame):
                 self.plot_data.emit((fname, wdg_com, image_data))
                 _logger.debug("[%s] scan loaded" % self.section_id)
             else:
-                _logger.error("unable to load scan, data is None")
+                _logger.error(f"unable to load scan file [{fname}], data is None")
         else:
-            _logger.error("unable to load scan, wrong scan type")
+            _logger.error("unable to load scan file [{fname}], wrong scan type")
 
 
     def on_spatial_row_deleted(self, sp_db):

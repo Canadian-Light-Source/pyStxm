@@ -186,7 +186,7 @@
            <string>Move OSA in or out of the way</string>
           </property>
           <property name="text">
-           <string>Move OSA Out</string>
+           <string>  Move OSA Out  </string>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -226,20 +226,6 @@
           </property>
           <property name="mandatoryField" stdset="0">
            <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QToolButton" name="dwell_magicBtn">
-          <property name="toolTip">
-           <string>adjust number of points to use this dwell value</string>
-          </property>
-          <property name="text">
-           <string>...</string>
-          </property>
-          <property name="icon">
-           <iconset>
-            <normaloff>../../../../../../../icons/wand.ico</normaloff>../../../../../../../icons/wand.ico</iconset>
           </property>
          </widget>
         </item>

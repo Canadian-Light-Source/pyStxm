@@ -340,7 +340,7 @@ class BaseLineSpecScanClass(BaseScan):
                 mtr_x = self.main_obj.device(mtr_dct["cx_name"])
                 mtr_y = self.main_obj.device(mtr_dct["cy_name"])
 
-            ev_mtr = self.main_obj.device("DNM_ENERGY")
+            energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
             pol_mtr = self.main_obj.device("DNM_EPU_POLARIZATION")
             shutter = self.main_obj.device("DNM_SHUTTER")
 
@@ -367,7 +367,7 @@ class BaseLineSpecScanClass(BaseScan):
                 for ev_roi in self.e_rois:
                     # switch to new energy
                     for ev_sp in ev_roi[SETPOINTS]:
-                        yield from bps.mv(ev_mtr, ev_sp)
+                        yield from bps.mv(energy_dev, ev_sp)
                         self.dwell = ev_roi[DWELL]
 
                         # go to start of line
@@ -420,7 +420,7 @@ class BaseLineSpecScanClass(BaseScan):
             print('entering BaseLineSpecScanClass: do_scan')
             psmtr_x = self.main_obj.device("DNM_SAMPLE_X")
             psmtr_y = self.main_obj.device("DNM_SAMPLE_Y")
-            mtr_ev = self.main_obj.device("DNM_ENERGY")
+            energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
             crs_x = self.main_obj.device("DNM_COARSE_X")
             crs_y = self.main_obj.device("DNM_COARSE_Y")
             shutter = self.main_obj.device("DNM_SHUTTER")
@@ -465,7 +465,7 @@ class BaseLineSpecScanClass(BaseScan):
 
             for ev_sp in ev_setpoints:
 
-                yield from bps.mv(mtr_ev, ev_sp, group='EV')
+                yield from bps.mv(energy_dev, ev_sp, group='EV')
                 yield from bps.wait('EV')
 
                 ACCEL_DISTANCE = self.x_roi[RANGE] * accel_dist_prcnt_pv.get()

@@ -71,18 +71,6 @@ class BasePointSpecScanClass(BaseScan):
         super().fine_scan_go_to_scan_start()
         return(True)
 
-    def add_spids_xy_setpoints(self, md={}):
-        md["sp_id_setpoints"] = {}
-        dct = {}
-        for sp_id in self._master_sp_id_list:
-            # get x and y setpoints
-            x_sp = self.sp_rois[sp_id]["X"]["CENTER"]
-            y_sp = self.sp_rois[sp_id]["Y"]["CENTER"]
-            # these are used by the nxstxm suitcase to record the correct SAMPLE_X and SAMPLE_Y positions for the spectra
-            dct[sp_id] = {"x_sp": x_sp, "y_sp": y_sp}
-        md["sp_id_setpoints"] = dict_to_json(dct)
-        return md
-
     def init_subscriptions(self, ew, func, det_lst):
         """
         Base init_subscriptions is used by most scans
@@ -153,7 +141,7 @@ class BasePointSpecScanClass(BaseScan):
             # need to make sure that all spatial points are within range of the piezo's before executing this
 
             #assume all points a reachable
-            mtr_ev = self.main_obj.device("DNM_ENERGY")
+            energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
             mtr_x = self.main_obj.get_sample_fine_positioner("X")
             mtr_y = self.main_obj.get_sample_fine_positioner("Y")
             pol_mtr = self.main_obj.device("DNM_EPU_POLARIZATION")
@@ -174,7 +162,7 @@ class BasePointSpecScanClass(BaseScan):
                     yield from bps.mv(ang_mtr, ang)
                 # switch to new energy
                 for ev_sp in self.ev_setpoints:
-                    yield from bps.mv(mtr_ev, ev_sp)
+                    yield from bps.mv(energy_dev, ev_sp)
                     self.dwell = self.setpointsDwell
 
                     for sp_id, sp_db in self.sp_rois.items():

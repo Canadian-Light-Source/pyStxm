@@ -151,6 +151,7 @@ SPDB_SCAN_PLUGIN_EST_SCAN_TIME_STR = "SCAN_PLUGIN.EST_SCAN_TIME_STR"  # each sca
 SPDB_SCAN_PLUGIN_IMG_EXP_DATA = "SCAN_PLUGIN.IMG_EXP_DATA"  # for the pattern generator scan this holds teh loaded patterns image data converted to exposure time in millesconds
 SPDB_SCAN_PLUGIN_IMG_DETAILS = "SCAN_PLUGIN.IMG_DETAILS"  # for the pattern generator scan this holds the loaded patterns image data details as a dictionary
 SPDB_SCAN_PLUGIN_STXM_SCAN_TYPE = "SCAN_PLUGIN.STXM_SCAN_TYPE"
+SPDB_SCAN_PLUGIN_USE_HDWACCEL = "SCAN_PLUGIN.USE_HDWACCEL" # whether to use hardware acceleration for fine image scans
 
 SPDB_ACTIVE_DATA_OBJECT = "ACTIVE_DATA_OBJ"
 

@@ -134,29 +134,20 @@ def array_to_qpixmap(gray):
     return pixmap
 
 def data_to_rgb(data0, alpha=False):
-    """Interpret an MxNxP array as an MxNx3 RGB image."""
+    """Interpret an MxNxP array as an MxNx3 RGB image (vectorized)."""
     data = np.nan_to_num(data0, copy=True, nan=0.)
     N = data.shape[2]
-    RGB = np.zeros((list(data.shape[:2]) + [3]))
-    total = np.empty((N, 3))
-    C = hsv_cmap(N)
-    for k in range(N):
-        total[k, :] = C[k, :]
-        if data is None or np.any(data == None):
-            pass
-        else:
-            RGB = RGB + np.broadcast_to(C[k, :], [1, 1, 3]) * data[:, :, [k, k, k]]
-    RGB = RGB / np.sum(total, axis=0)
+    C = hsv_cmap(N)  # shape (N, 3)
+    # Vectorized multiplication and sum over the last axis
+    RGB = np.tensordot(data, C, axes=([2], [0]))  # shape (M, N, 3)
+    RGB_sum = np.sum(C, axis=0)
+    RGB = RGB / RGB_sum
     RGB = RGB / np.amax(RGB)
-    ## Debug:The following code adds the set of hues to the first N pixels of the image
-    # for k in range(N):
-    # ind = np.unravel_index(k,RGB.shape[:2])
-    # RGB[ind[0],ind[1],:] = C[k,:]
-    # np.nan_to_num(RGB, copy=False,nan=0.)
     if alpha:
         return (255 * np.dstack((RGB, np.ones(RGB.shape[:2])))).astype(np.int64)
     else:
         return (255 * RGB).astype(np.int64)
+
 
 def numpy_rgb_to_qpixmap(rgb_array, target_width=150, target_height=150):
     if rgb_array.dtype != np.uint8:

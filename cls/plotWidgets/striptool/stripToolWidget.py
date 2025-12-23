@@ -190,10 +190,11 @@ class StripToolWidget(QtWidgets.QWidget):
             format="%d",
             title_color=master_colors["gray_255_rgb"]["rgb_str"],
             var_clr=master_colors["gray_255_rgb"]["rgb_str"],
-            #font=f,
+            font=f,
             scale_factor=self.scale_factor
         )
         self.energyFbkLbl.setObjectName("stripToolFbkLbl")
+        self.countsFbkLbl.setObjectName("stripToolCountsFbkLbl")
 
         self.upd_style_btn = QtWidgets.QPushButton("Update Style")
         self.upd_style_btn.clicked.connect(self.update_stlye)

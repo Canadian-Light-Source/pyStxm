@@ -30,11 +30,6 @@ one_color = "rgb(79, 255, 144);"
 # Moving color
 two_color = "rgb(79, 255, 144);"
 
-
-# def mycallback(kwargs):
-#     print(kwargs)
-
-
 def format_btn(title_color="black", bgcolor="transparent"):
 
     s = "QPushButton{ color: %s; background-color: %s;}" % (title_color, bgcolor)
@@ -64,11 +59,6 @@ class ophydPushBtn(QtWidgets.QPushButton):
         toggle=False,
     ):
         super(ophydPushBtn, self).__init__(off_str)
-        if (not isinstance(device, Bo)) and (not isinstance(device, Mbbo)):
-            _logger.error(
-                "ophydPushBtn: Invalid device type: requires device to be of type Bo or Mbbo"
-            )
-            return
 
         if btn is not None:
             # the user has passed in a different button for us to use so clone it
@@ -240,11 +230,6 @@ class ophydPushBtnWithFbk(QtWidgets.QPushButton):
         toggle=True,
     ):
         super(ophydPushBtnWithFbk, self).__init__(off_str)
-        if (not isinstance(device, Bo)) and (not isinstance(device, Mbbo)):
-            _logger.error(
-                "ophydPushBtnWithFbk: Invalid device type: requires device to be of type Bo"
-            )
-            return
         if btn is not None:
             # the user has passed in a different button for us to use so clone it
             # skiplist = ['staticMetaObject', '__weakref__', 'parent', 'parentWidget']
@@ -315,13 +300,6 @@ class ophydPushBtnWithFbk(QtWidgets.QPushButton):
         self.changed.connect(self.on_val_change)
         self.disconnected.connect(self.discon_fbk)
         self.connected.connect(self.init_fbk)
-        # dct = {self.sig_change_kw: pv.get()}
-        # print 'emiting changed[%d]' % init_val
-        # self.changed.emit(dct)
-        # self.discon_fbk()
-
-        # if(self.pv.pv.connected):
-        #    self.init_fbk()
 
     def get_fbk_valstr(self, val):
         """
@@ -340,22 +318,24 @@ class ophydPushBtnWithFbk(QtWidgets.QPushButton):
             elif val == 1:
                 val_str = str(self.fbk_dev.get("ONST"))
         else:
-            wrn_msg = f"Feedback device is of an unsupported type, setting to OFF_STR"
             if val == self.on_val:
                 val_str = self.on_str
-                wrn_msg = f"Feedback device is of an unsupported type, setting to ON_STR"
             else:
                 val_str = self.off_str
-            _logger.warn(wrn_msg)
 
         return val_str
 
     def make_checked(self, chkd):
-        # if self.toggle:
-        #     # skip it
-        #     return
-
         self.btn.setChecked(chkd)
+
+        if chkd:
+            s = self.on_str
+            val = self.on_val
+        else:
+            s = self.off_str
+            val = self.off_val
+        self.btn.setText(s)
+        self.btn.device.put(val)
 
     def on_connect(self, pvname=None, conn=None, pv=None):
         # print 'ca_aiLabelWidget: on_connect has been called'

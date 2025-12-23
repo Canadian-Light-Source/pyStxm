@@ -4,7 +4,10 @@ Created on May 6, 2016
 @author: control
 """
 import os
+import re
+import datetime
 import string
+
 from cls.types.stxmTypes import PLACEHOLDER_FILENAME
 
 def is_locked(filepath):
@@ -154,44 +157,32 @@ def get_latest_file_num_in_dir(path, prefix_char="C", extension="hdf5"):
         return generate_new_seq_num(path, prefix_char)
 
 
-def get_next_file_num_in_seq(path, prefix_char="C", extension="hdf5"):
-    _files = get_filenames_in_dir(path, extension)
-    if len(_files) == 0:
-        _files = get_filenames_in_dir(path, extension + ".tmp")
-    if len(_files) == 0:
-        _files = get_filenames_in_dir(path, extension + ".idx")
-    if len(_files) == 0:
-        _files = get_filenames_in_dir(path, extension + ".err")
-    if len(_files) == 0:
-        _files = get_cur_data_dir(path)
-    if len(_files) == 0:
-        _files = [get_next_dir_in_seq(path, prefix_char=prefix_char)]
+def get_next_file_num_in_seq(path, prefix_char="A", extension="hdf5"):
+    file_pattern = re.compile(rf"{prefix_char}(\d+)\.{extension}$")
+    dir_pattern = re.compile(rf"{prefix_char}(\d+)$")
+    used_nums = set()
 
-    if len(_files) > 0:
-        #turf the prefix char whatever it is and remove the suffix
-        seq_num_str = _files[-1][1:].replace(".%s" % extension, "")
-        seq_num_str = seq_num_str.replace(".tmp", "")
-        seq_num_str = seq_num_str.replace(".idx", "")
-        seq_num_str = seq_num_str.replace(".err", "")
-        # seq_num = int(seq_num_str) + 1
-        if seq_num_str.isnumeric():
-            seq_num = int(seq_num_str) + 1
-        else:
-            #assume its last 4 characters are _###
-            seq_num = int(seq_num_str[-3:]) + 1
+    if not os.path.isdir(path):
+        raise FileNotFoundError(f"Directory `{path}` does not exist.")
 
-        # if(check_if_tmp_or_final_exist(path, seq_num, prefix_char=prefix_char, extension=extension)):
-        #     #skip over the tmp/final file sequence number
-        #     seq_num = seq_num + 1
-        while check_if_tmp_or_final_exist(
-            path, seq_num, prefix_char=prefix_char, extension=extension
-        ):
-            # skip over the tmp/final file sequence number
-            seq_num = seq_num + 1
+    for entry in os.listdir(path):
+        file_match = file_pattern.match(entry)
+        dir_match = dir_pattern.match(entry)
+        if file_match:
+            used_nums.add(int(file_match.group(1)))
+        elif dir_match and os.path.isdir(os.path.join(path, entry)):
+            used_nums.add(int(dir_match.group(1)))
 
-        return seq_num
+    if not used_nums:
+        # Directory is empty, use today's date and 000
+        today = datetime.datetime.now()
+        next_num = int(today.strftime("%y%m%d") + "000")
     else:
-        return generate_new_seq_num(path, prefix_char)
+        next_num = max(used_nums) + 1
+        while next_num in used_nums:
+            next_num += 1
+
+    return next_num
 
 
 def get_next_dir_in_seq(path, prefix_char="C"):
@@ -614,20 +605,23 @@ if __name__ == "__main__":
     # print ' what about %s' % path + '\\' + new_stack_dirname
     # os.mkdir(path + '\\' + new_stack_dirname)
 
-    path = r"C:\controls\stxm-data\2020\guest\0406"
-    d = master_get_seq_names(
-        path,
-        prefix_char="C",
-        thumb_ext="jpg",
-        dat_ext="hdf5",
-        stack_dir=False,
-        num_desired_datafiles=5,
-        new_stack_dir=False,
-    )
-    if d is None:
-        print("the directory %s does not exist yet" % (path))
-    else:
-        for k in list(d.keys()):
-            print(d[k])
-    # path = r'C:\controls\stxm-data\guest\0110'
-    # check_if_tmp_or_final_exist(path, 200110041, prefix_char='C', extension='hdf5')
+    # path = r"C:\controls\stxm-data\2020\guest\0406"
+    # d = master_get_seq_names(
+    #     path,
+    #     prefix_char="C",
+    #     thumb_ext="jpg",
+    #     dat_ext="hdf5",
+    #     stack_dir=False,
+    #     num_desired_datafiles=5,
+    #     new_stack_dir=False,
+    # )
+    # if d is None:
+    #     print("the directory %s does not exist yet" % (path))
+    # else:
+    #     for k in list(d.keys()):
+    #         print(d[k])
+    # # path = r'C:\controls\stxm-data\guest\0110'
+    # # check_if_tmp_or_final_exist(path, 200110041, prefix_char='C', extension='hdf5')
+    path = "/beamlinedata/SM/operations/STXM-data/ASTXM_upgrade_tmp/2025/2025-12-03"
+    # path = "/tmp/empty_dir"
+    print(get_next_file_num_in_seq(path, prefix_char="A", extension="hdf5"))

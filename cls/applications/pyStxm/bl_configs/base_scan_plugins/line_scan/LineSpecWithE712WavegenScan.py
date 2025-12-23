@@ -193,7 +193,7 @@ class BaseLineSpecWithE712WavegenScanClass(BaseScan):
 
             mtr_x = self.main_obj.device(mtr_dct["cx_name"])
             mtr_y = self.main_obj.device(mtr_dct["cy_name"])
-            mtr_ev = self.main_obj.device("DNM_ENERGY")
+            energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
             shutter = self.main_obj.device("DNM_SHUTTER")
 
             ev_setpoints = []
@@ -204,7 +204,7 @@ class BaseLineSpecWithE712WavegenScanClass(BaseScan):
 
             x_traj = cycler(mtr_x, self.x_roi[SETPOINTS])
             y_traj = cycler(mtr_y, self.y_roi[SETPOINTS])
-            energy_traj = cycler(mtr_ev, ev_setpoints)
+            energy_traj = cycler(energy_dev, ev_setpoints)
 
             yield from bps.stage(gate)
             # this starts the wavgen and waits for it to finish without blocking the Qt event loop

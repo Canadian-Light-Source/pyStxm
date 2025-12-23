@@ -1,7 +1,7 @@
 
 import sys
 import os
-import simplejson as json
+import orjson
 import numpy as np
 
 #make sure that the applications modules can be found, used to depend on PYTHONPATH environ var
@@ -39,12 +39,12 @@ def load_nxstxm_file_to_h5_file_dct(filename, *, ret_as_dict=False, ret_as_jstr=
         # Convert numpy arrays to Python lists before JSON serialization
         python_dict = convert_numpy_to_python(h5_file_dct)
         python_dict = clean_nans(python_dict)
-        jstr = json.dumps(python_dict, indent=4)
+        jstr = orjson.dumps(python_dict).decode()
         return jstr
     else:
         python_dict = convert_numpy_to_python(h5_file_dct)
         python_dict = clean_nans(python_dict)
-        jstr = json.dumps(python_dict, indent=4)
+        jstr = orjson.dumps(python_dict).decode()
         # by printing it it becomes the output of the function when called from PixelatorController
         # print(jstr)
         sys.stdout.write(jstr)

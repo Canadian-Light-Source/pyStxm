@@ -25,12 +25,12 @@ def modify_generic_scan_ctrl_data_grps(parent, nxgrp, doc, scan_type):
     resize_data = False
     rois = parent.get_rois_from_current_md(doc["run_start"])
     x_src = parent.get_devname(rois[SPDB_X][POSITIONER])
-    x_posnr_nm = parent.fix_posner_nm(rois[SPDB_X][POSITIONER])
+    x_posnr_nm = parent.fix_posner_nm(rois[SPDB_X][POSITIONER]).upper()
 
     xnpoints = int(rois[SPDB_X][NPOINTS])
     ttlpnts = xnpoints
     uid = parent.get_current_uid()
-    prim_data_lst = parent.get_primary_all_data(x_src)
+    prim_data_lst = parent.get_primary_all_data(x_posnr_nm)
     if len(prim_data_lst) < ttlpnts:
         resize_data = True
         # scan was aborted so use setpoint data here
@@ -39,22 +39,10 @@ def modify_generic_scan_ctrl_data_grps(parent, nxgrp, doc, scan_type):
         # use actual data
         # xdata is teh first xnpoints
         xdata = np.array(
-            parent.get_primary_all_data(x_src)[0:xnpoints], dtype=np.float32
+            parent.get_primary_all_data(x_posnr_nm)[0:xnpoints], dtype=np.float32
         )
 
     _dataset(nxgrp, x_posnr_nm, xdata, "NX_FLOAT")
-
-    # this should be an array the same shape as the 'data' group in NXdata filled with the storagering current
-    # sr_data = np.array(
-    #     parent._data["primary"][parent.get_devname("DNM_RING_CURRENT")][uid]["data"],
-    #     dtype=np.float32,
-    # )
-    sr_data = parent.get_primary_all_data("DNM_RING_CURRENT")
-
-    if resize_data:
-        sr_data = np.resize(sr_data, (ttlpnts,))
-
-    _dataset(nxgrp, "data", sr_data, "NX_NUMBER")
 
     modify_generic_scan_ctrl_str_attrs(parent, nxgrp, doc)
 
@@ -85,12 +73,12 @@ def modify_generic_scan_nxdata_group(parent, data_nxgrp, doc, scan_type):
 
     rois = parent.get_rois_from_current_md(doc["run_start"])
     x_src = parent.get_devname(rois[SPDB_X][POSITIONER])
-    x_posnr_nm = parent.fix_posner_nm(rois[SPDB_X][POSITIONER])
+    x_posnr_nm = parent.fix_posner_nm(rois[SPDB_X][POSITIONER]).upper()
 
     xnpoints = int(rois[SPDB_X][NPOINTS])
     ttlpnts = xnpoints
     det_nm = parent.get_nxgrp_det_name(data_nxgrp)
-    prim_data_lst = parent.get_primary_all_data(x_src)
+    prim_data_lst = parent.get_primary_all_data(x_posnr_nm)
     if len(prim_data_lst) < ttlpnts:
         resize_data = True
         # scan was aborted so use setpoint data here
@@ -100,7 +88,7 @@ def modify_generic_scan_nxdata_group(parent, data_nxgrp, doc, scan_type):
         # use actual data
         # xdata is teh first xnpoints
         xdata = np.array(
-            parent.get_primary_all_data(x_src)[0:xnpoints], dtype=np.float32
+            parent.get_primary_all_data(x_posnr_nm)[0:xnpoints], dtype=np.float32
         )
 
     _dataset(data_nxgrp, x_posnr_nm, xdata, "NX_FLOAT")
@@ -146,9 +134,9 @@ def modify_generic_scan_instrument_group(parent, inst_nxgrp, doc, scan_type):
     xnpoints = int(rois[SPDB_X][NPOINTS])
 
     x_src = parent.get_devname(rois[SPDB_X][POSITIONER])
-    x_posnr_nm = parent.fix_posner_nm(rois[SPDB_X][POSITIONER])
+    x_posnr_nm = parent.fix_posner_nm(rois[SPDB_X][POSITIONER]).upper()
 
     # xdata is teh first xnpoints
-    xdata = parent.get_primary_all_data(x_src)[0:xnpoints]
+    xdata = parent.get_primary_all_data(x_posnr_nm)[0:xnpoints]
     # parent.make_detector(inst_nxgrp, x_posnr_nm, np.tile(xdata, xnpoints), dwell, ttlpnts, units='um')
     parent.make_detector(inst_nxgrp, x_posnr_nm, xdata, dwell, ttlpnts, units="um")

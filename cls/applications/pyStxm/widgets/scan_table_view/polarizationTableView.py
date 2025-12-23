@@ -50,13 +50,6 @@ class PolarizationTableView(BaseScanTableView):
         # self.set_model_id_start_val(POL_CNTR)
         self.setItemDelegateForColumn(POLARIZATION_COLUMN, PolComboBoxDelegate(self))
 
-        # turn bold off
-        font = self.horizontalHeader().font()
-        font.setBold(False)
-        font.setPointSize(8)
-        self.horizontalHeader().setFont(font)
-        # self.init_model()
-        # self.table_view.horizontalHeader().setSectionResizeMode(QtGui.QHeaderView.ResizeToContents)
         self.setMaximumHeight(100)
         # Set the resize policy
         size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)

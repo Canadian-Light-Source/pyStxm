@@ -27,8 +27,8 @@ _logger = get_module_logger(__name__)
 
 # this is the value that will be added to the start and end of each extra EV
 # region
-TABLE_FONT_SIZE = 8
-TABLE_HEADER_FONT_SIZE = 8
+TABLE_FONT_SIZE = 11
+TABLE_HEADER_FONT_SIZE = 11
 
 SPATIAL_CNTR = 1000
 EV_CNTR = 500

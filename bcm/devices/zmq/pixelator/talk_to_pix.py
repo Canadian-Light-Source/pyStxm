@@ -54,9 +54,9 @@ if sub_port == '56561':
         'Sample OUT': None,
         'topupMode': None,
         'beamShutterMode': None,
-        'loadFile directory': '{"directory":"/home/bergr/srv-unix-home/Data/2025-08-08","showHidden":1, "fileExtension":".hdf5"}',
-        'listDirectory': '{"directory":"/home/bergr/srv-unix-home/Data"}',
-        'loadFile file': '{ "directory": "/home/bergr/srv-unix-home/Data/0502", "file": "/home/bergr/srv-unix-home/Data/0502/A240502001.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["A240502001.hdf5"], "pluginNumber": 0 }',
+        'loadFile directory': '{"directory":"/beamlinedata/SM/operations/STXM-data/ASTXM_upgrade_tmp/2025/pix_data/2025-12-04","showHidden":1, "fileExtension":".hdf5"}',
+        'listDirectory': '{"directory":"/beamlinedata/SM/operations/STXM-data/ASTXM_upgrade_tmp/2025/pix_data"}',
+        'loadFile file': '{ "directory": "/beamlinedata/SM/operations/STXM-data/ASTXM_upgrade_tmp/2025/pix_data/2025-12-04", "file": "/beamlinedata/SM/operations/STXM-data/ASTXM_upgrade_tmp/2025/pix_data/2025-12-04/Detector_2025-12-04_001.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": ["Detector_2025-12-04_001.hdf5"], "pluginNumber": 0 }',
         'loadFile files': '{"cmd_args":{"files":[]}}',
         'loadDefinition': None,
         'change user': None,
@@ -186,8 +186,8 @@ class ZMQApp(QMainWindow):
         self.main_widget = QWidget(self)
         self.layout = QVBoxLayout(self.main_widget)
 
-        self.contact_sheet = ContactSheet()
-        self.contact_sheet.setMinimumSize(600, 400)
+        # self.contact_sheet = ContactSheet()
+        # self.contact_sheet.setMinimumSize(600, 400)
 
         # Label for command part
         self.cmd_label = QLabel("Select command (First Part of Multipart):", self)
@@ -218,7 +218,7 @@ class ZMQApp(QMainWindow):
         self.received_message_txtedit = QtWidgets.QTextEdit()
         self.layout.addWidget(self.received_message_txtedit)
 
-        self.layout.addWidget(self.contact_sheet)
+        # self.layout.addWidget(self.contact_sheet)
 
         self.setCentralWidget(self.main_widget)
 
@@ -264,7 +264,7 @@ class ZMQApp(QMainWindow):
             # print(f"on_sub_message_received: {msg_lst}")  # Print only the first 100 characters for brevity
             msg_dct = json.loads(msg_lst[1])
             h5_file_dct = json.loads(msg_dct['pystxm_load'])
-            self.contact_sheet.create_thumbnail_from_h5_file_dct(h5_file_dct)
+            # self.contact_sheet.create_thumbnail_from_h5_file_dct(h5_file_dct)
 
 
     def on_loadfile_directory_msg(self, msg_dct: dict) -> None:

@@ -19,7 +19,7 @@ commands = {
     'is_windows': None,
     'get_file_sequence_names': None,
     'loadfile_directory': '{"cmd_args":{"directory":"/mnt/srv-unix-home/bergr/Data/2025-08-19","extension":".hdf5"}}',
-    'loadfile_file': '{"cmd_args":{"file":"/mnt/srv-unix-home/bergr/Data/2025-08-20/A250820002/A250820002.hdf5"}}',
+    'loadfile_file': '{"cmd_args":{"file":"/beamlinedata/SM/operations/STXM-data/ASTXM_upgrade_tmp/2025/2025-10-20/A251020035.hdf5"}}',
     #'loadfile_files': '{"cmd_args":{"files":["/mnt/srv-unix-home/bergr/Data/2025-08-19/OSA_2025-08-19_002.hdf5","/mnt/srv-unix-home/bergr/Data/2025-08-19/Detector_2025-08-19_001.hdf5"]}}',
     'loadfile_files': '{ "directory": "/mnt/srv-unix-home/bergr/Data/2025-08-13", "file": "/mnt/srv-unix-home/bergr/Data/2025-08-13/.hdf5", "showHidden": 0, "fileExtension": ".hdf5", "directories": ["..", "discard"], "files": [], "pluginNumber": 0 }',
     'list_directory': '{"cmd_args":{"directory":"/mnt/srv-unix-home/bergr/Data","fileExtension":".hdf5"}}',
@@ -182,8 +182,9 @@ if __name__ == "__main__":
     NX_SERVER_PUB_PORT = 5565
 
     app = QApplication(sys.argv)
-    host = 'vopi1610-005.clsi.ca'
+    # host = 'vopi1610-005.clsi.ca'
     # host = 'localhost'
+    host = '10.52.32.41'
     req_port = int(os.getenv('NX_SERVER_PORT', NX_SERVER_REP_PORT))
     window = NXServerApp(host, req_port=NX_SERVER_REP_PORT, sub_port=NX_SERVER_PUB_PORT)
     window.show()

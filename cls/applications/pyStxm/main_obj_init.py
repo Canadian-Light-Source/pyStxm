@@ -133,8 +133,7 @@ if (sample_mode is not None) and (fine_sample_mode is not None):
     mainConfig.update(bl_config_dct)
     MAIN_OBJ.set_presets(mainConfig)
 
-    # DEFAULTS = Defaults('uhvstxm_dflts.json', new=False)
-    DEFAULTS = Defaults("%s_dflts.json" % bl_config_nm)
+    DEFAULTS = Defaults()
 else:
     print("NO SAMPLE POSITIONING MODE SELECTED")
     exit()

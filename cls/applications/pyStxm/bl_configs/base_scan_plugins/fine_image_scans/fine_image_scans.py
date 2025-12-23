@@ -10,12 +10,11 @@ from cls.stylesheets import get_style
 
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
 from cls.scanning.base import ScanParamWidget, MultiRegionScanParamBase, zp_focus_modes
-
 from cls.applications.pyStxm.widgets.scan_table_view.multiRegionWidget import (
     MultiRegionWidget,
 )
 
-# from cls.applications.pyStxm.bl_configs.amb_bl10ID1.device_names import *
+# from cls.applications.pyStxm.bl_configs.amb_bl10ID1.device_names import
 
 from cls.data_io.stxm_data_io import STXMDataIo
 
@@ -75,13 +74,19 @@ class BaseFineImageScansParam(MultiRegionScanParamBase):
     ):
         super().__init__(main_obj=main_obj, data_io=data_io, dflts=dflts)
         self._parent = parent
-        uic.loadUi(os.path.join(ui_path, "fine_image_scans.ui"), self)
+        if ui_path[-3:] == ".ui":
+            # parent class passed entire file path with non default name
+            uic.loadUi(os.path.join(os.path.dirname(__file__), ui_path), self)
+        else:
+            uic.loadUi(os.path.join(ui_path, "sample_image_scans.ui"), self)
 
         self.epu_supported = False
         self.goni_supported = False
 
         if self.main_obj.is_device_supported("DNM_GONI_X"):
             self.goni_supported = True
+
+        self.energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
 
         if self.sample_positioning_mode == sample_positioning_modes.GONIOMETER:
             x_cntr = self.main_obj.device("DNM_GONI_X").get_position()
@@ -155,7 +160,7 @@ class BaseFineImageScansParam(MultiRegionScanParamBase):
         set the plugin specific details to common attributes
         :return:
         """
-        self.name = "Fine Image Scan"
+        self.name = "Sample Image Scan"
         self.idx = self.main_obj.get_scan_panel_order(__file__)
         self.type = scan_types.SAMPLE_IMAGE
         # This is now set in constructor to support inheriting plugins that do not support LxL
@@ -197,6 +202,7 @@ class BaseFineImageScansParam(MultiRegionScanParamBase):
         :return:
         """
         if self.isEnabled():
+            self.energy_dev.set_focus_mode("SAMPLE")
             self.update_est_time()
             # call the standard init_base_values function for scan param widgets that contain a multiRegionWidget
             self.on_multiregion_widget_focus_init_base_values()
@@ -204,10 +210,11 @@ class BaseFineImageScansParam(MultiRegionScanParamBase):
 
     def show_hdw_accel_details(self):
         # if hasattr(self, 'e712_wg'):
-        if USE_E712_HDW_ACCEL:
+        if self.hdwAccelGrpBox.isChecked():
             dark = get_style()
-            self.scan_class.e712_wg.setStyleSheet(dark)
-            self.scan_class.e712_wg.show()
+            scan_class = self.get_scan_class()
+            scan_class.e712_wg.setStyleSheet(dark)
+            scan_class.e712_wg.show()
 
     def on_E712WavegenBtn(self, chkd):
         if chkd:
@@ -592,8 +599,8 @@ class BaseFineImageScansParam(MultiRegionScanParamBase):
             self.sub_type = scan_sub_types.POINT_BY_POINT
 
         dct_put(self.wdg_com, SPDB_SCAN_PLUGIN_SUBTYPE, self.sub_type)
-
-
+        dct_put(self.wdg_com, SPDB_SCAN_PLUGIN_TYPE, self.get_scan_type())
+        
         self.roi_changed.emit(self.wdg_com)
         self.update_est_time()
         return self.wdg_com

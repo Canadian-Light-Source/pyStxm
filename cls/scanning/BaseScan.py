@@ -784,27 +784,34 @@ class BaseScan(QtCore.QObject):
         dwell: is in milliseconds
         """
         scan_velo = rng / ((npoints * dwell) * 0.001)
-        ret = self.check_scan_velo(mtr, scan_velo)
+        ret = self.check_scan_velo(mtr, scan_velo, rng, npoints, dwell)
         if not ret:
             #set an invalid scan velocity
             scan_velo = 0
 
         return(scan_velo)
 
-    def check_scan_velo(self, mtr, desired_velo):
+    def check_scan_velo(self, mtr, desired_velo, rng, npoints, dwell):
         """
-        a function that takes a motor and checks its max velocity against
-        what the desired scan velocity is, if it is greater then popup a
-        warning message that the user needs to alter their scan params
-        (num points increase dwell time) to reduce the scan velocity
+        Checks if the desired scan velocity exceeds the motor's max velocity.
+        If so, calculates and displays the minimum dwell time, minimum number of points,
+        and the maximum allowed range for the given dwell and number of points.
         """
         ret = True
         if hasattr(mtr, "get_max_velo"):
             vmax = mtr.get_max_velo()
             if desired_velo > vmax:
-                notify("Error scan velo is faster than motor's max velocity",
-                       f"Calculated scan velocity {desired_velo} is too fast, max is {vmax}, increase number of points or dwell time and try again\n",
-                       "Ok")
+                min_dwell = (rng / (npoints * vmax)) * 1000.0
+                min_npoints = int((rng / (dwell * 0.001 * vmax)) + 1)
+                max_range = vmax * npoints * (dwell * 0.001)
+                msg = (
+                    f"Calculated scan velocity {desired_velo:.2f} is too fast (max is {vmax:.2f}).\n"
+                    f"Increase number of points, dwell time, or reduce the range and try again.\n\n"
+                    f"Minimum dwell time (ms) for [{npoints}] points: set dwell={min_dwell:.2f}\n"
+                    f"Minimum number of points for [{dwell}] ms dwell: set npoints={min_npoints}\n"
+                    f"To use current dwell and points, range must be below {max_range:.2f} um"
+                )
+                notify("Error: scan velocity exceeds motor's max velocity", msg, "Ok")
                 ret = False
         else:
             notify("Warning: unable to check scan velocity", "The motor does not have the get_max_velo() method", "Ok")

@@ -18,6 +18,7 @@ from cls.utils.roi_dict_defs import *
 from cls.types.stxmTypes import scan_sub_types
 from cls.utils.log import get_module_logger
 from cls.utils.json_utils import dict_to_json
+from cls.utils.dict_utils import dct_get
 from bcm.devices.ophyd.qt.data_emitters import ImageDataEmitter, SIS3820ImageDataEmitter
 from cls.scan_engine.bluesky.bluesky_defs import bs_dev_modes
 from bcm.devices.ophyd.qt.daqmx_counter_output import trig_src_types
@@ -67,6 +68,29 @@ class BaseOsaFocusScanClass(BaseScan):
             if hasattr(d, "set_row_change_index_points"):
                 # use defaults of all args = False
                 d.set_row_change_index_points()
+
+    def get_num_progress_events(self):
+        """
+        over ride base class def
+        """
+        if self.is_lxl:
+            return self.zz_roi[NPOINTS]
+        else:
+            #point scan
+            return self.x_roi[NPOINTS] * self.zz_roi[NPOINTS]
+
+    def get_num_points_in_scan(self):
+        """
+        overriddden by inheriting class
+        """
+        # self.numX = dct_get(self.sp_db, SPDB_XNPOINTS)
+        # self.numY = dct_get(self.sp_db, SPDB_YNPOINTS)
+        # self.numZ = dct_get(self.sp_db, SPDB_ZNPOINTS)
+        # self.numZZ = dct_get(self.sp_db, SPDB_ZZNPOINTS)
+        # self.numZX = dct_get(self.sp_db, SPDB_ZXNPOINTS)
+        # self.numZY = dct_get(self.sp_db, SPDB_ZYNPOINTS)
+        # self.numE = dct_get(self.sp_db, SPDB_EV_NPOINTS)
+        return self.numX * self.numZZ
 
     def go_to_scan_start(self):
         """
@@ -176,6 +200,7 @@ class BaseOsaFocusScanClass(BaseScan):
             }
 
         @bpp.baseline_decorator(dev_list)
+        @bpp.run_decorator(md=md)
         def do_scan():
             """
             do_scan(): description
@@ -190,17 +215,25 @@ class BaseOsaFocusScanClass(BaseScan):
             mtr_z = self.main_obj.device("DNM_ZONEPLATE_Z")
             shutter = self.main_obj.device("DNM_SHUTTER")
 
-            x_traj = cycler(mtr_x, self.x_roi[SETPOINTS])
-            y_traj = cycler(mtr_y, self.y_roi[SETPOINTS])
-            zz_traj = cycler(mtr_z, self.zz_roi[SETPOINTS])
+            # x_traj = cycler(mtr_x, self.x_roi[SETPOINTS])
+            # y_traj = cycler(mtr_y, self.y_roi[SETPOINTS])
+            # zz_traj = cycler(mtr_z, self.zz_roi[SETPOINTS])
+            #
+            # shutter.open()
+            # # the detector will be staged automatically by the grid_scan plan
+            # yield from scan_nd(dets, zz_traj * (y_traj + x_traj), md=md)
 
-            shutter.open()
-            # the detector will be staged automatically by the grid_scan plan
-            yield from scan_nd(dets, zz_traj * (y_traj + x_traj), md=md)
+            setpoints = list(zip(self.x_roi['SETPOINTS'], self.y_roi['SETPOINTS']))
+            for z_sp in self.zz_roi['SETPOINTS']:
+                yield from bps.mv(mtr_z, z_sp, group='ZZ')
+                yield from bps.wait('ZZ')
+                for spts in setpoints:
+                    x_sp, y_sp = spts
+                    yield from bps.mv(mtr_x, x_sp, mtr_y, y_sp, group='BB')
+                    yield from bps.wait('BB')
+                    yield from bps.trigger_and_read(dets)
 
             shutter.close()
-            # yield from bps.wait(group='e712_wavgen')
-
             # print("OsaFocusScanClass: make_scan_plan Leaving")
 
         return (yield from do_scan())

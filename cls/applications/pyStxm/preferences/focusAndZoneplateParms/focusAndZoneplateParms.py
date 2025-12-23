@@ -12,6 +12,8 @@ from PyQt5 import uic
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
 from cls.devWidgets.ophydLabelWidget import assign_aiLabelWidget
 from cls.appWidgets.basePreference import BasePreference
+from cls.scanning.paramLineEdit import dblLineEditParamObj
+from cls.appWidgets.focus_class import ABS_MIN_A0, ABS_MAX_A0
 from cls.utils.log import get_module_logger
 
 widgetsUiDir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
@@ -32,6 +34,10 @@ class FocusParams(BasePreference):
         self._parent = parent
         uic.loadUi(os.path.join(widgetsUiDir, "focusAndZoneplateParms.ui"), self)
 
+        # subscribe to focus changes
+        self.energy_dev = MAIN_OBJ.device("DNM_ENERGY_DEVICE")
+        self.energy_dev.focus_params_changed.connect(self.on_update_focus_params)
+
         # reassign the QLabels to be attached to pvs to update when their values change
         #if MAIN_OBJ.device("DNM_ENERGY_RBV"):
         if MAIN_OBJ.device("DNM_ENERGY"):
@@ -46,10 +52,10 @@ class FocusParams(BasePreference):
         else:
             self.evFbkLbl.setText("No Energy Feedback Device in database")
 
-        if MAIN_OBJ.device("DNM_ZP_DEF_A"):
+        if MAIN_OBJ.device("DNM_ZP_A1"):
             self.a1FbkLbl = assign_aiLabelWidget(
                 self.a1FbkLbl,
-                MAIN_OBJ.device("DNM_ZP_DEF_A"),
+                MAIN_OBJ.device("DNM_ZP_A1"),
                 hdrText="A1",
                 egu="",
                 title_color="white",
@@ -57,7 +63,7 @@ class FocusParams(BasePreference):
                 format="%5.4f",
             )
         else:
-            self.a1FbkLbl.setText("No DNM_ZP_DEF_A Device in database")
+            self.a1FbkLbl.setText("No DNM_ZP_A1 Device in database")
 
         if MAIN_OBJ.device("DNM_A0MAX"):
             self.a0MaxFbkLbl = assign_aiLabelWidget(
@@ -97,10 +103,10 @@ class FocusParams(BasePreference):
             self.sampleZFbkLbl.setText("No DNM_IDEAL_A0 Device in database")
 
         #if MAIN_OBJ.device("DNM_ZPZ_RBV"):
-        if MAIN_OBJ.device("DNM_ZONEPLATE_Z"):
+        if MAIN_OBJ.device("DNM_CALCD_ZPZ"):
             self.zpzFbkLbl = assign_aiLabelWidget(
                 self.zpzFbkLbl,
-                MAIN_OBJ.device("DNM_ZONEPLATE_Z"),
+                MAIN_OBJ.device("DNM_CALCD_ZPZ"),
                 hdrText="Zpz",
                 egu="um",
                 title_color="white",
@@ -108,7 +114,7 @@ class FocusParams(BasePreference):
                 format="%5.2f",
             )
         else:
-            self.zpzFbkLbl.setText("No DNM_ZPZ_RBV Device in database")
+            self.zpzFbkLbl.setText("No DNM_CALCD_ZPZ Device in database")
 
         self.a0Fld.returnPressed.connect(self.on_a0_changed)
 
@@ -143,10 +149,10 @@ class FocusParams(BasePreference):
             zpParms_ui = uic.loadUi(os.path.join(widgetsUiDir, "zpFlds.ui"))
 
             # populate fields
-            zpParms_ui.zpDFld.setText("%.2f" % zp_def["D"])
-            zpParms_ui.zpCStopFld.setText("%.2f" % zp_def["CsD"])
-            zpParms_ui.zpOZoneFld.setText("%.2f" % zp_def["OZone"])
-            zpParms_ui.zpA1Fld.setText("%.3f" % zp_def["a1"])
+            zpParms_ui.zpDFld.setText(f"{zp_def['D']:.2f}")
+            zpParms_ui.zpCStopFld.setText(f"{zp_def['CsD']:.2f}" )
+            zpParms_ui.zpOZoneFld.setText(f"{zp_def['OZone']:.2f}")
+            zpParms_ui.zpA1Fld.setText(f"{zp_def['a1']:.3f}")
 
             #self.zpToolBox.insertItem(pages, zpParms_ui, "ZP %d" % (pages))
             self.zpToolBox.insertItem(pages, zpParms_ui, f"{zp_def['name']}")
@@ -191,17 +197,23 @@ class FocusParams(BasePreference):
             osa_idx = 0
         self.osaToolBox.setCurrentIndex(osa_idx)
 
+        A0 = self.get_section("ZP_FOCUS_PARAMS.OSA_A0")
+        self.a0Fld.setText("%.2f" % A0)
+        self.on_a0_changed()
+
         self.update_zp_selection(zp_idx=zp_idx)
         self.update_osa_selection(osa_idx=osa_idx)
-
-        # A0 = self.get_section("ZP_FOCUS_PARAMS.OSA_A0")
-        # self.a0Fld.setText("%.2f" % A0)
-        # self.on_a0_changed()
 
         self.zpToolBox.currentChanged.connect(self.update_zp_selection)
         self.osaToolBox.currentChanged.connect(self.update_osa_selection)
 
-        scan_mode_dev = MAIN_OBJ.device("DNM_ZONEPLATE_SCAN_MODE")
+        self.minA0Fld.dpo = dblLineEditParamObj("minA0Fld", ABS_MIN_A0,  ABS_MAX_A0, 2, parent=self.minA0Fld)
+        # fld.dpo.valid_returnPressed.connect(self.update_data)
+        self.minA0Fld.dpo.valid_returnPressed.connect(
+            self.on_min_a0_changed
+        )
+
+        scan_mode_dev = MAIN_OBJ.device("DNM_ZONEPLATE_SCAN_MODE", do_warn=False)
         if scan_mode_dev:
             scan_mode_dev.put(1)
 
@@ -212,6 +224,45 @@ class FocusParams(BasePreference):
         self.add_section("ZP_FOCUS_PARAMS.OSA_A0", 1500.0)
         # init from saved
         self.reload()
+
+        self.update_fl_label()
+
+    def on_update_focus_params(self, focus_parms_dct: dict):
+        """
+        slot to handle when the focus parameters have been updated in the energy device
+        :param focus_parms_dct:
+            example:
+                {'zoneplate_def': self.zoneplate_def,
+                'osa_def': self.osa_def,
+                'FL': self._FL,
+                'min_A0': self.min_A0,
+                'A0': self.A0,
+                'max_A0': self.max_A0,
+                'delta_A0': self.delta_A0,
+                'zpz_adjust': self.zpz_adjust,
+                "defocus_beam_setpoint_um": self._defocus_beam_setpoint_um,
+                "defocus_beam_um": self._defocus_um,
+            }
+        :return:
+        """
+        # print(f"on_update_focus_params: focus_parms_dct={focus_parms_dct}")
+        if 'A0' in focus_parms_dct.keys():
+            self.a0Fld.setText(f"{focus_parms_dct['A0']:.2f}")
+        if 'FL' in focus_parms_dct.keys():
+            self.flFbkLbl.on_val_change(focus_parms_dct['FL'])
+        # if 'Zpz_pos' in focus_parms_dct.keys():
+        #     self.zpzFbkLbl.on_val_change(focus_parms_dct['Zpz_pos'])
+        # if 'Cz_pos' in focus_parms_dct.keys():
+        #     self.sampleZFbkLbl.on_val_change(focus_parms_dct['Cz_pos'])
+
+    def on_min_a0_changed(self):
+        """
+        handle when the min A0 field is changed
+        :return:
+        """
+        val = float(self.minA0Fld.text())
+        #MAIN_OBJ.update_min_a0(val)
+        self.energy_dev.update_min_a0(val)
 
     def convert_section_to_dict(self, section_defs_dct):
         dct = {}
@@ -317,21 +368,15 @@ class FocusParams(BasePreference):
             self.zpToolBox.setCurrentIndex(zp_idx)
             self.osaToolBox.setCurrentIndex(osa_idx)
 
-    def update_fl_label(self, val_dct):
+    def update_fl_label(self, val_dct=None):
         # print(f"update_fl_label: val_dct={val_dct}")
-        if isinstance(val_dct, dict):
-            if 'zpA1' in self._cur_sel_zp_def.keys():
-                new_fl = focal_length(val_dct["value"], self._cur_sel_zp_def["zpA1"])
-        else:
-            #assume its a scalar
-            if 'zpA1' in self._cur_sel_zp_def.keys():
-                new_fl = focal_length(val_dct, self._cur_sel_zp_def["zpA1"])
-        if 'zpA1' in self._cur_sel_zp_def.keys():
-            self.flFbkLbl.on_val_change(new_fl)
+        new_fl = self.energy_dev.calculate_focal_length()
+        self.flFbkLbl.on_val_change(new_fl)
 
-            if MAIN_OBJ.get_device_backend() == 'zmq':
-                # for zmq backend we need to set the focal length on the device
-                MAIN_OBJ.device("DNM_FOCAL_LENGTH").set_readback(new_fl)
+        #ToDO: THIS MAY NOT BE NEEDED ANYMORE SINCE THE ENERGY DEVICE HANDLES IT
+        if MAIN_OBJ.get_device_backend() == 'zmq':
+            # for zmq backend we need to set the focal length on the device
+            MAIN_OBJ.device("DNM_FOCAL_LENGTH").set_readback(new_fl)
 
 
     def on_energy_fbk_changed(self, val):
@@ -339,7 +384,7 @@ class FocusParams(BasePreference):
 
     def on_a0_changed(self):
         A0 = float(str(self.a0Fld.text()))
-        MAIN_OBJ.device("DNM_A0").put(A0)
+        self.energy_dev.update_a0(A0)
         self.update_zp_data()
 
     def update_zp_selection(self, zp_idx=None):
@@ -353,15 +398,17 @@ class FocusParams(BasePreference):
         self.set_definition_active_by_id("ZP_DEFS", zp_idx)
         zp_name, zp_dct = self.get_def_by_id_num("ZP_DEFS", zp_idx)
         if MAIN_OBJ.get_device_backend() == 'epics' and len(zp_dct) > 0:
-            zp_def_pv = MAIN_OBJ.device("DNM_ZP_DEF")
-            # because this is a Calc field I need to put values as strings
-            zp_def_pv.put("CLCA", str(zp_dct["a1"]))
-            zp_def_pv.put("CLCB", str(zp_dct["D"]))
-            zp_def_pv.put("CLCC", str(zp_dct["CsD"]))
-            zp_def_pv.put("CLCD", str(zp_dct["OZone"]))
-            zp_def_pv.put("PROC", 1)
+            # zp_def_pv = MAIN_OBJ.device("DNM_ZP_DEF")
+            # # because this is a Calc field I need to put values as strings
+            # zp_def_pv.put("CLCA", str(zp_dct["a1"]))
+            # zp_def_pv.put("CLCB", str(zp_dct["D"]))
+            # zp_def_pv.put("CLCC", str(zp_dct["CsD"]))
+            # zp_def_pv.put("CLCD", str(zp_dct["OZone"]))
+            # zp_def_pv.put("PROC", 1)
+            pass
 
         self.update_zp_data()
+        self.update_fl_label()
 
     def update_osa_selection(self, osa_idx=None):
         """
@@ -373,9 +420,10 @@ class FocusParams(BasePreference):
         self.set_definition_active_by_id("OSA_DEFS", osa_idx)
         osa_nm, osa_dct = self.get_def_by_id_num("OSA_DEFS", osa_idx)
         if MAIN_OBJ.get_device_backend() == 'epics' and len(osa_dct) > 0:
-            osa_def_pv = MAIN_OBJ.device("DNM_OSA_DEF")
-            osa_def_pv.put("CLCA", str(osa_dct["D"]))
-            osa_def_pv.put("PROC", 1)
+            # osa_def_pv = MAIN_OBJ.device("DNM_OSA_DEF")
+            # osa_def_pv.put("CLCA", str(osa_dct["D"]))
+            # osa_def_pv.put("PROC", 1)
+            pass
         self.update_osa_data()
 
     def update_osa_data(self):
@@ -383,7 +431,15 @@ class FocusParams(BasePreference):
         self.set_section("ZP_FOCUS_PARAMS.OSA_IDX", osa_idx)
 
         osa_defs = MAIN_OBJ.get_preset_section("OSA_DEFS")
+        osa_keys = list(osa_defs.keys())
         MAIN_OBJ.set_dcs_osa_definitions(osa_defs)
+
+        key = osa_keys[osa_idx]
+        if isinstance(osa_defs[key], str):
+            osa_dct = json.loads(osa_defs[key].replace("'", '"'))
+        else:
+            osa_dct = osa_defs[key]
+        self.energy_dev.set_osa_def(osa_dct)
 
     def update_zp_data(self, update_defaults=True):
         """
@@ -405,9 +461,9 @@ class FocusParams(BasePreference):
         self._cur_sel_zp_def["Zpz_pos"] = Zpz_pos = float(
             str(self.zpzFbkLbl.get_text())
         )
-        self._cur_sel_zp_def["Cz_pos"] = Cz_pos = float(
-            str(self.sampleZFbkLbl.get_text())
-        )
+        # self._cur_sel_zp_def["Cz_pos"] = Cz_pos = float(
+        #     str(self.sampleZFbkLbl.text())
+        # )
         self._cur_sel_zp_def["zpD"] = zpD = float(str(zpParms_ui.zpDFld.text()))
         self._cur_sel_zp_def["zpCStop"] = zpCStop = float(
             str(zpParms_ui.zpCStopFld.text())
@@ -424,7 +480,10 @@ class FocusParams(BasePreference):
         self.set_section("ZP_FOCUS_PARAMS.OSA_A0", A0)
 
         zp_defs = MAIN_OBJ.get_preset_section("ZP_DEFS")
+        self.energy_dev.set_zp_def(self._cur_sel_zp_def)
+
         MAIN_OBJ.set_dcs_zoneplate_definitions(zp_defs)
+
 
 
     def get_cur_zp_def(self):

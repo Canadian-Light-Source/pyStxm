@@ -188,7 +188,7 @@ class PreferencesParams(QtWidgets.QWidget):
         )
         self.a1FbkLbl = assign_aiLabelWidget(
             self.a1FbkLbl,
-            MAIN_OBJ.device("DNM_ZP_DEF_A"),
+            MAIN_OBJ.device("DNM_ZP_A1"),
             hdrText="A1",
             egu="",
             title_color="white",
@@ -490,10 +490,10 @@ if __name__ == "__main__":
     import sys
 
     # zps = get_zp_dct()
-    # osas = get_osa_dct()
+    # osa_holders = get_osa_dct()
 
     # DEFAULTS.add_section('PRESETS.ZP_PARAMS', zps)
-    # DEFAULTS.add_section('PRESETS.OSA_PARAMS',osas)
+    # DEFAULTS.add_section('PRESETS.OSA_PARAMS',osa_holders)
     # 	DEFAULTS.add_section('PRESETS.ZP_FOCUS_PARAMS',{})
     # 	DEFAULTS.add_section('PRESETS.ZP_FOCUS_PARAMS.ZP_IDX', 0)
     # 	DEFAULTS.add_section('PRESETS.ZP_FOCUS_PARAMS.ZP_A1', 0)

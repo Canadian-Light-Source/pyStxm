@@ -51,6 +51,7 @@ multi_entry_scans = [
 single_2d_scans = [
     scan_types.DETECTOR_IMAGE,
     scan_types.OSA_IMAGE,
+    scan_types.SAMPLE_IMAGE,
     scan_types.COARSE_IMAGE,
     scan_types.COARSE_GONI,
 ]

@@ -21,8 +21,7 @@ from cls.types.stxmTypes import scan_types
 
 appConfig = ConfigClass(abs_path_to_ini_file)
 BL_CFG_NM = appConfig.get_value("MAIN", "bl_config")
-bl_scan_time_dir = os.path.join(os.getcwd(), "..", "..", "applications", "pyStxm", "bl_configs", BL_CFG_NM,
-                                "scan_time_data")
+bl_scan_time_dir = os.path.join(os.getcwd(), "bl_configs", BL_CFG_NM,"scan_time_data")
 
 _logger = get_module_logger(__name__)
 

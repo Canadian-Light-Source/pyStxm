@@ -127,10 +127,10 @@ class BaseCoarseImageScanClass(BaseScan):
 
         # check if beyond soft limits
         # if the soft limits would be violated then return False else continue and return True
-        if not mtr_x.check_scan_limits(xstart, xstop):
+        if not mtr_x.check_scan_limits(xstart, xstop, coarse_only=True):
             _logger.error("Scan would violate soft limits of X motor")
             return (False)
-        if not mtr_y.check_scan_limits(ystart, ystop):
+        if not mtr_y.check_scan_limits(ystart, ystop, coarse_only=True):
             _logger.error("Scan would violate soft limits of Y motor")
             return (False)
 
@@ -173,48 +173,42 @@ class BaseCoarseImageScanClass(BaseScan):
             return self.x_roi[NPOINTS] * self.y_roi[NPOINTS]
 
     def make_pxp_scan_plan(self, dets, bi_dir=False, md={}):
-        dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()
+        dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()  # skip_lst)
+
         self._bi_dir = bi_dir
-        # zp_def = self.get_zoneplate_info_dct()
-        mtr_dct = self.determine_samplexy_posner_pvs()
-        md = copy.deepcopy(
-            self.make_standard_metadata(
-                entry_num=0, scan_type=self.scan_type, dets=dets
-            )
-        )
+        if md is None:
+            md = {
+                "metadata": dict_to_json(
+                    self.make_standard_metadata(
+                        entry_name="entry0", scan_type=self.scan_type, dets=dets
+                    )
+                )
+            }
 
         @bpp.baseline_decorator(dev_list)
+        @bpp.run_decorator(md=md)
         def do_scan():
-            # Declare the end of the run.
-            # make sure that the positions of the piezos are correct to start
             psmtr_x = self.main_obj.device("DNM_SAMPLE_X")
             psmtr_y = self.main_obj.device("DNM_SAMPLE_Y")
             psmtr_x.set_piezo_power_off()
             psmtr_y.set_piezo_power_off()
-            x_roi = self.sp_db["X"]
-            y_roi = self.sp_db["Y"]
-            mtr_x = self.main_obj.device(mtr_dct["cx_name"])
-            mtr_y = self.main_obj.device(mtr_dct["cy_name"])
+            mtr_x = self.main_obj.device("DNM_COARSE_X")
+            mtr_y = self.main_obj.device("DNM_COARSE_Y")
             shutter = self.main_obj.device("DNM_SHUTTER")
-            # the detector will be staged automatically by the grid_scan plan
+
             shutter.open()
-            yield from grid_scan(
-                dets,
-                mtr_y,
-                y_roi[START],
-                y_roi[STOP],
-                y_roi[NPOINTS],
-                mtr_x,
-                x_roi[START],
-                x_roi[STOP],
-                x_roi[NPOINTS],
-                self._bi_dir,
-                md=md,
-            )
+            yield from bps.mv(mtr_x, self.x_roi['START'], group='B')
+            yield from bps.mv(mtr_y, self.y_roi['START'], group='B')
+            yield from bps.wait('B')
+            # a scan with N events
+            for y_sp in self.y_roi['SETPOINTS']:
+                yield from bps.mv(mtr_y, y_sp)
+                for x_sp in self.x_roi['SETPOINTS']:
+                    yield from bps.mv(mtr_x, x_sp, group='BB')
+                    # yield from bps.wait('BB')
+                    yield from bps.trigger_and_read(dets)
 
             shutter.close()
-            #yield from bps.unstage(gate)
-
             # print("CoarseSampleImageScanClass: make_pxp_scan_plan Leaving")
 
         return (yield from do_scan())
@@ -264,7 +258,6 @@ class BaseCoarseImageScanClass(BaseScan):
                 DECCEL_DISTANCE = self.x_roi["RANGE"] * deccel_dist_prcnt_pv.get()
 
                 #scan_velo = self.x_roi["RANGE"] / ((self.x_roi["NPOINTS"] * self.dwell) * 0.001)
-                sisdev = dets[0]
                 piezo_mtr.scan_start.put(self.x_roi['START'] - ACCEL_DISTANCE)
                 #piezo_mtr.scan_stop.put(self.x_roi['STOP'] + ACCEL_DISTANCE)
                 piezo_mtr.scan_stop.put(self.x_roi['STOP'] + DECCEL_DISTANCE)
@@ -273,11 +266,6 @@ class BaseCoarseImageScanClass(BaseScan):
                 piezo_mtr.marker_stop.put(self.x_roi['STOP'])
                 piezo_mtr.set_marker.put(self.x_roi['START'])
                 piezo_mtr.set_marker_position(self.x_roi['START'])
-                #hack to soret out why trigs need to be opposite sign for positions
-                # piezo_mtr.marker_start.put(self.x_roi['START'] * -1.0)
-                # piezo_mtr.marker_stop.put(self.x_roi['STOP'] * -1.0)
-                # piezo_mtr.set_marker.put(self.x_roi['START'] * -1.0)
-                # piezo_mtr.set_marker_position(self.x_roi['START'] * -1.0)
 
                 # move to scan start
                 yield from bps.mv(crs_x, self.x_roi['START'] - ACCEL_DISTANCE, group='BB')
@@ -287,10 +275,12 @@ class BaseCoarseImageScanClass(BaseScan):
                 for y_sp in self.y_roi['SETPOINTS']:
                     ACCEL_DISTANCE = self.x_roi["RANGE"] * accel_dist_prcnt_pv.get()
                     DECCEL_DISTANCE = self.x_roi["RANGE"] * deccel_dist_prcnt_pv.get()
-                    #print(f"CoarseImageScan: ACCEL_DISTANCE = {ACCEL_DISTANCE}, DECCEL_DISTANCE={DECCEL_DISTANCE}")
+                    # print(f"CoarseImageScan: ACCEL_DISTANCE = {ACCEL_DISTANCE}, DECCEL_DISTANCE={DECCEL_DISTANCE}")
                     crs_x.velocity.put(self.scan_velo)
                     piezo_mtr.enable_marker_position(True)
-                    yield from bps.mv(sisdev.run, 1, group='SIS3820')
+                    for d in dets:
+                        if hasattr(d, 'run'):
+                            yield from bps.mv(d.run, 1, group='SIS3820')
                     # yield from bps.mv(crs_y, y_sp)
                     yield from bps.mv(crs_x, self.x_roi['STOP'] + DECCEL_DISTANCE, group='BB')
                     yield from bps.wait('BB')
@@ -301,10 +291,7 @@ class BaseCoarseImageScanClass(BaseScan):
                     yield from bps.wait('CC')
 
                 shutter.close()
-                # print("CoarseSampleImageScanClass LxL: make_scan_plan Leaving")
-            # except NameError as ne:
-            #     # Code to handle NameError
-            #     print(ne)
+
             except LimitError as le:
                 _logger.error(f"There was a problem involving a motor setpoint being larger than valid range: [{le}]")
 

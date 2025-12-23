@@ -70,6 +70,13 @@ def print_flds(slf, _attrs, _attr_lst=None):
     f.close()
 
 
+# make sure sim devices are available
+from bcm.devices.sim.sim_base_device import BaseSimDevice
+from bcm.devices.sim.sim_base_object import BaseSimObject
+from bcm.devices.sim.sim_binary_out import SimBo
+from bcm.devices.sim.sim_multi_bit_binary_out import SimMbbo
+from bcm.devices.sim.energy_dev import EnergyDevice
+
 if USE_EPICS:
     from .epics.base import BaseDevice
     from .epics.aio import basedevice as basedevice

@@ -38,7 +38,7 @@ class Defaults(QtCore.QObject):
 
     changed = QtCore.pyqtSignal()
 
-    def __init__(self, fname, new=False):
+    def __init__(self, fname="app_dflts.json", new=False):
         super(Defaults, self).__init__()
         self.defdct = {}
         self.fpath = os.path.join(defaultsDir, fname)

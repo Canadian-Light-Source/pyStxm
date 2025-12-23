@@ -2177,36 +2177,21 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         min_clr = master_colors["plot_gridmaj"]["rgb_hex"]
         maj_clr = master_colors["plot_gridmin"]["rgb_hex"]
 
-        # gridparam = {'fg_clr':fg_clr, 'bg_clr':bg_clr, 'min_clr':min_clr, 'maj_clr':maj_clr}
-
-        # self.lineByLineImageDataWidget = ImageWidgetPlot(parent=None, filtStr="*.hdf5", type=None,
-        #         options = dict(lock_aspect_ratio=True, show_contrast=True, show_xsection=True, show_ysection=True,
-        #         xlabel=("microns", ""), ylabel=("microns", ""), colormap="gist_gray"))
-
         self.lineByLineImageDataWidget = ImageWidgetPlot(
             parent=None,
             type="analyze",
-            settings_fname="%s_settings.json" % MAIN_OBJ.get_endstation_prefix(),
         )
         if hasattr(self, "lineByLineImageDataWidget"):
             # self.lineByLineImageDataWidget.plot.setTitle('lineByLineImageDataWidget')
             self.lineByLineImageDataWidget.set_lock_aspect_ratio(True)
-            # self.bsImagePlotWidget = ImgPlotWindow()
-            # vb = QtWidgets.QVBoxLayout()
-            # vb.addWidget(self.bsImagePlotWidget)
-            # self.bsImagePlotFrame.setLayout(vb)
 
             self.lineByLineImageDataWidget.setObjectName("lineByLineImageDataWidget")
             self.lineByLineImageDataWidget.register_osa_and_samplehldr_tool(
                 sample_pos_mode
             )
-            #        self.lineByLineImageDataWidget.register_osa_and_samplehldr_tool(sample_pos_mode)
-            # self.lineByLineImageDataWidget.set_transform_factors(0.333, 0.333, 0.333, 'um')
-            # self.lineByLineImageDataWidget.setMinimumSize(600, 600)
             self.lineByLineImageDataWidget.enable_tool_by_name(
                 "tools.clsOpenFileTool", False
             )
-            #   self.lineByLineImageDataWidget.set_sample_positioning_mode(sample_pos_mode)
             self.lineByLineImageDataWidget.set_dataIO(STXMDataIo)
 
             self.lineByLineImageDataWidget.addTool("DummySeparatorTool")
@@ -2240,8 +2225,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             self.lineByLineImageDataWidget.new_beam_position.connect(
                 self.on_new_directed_beam_pos
             )
-
-            # self.lineByLineImageDataWidget.create_sample_holder()
 
             vbox = QtWidgets.QVBoxLayout()
             # ################ TESTING

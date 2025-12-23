@@ -4,23 +4,21 @@ Created on 2011-03-03
 
 @author: bergr
 """
+
 from functools import partial
-import sys
+import numpy as np
 import os
+import qwt as Qwt
+import simplejson as json
+import sys
 import timeit
 from typing import Dict, Optional
+
 from PyQt5 import QtGui
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal, QObject, QTimer, QPointF, QRectF, Qt
 from PyQt5 import uic
 
-import qwt as Qwt
-import simplejson as json
-import numpy as np
-
-from cls.utils.bl_config_reader import BeamlineConfigReader
-from cls.utils.roi_utils import make_base_wdg_com
-from cls.types.stxmTypes import SPEC_ROI_PREFIX, scan_types
 from plotpy.plot import PlotOptions
 from plotpy.mathutils.colormap import get_cmap, register_extra_colormap
 from plotpy.plot import  PlotDialog
@@ -32,7 +30,7 @@ from plotpy.styles import (
     GridParam,
 )
 
-from cls.plotWidgets.config import _
+
 from plotpy.items import shape
 from plotpy.items import ImageItem, TrImageItem, LabelItem, HistogramItem
 
@@ -65,22 +63,6 @@ from plotpy.interfaces import (
     IDecoratorItemType,
 )
 from plotpy.items import AnnotatedRectangle, AnnotatedSegment, AnnotatedPoint, AnnotatedCircle, AnnotatedEllipse
-
-# from cls.plotWidgets.guiqwt_qt5_sigs import (
-#     SIG_MARKER_CHANGED,
-#     SIG_PLOT_LABELS_CHANGED,
-#     SIG_AXES_CHANGED,
-#     SIG_ANNOTATION_CHANGED,
-#     SIG_AXIS_DIRECTION_CHANGED,
-#     SIG_VOI_CHANGED,
-#     SIG_ITEMS_CHANGED,
-#     SIG_ACTIVE_ITEM_CHANGED,
-#     SIG_ITEM_MOVED,
-#     SIG_LUT_CHANGED,
-#     SIG_ITEM_SELECTION_CHANGED,
-#     SIG_STOP_MOVING,
-#     SIG_PLOT_AXIS_CHANGED)
-
 from plotpy.builder import make
 
 from guidata.dataset import DataSet
@@ -88,8 +70,12 @@ from guidata.dataset.dataitems import StringItem
 from guidata.dataset.qtwidgets import DataSetShowGroupBox
 from guidata.dataset import update_dataset
 
+from cls.plotWidgets.config import _
+from cls.utils.bl_config_reader import BeamlineConfigReader
+from cls.utils.roi_utils import make_base_wdg_com
+from cls.types.stxmTypes import SPEC_ROI_PREFIX, scan_types
 from cls.plotWidgets.tools.annotatedHorizontalSegment import AnnotatedHorizontalSegment
-
+from cls.plotWidgets.shapes import *
 from cls.plotWidgets.tools import ROITool, clsSquareAspectRatioTool
 from cls.utils.excepthook import exception
 from cls.utils.nextFactor import nextFactor

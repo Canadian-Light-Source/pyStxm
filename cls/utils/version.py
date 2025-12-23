@@ -1,10 +1,11 @@
 import os
 
+from cls.applications.pyStxm import abs_path_to_top
 from cls.utils.json_utils import file_to_json, json_to_dict
 
 
 def get_version():
-    ver_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "version.json")
+    ver_path = os.path.join(abs_path_to_top, "version.json")
     if os.path.exists(ver_path):
         js = file_to_json(ver_path)
         ver_dct = json_to_dict(js)

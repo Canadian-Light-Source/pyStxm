@@ -40,7 +40,6 @@ iconsDir = os.path.join(
 
 mtrDetailDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
 
-
 # motor internal status
 NONFLOAT, OUTSIDE_LIMITS, UNCONNECTED = -13, -12, -11
 TIMEOUT, TIMEOUT_BUTDONE = -8, -7
@@ -50,7 +49,7 @@ DONE_OK = 0
 MOVE_BEGUN, MOVE_BEGUN_CONFIRMED = 0, 1
 NOWAIT_SOFTLIM, NOWAIT_HARDLIM = 4, 3
 MIN_MTR_FLD_NM_WIDTH = 300
-
+MAX_UNITS_WIDTH = 40
 FEEDBACK_DELAY = 100
 
 _sp_not_moving = master_colors["app_ltgray"]["rgb_str"]
@@ -64,6 +63,7 @@ _pbtn_font_size = font_sizes["pbtn_font_size"]
 
 _logger = get_module_logger(__name__)
 
+MTR_FEEDBACK_FORMAT = "%6.3f"
 
 class PositionersPanel(QtWidgets.QWidget):
     """
@@ -249,7 +249,7 @@ class PositionersPanel(QtWidgets.QWidget):
             #mtr_fbk = mtr.get("user_readback")
             mtr_fbk = mtr.get_position()
             if type(mtr_fbk) is float:
-                s = "%6.1f" % mtr_fbk
+                s = MTR_FEEDBACK_FORMAT % mtr_fbk
                 mtr_ui.posFbkLbl.setText(s)
         else:
             _logger.warn("%s is not ready to get feedback: %s" % (desc, pv_name))
@@ -269,13 +269,15 @@ class PositionersPanel(QtWidgets.QWidget):
 
         units = str(mtr.get_units())
         mtr_ui.unitsLbl.setText(units or "")
+        mtr_ui.unitsLbl.setMaximumWidth(MAX_UNITS_WIDTH)
 
         self.grid_layout.addWidget(mtr_ui.mtrNameFld, row, 0)
         self.grid_layout.addWidget(mtr_ui.setPosFld, row, 1)
         self.grid_layout.addWidget(mtr_ui.posFbkLbl, row, 2)
         self.grid_layout.addLayout(led_vbox, row, 3)
-        self.grid_layout.addWidget(mtr_ui.stopBtn, row, 4)
-        self.grid_layout.addWidget(mtr_ui.detailsBtn, row, 5)
+        self.grid_layout.addWidget(mtr_ui.unitsLbl, row, 4)
+        self.grid_layout.addWidget(mtr_ui.stopBtn, row, 5)
+        self.grid_layout.addWidget(mtr_ui.detailsBtn, row, 6)
         # _logger.debug('Done[%s] \n\n' % name)
 
     def connect_combobox_widgets(self, name, mtr_ui, widg, mtr, row):
@@ -327,18 +329,30 @@ class PositionersPanel(QtWidgets.QWidget):
         mtr_ui.mtrNameFld.setStyleSheet("border: 2px solid %s; background-color: %s;" % (clr_str, clr_str))
         units = str(mtr.get_units())
         mtr_ui.unitsLbl.setText(units or "")
+        mtr_ui.unitsLbl.setMaximumWidth(MAX_UNITS_WIDTH)
+
+        # update now whether the motor is at a limit switch
+        led_vbox = QtWidgets.QVBoxLayout()
+        clr_high_limit = _fbk_at_limit_true if mtr.at_high_limit() else _fbk_at_limit_false
+        mtr_ui.highLimitLED.setStyleSheet("background-color: %s;" % clr_high_limit)
+        clr_low_limit = _fbk_at_limit_true if mtr.at_low_limit() else _fbk_at_limit_false
+        mtr_ui.lowLimitLED.setStyleSheet("background-color: %s;" % clr_low_limit)
+        led_vbox.addWidget(mtr_ui.highLimitLED)
+        led_vbox.addWidget(mtr_ui.lowLimitLED)
 
         self.grid_layout.addWidget(mtr_ui.mtrNameFld, row, 0)
         self.grid_layout.addWidget(mtr_ui.spComboBox, row, 1)
         self.grid_layout.addWidget(mtr_ui.posFbkLbl, row, 2)
-        self.grid_layout.addWidget(mtr_ui.stopBtn, row, 4)
-        self.grid_layout.addWidget(mtr_ui.detailsBtn, row, 5)
+        self.grid_layout.addLayout(led_vbox, row, 3)
+        self.grid_layout.addWidget(mtr_ui.unitsLbl, row, 4)
+        self.grid_layout.addWidget(mtr_ui.stopBtn, row, 5)
+        self.grid_layout.addWidget(mtr_ui.detailsBtn, row, 6)
         # _logger.debug('Done[%s] \n\n' % name)
 
     def update_combobox_selection(self, mtr):
         mtr_fbk = mtr.get("user_readback")
         if type(mtr_fbk) is float:
-            s = "%6.1f" % mtr_fbk
+            s = MTR_FEEDBACK_FORMAT % mtr_fbk
             mtr_ui.posFbkLbl.setText(s)
             mtr_ui.spComboBox.blockSignals(True)
             mtr_ui.spComboBox.setCurrentIndex(int(mtr_fbk))
@@ -774,7 +788,7 @@ class PositionersPanel(QtWidgets.QWidget):
                 _dct["val"] = val
             else:
                 val = float(kwargs["value"])
-                s = "%6.1f" % val
+                s = MTR_FEEDBACK_FORMAT % val
 
             _dct["setText"] = (dev_ui.posFbkLbl, s)
             self.updateQueue.put_nowait(_dct)

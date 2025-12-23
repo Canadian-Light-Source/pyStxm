@@ -405,6 +405,9 @@ class MotorQt(EpicsMotor, QObject):
         if type(units) is numpy.ndarray:
             # convert it to a string
             units = "".join([chr(item) for item in units])
+        elif type(units) is str:
+            if len(units) == 0:
+                units = self._egu
         return units
 
     #

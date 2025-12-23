@@ -183,7 +183,7 @@ class EnergyDevice(FocusCalculations, Device):
         self.calcd_zpz_dev = energy_dev_dict['calcd_zpz_dev']
         self.zp_focus_mode_dev = energy_dev_dict["zp_focus_mode_dev"]
 
-        self._enable_fl_change_on_energy_change = True
+        self._enable_fl_change_on_energy_change = False
         self.focus_mode = 'OSA'  # or 'SAMPLE'
         self.FLMode_0 = 0.0
         self.FLMode_1 = 0.0
@@ -450,28 +450,30 @@ class EnergyDevice(FocusCalculations, Device):
         """
         Move the zpz positioner to the calculated position for OSA focused mode.
         """
-        if energy_sp is not None:
-            energy_val = energy_sp
-        else:
-            energy_val = self.energy_posner.get()
+        if self._enable_fl_change_on_energy_change:
+            if energy_sp is not None:
+                energy_val = energy_sp
+            else:
+                energy_val = self.energy_posner.get()
 
-        new_zpz = self.calc_new_zpz_for_osa_focussed(energy_val)
-        # print(f"Moving ZPZ to OSA focused position: {new_zpz:.2f}\n")
-        #self.zpz_posner.put("user_setpoint", new_zpz)
-        self.zpz_posner.call_emit_move(new_zpz, wait=False)
+            new_zpz = self.calc_new_zpz_for_osa_focussed(energy_val)
+            # print(f"Moving ZPZ to OSA focused position: {new_zpz:.2f}\n")
+            #self.zpz_posner.put("user_setpoint", new_zpz)
+            self.zpz_posner.call_emit_move(new_zpz, wait=False)
 
     def move_to_sample_focussed(self, energy_sp=None):
         """
         Move the zpz positioner to the calculated position for Sample focused mode.
         """
-        if energy_sp is not None:
-            energy_val = energy_sp
-        else:
-            energy_val = self.energy_posner.get()
-        new_zpz = self.calc_new_zoneplate_z_pos_for_focus(energy_val)
-        # print(f"Moving ZPZ to Sample focused position: {new_zpz:.2f}\n")
-        # self.zpz_posner.put("user_setpoint", new_zpz)
-        self.zpz_posner.call_emit_move(new_zpz, wait=False)
+        if self._enable_fl_change_on_energy_change:
+            if energy_sp is not None:
+                energy_val = energy_sp
+            else:
+                energy_val = self.energy_posner.get()
+            new_zpz = self.calc_new_zoneplate_z_pos_for_focus(energy_val)
+            # print(f"Moving ZPZ to Sample focused position: {new_zpz:.2f}\n")
+            # self.zpz_posner.put("user_setpoint", new_zpz)
+            self.zpz_posner.call_emit_move(new_zpz, wait=False)
 
     def move(self, val: float, wait=True):
         # print("EnergyDevice [move] called with val: ", val)
@@ -506,10 +508,27 @@ class EnergyDevice(FocusCalculations, Device):
         st.set_finished()
         return st
 
-    def stop(self, *, success):
+    def stop(self):
         # self.close()
         # self.is_open = False
-        pass
+        if hasattr(self.a0_dev, "stop"):
+            self.a0_dev.stop()
+        if hasattr(self.delta_a0_dev, "stop"):
+            self.delta_a0_dev.stop()
+        if hasattr(self.zpz_adjust_dev, "stop"):
+            self.zpz_adjust_dev.stop()
+        if hasattr(self.defocus_beam_dev, "stop"):
+            self.defocus_beam_dev.stop()
+        if hasattr(self.focal_len_dev, "stop"):
+            self.focal_len_dev.stop()
+        if hasattr(self.zp_a1_dev, "stop"):
+            self.zp_a1_dev.stop()
+        if hasattr(self.a0_max_dev, "stop"):
+            self.a0_max_dev.stop()
+        if hasattr(self.calcd_zpz_dev, "stop"):
+            self.calcd_zpz_dev.stop()
+        if hasattr(self.zp_focus_mode_dev, "stop"):
+            self.zp_focus_mode_dev.stop()
 
 
 

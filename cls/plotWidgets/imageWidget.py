@@ -5748,7 +5748,7 @@ class ImageWidgetPlot(PlotDialog):
             if not exclude_rois:
                 if hasattr(item, "title"):
                     if item.title().text().find(SPEC_ROI_PREFIX) == -1:
-                        print(f"deleting shape item 1: {item.title().text()} or type {type(item)}")
+                        # print(f"deleting shape item 1: {item.title().text()} or type {type(item)}")
                         self.delShapePlotItem(item, replot=False)
             else:
                 print(f"deleting shape item 2: {item.title().text()} or type {type(item)}")

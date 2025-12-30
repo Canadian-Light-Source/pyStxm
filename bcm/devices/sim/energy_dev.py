@@ -508,7 +508,7 @@ class EnergyDevice(FocusCalculations, Device):
         st.set_finished()
         return st
 
-    def stop(self):
+    def stop(self, success=True):
         # self.close()
         # self.is_open = False
         if hasattr(self.a0_dev, "stop"):

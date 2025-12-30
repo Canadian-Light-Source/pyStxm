@@ -8,6 +8,8 @@ import threading
 import time
 import sys
 import zmq
+import h5py
+import numpy as np
 
 #make sure that the applications modules can be found, used to depend on PYTHONPATH environ var
 sys.path.append( os.path.join(os.path.dirname(os.path.abspath(__file__)), "..") )
@@ -32,7 +34,8 @@ REP_PORT = 5555
 PUB_PORT = 56566
 
 NX_SERVER_CMNDS = Enum('save_files', 'remove_files', 'test_connection', 'is_windows', 'get_file_sequence_names',
-                       'loadfile_directory', 'loadfile_file', 'loadfile_files', 'list_directory')
+                       'loadfile_directory', 'loadfile_file', 'loadfile_files', 'list_directory',
+                       'save_progressive_stack_data')
 # save_files: Saves standard nxStxm files
 # remove_files: removes a list of files, used by ptycho scan to remove garbage tifs that were created during pxp line transaltions
 # test_connection: client can send a test connection msg
@@ -150,6 +153,46 @@ def process_and_publish_files(pub_socket, files):
     print(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published [{len(data_lst)}] files")
     return data_lst
 
+def save_data_to_hdf5(data_dct, data_dir, fprefix):
+    """
+        Save detector 2D array data from a dictionary to an HDF5 file.
+
+        - Creates the HDF5 file in `data_dir` with the name `{fprefix}.hdf5` if it does not exist.
+        - Creates a group named by `img_idx` from `data_dct`.
+        - For each key in `det_data`, creates a subgroup and saves the corresponding 2D array as a dataset named 'data'.
+
+        Parameters
+        ----------
+        data_dct : dict
+            Dictionary containing 'img_idx' and 'det_data' with 2D arrays.
+        data_dir : str
+            Directory path to save the HDF5 file.
+        fprefix : str
+            Prefix for the HDF5 file name.
+
+        Returns
+        -------
+        None
+    """
+    # Ensure directory exists
+    os.makedirs(data_dir, exist_ok=True)
+    h5_path = os.path.join(data_dir, f"{fprefix}.hdf5")
+
+    # Create file if it doesn't exist
+    with h5py.File(h5_path, 'a') as h5f:
+        img_idx = str(data_dct['img_idx'])
+        # Create group for img_idx
+        grp = h5f.require_group(img_idx)
+        det_data = data_dct['det_data']
+        for det_key, arr in det_data.items():
+            # Create subgroup for detector
+            det_grp = grp.require_group(det_key)
+            # Save 2D array as dataset
+            arr_np = np.array(arr)
+            if 'data' in det_grp:
+                del det_grp['data']
+            det_grp.create_dataset('data', data=arr_np)
+
 def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, is_windows=True):
     """
     Note this server currently needs to run on the same machine as the mongodb service in order to access the
@@ -204,6 +247,16 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
                 exporter.finish_export(data_dir, fprefix, first_uid)
                 ret_msg = f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"
                 ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "msg": f"NX_SERVER[{HOSTNAME}], [{rep_port}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"})
+
+        elif cmnd == NX_SERVER_CMNDS.SAVE_PROGRESSIVE_STACK_DATA:
+            cmd_args = data['cmd_args']
+            fprefix = cmd_args['file_prefix']
+            data_dir = cmd_args['directory']
+            # extension = cmd_args['extension']
+            data_dct = json.loads(cmd_args['data_dct'])
+            save_data_to_hdf5(data_dct, data_dir, fprefix)
+            print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: save_progressive_stack_data called with fprefix=[{fprefix}], data_dir=[{data_dir}]")
+            ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS})
 
         elif cmnd == NX_SERVER_CMNDS.REMOVE_FILES:
             # ToDo: implement removal of files

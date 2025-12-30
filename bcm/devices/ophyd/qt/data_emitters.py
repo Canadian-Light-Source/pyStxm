@@ -166,6 +166,16 @@ class BaseQtImageDataEmitter(QtDataEmitter):
         self._events.clear()
         self._descriptors.clear()
 
+    def condense_det_data(self, det_data_list):
+        if not det_data_list:
+            return {}
+        det_names = det_data_list[0].keys()
+        condensed = {}
+        for det in det_names:
+            # Stack arrays for this detector from all dicts
+            condensed[det] = np.stack([d[det] for d in det_data_list])
+        return condensed
+
 
 class SpecDataEmitter(BaseQtSpectraDataEmitter):
     def __init__(self, det, x=None, epoch="run", **kwargs):
@@ -488,9 +498,10 @@ class ImageDataEmitter(BaseQtImageDataEmitter):
         dct = {}
         dct["x_data"] = self.x_data
         dct["y_data"] = self.y_data
-        dct["det_data"] = self.det_data
+        dct["img_idx"] = self.img_idx
+        dct["det_data"] = self.condense_det_data(self.det_data)
         self.final_data.emit(dct)
-        # print('emitting data')
+        print('ImageDataEmitter: emitting data')
 
 
 class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
@@ -504,6 +515,8 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
         self.x_idx = -1
         self.y_idx = 0
         self.img_idx = 0  # linespec scans can be made up of multiple images (ev regions) side by side in a single scan
+        self._image_num = 0
+        self._counter = -1
         self.factor_list = []
         self._seq_dct = None
         self.ch_id_lst = []
@@ -526,7 +539,9 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
         :return:
         """
         if seq_num in self._seq_dct.keys():
-            self.img_idx = self._seq_dct[seq_num]["img_num"]
+            # self.img_idx = self._seq_dct[seq_num]["img_num"]
+            self.img_idx = self._seq_dct[self._counter]["img_num"]
+            #print(f"SIS3820ImageDataEmitter: update_idxs: seq_num={seq_num}, img_idx={self.img_idx}")
             # self.y_idx = self._seq_dct[seq_num][self.img_idx][0]
             self.y_idx = self._seq_dct[seq_num]["row"]
             # self.x_idx = self._seq_dct[seq_num][self.img_idx][1]
@@ -579,6 +594,8 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
         data_map = self.md['sis3820_data_map']
         num_chans = len(self.md['sis3820_data_map'])
         seq_num = doc['seq_num']
+        # self.seq_num = seq_num
+
         self.skip_first_datapoint = False
         d_keys = list(doc['data'].keys())
         if self.y_idx not in self._acquired_rows:
@@ -619,6 +636,8 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
         # streams will be emitted by the RunEngine and not all event
         # streams will have the keys we want.        new_det = None
         #print(doc)
+        # print(f"event: doc[seq_num]={doc['seq_num']}")
+
         new_x = None
         new_y = None
         try:
@@ -626,17 +645,10 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
             # be keys in the data or accessing the standard entries in every
             # event.
             try:
-                # print(doc)
                 # make sure the index is zero based
                 seq_num = doc["seq_num"] - 1
-
-                # self.update_idxs(seq_num)
-                # print(self.det)
-                # print(doc['data'].keys())
-
                 klst = list(doc["data"].keys())
                 res = [i for i in klst if self.det in i]
-                # if(self.det in doc['data'].keys()):
                 if len(res) > 0:
                     if SIMULATE:
                         new_det = np.random.randint(65535)
@@ -650,6 +662,7 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
                             # looks like a line reset array
                             print("SIS3820ImageDataEmitter: event: looks like a line reset array")
                             return
+                    self._counter += 1
                     self.update_idxs(seq_num)
                     new_x = self.x_idx
                     new_y = self.y_idx
@@ -709,9 +722,10 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
         dct = {}
         dct["x_data"] = self.x_data
         dct["y_data"] = self.y_data
-        dct["det_data"] = self.det_data
+        dct["img_idx"] = self.img_idx
+        dct["det_data"] = self.condense_det_data(self.det_data)
         self.final_data.emit(dct)
-        # print('emitting data')
+
 
 class SIS3820SpecDataEmitter(BaseQtSpectraDataEmitter):
 
@@ -775,6 +789,7 @@ class SIS3820SpecDataEmitter(BaseQtSpectraDataEmitter):
                 data_dct = None
                 # make sure the index is zero based
                 seq_num = doc["seq_num"] - 1
+                self.img_idx = seq_num
                 det_name = self.det + "_waveform_rbv"
                 if det_name in doc["data"].keys():
                     new_y = doc["data"][det_name]

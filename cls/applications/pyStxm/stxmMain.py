@@ -3956,6 +3956,21 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             if scan_type != scan_types.PATTERN_GEN:
                 _scan_plotter.init_image_items(final_det_nms, image_types.IMAGE, numY, numX, parms={SPDB_RECT: rect})
 
+            save_progressive_data = MAIN_OBJ.get_bool_beamline_cfg_preset("save_progressive_stack_data")
+            if save_progressive_data:
+                # setup a subscription for the default detector to save data progressively during stack acquisition
+                # scan_class.init_subscriptions(MAIN_OBJ.engine_widget, plotting_func, dets)
+                # new_data = QtCore.pyqtSignal(object)
+                # final_data = QtCore.pyqtSignal(object)
+                # new_plot_data = QtCore.pyqtSignal(object)
+                if scan_class._emitter_cb:
+                    stack_dir = master_seq_dct[0]['stack_dir']
+                    fprefix = master_seq_dct[0]['prefix']
+                    MAIN_OBJ.init_progressive_stack_data(stack_dir, fprefix, final_det_nms)
+                    #scan_class._emitter_cb.new_plot_data.connect(MAIN_OBJ.publish_progressive_stack_data)
+                    scan_class._emitter_cb.final_data.connect(MAIN_OBJ.publish_progressive_stack_data)
+
+
         ####################################################################################################################
         elif scan_type == scan_types.PTYCHOGRAPHY:
             _scan_plotter = self.lineByLineImageDataWidget
@@ -4261,7 +4276,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 # fireoff a thread to handle saving data to an nxstxm file
                 # ONLY if BACKEND is NOT zmq because zmq doesnt
                 worker = Worker(
-                    self.do_data_export, run_uids, "datadir", False
+                    self.do_nx_server_data_export, run_uids, "datadir", False
                 )  # Any other args, kwargs are passed to the run function
                 # # Execute
                 self._threadpool.start(worker)
@@ -4276,14 +4291,14 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 scan_plugin.update_scantime_estimate(self.elapsed_time)
 
 
-    def do_data_export(self, run_uids, datadir, is_stack_dir=False, progress_callback=None):
+    def do_nx_server_data_export(self, run_uids, datadir, is_stack_dir=False, progress_callback=None):
         """
         executes inside a threadpool so it doesnt bog down the main event loop
         :return:CCDViewerPanel
         """
 
-        _logger.info("do_data_export: ok starting export")
-        _logger.debug(f"do_data_export: run_uids {run_uids}")
+        _logger.info("do_nx_server_data_export: ok starting export")
+        _logger.debug(f"do_nx_server_data_export: run_uids {run_uids}")
 
         data_dir = self.active_user.get_data_dir()
         fprefix = str(MAIN_OBJ.get_datafile_prefix()) + str(
@@ -4292,6 +4307,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         
         if 0 in MAIN_OBJ.nx_server_master_seq_dct.keys():
             data_dir = MAIN_OBJ.nx_server_master_seq_dct[0]['data_dir']
+            stack_dir = MAIN_OBJ.nx_server_master_seq_dct[0]['stack_dir']
 
         scan_type = self.get_cur_scan_type()
         first_uid = run_uids[0]
@@ -4307,15 +4323,16 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             return
 
         if scan_type in [scan_types.SAMPLE_IMAGE_STACK, scan_types.TOMOGRAPHY]:
+            data_dir = stack_dir
             print(f"do_data_export: scan_type = {scan_type} is in [scan_types.SAMPLE_IMAGE_STACK, scan_types.TOMOGRAPHY]")
             # could also just be multiple rois on a single energy
             print(f"do_data_export: data_dir={data_dir} fprefix={fprefix}")
-            data_dir = os.path.join(data_dir, fprefix)
-            print(f"do_data_export: final data_dir={data_dir} ")
+            # data_dir = os.path.join(data_dir, fprefix)
+            # print(f"do_data_export: final data_dir={data_dir} ")
             
             is_stack = True
-            if not os.path.exists(data_dir):
-                os.makedirs(data_dir)
+            # if not os.path.exists(data_dir):
+            #     os.makedirs(data_dir)
             ret_msg =  MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
                                    verbose=False)
 

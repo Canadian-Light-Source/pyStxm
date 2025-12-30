@@ -1776,9 +1776,10 @@ class ScanParamWidget(QtWidgets.QFrame):
     def load_scan(self, ev_only=False, sp_only=False):
         datadir = self.main_obj.get("APP.USER").get_data_dir()
         self.data_file_pfx = self.main_obj.get_datafile_prefix()
+        filter_str = f"Scan and Config Files ({self.data_file_pfx}*.hdf5 *.json)"
         fname = getOpenFileName(
             "Load Scan",
-            filter_str=f"Scan Files ({self.data_file_pfx}*.hdf5);; Scan Config Files (*.json)",
+            filter_str=filter_str,
             search_path=datadir,
         )
         if fname is None or len(fname) < 1:
@@ -1870,7 +1871,7 @@ class ScanParamWidget(QtWidgets.QFrame):
         # self.data_file_pfx = self.main_obj.get_datafile_prefix()
         fname = getOpenFileName(
             "Load Scan Definition",
-            filter_str="Scan Data Files (*.hdf5); Scan Config Files(*.json)",
+            filter_str="Scan Data and Config Files (*.hdf5 *.json)",
             search_path=scanDefs_dir,
         )
 
@@ -1962,7 +1963,7 @@ class ScanParamWidget(QtWidgets.QFrame):
 
         if not ev_only:
             self.clear_params()
-            # tell the parent to clear the slate (plotteer)
+            # tell the parent to clear the slate (plotter)
             self.clear_all_sig.emit()
             reset_unique_roi_id()
 
@@ -1981,6 +1982,12 @@ class ScanParamWidget(QtWidgets.QFrame):
 
         sp_db = get_first_sp_db_from_wdg_com(wdg_com)
         scan_type_int = dct_get(cfg_dict, ADO_CFG_SCAN_TYPE)
+        if scan_type_int is None:
+            scan_type_int = dct_get(sp_db, SPDB_SCAN_PLUGIN_TYPE)
+            if scan_type_int is None:
+                _logger.error("load_config: unable to determine scan type from config file, possibly trying to load "
+                              "old format file?")
+                return
         nxstxm_scan_str = scan_types[scan_type_int].replace('_', ' ')
         loaded_scan_type = self.get_scan_panel_id_from_scan_name(nxstxm_scan_str)
         # loaded_scan_type = dct_get(cfg_dict, ADO_CFG_SCAN_TYPE)

@@ -4,6 +4,7 @@ import json
 import os
 import platform
 import re
+import stat
 import threading
 import time
 import sys
@@ -178,21 +179,27 @@ def save_data_to_hdf5(data_dct, data_dir, fprefix):
     os.makedirs(data_dir, exist_ok=True)
     h5_path = os.path.join(data_dir, f"{fprefix}.hdf5")
 
-    # Create file if it doesn't exist
-    with h5py.File(h5_path, 'a') as h5f:
+    file_exists = os.path.exists(h5_path)
+    mode = 'r+' if file_exists else 'w'
+    # Use libver='latest' when creating a new file for SWMR support
+    kwargs = {'libver': 'latest'} if not file_exists else {}
+
+    with h5py.File(h5_path, mode, **kwargs) as h5f:
+        # ensure file permissions allow read/write for user, read for group and others
+        os.chmod(h5_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        if not file_exists:
+            h5f.swmr_mode = True  # Safe to enable immediately on new file
+        else:
+            h5f.swmr_mode = True  # Will work if file was created with libver='latest'
         img_idx = str(data_dct['img_idx'])
-        # Create group for img_idx
         grp = h5f.require_group(img_idx)
         det_data = data_dct['det_data']
         for det_key, arr in det_data.items():
-            # Create subgroup for detector
             det_grp = grp.require_group(det_key)
-            # Save 2D array as dataset
             arr_np = np.array(arr)
             if 'data' in det_grp:
                 del det_grp['data']
             det_grp.create_dataset('data', data=arr_np)
-
 def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, is_windows=True):
     """
     Note this server currently needs to run on the same machine as the mongodb service in order to access the

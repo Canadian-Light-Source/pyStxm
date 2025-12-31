@@ -171,21 +171,6 @@ class BaseSampleFineImageScanClass(BaseScan):
         else:
             return(False)
 
-    def get_num_progress_events(self):
-        """
-        over ride base class def
-        """
-        # if self.is_lxl:
-        #     return self.y_roi[NPOINTS]
-        # else:
-        #     #point scan
-        #     return self.x_roi[NPOINTS] * self.y_roi[NPOINTS]
-        if self.is_lxl:
-            return self.y_roi[NPOINTS] * self.numE * self.numEPU * self.numSPIDS
-        else:
-            # point scan
-            return self.x_roi[NPOINTS] * self.y_roi[NPOINTS] * self.numE * self.numEPU * self.numSPIDS
-
     def make_scan_plan(self, dets, md=None, bi_dir=False):
         """
         override the default make_scan_plan to set the scan_type

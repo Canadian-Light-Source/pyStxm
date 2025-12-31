@@ -61,16 +61,6 @@ class BaseFocusScanClass(BaseScan):
         else:
             return(False)
 
-    def get_num_progress_events(self):
-        """
-        over ride base class def
-        """
-        if self.is_lxl:
-            return self.zz_roi[NPOINTS]
-        else:
-            #point scan
-            return self.x_roi[NPOINTS] * self.zz_roi[NPOINTS]
-
     def init_subscriptions(self, ew, func, dets=[]):
         """
          override the base init_subscriptions because we need to use the number of rows from the self.zz_roi instead of

@@ -85,17 +85,6 @@ class BasePatternGenScanClass(BaseScan):
         """
         pass
 
-    def get_num_progress_events(self):
-        """
-        each scan needs to indicate how many event documents the RE will produce for the scan
-        as each iteration (based on seq id of event document) makes up the total number of events for this scan,
-        will change if it is point by point, line by line, or executed by the waveform generator where there are
-        no event documents
-
-        To be over ridden by inheriting class
-        """
-        return self.get_num_points_in_scan()
-
     def get_num_points_in_scan(self):
         """
         here I need to return the actual number of points which do not include the 0 pixel points

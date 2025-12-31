@@ -483,47 +483,22 @@ class BaseScan(QtCore.QObject):
 
         return dct
 
-    def gen_spectrum_scan_seq_map(self, num_ev, sp_id_lst, num_pol=1):
-        num_spids = len(sp_id_lst)
-        num_ev_pol = num_ev * num_pol
-        ev_idx_lst = list(range(0, num_ev))
-        pol_idx_lst = list(range(0, num_pol))
-        seq = list(range(0, num_ev_pol * num_spids))
-        spid_seq = np.tile(sp_id_lst, num_ev_pol)
-        es = np.repeat(ev_idx_lst, num_spids)
-        ev_seq = np.tile(es, num_pol)
-        pol_seq = np.repeat(pol_idx_lst, num_ev * num_spids)
-        entry_lst = ["entry%d" % s for s in sp_id_lst]
-        entry_seq = np.tile(entry_lst, num_ev_pol)
-        i = 0
-        dct = {}
-        for s in seq:
-            dct[s] = {
-                "entry": entry_seq[i],
-                "e_idx": ev_seq[i],
-                "sp_idx": spid_seq[i],
-                "sp_id": spid_seq[i],
-                "pol_idx": pol_seq[i],
-            }
-            i += 1
-        return dct
-
     def gen_spid_seq_map(self, sp_id_lst, points_for_spid):
         """
-        given a list of sp_ids and the max number of points expected PER spid, create a zipped list of (spid, seq_number)
+        Given a list of sp_ids and the max number of points expected PER spid, create a zipped list of (spid, value),
+        and add 'img_num': 0 to each entry.
         :return:
         """
-
         ttl_spid_lst = list(np.tile(sp_id_lst, len(points_for_spid)))
         ttl_sequence_points = len(sp_id_lst) * len(points_for_spid)
         seq_lst = range(0, ttl_sequence_points)
         ttl_points_for_spid = list(np.repeat(points_for_spid, len(sp_id_lst)))
         l2 = list(zip(ttl_spid_lst, ttl_points_for_spid))
 
-        # ttl_sp_id_lst = sp_id_lst * len(points_for_spid)
-        # ttl_points_for_spid = points_for_spid * len(sp_id_lst)
-        # zipped_sp_id_map = dict(itertools.zip_longest(seq_lst, ttl_sp_id_lst, ttl_points_for_spid ))
-        zipped_sp_id_map = dict(itertools.zip_longest(seq_lst, l2))
+        zipped_sp_id_map = {}
+        for idx, val in itertools.zip_longest(seq_lst, l2):
+            if val is not None:
+                zipped_sp_id_map[idx] = {'sp_id': val[0], 'x_pos': val[1], 'img_num': 0}
         return zipped_sp_id_map
 
     def get_zoneplate_info_dct(self):
@@ -618,17 +593,12 @@ class BaseScan(QtCore.QObject):
         dct["sp_id_lst"] = self._master_sp_id_list
         dct["rois"] = self.get_rois_dict(override_xy_posner_nms)
         dct["num_points"] = self.get_num_points_in_scan()
-        dct["num_prog_events"] = self.get_num_progress_events()
-
-        # dct['device_reverse_lu_dct'] = self.main_obj.get_device_reverse_lu_dct()
         dct["dwell"] = self.dwell
         dct["primary_det"] = self.dets_names(dets)
-        # dct["detector_names"] = self.dets_names(dets)
         dct["default_det"] = self.default_detector_nm
         dct["ring_current_nm"] = "DNM_BASELINE_RING_CURRENT"
         dct["zp_def"] = self.get_zoneplate_info_dct()
         dct["rotation_angle"] = self.main_obj.get_sample_rotation_angle()
-        # self._wdg_com['SPATIAL_ROIS']['1']['ACTIVE_DATA_OBJ']['CFG']['DATA_DIR'] and ['DATA_FILE_NAME']
         dct["wdg_com"] = dict_to_json(self.wdg_com)
         ado = dct_get(self.sp_db, SPDB_ACTIVE_DATA_OBJECT)
         dct["data_dir"] = ado["CFG"]["DATA_DIR"]
@@ -1635,12 +1605,7 @@ class BaseScan(QtCore.QObject):
         self.reset_evidx()
         self.reset_imgidx()
 
-        # self._config_start_stop(self.xScan, 1, self.x_roi[START], self.x_roi[STOP], self.numX)
-        # self._config_scan_velo(self.xScan, self.xScan.P1.get('max_speed'))
-        # self.stack_scan = False
         self.config_hdr_datarecorder(stack=self.stack)
-        # THIS must be the last call
-        self.finish_setup()
 
     def config_basic_2d(self, wdg_com, sp_id=0, z_enabled=False):
         """
@@ -1759,10 +1724,6 @@ class BaseScan(QtCore.QObject):
 
         self.config_hdr_datarecorder(self.stack)
         self.stack_scan = False
-
-        # THIS must be the last call
-        self.finish_setup()
-
         sp_id = self.get_next_spatial_id()
         self.new_spatial_start.emit(sp_id)
 
@@ -3270,189 +3231,32 @@ class BaseScan(QtCore.QObject):
 
         self.connect_signals()
 
-        # self.dump_scan_levels()
+        self.set_seq_map_progress()
 
         if self.main_obj.device("DNM_SHUTTER").is_auto():
             self.main_obj.device("DNM_SHUTTER").open()
 
-    # def chk_for_more_evregions(self):
-    #     """
-    #     chk_for_more_evregions(): description
-    #
-    #     :returns: None
-    #     """
-    #     """
-    #     this slot handles the end of scan, when the default on_scan_done() is called in the
-    #     base scan class it will check for an installed child on_scan_done slot (this one)
-    #     once this has been called it returns True or False
-    #         return True if there are no more ev regions and you want the default on_scan_done(0) to finish and clean everything up
-    #
-    #         return False if there are more ev Regions and you dont want everything stopped and cleaned up
-    #     """
-    #     multi_ev_single_image_scans = [scan_types.SAMPLE_LINE_SPECTRUM, scan_types.SAMPLE_POINT_SPECTRUM]
-    #
-    #     #Sept 6 if(TEST_SAVE_INITIAL_FILE):
-    #     #Sept 6     self.save_hdr(update=True)
-    #     _logger.info('chk_for_more_evregions: checking')
-    #
-    #     if(self._abort):
-    #         _logger.info('chk_for_more_evregions: abort has been set, scan aborting')
-    #         #make sure to save current scan
-    #         if(self.main_obj.get_beamline_id() is BEAMLINE_IDS.STXM):
-    #             self.gate.stop()
-    #             self.counter.stop()
-    #
-    #         self.disconnect_signals()
-    #         self.save_hdr()
-    #         self.hdr.remove_tmp_file()
-    #
-    #         return(True)
-    #
-    #     #increment the index into ev regions
-    #     self.incr_evidx()
-    #
-    #     if(self.get_evidx() < len(self.e_rois)):
-    #         _logger.info('chk_for_more_evregions: yes there is, loading and starting')
-    #         if(self.main_obj.get_beamline_id() is BEAMLINE_IDS.STXM):
-    #             # if point or line spec, ONLY THE FIRST dwell value is used, to allow different dwell values
-    #             # does not make sense, Jian and I talked about this
-    #             # so do NOT stop the gate and counter, leave as previously configured for dwell for rest of ev regions
-    #             if(not (self.is_point_spec or self.is_line_spec)):
-    #                 self.gate.stop()
-    #                 self.counter.stop()
-    #                 self.counter.wait_till_stopped()
-    #
-    #         if(self.scan_type not in multi_ev_single_image_scans):
-    #             #signal plotter to start a new image
-    #             self.new_spatial_start.emit(self.sp_db[SPDB_ID_VAL])
-    #
-    #         e_roi = self.e_rois[self._current_ev_idx]
-    #         #configure next ev sscan record with next ev region start/stop
-    #         self._config_start_stop(self.evScan, 1, e_roi[START], e_roi[STOP], e_roi[NPOINTS])
-    #         self.dwell = e_roi[DWELL]
-    #
-    #         if(self.use_hdw_accel):
-    #             #need to check to see if dwell changed, if it did we need to re-configure the wavetables
-    #             #if(prev_dwell != self.dwell):
-    #             #_logger.debug('dwell changed [%.2f] so reconfiguring the hardware accel' % self.dwell)
-    #             self.modify_config()
-    #             # wait for gate and counter to start
-    #             time.sleep(2.0)
-    #
-    #         #need to determine the scan velocity if there is a change in Dwell for this next ev region
-    #         elif(not self.is_point_spec):
-    #             #the dwell ime for the new ev region could have changed so determine the scan velo and accRange
-    #             #need to determine the scan velocity if there is a change in Dwell for this next ev region
-    #             if(self.is_line_spec and self.is_pxp):
-    #                 scan_velo = self.get_mtr_max_velo(self.xyScan.P1)
-    #                 #vmax = self.get_mtr_max_velo(self.xyScan.P1)
-    #             else:
-    #                 vmax = self.get_mtr_max_velo(self.xScan.P1)
-    #                 (scan_velo , npts, dwell) = ensure_valid_values(self.x_roi[START],  self.x_roi[STOP],  self.dwell,  self.numX, vmax, do_points=True)
-    #                 #need the range of scan to be passed to calc_accRange()
-    #                 rng = self.x_roi[STOP] - self.x_roi[START]
-    #                 accRange = calc_accRange('SampleX', 'Fine', rng, scan_velo , dwell, accTime=0.04)
-    #                 #reassign dwell because it ay have changed on return from ensure_valid_values()
-    #                 self.dwell = dwell
-    #                 _logger.debug('set_sample_scan_velocity Image scan: scan_velo=%.2f um/s accRange=%.2f um' % (scan_velo, accRange))
-    #
-    #             self.set_x_scan_velo(scan_velo)
-    #             # ok now finish configuration and start it
-    #             self.on_this_dev_cfg()
-    #             if (self.main_obj.get_beamline_id() is BEAMLINE_IDS.STXM):
-    #                 self.gate.start()
-    #                 self.counter.start()
-    #                 # sept 11
-    #                 self.counter.wait_till_running()
-    #
-    #
-    #         elif(self.is_point_spec):
-    #             if(self.counter.isRunning):
-    #                 #leave it running
-    #                 pass
-    #             else:
-    #                 #ok now finish configuration and start it
-    #                 self.on_this_dev_cfg()
-    #                 if(self.main_obj.get_beamline_id() is BEAMLINE_IDS.STXM):
-    #                     if (not self.is_point_spec):
-    #                         self.gate.start()
-    #                         self.counter.start()
-    #                         #sept 11
-    #                         self.counter.wait_till_running()
-    #
-    #         self.start()
-    #         #let caller know were not done
-    #         return(False)
-    #     else:
-    #         _logger.info('chk_for_more_evregions: Nope no more')
-    #         if((not self.is_point_spec) and self.chk_for_more_spatial_regions()):
-    #             #were not done
-    #             return(False)
-    #         else:
-    #             if(self.main_obj.get_beamline_id() is BEAMLINE_IDS.STXM):
-    #                 self.gate.stop()
-    #                 self.counter.stop()
-    #
-    #
-    #             #ok scan is all done now, so save final header file
-    #             if(not self.file_saved):
-    #                 _logger.debug('chk_for_more_evregions: calling on_save_sample_image()')
-    #                 self.on_save_sample_image()
-    #             self.save_hdr()
-    #
-    #             #ok there are no more spatial regions to execute
-    #             self.disconnect_signals()
-    #             return(True)
-    #
+    def set_seq_map_progress(self):
+        """
+        Sets 'prog' in each dict in self.seq_map_dct, counting progress from 10 to 100
+        for each group of dicts with the same 'img_num'.
+        """
+        from collections import defaultdict
 
-    # def chk_for_more_spatial_regions(self):
-    #     """
-    #     chk_for_more_spatial_regions(): this slot handles the end of scan, when the default on_scan_done() is called in the
-    #         base scan class it will check for an installed child on_scan_done slot (this one)
-    #         once this has been called it returns True or False
-    #
-    #         return True if there are more spatial Regions and you dont want everything stopped and cleaned up
-    #
-    #         return False if there are no more spatial regions and you want the default on_scan_done(0 to finish and clean everything up
-    #
-    #     :returns: True if there are more spatial Regions and you dont want everything stopped and cleaned up
-    #             return False if there are no more spatial regions and you want the default on_scan_done(0 to finish and clean everything up
-    #
-    #     """
-    #     _logger.info('chk_for_more_spatial_regions: checking')
-    #
-    #     if(self._abort):
-    #         _logger.info('chk_for_more_spatial_regions: scan aborting')
-    #         self.save_hdr()
-    #         self.hdr.remove_tmp_file()
-    #         return(True)
-    #
-    #     #get the next spatial ID in the list of spatial regions we are to scan
-    #     sp_id = self.get_next_spatial_id()
-    #     if(sp_id is not None):
-    #         #save the current one and then go again
-    #         self.save_hdr()
-    #
-    #         _logger.info('chk_for_more_spatial_regions: found sp_id=%d, loading and starting' % sp_id)
-    #
-    #         #because we will be starting a new scan that will have new self.data created we need to reinit the index to the data
-    #         #because imgidx is what is used as the first dimension of the data
-    #         _logger.info('chk_for_more_spatial_regions: resetting the data image index')
-    #         self.reset_imgidx()
-    #
-    #         if(self.is_lxl):
-    #             self.configure(self.wdg_com, sp_id, ev_idx=0, line=True, block_disconnect_emit=True)
-    #         else:
-    #             if(self.is_point_spec):
-    #                 self.configure(self.wdg_com, sp_id, ev_idx=0, line=False, block_disconnect_emit=True)
-    #             else:
-    #                 self.configure(self.wdg_com, sp_id, ev_idx=0, line=False, block_disconnect_emit=True)
-    #         self.start()
-    #         return(True)
-    #     else:
-    #         _logger.info('chk_for_more_spatial_regions: nope all done')
-    #         return(False)
-    #
+
+        # Group keys by img_num
+        groups = defaultdict(list)
+        for key, item in self.seq_map_dct.items():
+            if isinstance(item, dict) and 'img_num' in item:
+                groups[item['img_num']].append(key)
+
+        # Assign progress for each group
+        for img_num, keys in groups.items():
+            total = len(keys)
+            for i, key in enumerate(keys, 1):
+                percent = int(round((i / total) * 100))
+                self.seq_map_dct[key]['prog'] = percent
+
 
     def set_sample_posner_mode(self, smplx, finex, mode):
         """
@@ -3655,35 +3459,6 @@ class BaseScan(QtCore.QObject):
         time.sleep(0.1)
         mtr.put("stop_go", 3)  # go
 
-    # def set_scan_resolution(self):
-    #     '''
-    #         sample_positioning_modes = Enum('Coarse', 'Goniometer')
-    #         sample_fine_positioning_modes = Enum('SampleFine', 'Zoneplate')
-    #     :return:
-    #     '''
-    #
-    #     if(self.sample_positioning_mode == sample_positioning_modes.GONIOMETER):
-    #         MAX_SCAN_RANGE_FINEX = self.main_obj.get_preset_as_float('max_fine_x')
-    #         MAX_SCAN_RANGE_FINEY = self.main_obj.get_preset_as_float('max_fine_y')
-    #     else:
-    #         MAX_SCAN_RANGE_FINEX = self.main_obj.get_preset_as_float('max_fine_x')
-    #         MAX_SCAN_RANGE_FINEY = self.main_obj.get_preset_as_float('max_fine_y')
-    #
-    #     if(self.sample_fine_positioning_mode == sample_positioning_modes.COARSE):
-    #         #force the scan to be a COARSE scan
-    #         self.x_roi[SCAN_RES] = COARSE
-    #         self.y_roi[SCAN_RES] = COARSE
-    #
-    #     else:
-    #         if(self.x_roi[RANGE] > MAX_SCAN_RANGE_FINEX):
-    #             self.x_roi[SCAN_RES] = COARSE
-    #         else:
-    #             self.x_roi[SCAN_RES] = 'FINE'
-    #
-    #         if(self.y_roi[RANGE] > MAX_SCAN_RANGE_FINEY):
-    #             self.y_roi[SCAN_RES] = COARSE
-    #         else:
-    #             self.y_roi[SCAN_RES] = 'FINE'
 
     def set_scan_resolution(self):
         """
@@ -3805,50 +3580,7 @@ class BaseScan(QtCore.QObject):
 
         self.set_osa_xy_lock_positions()
         return
-        if self.main_obj.get_beamline_id() is not BEAMLINE_IDS.STXM:
-            return
 
-        do_types = [
-            scan_types.SAMPLE_IMAGE,
-            scan_types.SAMPLE_LINE_SPECTRUM,
-            scan_types.SAMPLE_POINT_SPECTRUM,
-            scan_types.SAMPLE_FOCUS,
-            scan_types.SAMPLE_IMAGE_STACK,
-        ]
-
-        if self.scan_type not in do_types:
-            self.enable_osa_x_tracking(False)
-            self.enable_osa_y_tracking(False)
-            return
-        else:
-            self.set_osa_xy_lock_positions()
-
-        fine_sample_positioning_mode = self.main_obj.get_fine_sample_positioning_mode()
-        if fine_sample_positioning_mode != sample_fine_positioning_modes.ZONEPLATE:
-            # if the fine scanning is not Zoneplate scanning then turn OSA Y tracking off
-            self.enable_osa_y_tracking(False)
-            return
-
-        scan_range = self.x_roi[RANGE]
-        # make sure zoneplate XY are moved to 0,0
-        self.main_obj.device("DNM_ZONEPLATE_X").move(0.0)
-        self.main_obj.device("DNM_ZONEPLATE_Y").move(0.0)
-
-        if self.is_lxl:
-            # if lxl then turn off OSA X tracking and turn ON osa Y tracking
-            self.enable_osa_x_tracking(False)
-            self.enable_osa_y_tracking(True)
-        else:
-            if scan_range > (
-                0.4 * self.main_obj.get_preset_as_float("MAX_SCAN_RANGE_X")
-            ):
-                # if lxl then turn off OSA X tracking and turn ON osa Y tracking
-                self.enable_osa_x_tracking(True)
-                self.enable_osa_y_tracking(True)
-            else:
-                # self.main_obj.device('DNM_OSA_X').move(0.0)
-                self.enable_osa_x_tracking(False)
-                self.enable_osa_y_tracking(True)
     def set_x_scan_velo(self, velo):
         """
         set_x_scan_velo(): description
@@ -4341,72 +4073,6 @@ class BaseScan(QtCore.QObject):
     ):
         _logger.error("make_single_image_plan: THIS NEEDS TO BE IMPLEMENTED")
 
-    # def make_single_pxp_image_plan(self, dets, gate, md=None, bi_dir=False, do_baseline=True):
-    #     '''
-    #
-    #     this needs to be adapted to be a fly scan, setup SampleX to trigger at correct location, set scan velo and acc range
-    #     and then call scan, gate an d counter need to be staged for lxl
-    #     :param dets:
-    #     :param gate:
-    #     :param bi_dir:
-    #     :return:
-    #     '''
-    #     dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()
-    #     self._bi_dir = bi_dir
-    #     stagers = []
-    #     for d in dets:
-    #         stagers.append(d)
-    #     det = dets[0]
-    #     if (self.is_lxl):
-    #         stagers.append(gate)
-    #         det.set_mode(1)
-    #         gate.set_mode(1)
-    #         gate.set_num_points(self.x_roi[NPOINTS])
-    #         gate.set_trig_src(trig_src_types.E712)
-    #     else:
-    #         det.set_mode(0)
-    #         gate.set_mode(0)
-    #         gate.set_num_points(1)
-    #         gate.set_trig_src(trig_src_types.E712)
-    #
-    #     gate.set_dwell(self.dwell)
-    #     # det.set_num_points(self.x_roi[NPOINTS])
-    #     det.configure(self.x_roi[NPOINTS], self.scan_type)
-    #     if (md is None):
-    #         md = {'metadata': dict_to_json(
-    #             self.make_standard_metadata(entry_name='entry0', scan_type=self.scan_type))}
-    #         # if(not skip_baseline):
-    #         #     @bpp.baseline_decorator(dev_list)
-    #
-    #     @conditional_decorator(bpp.baseline_decorator(dev_list), do_baseline)
-    #     @bpp.stage_decorator(stagers)
-    #     @bpp.run_decorator(md=md)
-    #     def do_scan():
-    #         mtr_x = self.main_obj.device('DNM_SAMPLE_X')
-    #         mtr_y = self.main_obj.device('DNM_SAMPLE_Y')
-    #
-    #         shutter = self.main_obj.device('DNM_SHUTTER')
-    #
-    #         yield from bps.stage(gate)
-    #         # the detector will be staged automatically by the grid_scan plan
-    #         shutter.open()
-    #         bps.open_run(md=md)
-    #
-    #         # go to start of line
-    #         yield from bps.mv(mtr_x, self.x_roi[START], mtr_y, self.y_roi[CENTER])
-    #
-    #         # now do a horizontal line for every new zoneplate Z setpoint
-    #         yield from scan_nd(dets, mtr_y, self.y_roi[START], self.y_roi[STOP], self.y_roi[NPOINTS, \
-    #                                 mtr_x, self.x_roi[START], self.x_roi[STOP], self.x_roi[NPOINTS])
-    #
-    #
-    #         shutter.close()
-    #         # yield from bps.wait(group='e712_wavgen')
-    #         yield from bps.unstage(gate)
-    #         bps.close_run()
-    #         print('CoarseSampleImageScanClass LxL: make_scan_plan Leaving')
-    #
-    #     return (yield from do_scan())
 
     def motor_ready_check(self, mtr_lst):
         """
@@ -4794,16 +4460,6 @@ class BaseScan(QtCore.QObject):
         # self.numE = dct_get(self.sp_db, SPDB_EV_NPOINTS)
         return self.numX * self.numY * self.numE
 
-    def get_num_progress_events(self):
-        """
-        each scan needs to indicate how many event documents the RE will produce for the scan
-        as each iteration (based on seq id of event document) makes up the total number of events for this scan,
-        will change if it is point by point, line by line, or executed by the waveform generator where there are
-        no event documents
-
-        To be over ridden by inheriting class
-        """
-        return self.numX * self.numY * self.numE
 
     def verify_scan_velocity(self):
         """

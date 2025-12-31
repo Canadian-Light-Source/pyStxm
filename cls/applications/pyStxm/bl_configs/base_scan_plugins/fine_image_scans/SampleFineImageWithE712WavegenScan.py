@@ -109,8 +109,9 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
 
     def init_subscriptions(self, ew, func, det_lst):
         """
-        over ride the base init_subscriptions because we need to use the number of rows from the self.zz_roi instead of
-        self.y_roi
+        for E712 hardware accelerated scans we cant use the BaseScan init_subscriptions() because that is based
+        on BlueSky 'event' docs, we only get 1 event when the scan is done so we need to connect directly to the
+        detectors data callback and plot from there
         :param ew:
         :param func:
         :param det_lst is a list of detector ophyd objects
@@ -122,18 +123,6 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
             d = det_lst[0]
             d.new_plot_data.connect(func)
             self._det_subscription = d
-
-
-    # def init_progress_subscription(self, ew, func, det_lst):
-    #     """
-    #     connect the SIS3820 and ask it to send us progress dictionarys
-    #     """
-    #     if len(det_lst) > 0 and hasattr(det_lst[0], 'name'):
-    #         d = det_lst[0]
-    #         if hasattr(d, "set_sequence_map"):
-    #             d.set_sequence_map(self.seq_map_dct)
-    #         d.new_progress_data.connect(func)
-    #         self._det_prog_subscription = d
 
     def configure_devs(self, dets):
         """

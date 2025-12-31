@@ -162,16 +162,6 @@ class BaseCoarseImageScanClass(BaseScan):
         else:
             return(False)
 
-    def get_num_progress_events(self):
-        """
-        over ride base class def
-        """
-        if self.is_lxl:
-            return self.y_roi[NPOINTS]
-        else:
-            #point scan
-            return self.x_roi[NPOINTS] * self.y_roi[NPOINTS]
-
     def make_pxp_scan_plan(self, dets, bi_dir=False, md={}):
         dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()  # skip_lst)
 

@@ -8,6 +8,7 @@ import simplejson as json
 import numpy as np
 import datetime
 import ctypes
+from PIL.TiffImagePlugin import IFDRational
 
 from cls.appWidgets.user_account.user_object import user_obj
 
@@ -16,7 +17,9 @@ class NumpyAwareJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         # try:
         #print(type(obj))
-        if isinstance(obj, np.ndarray) and obj.ndim == 1:
+        if isinstance(obj, IFDRational):
+            return float(obj)
+        elif isinstance(obj, np.ndarray) and obj.ndim == 1:
             return obj.tolist()
         elif isinstance(obj, np.ndarray) and obj.ndim == 2:
             return obj.tolist()

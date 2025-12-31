@@ -74,16 +74,16 @@ class BasePatternGenScanClass(BaseScan):
             self.e712_wg = MAIN_OBJ.device("DNM_E712_WIDGET")
             self.e712_wg.set_main_obj(MAIN_OBJ)
         
-    def init_subscriptions(self, ew, func, det_lst):
-        """
-        over ride the base init_subscriptions because we dont want any data emitted to plotter
-        self.y_roi
-        :param ew:
-        :param func:
-        :param det_lst is a list of detector ophyd objects
-        :return:
-        """
-        pass
+    # def init_subscriptions(self, ew, func, det_lst):
+    #     """
+    #     over ride the base init_subscriptions because we dont want any data emitted to plotter
+    #     self.y_roi
+    #     :param ew:
+    #     :param func:
+    #     :param det_lst is a list of detector ophyd objects
+    #     :return:
+    #     """
+    #     pass
 
     def get_num_points_in_scan(self):
         """
@@ -117,7 +117,7 @@ class BasePatternGenScanClass(BaseScan):
         call a specific scan start for fine scans
         """
         super().fine_scan_go_to_scan_start()
-        return (True)
+        return True
 
     def stop(self):
         # call the parents stop
@@ -269,7 +269,7 @@ class BasePatternGenScanClass(BaseScan):
         dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()
         self._bi_dir = bi_dir
         final_data = self.final_data
-        det_with_count_time = DetWithCountTime(name='det', labels={'detectors'})
+        # det_with_count_time = DetWithCountTime(name='det', labels={'detectors'})
 
         mtr_dct = self.determine_samplexy_posner_pvs()
         mtr_x = self.main_obj.device(mtr_dct["fx_name"])
@@ -298,7 +298,7 @@ class BasePatternGenScanClass(BaseScan):
         @bpp.run_decorator(md=md)
         def do_scan():
             #need a dud dets to generate the event documents needed for the progress report from the RE
-            dets = [det_with_count_time]
+            # dets = [det_with_count_time]
             shutter.open()
             # this PV will cause the E712 driver to not bog down controller with reading/updating values that we dont care about during scan resulting in better performance
             suspnd_controller_fbk.put(1)
@@ -312,92 +312,12 @@ class BasePatternGenScanClass(BaseScan):
                     mtr_x.settle_time = dwell_time * 0.001
                     #print("make_sw_image_pattern_scan_plan: moving X to %.3f" % x_pos)
                     yield from bps.mv(mtr_x, x_pos)
-                    #here we need to create an event doc so that the progress of the scan will be picked up by the progress signals and handlers
-                    yield from bps.create(name="primary")
-                    yield from bps.read(det_with_count_time)
-                    yield from bps.save()
+                    yield from bps.trigger_and_read(dets)
 
             shutter.close()
             #re enable controller feedback
             suspnd_controller_fbk.put(0)
             # print("PositionerScanClass: make_scan_plan Leaving")
-
-        return (yield from do_scan())
-
-    def make_pattern_generator_plan(self, dets, md=None, bi_dir=False):
-        """
-        a plan for making the 9 pad pattern generator plan
-        :param dets:
-        :param gate:
-        :param md:
-        :param bi_dir:
-        :return:
-        """
-        print("entering: make_pattern_generator_plan")
-        # dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()
-        stagers = []
-        for d in dets:
-            stagers.append(d)
-
-        def do_scan():
-            # print('starting: make_pattern_generator_plan: do_scan()')
-            entrys_lst = []
-            entry_num = 0
-            self._current_img_idx = 0
-            mtr_x = self.main_obj.get_sample_fine_positioner("X")
-            mtr_y = self.main_obj.get_sample_fine_positioner("Y")
-            if not self.motor_ready_check([mtr_x, mtr_y]):
-                _logger.error(
-                    "The scan cannot execute because one or more motors for the scan are not in a ready state"
-                )
-                return None
-
-            for sp_id in self.sp_ids:
-                self.sp_id = sp_id
-                self.dwell = self.sp_rois[sp_id][SPDB_EV_ROIS][0][DWELL]
-
-                print(
-                    "make_pattern_generator_plan: scanning pad %d, setting dwell=%.2f"
-                    % (sp_id + 1, self.dwell)
-                )
-                _logger.info(
-                    "make_pattern_generator_plan: scanning pad %d, setting dwell=%.2f"
-                    % (sp_id + 1, self.dwell)
-                )
-
-                # this updates member vars x_roi, y_roi, etc... with current spatial id specifics
-                self.update_roi_member_vars(self.sp_rois[self.sp_id])
-
-                for d in dets:
-                    if hasattr(d, "set_dwell"):
-                        d.set_dwell(self.dwell)
-                    if hasattr(d, "set_points_per_row"):
-                        d.set_points_per_row(self.x_roi[NPOINTS])
-
-                # take a single image that will be saved with its own run scan id
-                img_dct = self.img_idx_map["%d" % self._current_img_idx]
-
-                md = {
-                    "metadata": dict_to_json(
-                        self.make_standard_metadata(
-                            entry_name=img_dct["entry"], scan_type=self.scan_type
-                        )
-                    )
-                }
-
-                # take the bnaseline on the middle (5th) pad so that its params are used for the data
-                if self._current_img_idx == 4:
-                    do_baseline = True
-                else:
-                    do_baseline = False
-
-                yield from self.make_single_pxp_image_plan(
-                    dets, md=md, do_baseline=do_baseline
-                )
-                self._current_img_idx += 1
-                entrys_lst.append(img_dct["entry"])
-
-            # print("make_pattern_generator_plan Leaving")
 
         return (yield from do_scan())
 
@@ -419,184 +339,6 @@ class BasePatternGenScanClass(BaseScan):
             )
         # if(done):
         self.disconnect_signals()
-
-    # def configure(self, wdg_com, sp_id=0, ev_idx=0, line=True, block_disconnect_emit=False):
-    #     """
-    #     configure(): This is the configure routine that is required to be defined by every scan plugin. the main goal of the configure function is to
-    #         - extract into member variables the scan param data from the wdg_com (widget communication) dict
-    #         - configure the sample motors for the correct Mode for the upcoming scan
-    #         - reset any relevant member variable counters
-    #         - decide if it is a line by line, point by point or point spectrum scan
-    #         - set the optimization function for this scan (which is used later to fine tune some key params of the sscan record before scan)
-    #         - decide if this is a goniometer scan and set a flag accordingly
-    #         - set the start/stop/npts etc fields of the relevant sscan records for a line or point scan by calling either:
-    #             set_ImageLineScan_line_sscan_rec() or set_ImageLineScan_point_sscan_rec()
-    #         - determine the positioners that will be used in this scan (they depend on the size of the scan range, coarse or fine etc)
-    #         - call either config_for_goniometer_scan() or config_for_sample_holder_scan() depending on if a goniometer scan or not
-    #         - create the numpy array in self.data by calling config_hdr_datarecorder()
-    #         - then call final_setup() which must be called at the end of every configure() function
-    #
-    #     :param wdg_com: wdg_com is a "widget Communication dictionary" and it is used to relay information to/from widgets regarding current regions of interest
-    #     :type wdg_com: wdg_com is a dictionary comprised of 2 keys: WDGCOM_CMND and SPDB_SPATIAL_ROIS, both of which are strings defined in roi_dict_defs.py
-    #             WDGCOM_CMND       : is a command that identifys what should be done with the rois listed in the next field
-    #             SPDB_SPATIAL_ROIS : is a list of spatial roi's or spatial databases (sp_db)
-    #
-    #     :param sp_id: sp_id is the "spatial ID" of the sp_db
-    #     :type sp_id: integer
-    #
-    #     :param ev_idx: ev_idx is the index into the e_rois[] list of energy regions of interest, this configure() function could be called again repeatedly if there are more than one
-    #             energy regions of interest, this index is the index into that list, when the scan is first configured/called the index is always the first == 0
-    #     :type ev_idx: integer
-    #
-    #     :param line: line is a boolean flag indicating if the scan to be configured is a line by line scan or not
-    #     :type line: bool
-    #
-    #     :param block_disconnect_emit: because configure() can be called repeatedly by check_more_spatial_regions() I need to be able to control
-    #             how the main GUI will react to a new scan being executed in succession, this flag if False will not blocking the emission of the 'disconnect' signals signal
-    #             and if True it will block teh emission of the 'disconnect' that the main GUI is listening to
-    #     :type block_disconnect_emit: bool
-    #
-    #     :returns: None
-    #
-    #     """
-    #     ret = super().configure(wdg_com, sp_id=sp_id, line=line, z_enabled=False)
-    #     if not ret:
-    #         return(ret)
-    #
-    #     _logger.info("\n\nPatternGenScanClass: configuring sp_id [%d]" % sp_id)
-    #     self.new_spatial_start_sent = False
-    #     img_details = dct_get(self.sp_db, SPDB_SCAN_PLUGIN_IMG_DETAILS)
-    #     if len(img_details.keys()):
-    #         self.exp_data = dct_get(self.sp_db, SPDB_SCAN_PLUGIN_IMG_EXP_DATA)
-    #         self.img_details = dct_get(self.sp_db, SPDB_SCAN_PLUGIN_IMG_DETAILS)
-    #     else:
-    #         self.exp_data = None
-    #         self.img_details = {}
-    #
-    #     if ev_idx == 0:
-    #         self.reset_evidx()
-    #         self.reset_imgidx()
-    #         # self.reset_pnt_spec_spid_idx()
-    #         self.final_data_dir = None
-    #         self.update_dev_data = []
-    #
-    #     if len(self.sp_ids) > 1:
-    #         self.is_multi_spatial = True
-    #         # if multi spatial then just save everything without prompting
-    #         self.set_save_all_data(True)
-    #     else:
-    #         self.is_multi_spatial = False
-    #         self.set_save_all_data(False)
-    #
-    #     self.use_hdw_accel = dct_get(self.sp_db, SPDB_HDW_ACCEL_USE)
-    #     if self.use_hdw_accel is None:
-    #         self.use_hdw_accel = False
-    #         self.e712_enabled = False
-    #         # force the wave table rate to be 10 so that all pattern pads will be calc to use same rate
-    #         # self.e712_wg.set_forced_rate(10)
-    #
-    #     self.is_fine_scan = True
-    #     # override
-    #     if not self.is_fine_scan:
-    #         # coarse scan so turn hdw accel flag off
-    #         self.use_hdw_accel = False
-    #
-    #
-    #     if self.scan_type != scan_types.SAMPLE_POINT_SPECTRUM:
-    #         self.numImages = int(
-    #             self.sp_db[SPDB_EV_NPOINTS] * self.numEPU * self.numSPIDS
-    #         )
-    #     else:
-    #         # is a sample point spectrum
-    #         self.numImages = 1
-    #
-    #     # set some flags that are used elsewhere
-    #     if self.numImages > 1:
-    #         self.stack = True
-    #         self.save_all_data = True
-    #     else:
-    #         self.stack = False
-    #
-    #     # self.is_lxl = False
-    #     # self.is_pxp = False
-    #     # self.is_point_spec = False
-    #     # self.file_saved = False
-    #     # self.sim_point = 0
-    #     #
-    #     # if (self.scan_sub_type == scan_sub_types.LINE_UNIDIR):
-    #     #     # LINE_UNIDIR
-    #     #     self.is_lxl = True
-    #     # else:
-    #     #     # POINT_BY_POINT
-    #     #     self.is_pxp = True
-    #     #
-    #     # if (self.fine_sample_positioning_mode == sample_fine_positioning_modes.ZONEPLATE):
-    #     #     self.is_zp_scan = True
-    #     # else:
-    #     #     self.is_zp_scan = False
-    #     #     # determine and setup for line or point by point
-    #     # self.ttl_pnts = 0
-    #
-    #     # depending on the scan size the positioners used in the scan will be different, use a singe
-    #     # function to find out which we are to use and return those names in a dct
-    #     dct = self.determine_samplexy_posner_pvs(force_fine_scan=True)
-    #
-    #     # depending on the current samplpositioning_mode perform a different configuration
-    #     if self.sample_positioning_mode == sample_positioning_modes.GONIOMETER:
-    #         if self.use_hdw_accel:
-    #             self.config_for_goniometer_scan_hdw_accel(dct)
-    #         else:
-    #             self.config_for_goniometer_scan(dct)
-    #
-    #     else:
-    #         if self.sample_positioning_mode == sample_positioning_modes.GONIOMETER:
-    #             # goniometer_zoneplate mode
-    #             if self.use_hdw_accel:
-    #                 self.configure_for_zxzy_fine_scan_hdw_accel(dct)
-    #             else:
-    #                 raise Exception(
-    #                     "configure_for_zxzy_fine_scan()  This needs to be implemented!!!"
-    #                 )
-    #
-    #         elif (self.sample_positioning_mode == sample_positioning_modes.COARSE) and (
-    #             self.fine_sample_positioning_mode
-    #             == sample_fine_positioning_modes.ZONEPLATE
-    #         ):
-    #             if self.use_hdw_accel:
-    #                 self.configure_for_coarse_zoneplate_fine_scan_hdw_accel(dct)
-    #             else:
-    #                 raise Exception(
-    #                     "configure_for_coarse_zoneplate_fine_scan()  This needs to be implemented!!!"
-    #                 )
-    #
-    #         else:
-    #             # coarse_samplefine mode
-    #             if self.use_hdw_accel:
-    #                 self.configure_for_samplefxfy_fine_scan_hdw_accel(dct)
-    #             else:
-    #                 raise Exception(
-    #                     "configure_for_samplefxfy_fine_scan() does not exist, This needs to be implemented!!!"
-    #                 )
-    #
-    #     # move Gx and Gy to center of scan, is it within a um?
-    #
-    #     self.final_data_dir = self.config_hdr_datarecorder(
-    #         self.stack, self.final_data_dir
-    #     )
-    #     # self.stack_scan = stack
-    #
-    #     # make sure OSA XY is in its center
-    #     self.move_osaxy_to_its_center()
-    #
-    #     self.seq_map_dct = self.generate_2d_seq_image_map(
-    #         1, self.y_roi[NPOINTS], self.x_roi[NPOINTS], lxl=False
-    #     )
-    #
-    #     # THIS must be the last call
-    #     self.finish_setup()
-    #
-    #     self.new_spatial_start.emit(sp_id)
-    #     return(ret)
 
     def configure(self, wdg_com, sp_id=0, ev_idx=0, line=True, block_disconnect_emit=False):
         """
@@ -641,7 +383,7 @@ class BasePatternGenScanClass(BaseScan):
         if not ret:
             return (ret)
         _logger.info(
-            "\n\nPatternGenWithE712WavegenScanClass: configuring sp_id [%d]"
+            "\n\nPatternGenScanClass: configuring sp_id [%d]"
             % sp_id
         )
         self.final_data = {}
@@ -736,49 +478,7 @@ class BasePatternGenScanClass(BaseScan):
         # function to find out which we are to use and return those names in a dct
         dct = self.determine_samplexy_posner_pvs(force_fine_scan=True)
 
-        if USE_E712_HDW_ACCEL:
-            # depending on the current samplpositioning_mode perform a different configuration
-            if self.sample_positioning_mode == sample_positioning_modes.GONIOMETER:
-                self.seq_map_dct = self.generate_2d_seq_image_map(
-                    self.numE, self.numEPU, self.zy_roi[NPOINTS], self.zx_roi[NPOINTS], lxl=self.is_lxl
-                )
-                if self.use_hdw_accel:
-                    self.config_for_goniometer_scan_hdw_accel(dct)
-                else:
-                    self.config_for_goniometer_scan(dct)
-
-            else:
-                if self.sample_positioning_mode == sample_positioning_modes.GONIOMETER:
-                    self.seq_map_dct = self.generate_2d_seq_image_map(
-                        self.numE,
-                        self.numEPU,
-                        self.zy_roi[NPOINTS],
-                        self.zx_roi[NPOINTS],
-                        lxl=self.is_lxl,
-                    )
-                    # goniometer_zoneplate mode
-                    self.configure_for_zxzy_fine_scan_hdw_accel(dct)
-                elif (self.sample_positioning_mode == sample_positioning_modes.COARSE) and (
-                        self.fine_sample_positioning_mode
-                        == sample_fine_positioning_modes.ZONEPLATE
-                ):
-                    self.seq_map_dct = self.generate_2d_seq_image_map(
-                        self.numE,
-                        self.numEPU,
-                        self.zy_roi[NPOINTS],
-                        self.zx_roi[NPOINTS],
-                        lxl=self.is_lxl,
-                    )
-                    self.configure_for_coarse_zoneplate_fine_scan_hdw_accel(dct)
-                else:
-                    # coarse_samplefine mode
-                    self.seq_map_dct = self.generate_2d_seq_image_map(
-                        self.numE, self.numEPU, self.y_roi[NPOINTS], self.x_roi[NPOINTS], lxl=self.is_lxl
-                    )
-                    #self.configure_for_samplefxfy_fine_scan_hdw_accel(dct)
-                    if hasattr(self, "e712_wg"):
-                        if self.e712_wg.useHdwRadioBtn.isChecked():
-                            self.modify_config_patterngen_for_hdw_accel(dct)
+        self.seq_map_dct = self.generate_patterngen_seq_image_map(self.num_ttl_pnts)
 
         self.final_data_dir = self.config_hdr_datarecorder(
             self.stack, self.final_data_dir
@@ -792,8 +492,24 @@ class BasePatternGenScanClass(BaseScan):
         self.finish_setup()
 
         self.new_spatial_start.emit(sp_id)
-        return (ret)
+        return ret
 
+    def generate_patterngen_seq_image_map(self, num_total_pnts: int ) -> dict:
+        """
+            this is nly used to generate a sequence map for pattern generator scans so that it will update the progress
+            indicator on the main GUI with the correct information as the scan executes
+        :param num_total_pnts:
+        :param nxpnts:
+        :return:
+        """
+
+        dct = {}
+        seq_num = 0
+        # each line is an event in the sequence
+        for seq in range(seq_num, seq_num + num_total_pnts):
+            dct[seq] = {"img_num": 0, "row": 0, "col": seq}
+
+        return dct
 
     def configure_for_zxzy_fine_scan_hdw_accel(self, dct, is_focus=False):
         """

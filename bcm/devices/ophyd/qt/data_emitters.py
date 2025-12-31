@@ -608,6 +608,7 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
 
                 klst = list(doc["data"].keys())
                 res = [i for i in klst if self.det in i]
+                # print(f"SIS3820ImageDataEmitter: event: seq_num={seq_num}, self.det={self.det}, klst={klst}, res={res}")
                 if len(res) > 0:
                     if SIMULATE:
                         new_det = np.random.randint(65535)

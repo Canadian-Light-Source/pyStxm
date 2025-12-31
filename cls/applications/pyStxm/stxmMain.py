@@ -1818,6 +1818,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         data_dir, fprefix, fsuffix = get_file_path_as_parts(fname)
         item = self.lineByLineImageDataWidget.get_image_item(fprefix)
         self.lineByLineImageDataWidget.set_max_trimage_size(item.title().text(), (max_scan_range_x, max_scan_range_y))
+        self.lineByLineImageDataWidget.item_handle_moved(item)
         self.lineByLineImageDataWidget.do_emit_new_roi(None)
 
     def on_scantable_roi_deleted(self, wdg_com):
@@ -2959,6 +2960,18 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         crv_nm = self.roiSpectraWidget.get_complete_curve_name(nm)
         self.roiSpectraWidget.add_xy_point(f"{crv_nm}", energy, val, update=True)
 
+    def update_scan_progress(self, counter_to_plotter_com_dct):
+        """
+        just pull the progress dict and call set_progress, this is only currently used by the pattern generation scan
+        which does not do any plotting
+
+        :returns: None
+        """
+        # print(f"update_scan_progress: {counter_to_plotter_com_dct}")
+        prog_dct = counter_to_plotter_com_dct[CNTR2PLOT_PROG_DCT]
+        if len(prog_dct) > 0:
+            self.on_scan_progress(prog_dct)
+
     def add_line_to_plot(self, counter_to_plotter_com_dct):
         """
         add_line_to_plot(): a function to take data (a full line) and add it to the configured plotters
@@ -3919,12 +3932,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     detectors=dets
                 )
 
-            if scan_type == scan_types.PATTERN_GEN:
-                # scan_class.init_subscriptions(
-                #     MAIN_OBJ.engine_widget, self.add_point_to_plot, dets
-                # )
-                pass
-            # apr 12 2023
             if hasattr(self.executingScan, 'data_plot_type'):
                 # added to support for other labs scans like SLS det scan is line by line
                 if self.executingScan.data_plot_type == 'line':
@@ -3932,15 +3939,16 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 else:
                     plotting_func = self.add_point_to_plot
             else:
-                if scan_sub_type is scan_sub_types.POINT_BY_POINT:
+                # firt see if its a pattern gen scan, then check for PxP or LxL
+                if scan_type == scan_types.PATTERN_GEN:
+                    plotting_func = self.update_scan_progress
+
+                elif scan_sub_type is scan_sub_types.POINT_BY_POINT:
                     if scan_class.e712_enabled:
-                        #scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_line_to_plot, dets)
                         plotting_func = self.add_line_to_plot
                     else:
-                        #scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_point_to_plot, dets)
                         plotting_func = self.add_point_to_plot
                 else:
-                    #scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_line_to_plot, dets)
                     plotting_func = self.add_line_to_plot
 
             if plotting_func:
@@ -3973,7 +3981,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 _scan_plotter.init_image_items(final_det_nms, image_types.IMAGE, numY, numX, parms={SPDB_RECT: rect})
 
             save_progressive_data = MAIN_OBJ.get_bool_beamline_cfg_preset("save_progressive_stack_data")
-            if save_progressive_data:
+            if save_progressive_data and scan_type != scan_types.PATTERN_GEN:
                 # setup a subscription for the default detector to save data progressively during stack acquisition
                 # scan_class.init_subscriptions(MAIN_OBJ.engine_widget, plotting_func, dets)
                 # new_data = QtCore.pyqtSignal(object)

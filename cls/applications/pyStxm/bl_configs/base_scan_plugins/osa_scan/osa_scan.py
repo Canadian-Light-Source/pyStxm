@@ -128,13 +128,12 @@ class BaseOsaScanParam(ScanParamWidget):
         """
         if self.isEnabled():
             self.energy_dev.set_focus_mode("OSA")
+            osa_y_tracking_dev = self.main_obj.device("DNM_OSAY_TRACKING", do_warn=False)
             # make sure that the OSA vertical tracking is off if it is on
             self.update_est_time()
-            if self.osa_tracking_enabled:
-                self.osay_trcking_was = self.main_obj.device(
-                    "DNM_OSAY_TRACKING"
-                ).get_position()
-                self.main_obj.device("DNM_OSAY_TRACKING").put(0)  # off
+            if self.osa_tracking_enabled and osa_y_tracking_dev:
+                self.osay_trcking_was = osa_y_tracking_dev.get_position()
+                osa_y_tracking_dev.put(0)  # off
 
     def on_plugin_defocus(self):
         """
@@ -143,9 +142,10 @@ class BaseOsaScanParam(ScanParamWidget):
         """
 
         if self.isEnabled():
-            if self.osa_tracking_enabled:
+            osa_y_tracking_dev = self.main_obj.device("DNM_OSAY_TRACKING", do_warn=False)
+            if self.osa_tracking_enabled and osa_y_tracking_dev:
                 # put the OSA vertical tracking back to its previous state
-                self.main_obj.device("DNM_OSAY_TRACKING").put(self.osay_trcking_was)
+                osa_y_tracking_dev.put(self.osay_trcking_was)
 
         # call the base class defocus
         super().on_plugin_defocus()

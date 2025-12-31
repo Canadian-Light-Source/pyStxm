@@ -170,7 +170,7 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
         calculate the current progress, 0-100% oer image
         """
         percent = (row/self.num_rows) * 100.0
-        return(percent)
+        return percent
 
     def set_sequence_map(self, map):
         """
@@ -477,14 +477,19 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
             self.twoD_data[self.row] = data_dct
 
             if self.enable_progress_emit:
-                percent = self.calc_cur_progress(self.row, self.col)
+
+                percent = self.seq_map[self.seq_cntr]["prog"]
                 img_num = self.seq_map[self.seq_cntr]["img_num"]
                 ev_idx = self.seq_map[self.seq_cntr]["ev_idx"]
                 pol_idx = self.seq_map[self.seq_cntr]["pol_idx"]
+                row = self.seq_map[self.seq_cntr]["row"]
+                col = self.seq_map[self.seq_cntr]["col"]
 
                 set_prog_dict(self._prog_dct, sp_id=0, percent=percent, cur_img_idx=img_num, ev_idx=ev_idx,
                               pol_idx=pol_idx)
-                plot_dct = make_counter_to_plotter_com_dct(self.row, self.col, data_dct, is_point=self.is_pxp_scan, prog_dct=self._prog_dct)
+                # print(f"sis3820_scalar.py: process_sis3820_data: emitting progress dict:[{self.row}, {self.col}]={self._prog_dct}")
+                plot_dct = make_counter_to_plotter_com_dct(row, col, data_dct, is_point=self.is_pxp_scan,
+                                                           prog_dct=self._prog_dct)
                 self.seq_cntr += 1
 
             else:
@@ -492,7 +497,7 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
 
             self.new_plot_data.emit(plot_dct)
 
-            self.increment_indexes()
+            #self.increment_indexes()
 
     def set_config(self, rows, cols, is_pxp_scan=False, is_e712_wg_scan=False, pxp_single_trig=False):
         self.abort_scan()
@@ -501,8 +506,8 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
         self.num_rows = rows
         self.num_cols = cols
         self.is_pxp_scan = is_pxp_scan
+        self.enable_progress_emit = True
         if is_pxp_scan and not is_e712_wg_scan:
-            self.enable_progress_emit = False
             #all point by point scans, det, osa etc
             self.ignore_even_data_points = False
             self.num_acqs.put(1)
@@ -510,7 +515,6 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
             #self.num_acqs_per_trig.put(2)
             self.num_acqs_per_trig.put(1)
         elif pxp_single_trig:
-            self.enable_progress_emit = True
             self.num_cols = 0  # this forces self.row to increment each iteration of the sequence when self.increment_indexes
             # point scan by Ptychography
             self.ignore_even_data_points = False
@@ -519,7 +523,6 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
             self.num_acqs_per_trig.put(rows * cols)
 
         elif is_pxp_scan and is_e712_wg_scan:
-            self.enable_progress_emit = True
             self.num_cols = 0 #this forces self.row to increment each iteration of the sequence when self.increment_indexes
             # point scan
             self.ignore_even_data_points = True
@@ -528,7 +531,6 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
             self.num_acqs_per_trig.put(rows * cols)
 
         elif not is_pxp_scan and is_e712_wg_scan:
-            self.enable_progress_emit = True
             #line scan
             #cols = cols + SIS3820_EXTRA_PNTS
             self.ignore_even_data_points = False
@@ -536,7 +538,6 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
             self.num_acqs.put(cols)
             self.num_acqs_per_trig.put(rows * cols)
         else:
-            self.enable_progress_emit = False
             #coarseImage scan
             self.ignore_even_data_points = False
             self.num_acqs.put(cols + SIS3820_EXTRA_PNTS)

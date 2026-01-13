@@ -45,6 +45,12 @@ class ThumbnailSceneManager(QtCore.QObject):
         self.history = []  # Browser-like history of directories
         self.current_index = -1
 
+    def get_scenes(self, directory: str=None):
+        """Check if a scene for the given directory exists."""
+        if directory in self.scenes.keys():
+            return self.scenes[directory]
+        return None, None
+
     def scene_exists(self, directory):
         """Check if a scene for the given directory exists."""
         return directory in self.scenes.keys()
@@ -386,6 +392,7 @@ class ContactSheet(QtWidgets.QWidget):
             return
 
         _scan_type = h5_file_dct[h5_file_dct['default']]['sp_db_dct']['pystxm_enum_scan_type']
+        _data_dir = h5_file_dct[h5_file_dct['default']]['sp_db_dct']['directory']
         is_folder = False
         is_stack = False
         if _scan_type == scan_types.SAMPLE_IMAGE_STACK:
@@ -406,12 +413,27 @@ class ContactSheet(QtWidgets.QWidget):
             if thumbnail.draggable:
                 thumbnail.drag.connect(self.on_drag)
 
+        # use the data dir to get the correct scene
+
+        if _data_dir[-1] == '/':
+            data_dir = _data_dir[:-1]
+        image_scene, spec_scene = self._scene_mgr.get_scenes(data_dir)
         if _scan_type in spectra_type_scans:
-            scene = self.spectra_scene
+            if spec_scene:
+                self.spectra_scene = spec_scene
+                scene = spec_scene
+            else:
+                scene = self.spectra_scene
             self.spectra_thumbs.append(thumbnail)
         else:
-            scene = self.images_scene
+            if spec_scene:
+                self.images_scene = image_scene
+                scene = image_scene
+            else:
+                scene = self.images_scene
             self.image_thumbs.append(thumbnail)
+
+
 
         # Find the bottom-most y position
         items = [item for item in scene.items() if isinstance(item, QtWidgets.QGraphicsWidget)]
@@ -573,7 +595,7 @@ class ContactSheet(QtWidgets.QWidget):
         import orjson
         import timeit
 
-        print("on_drag: Entered.")
+        # print("on_drag: Entered.")
         event.accept()
 
         if self.get_drag_enabled():
@@ -586,17 +608,17 @@ class ContactSheet(QtWidgets.QWidget):
             else:
                 format = "application/dict-based-imageplot-stxmscan"
                 dct = obj.get_standard_image_launch_viewer_dct()
-            print("\n")
+            # print("\n")
             start = timeit.default_timer()
             #jstr = json.dumps(convert_numpy_to_python(dct), cls=NumpyAwareJSONEncoder)
             py_dict = convert_numpy_to_python(dct)
             end = timeit.default_timer()
-            print(f"\tconvert_numpy_to_python: Elapsed: {end - start} seconds")
+            # print(f"\tconvert_numpy_to_python: Elapsed: {end - start} seconds")
 
             start = timeit.default_timer()
             jstr_bytes = orjson.dumps(py_dict)
             end = timeit.default_timer()
-            print(f"\torjson.dumps: Elapsed: {end - start} seconds")
+            # print(f"\torjson.dumps: Elapsed: {end - start} seconds")
 
             itemData = QtCore.QByteArray()
             dataStream = QtCore.QDataStream(itemData, QtCore.QIODevice.WriteOnly)
@@ -604,14 +626,14 @@ class ContactSheet(QtWidgets.QWidget):
             start = timeit.default_timer()
             if obj.is_stack:
                 # if its a stack we only need 1 images worth of data
-                print("\ton_drag: Stack detected, using first image data only.")
+                # print("\ton_drag: Stack detected, using first image data only.")
                 #data_bytes = obj.data[0].tobytes()
                 data_bytes = b''
             else:
-                print("\ton_drag: Single image detected, using full data.")
+                # print("\ton_drag: Single image detected, using full data.")
                 data_bytes = obj.data.tobytes()
             end = timeit.default_timer()
-            print(f"\ttobytes(): Elapsed: {end - start} seconds")
+            # print(f"\ttobytes(): Elapsed: {end - start} seconds")
 
             start = timeit.default_timer()
             (
@@ -621,14 +643,14 @@ class ContactSheet(QtWidgets.QWidget):
                     << (event.pos() - obj.rect().topLeft())
             )
             end = timeit.default_timer()
-            print(f"\tdataStream << << << : Elapsed: {end - start} seconds")
+            # print(f"\tdataStream << << << : Elapsed: {end - start} seconds")
 
             start = timeit.default_timer()
             mimeData = QtCore.QMimeData()
             mimeData.setData(format, itemData)
             mimeData.setText(obj.info_jstr)
             end = timeit.default_timer()
-            print(f"\tmimeData : Elapsed: {end - start} seconds")
+            # print(f"\tmimeData : Elapsed: {end - start} seconds")
 
             start = timeit.default_timer()
             drag = QtGui.QDrag(self)
@@ -637,7 +659,7 @@ class ContactSheet(QtWidgets.QWidget):
             drag.setHotSpot(QtCore.QPoint(int(pos.x()), int(pos.y())))
 
             end = timeit.default_timer()
-            print(f"\tdrag.setHotSpot : Elapsed: {end - start} seconds")
+            # print(f"\tdrag.setHotSpot : Elapsed: {end - start} seconds")
 
             if obj.pixmap is not None:
                 drag.setPixmap(obj.pixmap)
@@ -651,7 +673,7 @@ class ContactSheet(QtWidgets.QWidget):
                 pass
             else:
                 pass
-        print("on_drag: Leaving.")
+        # print("on_drag: Leaving.")
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

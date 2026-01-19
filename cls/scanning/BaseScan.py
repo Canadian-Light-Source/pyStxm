@@ -568,7 +568,6 @@ class BaseScan(QtCore.QObject):
                 dlst.append(dnm)
         return dlst
 
-    # def make_standard_metadata(self, entry_name, scan_type, dets=[self.main_obj.device('DNM_DEFAULT_COUNTER')], override_xy_posner_nms=False):
     def make_standard_metadata(
         self, entry_name, scan_type, dets=[], override_xy_posner_nms=False
     ):

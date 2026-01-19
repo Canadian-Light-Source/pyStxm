@@ -1353,10 +1353,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             _logger.error("The device database does not contain a DNM_SHUTTER")
 
         self.shutterCntrlComboBox.currentIndexChanged.connect(
-            self.on_shutterCntrlComboBox
+            self.on_shutter_cntrl_combo_box
         )
         idx = self.shutterCntrlComboBox.currentIndex()
-        self.on_shutterCntrlComboBox(0)  # Auto
+        self.on_shutter_cntrl_combo_box(0)  # Auto
 
         self.scan_progress_table = ScanQueueTableWidget(parent=self)
         self.scanQFrame.layout().addWidget(self.scan_progress_table)
@@ -1597,7 +1597,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         else:
             _logger.info("Great Eyes CCD not detected so not loading CCD viewer panel")
 
-    def on_shutterCntrlComboBox(self, idx):
+    def on_shutter_cntrl_combo_box(self, idx):
         """
         on_shutterCntrlComboBox(): The Shutter device contains the list of control enumerations so
         Typically:
@@ -3070,6 +3070,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         if len(prog_dct) > 0:
             # self.non_re_scan_progress.emit(prog_dct)
+            # print(f"add_line_to_plot: emitting on_scan_progress with prog_dct={prog_dct}")
             self.on_scan_progress(prog_dct)
 
 
@@ -3562,7 +3563,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.set_buttons_for_scanning()
 
         # force shutter control back to Auto
-        self.on_shutterCntrlComboBox(0)  # Auto
+        self.on_shutter_cntrl_combo_box(0)  # Auto
 
         self.executingScan = None
         self.stopping = False
@@ -4368,7 +4369,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                                    verbose=False)
 
         else:
-            print(f"do_data_export: scan_type = {scan_type} in CATCH ALL else block")
+            #print(f"do_data_export: scan_type = {scan_type} in CATCH ALL else block")
             ret_msg = MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
                                    verbose=False)
 
@@ -4876,7 +4877,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         """
 
         self.scan_elapsed_timer.stop()
-        self.on_shutterCntrlComboBox(0)  # Auto
+        self.on_shutter_cntrl_combo_box(0)  # Auto
         self.set_buttons_for_starting()
         if self.executingScan:
             self.executingScan.set_scan_as_aborted(True)

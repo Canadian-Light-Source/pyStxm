@@ -356,7 +356,7 @@ class BaseFocusScanClass(BaseScan):
         @bpp.run_decorator(md=md)
 
         def do_scan():
-            print('entering BaseFocusScanClass: do_scan')
+            # print('entering BaseFocusScanClass: do_scan')
             psmtr_x = self.main_obj.device("DNM_SAMPLE_X")
             psmtr_y = self.main_obj.device("DNM_SAMPLE_Y")
             crs_x = self.main_obj.device("DNM_COARSE_X")
@@ -377,7 +377,7 @@ class BaseFocusScanClass(BaseScan):
                 DECCEL_DISTANCE = self.x_roi["RANGE"] * deccel_dist_prcnt_pv.get()
                 piezo_mtr_x.scan_start.put(self.x_roi['START'] - ACCEL_DISTANCE)
                 piezo_mtr_x.scan_stop.put(self.x_roi['STOP'] + DECCEL_DISTANCE)
-                print(f"SampleFocusScan: ACCEL_DISTANCE = {ACCEL_DISTANCE}, DECCEL_DISTANCE={DECCEL_DISTANCE}")
+                # print(f"SampleFocusScan: ACCEL_DISTANCE = {ACCEL_DISTANCE}, DECCEL_DISTANCE={DECCEL_DISTANCE}")
                 piezo_mtr_x.marker_start.put(self.x_roi['START'])
                 piezo_mtr_x.marker_stop.put(self.x_roi['STOP'])
                 piezo_mtr_x.set_marker.put(self.x_roi['START'])

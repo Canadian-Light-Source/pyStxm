@@ -10,7 +10,7 @@ import sys
 
 from PyQt5 import QtCore, QtWidgets
 
-from bcm.devices.epics_orig.aio import aio
+from bcm.devices.ophyd.base_device import BaseDevice
 from cls.utils.excepthook import excepthook
 
 sys.excepthook = excepthook
@@ -77,22 +77,28 @@ class InterferometerSignalWindow(QtWidgets.QWidget):
 
         layout.addLayout(hlayout)
         layout.addLayout(h2layout)
+        self.axis_map = {}
 
-        self.axis1_volts = aio(f"{axis1}_RBV", id=0)
+
+        self.axis1_volts = BaseDevice(f"{axis1}_RBV", id=0)
         self.axis1_volts.changed.connect(self.on_new_val)
+        self.axis_map[f"{axis1}_RBV"] = self.ax1Fbk
 
-        self.axis2_volts = aio(f"{axis2}_RBV", id=1)
+        self.axis2_volts = BaseDevice(f"{axis2}_RBV", id=1)
         self.axis2_volts.changed.connect(self.on_new_val)
+        self.axis_map[f"{axis2}_RBV"] = self.ax2Fbk
 
     def on_new_val(self, kwargs):
         # print kwargs
-        id = kwargs["id"]
+        obj = kwargs["obj"]
+        lbl = self.axis_map[obj.name]
         val = kwargs["value"]
-        if id is 0:
-            # self.changed.emit(self.ax1Fbk, val)
-            self.on_changed(self.ax1Fbk, val)
-        else:
-            self.on_changed(self.ax2Fbk, val)
+        self.on_changed(lbl, val)
+        # if id is 0:
+        #     # self.changed.emit(self.ax1Fbk, val)
+        # self.on_changed(self.ax1Fbk, val)
+        # else:
+        #     self.on_changed(self.ax2Fbk, val)
 
     def on_changed(self, axis, val):
         ax_str = str("\t%.4f" % val)
@@ -124,3 +130,4 @@ if __name__ == "__main__":
     win = InterferometerSignalWindow(axis1="ASTXM1610:Ai:ai0", axis2="ASTXM1610:Ai:ai1")
     win.show()
     app.exec_()
+

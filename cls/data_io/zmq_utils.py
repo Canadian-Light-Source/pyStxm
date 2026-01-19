@@ -25,9 +25,9 @@ def send_to_server(cmnd, run_uids=[], fprefix='', data_dir='', nx_app_def=None, 
         socket = context.socket(zmq.REQ)  # REQ is for request
         socket.connect(f"tcp://{host}:{port}")
 
-        # Set the send timeout to 5 seconds (5000 milliseconds)
-        socket.setsockopt(zmq.SNDTIMEO, 5000)
-        socket.setsockopt(zmq.RCVTIMEO, 5000)
+        # Set the send timeout to 5 seconds (25000 milliseconds), some large stack data can take a while to send
+        socket.setsockopt(zmq.SNDTIMEO, 25000)
+        socket.setsockopt(zmq.RCVTIMEO, 25000)
 
         data = gen_nx_server_dict(cmnd=cmnd, run_uids=run_uids,fprefix=fprefix,data_dir=data_dir,nx_app_def=nx_app_def,
                                   fpaths=fpaths, cmd_args=cmd_args)

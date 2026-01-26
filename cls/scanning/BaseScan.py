@@ -568,6 +568,50 @@ class BaseScan(QtCore.QObject):
                 dlst.append(dnm)
         return dlst
 
+    def make_progressive_stack_metadata_dict(self):
+        """
+        looking at the sp_db for the stack scan pull out the following and place into a dictionary that will be passed
+        to nx_sever to save along with the data as it is acquired:
+            - horizontal roi dict for image
+            - vertical roi dict for image
+            - energy list for stack
+            - dwell time of each point
+            - is_pxp flag
+            - default detector name
+            - rotation angle of sample
+        """
+        dct = {}
+        rois = self.get_rois_dict(override_xy_posner_nms=False)
+        ev_rois = self.get_ev_roi_list_from_sp_db(rois)
+        dwell, energies = self.get_all_energies_from_ev_roi_list(ev_rois)
+        dct['ev_setpoints'] = energies
+        dct["x_roi"] = self.x_roi
+        dct["y_roi"] = self.y_roi
+        dct["dwell"] = dwell
+        dct["is_pxp"] = 1 if self.is_pxp == True else 0
+        dct["default_det"] = self.default_detector_nm
+        dct["rotation_angle"] = self.main_obj.get_sample_rotation_angle()
+
+        return dct
+
+    def get_all_energies_from_ev_roi_list(self, ev_rois):
+        """
+        walk list of ev_rois and build a ascending list of energy setpoints
+        """
+        evs = []
+        dwell = None
+        for eroi in ev_rois:
+            evs.extend(eroi[SETPOINTS])
+            if dwell is None:
+                dwell = eroi[DWELL]
+        evs = list(set(evs))
+        evs.sort()
+        return dwell, evs
+
+    def get_ev_roi_list_from_sp_db(self, rois):
+        sp_keys = list(rois.keys())
+        return rois[sp_keys[0]]['EV_ROIS']
+
     def make_standard_metadata(
         self, entry_name, scan_type, dets=[], override_xy_posner_nms=False
     ):

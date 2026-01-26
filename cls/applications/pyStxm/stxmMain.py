@@ -3983,18 +3983,12 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
             save_progressive_data = MAIN_OBJ.get_bool_beamline_cfg_preset("save_progressive_stack_data")
             if save_progressive_data and scan_type != scan_types.PATTERN_GEN:
-                # setup a subscription for the default detector to save data progressively during stack acquisition
-                # scan_class.init_subscriptions(MAIN_OBJ.engine_widget, plotting_func, dets)
-                # new_data = QtCore.pyqtSignal(object)
-                # final_data = QtCore.pyqtSignal(object)
-                # new_plot_data = QtCore.pyqtSignal(object)
                 if scan_class._emitter_cb:
                     stack_dir = master_seq_dct[0]['stack_dir']
                     fprefix = master_seq_dct[0]['prefix']
-                    MAIN_OBJ.init_progressive_stack_data(stack_dir, fprefix, final_det_nms)
-                    #scan_class._emitter_cb.new_plot_data.connect(MAIN_OBJ.publish_progressive_stack_data)
+                    _dct = scan_class.make_progressive_stack_metadata_dict()
+                    MAIN_OBJ.init_progressive_stack_data(stack_dir, fprefix, final_det_nms, _dct)
                     scan_class._emitter_cb.final_data.connect(MAIN_OBJ.publish_progressive_stack_data)
-
 
         ####################################################################################################################
         elif scan_type == scan_types.PTYCHOGRAPHY:

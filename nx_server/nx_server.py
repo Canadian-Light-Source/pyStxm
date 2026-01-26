@@ -154,13 +154,14 @@ def process_and_publish_files(pub_socket, files):
     print(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published [{len(data_lst)}] files")
     return data_lst
 
-def save_data_to_hdf5(data_dct, data_dir, fprefix):
+def save_data_to_hdf5(data_dct, data_dir, fprefix, metadata):
     """
         Save detector 2D array data from a dictionary to an HDF5 file.
 
         - Creates the HDF5 file in `data_dir` with the name `{fprefix}.hdf5` if it does not exist.
         - Creates a group named by `img_idx` from `data_dct`.
         - For each key in `det_data`, creates a subgroup and saves the corresponding 2D array as a dataset named 'data'.
+        - If the `scan_parameters` group does not exist, creates it and writes selected metadata keys (`ev_setpoints`, `x_roi`, `y_roi`, `dwell`) as datasets.
 
         Parameters
         ----------
@@ -170,36 +171,61 @@ def save_data_to_hdf5(data_dct, data_dir, fprefix):
             Directory path to save the HDF5 file.
         fprefix : str
             Prefix for the HDF5 file name.
+        metadata : dict
+            Metadata associated with the data.
 
         Returns
         -------
         None
     """
-    # Ensure directory exists
-    os.makedirs(data_dir, exist_ok=True)
-    h5_path = os.path.join(data_dir, f"{fprefix}.hdf5")
+    try:
+        import h5py
+        import os
+        import stat
+        import numpy as np
 
-    file_exists = os.path.exists(h5_path)
-    mode = 'r+' if file_exists else 'w'
-    # Use libver='latest' when creating a new file for SWMR support
-    kwargs = {'libver': 'latest'} if not file_exists else {}
+        os.makedirs(data_dir, exist_ok=True)
+        h5_path = os.path.join(data_dir, f"{fprefix}.hdf5")
 
-    with h5py.File(h5_path, mode, **kwargs) as h5f:
-        # ensure file permissions allow read/write for user, read for group and others
-        os.chmod(h5_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
-        if not file_exists:
-            h5f.swmr_mode = True  # Safe to enable immediately on new file
-        else:
-            h5f.swmr_mode = True  # Will work if file was created with libver='latest'
-        img_idx = str(data_dct['img_idx'])
-        grp = h5f.require_group(img_idx)
-        det_data = data_dct['det_data']
-        for det_key, arr in det_data.items():
-            det_grp = grp.require_group(det_key)
-            arr_np = np.array(arr)
-            if 'data' in det_grp:
-                del det_grp['data']
-            det_grp.create_dataset('data', data=arr_np)
+        file_exists = os.path.exists(h5_path)
+        mode = 'r+' if file_exists else 'w'
+        kwargs = {'libver': 'latest'} if not file_exists else {}
+
+        with h5py.File(h5_path, mode, **kwargs) as h5f:
+            os.chmod(h5_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+            h5f.swmr_mode = True
+
+            if 'scan_parameters' not in h5f:
+                required_keys = ['dwell', 'ev_setpoints', 'x_roi', 'y_roi', 'is_pxp', 'default_det', 'rotation_angle']
+                try:
+                    for key in required_keys:
+                        assert key in metadata, f"Missing required metadata key: {key}"
+
+                    scan_grp = h5f.create_group('scan_parameters')
+                    scan_grp.create_dataset('ev_setpoints', data=np.array(metadata['ev_setpoints']))
+                    scan_grp.create_dataset('dwell', data=metadata['dwell'])
+                    scan_grp.create_dataset('is_pxp', data=metadata['is_pxp'])
+                    scan_grp.create_dataset('default_det', data=metadata['default_det'])
+                    scan_grp.create_dataset('rotation_angle', data=metadata['rotation_angle'])
+                    scan_grp.create_dataset('numpoints_x', data=metadata['x_roi']['NPOINTS'])
+                    scan_grp.create_dataset('numpoints_y', data=metadata['y_roi']['NPOINTS'])
+                    scan_grp.create_dataset('step_size_x', data=metadata['x_roi']['STEP'])
+                    scan_grp.create_dataset('step_size_y', data=metadata['y_roi']['STEP'])
+                except AssertionError as e:
+                    print(f"Warning: {e}. scan_parameters group not written.")
+
+            img_idx = str(data_dct['img_idx'])
+            grp = h5f.require_group(img_idx)
+            det_data = data_dct['det_data']
+            for det_key, arr in det_data.items():
+                det_grp = grp.require_group(det_key)
+                arr_np = np.array(arr)
+                if 'data' in det_grp:
+                    del det_grp['data']
+                det_grp.create_dataset('data', data=arr_np)
+    except Exception as e:
+        print(f"Error in save_data_to_hdf5: {e}")
+
 def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, is_windows=True):
     """
     Note this server currently needs to run on the same machine as the mongodb service in order to access the
@@ -260,11 +286,12 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
 
         elif cmnd == NX_SERVER_CMNDS.SAVE_PROGRESSIVE_STACK_DATA:
             cmd_args = data['cmd_args']
+            metadata = json.loads(cmd_args['metadata'])
             fprefix = cmd_args['file_prefix']
             data_dir = cmd_args['directory']
             # extension = cmd_args['extension']
             data_dct = json.loads(cmd_args['data_dct'])
-            save_data_to_hdf5(data_dct, data_dir, fprefix)
+            save_data_to_hdf5(data_dct, data_dir, fprefix, metadata)
             print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: save_progressive_stack_data called with fprefix=[{fprefix}], data_dir=[{data_dir}]")
             ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS})
 

@@ -222,10 +222,11 @@ class main_object_base(QtCore.QObject):
         self.data_sub_message_received.connect(self.on_data_sub_message_received)
         self.start_sub_listener_thread()
 
-    def init_progressive_stack_data(self, stack_dir, file_prefix, detector_names: list):
+    def init_progressive_stack_data(self, stack_dir, file_prefix, detector_names: list, meta_data: dict=None):
         """
         initialize the progressive stack data dict with empty lists for each detector name
         """
+        self._progressive_stack_data['metadata'] = meta_data
         self._progressive_stack_data_dir = stack_dir
         self._progressive_stack_data_file_prefix = file_prefix
         for det_name in detector_names:
@@ -253,6 +254,7 @@ class main_object_base(QtCore.QObject):
         if self.get_device_backend() == 'epics':
 
             cmd_args = {}
+            cmd_args['metadata'] = orjson.dumps(convert_ndarrays_to_lists(self._progressive_stack_data['metadata'])).decode('utf-8')
             cmd_args['directory'] = self._progressive_stack_data_dir
             cmd_args['file_prefix'] = f"progressive-stack-{self._progressive_stack_data_file_prefix}"
             cmd_args['extension'] = '.hdf5'

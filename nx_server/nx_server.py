@@ -237,6 +237,9 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
         nx_app_def = data['nx_app_def']
         if cmnd == NX_SERVER_CMNDS.SAVE_FILES:
             ret_msg = ''
+            # send response now in case export takes a long time
+            ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS,
+                                  "msg": f"NX_SERVER[{HOSTNAME}], [{rep_port}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"})
             exporter = determine_exporter(nx_app_def)
             if exporter:
                 first_uid = run_uids[0]
@@ -252,8 +255,8 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
                         primary_docs, data_dir, file_prefix=fprefix, first_uid=first_uid, last_uid=last_uid, aborted=False
                     )
                 exporter.finish_export(data_dir, fprefix, first_uid)
-                ret_msg = f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"
-                ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "msg": f"NX_SERVER[{HOSTNAME}], [{rep_port}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"})
+                #ret_msg = f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"
+                # ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "msg": f"NX_SERVER[{HOSTNAME}], [{rep_port}]:nxstxm: finished exporting [{data_dir}/{fprefix}.hdf5"})
 
         elif cmnd == NX_SERVER_CMNDS.SAVE_PROGRESSIVE_STACK_DATA:
             cmd_args = data['cmd_args']

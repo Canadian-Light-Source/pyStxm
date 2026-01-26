@@ -194,14 +194,49 @@ class BaseQtImageDataEmitter(QtDataEmitter):
         self._descriptors.clear()
 
     def condense_det_data(self, det_data_list):
-        if not det_data_list:
+        """
+            Condense a list of detector data dictionaries into a single dictionary with stacked arrays.
+
+            Each element in det_data_list is expected to be a dictionary mapping detector names to arrays.
+            This function stacks the arrays for each detector across all dictionaries in the list.
+
+            Parameters:
+                det_data_list (list of dict): List of dictionaries containing detector data.
+
+            Returns:
+                dict: Dictionary where each key is a detector name and the value is a stacked numpy array
+                      of the corresponding data from all input dictionaries. Returns an empty dict if input is empty.
+            """
+        try:
+
+            # if not det_data_list:
+            #     return {}
+            # det_names = det_data_list[0].keys()
+            # condensed = {}
+            # for det in det_names:
+            #     # Stack arrays for this detector from all dicts
+            #     condensed[det] = np.stack([d[det] for d in det_data_list])
+            # return condensed
+            import numpy as np
+
+            if not det_data_list:
+                return {}
+            det_names = det_data_list[0].keys()
+            condensed = {}
+            for det in det_names:
+                arrays = [d[det] for d in det_data_list]
+                #print(f"Detector: {det}")
+                # for i, arr in enumerate(arrays):
+                #     print(f"  Index {i}: type={type(arr)}, shape={getattr(arr, 'shape', 'N/A')}")
+                try:
+                    condensed[det] = np.stack(arrays)
+                except Exception as e:
+                    print(f"Error stacking arrays for detector '{det}': {e}")
+                    raise
+            return condensed
+        except Exception as e:
+            print(f"Error in condense_det_data: det={det} {e}")
             return {}
-        det_names = det_data_list[0].keys()
-        condensed = {}
-        for det in det_names:
-            # Stack arrays for this detector from all dicts
-            condensed[det] = np.stack([d[det] for d in det_data_list])
-        return condensed
 
 
 class SpecDataEmitter(BaseQtSpectraDataEmitter):
@@ -477,7 +512,7 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
         self.y_idx = 0
         self.img_idx = 0  # linespec scans can be made up of multiple images (ev regions) side by side in a single scan
         self._image_num = 0
-        self._counter = -1
+        self._counter = 0
         self.factor_list = []
         self._seq_dct = None
         self.ch_id_lst = []
@@ -622,7 +657,7 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
                             # looks like a line reset array
                             print("SIS3820ImageDataEmitter: event: looks like a line reset array")
                             return
-                    self._counter += 1
+                    #self._counter += 1
                     #print(f"SIS3820ImageDataEmitter: event: self._counter={self._counter}")
                     #self.update_idxs(seq_num)
                     self.update_idxs(self._counter)
@@ -661,30 +696,33 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
                 ev_idx = 0
                 pol_idx = 0
 
-                if 'img_num' in self._seq_dct[self._counter]:
-                    img_num = self._seq_dct[self._counter]["img_num"]
-                if 'ev_idx' in self._seq_dct[self._counter]:
-                    ev_idx = self._seq_dct[self._counter]["ev_idx"]
-                if 'pol_idx' in self._seq_dct[self._counter]:
-                    pol_idx = self._seq_dct[self._counter]["pol_idx"]
-                if 'prog' in self._seq_dct[self._counter]:
-                    percent = self._seq_dct[self._counter]['prog']
+                if self._counter in self._seq_dct:
+                    if 'img_num' in self._seq_dct[self._counter]:
+                        img_num = self._seq_dct[self._counter]["img_num"]
+                    if 'ev_idx' in self._seq_dct[self._counter]:
+                        ev_idx = self._seq_dct[self._counter]["ev_idx"]
+                    if 'pol_idx' in self._seq_dct[self._counter]:
+                        pol_idx = self._seq_dct[self._counter]["pol_idx"]
+                    if 'prog' in self._seq_dct[self._counter]:
+                        percent = self._seq_dct[self._counter]['prog']
 
-                set_prog_dict(self._prog_dct, sp_id=0, percent=percent, cur_img_idx=img_num, ev_idx=ev_idx,
-                              pol_idx=pol_idx)
-                # print('SIS3820ImageDataEmitter: emit x=%f y=%f' % (new_x, new_y))
-                self._plot_dct[CNTR2PLOT_FUNC_NAME] = f"{self.__class__.__name__}.{_func_name}"
-                self._plot_dct[CNTR2PLOT_DETID] = self.det_id
-                self._plot_dct[CNTR2PLOT_ROW] = int(new_y)
-                self._plot_dct[CNTR2PLOT_COL] = int(new_x)
-                self._plot_dct[CNTR2PLOT_VAL] = new_det
-                self._plot_dct[CNTR2PLOT_IS_LINE] = True if not self.is_pxp else False
-                self._plot_dct[CNTR2PLOT_IS_POINT] = self.is_pxp
-                self._plot_dct[CNTR2PLOT_PROG_DCT] = self._prog_dct
-                # print(f"SIS3820ImageDataEmitter: event:: col = {self._plot_dct[CNTR2PLOT_COL]} row = {self._plot_dct[CNTR2PLOT_ROW]} = {new_det}")
-                # print(f"SIS3820ImageDataEmitter: event: self._prog_dct={self._prog_dct}")
-                self.new_plot_data.emit(self._plot_dct)
-            # self.update_plot()
+                    set_prog_dict(self._prog_dct, sp_id=0, percent=percent, cur_img_idx=img_num, ev_idx=ev_idx,
+                                  pol_idx=pol_idx)
+                    # print('SIS3820ImageDataEmitter: emit x=%f y=%f' % (new_x, new_y))
+                    self._plot_dct[CNTR2PLOT_FUNC_NAME] = f"{self.__class__.__name__}.{_func_name}"
+                    self._plot_dct[CNTR2PLOT_DETID] = self.det_id
+                    self._plot_dct[CNTR2PLOT_ROW] = int(new_y)
+                    self._plot_dct[CNTR2PLOT_COL] = int(new_x)
+                    self._plot_dct[CNTR2PLOT_VAL] = new_det
+                    self._plot_dct[CNTR2PLOT_IS_LINE] = True if not self.is_pxp else False
+                    self._plot_dct[CNTR2PLOT_IS_POINT] = self.is_pxp
+                    self._plot_dct[CNTR2PLOT_PROG_DCT] = self._prog_dct
+                    # print(f"SIS3820ImageDataEmitter: event:: col = {self._plot_dct[CNTR2PLOT_COL]} row = {self._plot_dct[CNTR2PLOT_ROW]} = {new_det}")
+                    # print(f"SIS3820ImageDataEmitter: event: self._prog_dct={self._prog_dct}")
+                    self.new_plot_data.emit(self._plot_dct)
+                # self.update_plot()
+                self._counter += 1
+
         super().event(doc)
 
     def update_caches(self, x, y, det):

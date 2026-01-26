@@ -1776,7 +1776,7 @@ class ScanParamWidget(QtWidgets.QFrame):
     def load_scan(self, ev_only=False, sp_only=False):
         datadir = self.main_obj.get("APP.USER").get_data_dir()
         self.data_file_pfx = self.main_obj.get_datafile_prefix()
-        filter_str = f"Scan and Config Files ({self.data_file_pfx}*.hdf5 *.json)"
+        filter_str = f"Scan and Config Files (*.hdf5 *.json)"
         fname = getOpenFileName(
             "Load Scan",
             filter_str=filter_str,

@@ -170,7 +170,7 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
         calculate the current progress, 0-100% oer image
         """
         percent = (row/self.num_rows) * 100.0
-        return(percent)
+        return percent
 
     def set_sequence_map(self, map):
         """
@@ -236,25 +236,9 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
         a convienience function to return the names of all the sis3820 channels,
         primarily used to tell the parent UI what names to populate a detector selection form with
         """
-        return(self.channel_names)
-
-    def kickoff(self):
-        # base class call to kickoff will call set_finished() on the status
-        self.twoD_data = None
-        #_logger.info(f"kickoff: self.twoD_data = None ")
-        st = super().kickoff() #this sets the parents _acquiring attr to True
-
-        def check_value(*, old_value, value, **kwargs):
-            "Return True when the acquisition is complete, False otherwise."
-            return (old_value == 0 and value == 1)
-
-        status = SubscriptionStatus(self.run, check_value)
-
-        self.run.put(1)
+        return self.channel_names
 
 
-        #return st
-        return status
 
     # def complete(self):
     #     # base class call to complete will call set_finished() on the status
@@ -272,9 +256,9 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
     def is_running(self):
         run = self.run.get()
         if run:
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def set_dwell(self, dwell):
         """
@@ -442,67 +426,62 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
                 if self.row == 0:
                     fix_first_point = True
 
-                # if self.ignore_even_data_points:
-                #     remove_last = False
-                # else:
-                #     remove_last = True
-                #
-                # remove_first = False
-
-                #stripped_dat = sis3820_remove_row_change_extra_point(dat, ignore_even_data_points=self.ignore_even_data_points, fix_first_point=fix_first_point, remove_first=remove_first, remove_last=remove_last)
                 stripped_dat = sis3820_remove_row_change_extra_point(dat,
                                     ignore_even_data_points=self.ignore_even_data_points,
                                     fix_first_point=fix_first_point,
                                     remove_first=self.remove_first_point,
                                     remove_last=self.remove_last_point)
 
-                # if ch_num == 0:
-                #     print(f"sis3820_scalar.py: process_sis3820_data: chan 0 data: raw", dat)
-                #     print(f"sis3820_scalar.py: process_sis3820_data: chan 0 data: STRIPPED", stripped_dat)
-                #     print()
-                # print(dat.shape)
-                # print(stripped_dat.shape)
                 if self.is_spec_scan:
                     #generate the correct channel name with spid
                     chan_nm = gen_complete_spec_chan_name(chan_nm, self.spec_spid)
                 data_dct[chan_nm] = stripped_dat
-
-            row_chan_dct = {}
-            row_chan_dct[self.row] = data_dct
-            # keep this data for collect to process
-            if self.twoD_data is None:
-                _logger.debug(f"twoD_data should not be None here")
-                self.twoD_data = {}
-
-            self.twoD_data[self.row] = data_dct
-
-            if self.enable_progress_emit:
-                percent = self.calc_cur_progress(self.row, self.col)
+            if self.seq_cntr in self.seq_map:
+                percent = self.seq_map[self.seq_cntr]["prog"]
                 img_num = self.seq_map[self.seq_cntr]["img_num"]
                 ev_idx = self.seq_map[self.seq_cntr]["ev_idx"]
                 pol_idx = self.seq_map[self.seq_cntr]["pol_idx"]
+                row = self.seq_map[self.seq_cntr]["row"]
+                col = self.seq_map[self.seq_cntr]["col"]
+
+                row_chan_dct = {}
+                #row_chan_dct[self.row] = data_dct
+                row_chan_dct[row] = data_dct
+
+                # keep this data for collect to process
+                #if self.twoD_data is None:
+                if row == 0:
+                    #_logger.debug(f"twoD_data should not be None here")
+                    # _logger.debug(
+                    #     f"process_sis3820_data(): [{self.seq_cntr}] resetting it as dict for row=[{row}]")
+                    self.twoD_data = {}
+
+                #self.twoD_data[self.row] = data_dct
+                self.twoD_data[row] = data_dct
 
                 set_prog_dict(self._prog_dct, sp_id=0, percent=percent, cur_img_idx=img_num, ev_idx=ev_idx,
-                              pol_idx=pol_idx)
-                plot_dct = make_counter_to_plotter_com_dct(self.row, self.col, data_dct, is_point=self.is_pxp_scan, prog_dct=self._prog_dct)
+                                                 pol_idx=pol_idx)
+                self._prog_dct['self.seq_cntr'] = self.seq_cntr
+
+                plot_dct = make_counter_to_plotter_com_dct(row=row, col=col, val=data_dct, is_point=self.is_pxp_scan, prog_dct=self._prog_dct)
                 self.seq_cntr += 1
+                self.new_plot_data.emit(plot_dct)
+                #_logger.debug(f"process_sis3820_data(): [{self.seq_cntr}] emitted new plot data for row=[{row}] col=[{col}] percent=[{percent}] img_num=[{img_num}]")
 
-            else:
-                plot_dct = make_counter_to_plotter_com_dct(self.row, self.col, data_dct, is_point=self.is_pxp_scan, prog_dct={})
 
-            self.new_plot_data.emit(plot_dct)
-
-            self.increment_indexes()
 
     def set_config(self, rows, cols, is_pxp_scan=False, is_e712_wg_scan=False, pxp_single_trig=False):
+        """
+        configure the SIS3820 for a particular scan type
+        """
         self.abort_scan()
         self.init_indexs()
         self.seq_cntr = 0
         self.num_rows = rows
         self.num_cols = cols
         self.is_pxp_scan = is_pxp_scan
+        self.enable_progress_emit = True
         if is_pxp_scan and not is_e712_wg_scan:
-            self.enable_progress_emit = False
             #all point by point scans, det, osa etc
             self.ignore_even_data_points = False
             self.num_acqs.put(1)
@@ -510,7 +489,6 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
             #self.num_acqs_per_trig.put(2)
             self.num_acqs_per_trig.put(1)
         elif pxp_single_trig:
-            self.enable_progress_emit = True
             self.num_cols = 0  # this forces self.row to increment each iteration of the sequence when self.increment_indexes
             # point scan by Ptychography
             self.ignore_even_data_points = False
@@ -519,7 +497,6 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
             self.num_acqs_per_trig.put(rows * cols)
 
         elif is_pxp_scan and is_e712_wg_scan:
-            self.enable_progress_emit = True
             self.num_cols = 0 #this forces self.row to increment each iteration of the sequence when self.increment_indexes
             # point scan
             self.ignore_even_data_points = True
@@ -528,7 +505,6 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
             self.num_acqs_per_trig.put(rows * cols)
 
         elif not is_pxp_scan and is_e712_wg_scan:
-            self.enable_progress_emit = True
             #line scan
             #cols = cols + SIS3820_EXTRA_PNTS
             self.ignore_even_data_points = False
@@ -536,7 +512,6 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
             self.num_acqs.put(cols)
             self.num_acqs_per_trig.put(rows * cols)
         else:
-            self.enable_progress_emit = False
             #coarseImage scan
             self.ignore_even_data_points = False
             self.num_acqs.put(cols + SIS3820_EXTRA_PNTS)
@@ -613,9 +588,9 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
         attr = getattr(self, attr_ch_nm)
         en = attr.get()
         if en:
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def enable_channel(self, chan_name, en):
         """
@@ -632,7 +607,7 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
     def get_chan_num_from_name(self, nm):
         nm = nm.replace("DNM_","")
         chan = int(nm.replace('SIS3820_CHAN_',''))
-        return(chan)
+        return chan
 
     def get_enabled_chans(self, update_map=True):
         '''
@@ -883,66 +858,7 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
 
         self.increment_indexes()
         # print(dct)
-        return(dct)
-    # def read(self):
-    #     '''
-    #     if the current scan is lxl then I need to have an
-    #     '''
-    #     # print('SIS3820ScalarDevice: read called')
-    #     # return(self.waveform_rbv.get())
-    #
-    #
-    #     #line data
-    #     self.rawData = self.waveform_rbv.get()
-    #     # note the first data point in the array returned is the number of enabled channels
-    #     if hasattr(self.rawData, "shape"):
-    #         _nsamples, = self.rawData.shape
-    #         en_chan_nums, en_chan_nms, en_chan_fbk_attrs = self.get_enabled_chans()
-    #         num_chans = len(en_chan_nums)
-    #         if _nsamples == 0:
-    #             dct = {
-    #                 self.name + '_waveform_rbv': {
-    #                     "value": [0],
-    #                     "timestamp": time.time(),
-    #                     "chan_nms": en_chan_nms,
-    #                     "chan_nums": en_chan_nums,
-    #                     "chan_dct": {},
-    #                     "col": int(self.col),
-    #                     "row": int(self.row),
-    #
-    #                 }
-    #             }
-    #             return(dct)
-    #         #print("self.rawdata.shape", self.rawData.shape)
-    #         data = self.rawData[1:]
-    #         if self.return_2D_data:
-    #             #self.twoD_data contains a dictionary using the row number as the key to a dictionary whose
-    #             # keys are the channel names and values are 1 rows worth of points
-    #             dct = {}
-    #             # append each rows data to that channels total data
-    #             for row_num, data_dct in self.twoD_data.items():
-    #                 for k in data_dct.keys():
-    #                     if k not in dct.keys():
-    #                         dct[k] = []
-    #                     dct[k] += list(data_dct[k])
-    #
-    #             #return a dict of channels with 1D data
-    #             _data = dct
-    #         else:
-    #             _data = self.read_process_sis3820_data(data)
-    #
-    #         dct = {
-    #             self.name + '_waveform_rbv': {
-    #                 "value": _data,
-    #                 "timestamp": time.time(),
-    #                 # "chan_dct": self.read_process_sis3820_data(data),
-    #             }
-    #         }
-    #
-    #         self.increment_indexes()
-    #         return(dct)
-
-
+        return dct
 
     def read_process_sis3820_data(self, arr):
         """
@@ -985,7 +901,7 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
                 #print(f"SIS3820: read() channel name to {chan_nm}")
                 data_dct[chan_nm] = stripped_dat
 
-        return(data_dct)
+        return data_dct
 
 
     def describe_collect(self):
@@ -1050,6 +966,7 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
         self._collected_data = None
 
         if self._pivot:
+            # return a single event
             for attr, data in collected.items():
                 name = getattr(self, attr).name
                 for ts, value in zip(data["timestamp"], data["value"]):
@@ -1059,21 +976,57 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
                         data={name: value},
                     )
                     # print('collect: ', d)
+                    # _logger.debug(
+                    #     f"------------ if self._pivot::  collect called [{self._russ_collect_counter}] times, dict size is [{len(d)}]---------------- ")
                     yield d
 
         else:
+            # return all events as an array
             for attr, data in collected.items():
                 d = dict(
                     time=time.time(),
                     timestamps={attr: data["timestamp"]},
                     #data={attr: data['value']},
-                    data={attr: self.merge_row_data_into_2d()},
+                    data={attr: self.merge_twoD_data_row_data_into_2d()},
                 )
-                self.twoD_data = None
-                #_logger.info(f"collect: self.twoD_data = None ")
+                # _logger.debug(f"collect: resetting self.twoD_data = None ")
+                # self.twoD_data = None
+
                 yield d
 
+    # def trigger(self):
+    #     def check_value(*, old_value, value, **kwargs):
+    #         print("SIS3820: check_value before if")
+    #         #"Mark status as finished when the acquisition is complete."
+    #         if old_value == 1 and value == 0:
+    #             print("SIS3820: calling status.set_finished()")
+    #             status.set_finished()
+    #             # Clear the subscription.
+    #             self.run.clear_sub(check_value)
+    #
+    #     status = DeviceStatus(self.run)
+    #     self.run.subscribe(check_value)
+    #     self.run.set(1)
+    #     print("SIS3820: setting run to 1, returning status")
+    #     return status
 
+    # def trigger(self):
+    #     def check_value(*, old_value, value, **kwargs):
+    #         "Return True when the run is complete, False otherwise."
+    #         return (old_value == 1 and value == 0)
+    #
+    #     status = SubscriptionStatus(self.run, check_value)
+    #     self.run.set(1)
+    #     return status
+
+    # def complete(self):
+    #     def check_value(*, old_value, value, **kwargs):
+    #         #"Return True when the run is complete, False otherwise."
+    #         return (old_value == 1 and value == 0)
+    #
+    #     status = SubscriptionStatus(self.run, check_value)
+    #     #self.run.set(1)
+    #     return status
 
 def sis3820_remove_row_change_extra_point(chan_data, ignore_even_data_points=False, fix_first_point=False, remove_first=False, remove_last=False):
     """

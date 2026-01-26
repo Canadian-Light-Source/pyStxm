@@ -118,45 +118,60 @@ def do_scan(xdata, ydata, exp_data):
 
 def return_final_scan_points(xdata, ydata, exp_data):
     """
-    return a zipped final data consisting of (yposition, xposition, exposure time)
-    :param xdata: 1D array of x motor positions
-    :param ydata: 1D array of x motor positions
-    :param exp_data: 2D array of pixel exposure values
-    :return:
+    Return a list of dicts, each describing a scan line with nonzero exposures.
+    Each dict contains: y, row, x_indices, x_line, xdelta_line, dwell_data, line_time.
     """
     final_data = []
     exp_data = np.flipud(exp_data)
     rows, cols = exp_data.shape
 
-    row_indices = list(range(rows))
     num_rows = 0
     num_ttl_pnts = 0
-    for row in row_indices:
+    for row in range(rows):
         line_data = exp_data[row]
         y = ydata[row]
         no_zero_ele = np.nonzero(line_data)
         if no_zero_ele[0].size > 0:
-            x_line  = xdata[tuple(no_zero_ele)]
-            dwell_data = line_data[tuple(no_zero_ele)]
-            xdelta_line =  np.diff(x_line)
+            x_line = xdata[no_zero_ele]
+            dwell_data = line_data[no_zero_ele]
+            xdelta_line = np.diff(x_line)
             xdelta_line = np.insert(xdelta_line, 0, 0.0)
             line_time = np.sum(dwell_data)
-            npts, = x_line.shape
+            npts = x_line.shape[0]
             num_ttl_pnts += npts
             num_rows += 1
-            final_data.append({"y":y,
-                               "row": row,
-                               "x_indices": no_zero_ele,
-                               "x_line": x_line,
-                               "xdelta_line": xdelta_line,
-                               "dwell_data": dwell_data,
-                               "line_time": line_time})
-                               # "xshape": x_line.shape,
-                               # "dwellshape": dwell_data.shape})
-    #give total_time in seconds
-    total_time = np.sum(exp_data)
-    total_time = (total_time / 1000.0)
-    return(final_data, total_time, num_ttl_pnts)
+            final_data.append({
+                "y": y,
+                "row": row,
+                "x_indices": no_zero_ele,
+                "x_line": x_line,
+                "xdelta_line": xdelta_line,
+                "dwell_data": dwell_data,
+                "line_time": line_time
+            })
+    total_time = np.sum(exp_data) / 1000.0
+    return final_data, total_time, num_ttl_pnts
+
+def quick_plot(final_data):
+    import matplotlib.pyplot as plt
+
+    # After final_data, total_time, num_ttl_pnts = return_final_scan_points(...)
+    x_points = []
+    y_points = []
+    dwell_points = []
+
+    for line in final_data:
+        x_points.extend(line["x_line"])
+        y_points.extend([line["y"]] * len(line["x_line"]))
+        dwell_points.extend(line["dwell_data"])
+
+    plt.figure(figsize=(8, 6))
+    sc = plt.scatter(x_points, y_points, c=dwell_points, cmap='viridis', s=10)
+    plt.colorbar(sc, label='Dwell (ms)')
+    plt.xlabel('X Position')
+    plt.ylabel('Y Position')
+    plt.title('Scan Points (colored by dwell)')
+    plt.show()
 
 
 def load_grayscale_image(fname, time_value_of_brightest_pixel_ms=1000.0):

@@ -321,7 +321,7 @@ class sample_abstract_motor(MotorQt):
 
         d_rng = math.fabs(cfbk - ffbk)
         if d_rng > self.min_interfer_reset_range:
-            print(f"do_interferometer_check: (delta range coarse to fine fbk) {d_rng} > {self.min_interfer_reset_range}(MIN_INTERFER_RESET_RANGE_UM) range too large Resetting interferometer")
+            _logger.info(f"do_interferometer_check: (delta range coarse to fine fbk) {d_rng:.3f} > {self.min_interfer_reset_range} (MIN_INTERFER_RESET_RANGE_UM) range too large Resetting interferometer")
             self.reset_interferometers()
 
             #if we did a reset, loop here until the feedbacks match

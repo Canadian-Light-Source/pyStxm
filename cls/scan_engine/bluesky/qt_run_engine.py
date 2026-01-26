@@ -72,7 +72,6 @@ class QRunEngine(QObject, RunEngine):
     @pyqtSlot()
     def start(self):
         """Start the RunEngine"""
-        self._max_prog_events = 0
         self._event_uid = 0
         self._start_time = 0
         self._stop_time = 0
@@ -137,10 +136,8 @@ class QRunEngine(QObject, RunEngine):
             self._scan_idx += 1
             if "metadata" in list(doc.keys()):
                 dct = json.loads(doc["metadata"])
-                self._max_prog_events = dct["num_prog_events"]
             else:
                 # indicate that the scan is a flyer
-                self._max_prog_events = -1
                 # print("Scan progress: Flyer scan in progress...")
                 if self._stop_time <= self._start_time:
                     # elapsed_tm = gmtime((self._start_time + 1.0) - self._start_time)
@@ -183,23 +180,6 @@ class QRunEngine(QObject, RunEngine):
                 # print('Scan progress: 0.0% complete')
                 # self.prog_changed.emit(0.0)
                 return
-            elif seq_num <= self._max_prog_events:
-                self._stop_time = doc["time"]
-                if self._event_uid == 0:
-                    # these are the events we want to look at for progress, all others skipped
-                    self._event_uid = doc["descriptor"]
-                if doc["descriptor"] == self._event_uid:
-                    prog = (float(seq_num) / float(self._max_prog_events)) * 100.0
-                    # elapsed_tm = gmtime(self._stop_time - self._start_time)
-                    # elapsed_tm_str = time.strftime("Elapsed time %H:%M:%S", elapsed_tm)
-                    # print('Scan progress: %d/%d %.2f complete| %s ' % (seq_num, self._max_prog_pnts, prog, elapsed_tm_str))
-                    # self.prog_changed.emit({'scan_idx': self._scan_idx, 'prog':prog, 'elapsed_tm_str':elapsed_tm_str, 'elapsed_tm': elapsed_tm})
-                    d = self.create_prog_dict(
-                        self._scan_idx, self._start_time, self._stop_time, prog=prog
-                    )
-                    # skip the last 100 % prog that has a elapsed time of 23:59:59 ( also has tm_year of 1969)
-                    if d["elapsed_tm"].tm_year >= 1970:
-                        self.prog_changed.emit(d)
 
         if name.find("stop") > -1:
             self._stop_time = doc["time"]
@@ -226,10 +206,6 @@ class QRunEngine(QObject, RunEngine):
                 )
                 if d["elapsed_tm"].tm_year >= 1970:
                     self.prog_changed.emit(d)
-
-            self._max_prog_events = 0
-
-        # print(name, doc)
 
 
 

@@ -383,7 +383,9 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.scan_elapsed_timer = QtCore.QTimer()
         self.scan_elapsed_timer.timeout.connect(self.on_elapsed_timer_to)
         self.elapsed_time = 0
-        self.non_re_scan_progress.connect(self.on_scan_progress)
+
+        # if MAIN_OBJ.get_device_backend() != 'epics':
+        #     self.non_re_scan_progress.connect(self.on_scan_progress)
 
         self.integrate.connect(self.do_integrations)
 
@@ -399,10 +401,13 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.status_label = EngineLabel(self.scanActionLbl)
 
         MAIN_OBJ.engine_widget.engine.exec_result.connect(self.on_execution_status_changed)
-        MAIN_OBJ.engine_widget.prog_changed.connect(self.on_run_engine_progress)
         MAIN_OBJ.engine_widget.msg_to_app.connect(self.on_dcs_msg_to_app)
         MAIN_OBJ.engine_widget.new_data.connect(self.on_new_dcs_server_data)
         MAIN_OBJ.load_files_status.connect(self.on_load_files_status)
+        if MAIN_OBJ.get_device_backend() != 'epics':
+            # epics sets the progress from Data emitters
+            MAIN_OBJ.engine_widget.prog_changed.connect(self.on_run_engine_progress)
+            self.non_re_scan_progress.connect(self.on_scan_progress)
 
         self.status_label.connect_to_engine(MAIN_OBJ.engine_widget.engine)
 
@@ -1348,10 +1353,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             _logger.error("The device database does not contain a DNM_SHUTTER")
 
         self.shutterCntrlComboBox.currentIndexChanged.connect(
-            self.on_shutterCntrlComboBox
+            self.on_shutter_cntrl_combo_box
         )
         idx = self.shutterCntrlComboBox.currentIndex()
-        self.on_shutterCntrlComboBox(0)  # Auto
+        self.on_shutter_cntrl_combo_box(0)  # Auto
 
         self.scan_progress_table = ScanQueueTableWidget(parent=self)
         self.scanQFrame.layout().addWidget(self.scan_progress_table)
@@ -1592,7 +1597,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         else:
             _logger.info("Great Eyes CCD not detected so not loading CCD viewer panel")
 
-    def on_shutterCntrlComboBox(self, idx):
+    def on_shutter_cntrl_combo_box(self, idx):
         """
         on_shutterCntrlComboBox(): The Shutter device contains the list of control enumerations so
         Typically:
@@ -1813,6 +1818,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         data_dir, fprefix, fsuffix = get_file_path_as_parts(fname)
         item = self.lineByLineImageDataWidget.get_image_item(fprefix)
         self.lineByLineImageDataWidget.set_max_trimage_size(item.title().text(), (max_scan_range_x, max_scan_range_y))
+        self.lineByLineImageDataWidget.item_handle_moved(item)
         self.lineByLineImageDataWidget.do_emit_new_roi(None)
 
     def on_scantable_roi_deleted(self, wdg_com):
@@ -2954,6 +2960,18 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         crv_nm = self.roiSpectraWidget.get_complete_curve_name(nm)
         self.roiSpectraWidget.add_xy_point(f"{crv_nm}", energy, val, update=True)
 
+    def update_scan_progress(self, counter_to_plotter_com_dct):
+        """
+        just pull the progress dict and call set_progress, this is only currently used by the pattern generation scan
+        which does not do any plotting
+
+        :returns: None
+        """
+        # print(f"update_scan_progress: {counter_to_plotter_com_dct}")
+        prog_dct = counter_to_plotter_com_dct[CNTR2PLOT_PROG_DCT]
+        if len(prog_dct) > 0:
+            self.on_scan_progress(prog_dct)
+
     def add_line_to_plot(self, counter_to_plotter_com_dct):
         """
         add_line_to_plot(): a function to take data (a full line) and add it to the configured plotters
@@ -2967,6 +2985,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         :returns: None
         """
+        # import inspect
+
         # print(f'add_line_to_plot: plot_dct={counter_to_plotter_com_dct}')
         # return
         # det_id = counter_to_plotter_com_dct[CNTR2PLOT_DETID]
@@ -2977,6 +2997,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         det_name = counter_to_plotter_com_dct[CNTR2PLOT_DETNAME]
         is_tiled = counter_to_plotter_com_dct[CNTR2PLOT_IS_TILED]
         is_partial = counter_to_plotter_com_dct[CNTR2PLOT_IS_PARTIAL]
+        # print(f'add_line_to_plot: called from {inspect.stack()[1].function}, prog_dct={prog_dct}')
 
         emit_do_integrations = False
         if self.executingScan.scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
@@ -3048,7 +3069,9 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
 
         if len(prog_dct) > 0:
-            self.non_re_scan_progress.emit(prog_dct)
+            # self.non_re_scan_progress.emit(prog_dct)
+            # print(f"add_line_to_plot: emitting on_scan_progress with prog_dct={prog_dct}")
+            self.on_scan_progress(prog_dct)
 
 
     def do_roi_update(self, det_name, prog_dct):
@@ -3129,7 +3152,9 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         """ a function to take data (a full line) and add it to the configured plotters
         Need a flag to monitor when to start a new image
         """
-        # print(counter_to_plotter_com_dct)
+        # import inspect
+
+        # print(f"add_point_to_plot: {counter_to_plotter_com_dct}")
         # return
         # det_id = counter_to_plotter_com_dct[CNTR2PLOT_DETID]
         row = counter_to_plotter_com_dct[CNTR2PLOT_ROW]
@@ -3139,7 +3164,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         # img_cntr could be used to have the multiple eve regions be their own images with different resolutions
         # img_cntr = counter_to_plotter_com_dct[CNTR2PLOT_IMG_CNTR]
         # ev_cntr = counter_to_plotter_com_dct[CNTR2PLOT_EV_CNTR]
-        sp_id = self.executingScan._current_sp_id
+        # sp_id = self.executingScan._current_sp_id
+        # print(f'add_point_to_plot: called from {inspect.stack()[1].function}, prog_dct={prog_dct}')
 
         # print('add_point_to_plot:',sp_id, counter_to_plotter_com_dct)
         if type(val) == dict:
@@ -3156,7 +3182,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     print("counter_to_plotter_com_dct: error", counter_to_plotter_com_dct)
 
         if len(prog_dct) > 0:
-            self.non_re_scan_progress.emit(prog_dct)
+            #self.non_re_scan_progress.emit(prog_dct)
+            self.on_scan_progress(prog_dct)
 
     def add_point_to_spectra(self, counter_to_plotter_com_dct):
         """
@@ -3196,7 +3223,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         :returns: None
         """
-        """ a function to take data (a full line) and add it to the configured plotters """
+        #import inspect
+
         # print(f"add_point_to_spectra: {counter_to_plotter_com_dct}")
         # det_id = counter_to_plotter_com_dct[CNTR2PLOT_DETID]
         # row = counter_to_plotter_com_dct[CNTR2PLOT_ROW]
@@ -3206,6 +3234,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         prog_dct = counter_to_plotter_com_dct[CNTR2PLOT_PROG_DCT]
         # is_tiled = counter_to_plotter_com_dct[CNTR2PLOT_IS_TILED]
         # is_partial = counter_to_plotter_com_dct[CNTR2PLOT_IS_PARTIAL]
+        # print(f'add_point_to_spectra: called from {inspect.stack()[1].function}, prog_dct={prog_dct}')
 
 
         if type(val) == dict:
@@ -3216,7 +3245,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     self.spectraWidget.add_xy_point(curve_name, col, data, update=True)
 
         if len(prog_dct) > 0:
-            self.non_re_scan_progress.emit(prog_dct)
+            #self.non_re_scan_progress.emit(prog_dct)
+            self.on_scan_progress(prog_dct)
 
     def add_line_to_spec_plot(self, counter_to_plotter_com_dct):
         """
@@ -3533,7 +3563,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.set_buttons_for_scanning()
 
         # force shutter control back to Auto
-        self.on_shutterCntrlComboBox(0)  # Auto
+        self.on_shutter_cntrl_combo_box(0)  # Auto
 
         self.executingScan = None
         self.stopping = False
@@ -3903,12 +3933,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     detectors=dets
                 )
 
-            if scan_type == scan_types.PATTERN_GEN:
-                # scan_class.init_subscriptions(
-                #     MAIN_OBJ.engine_widget, self.add_point_to_plot, dets
-                # )
-                pass
-            # apr 12 2023
             if hasattr(self.executingScan, 'data_plot_type'):
                 # added to support for other labs scans like SLS det scan is line by line
                 if self.executingScan.data_plot_type == 'line':
@@ -3916,15 +3940,16 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 else:
                     plotting_func = self.add_point_to_plot
             else:
-                if scan_sub_type is scan_sub_types.POINT_BY_POINT:
+                # firt see if its a pattern gen scan, then check for PxP or LxL
+                if scan_type == scan_types.PATTERN_GEN:
+                    plotting_func = self.update_scan_progress
+
+                elif scan_sub_type is scan_sub_types.POINT_BY_POINT:
                     if scan_class.e712_enabled:
-                        #scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_line_to_plot, dets)
                         plotting_func = self.add_line_to_plot
                     else:
-                        #scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_point_to_plot, dets)
                         plotting_func = self.add_point_to_plot
                 else:
-                    #scan_class.init_subscriptions(MAIN_OBJ.engine_widget, self.add_line_to_plot, dets)
                     plotting_func = self.add_line_to_plot
 
             if plotting_func:
@@ -3955,6 +3980,15 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             final_det_nms = self.get_final_det_list(dets)
             if scan_type != scan_types.PATTERN_GEN:
                 _scan_plotter.init_image_items(final_det_nms, image_types.IMAGE, numY, numX, parms={SPDB_RECT: rect})
+
+            save_progressive_data = MAIN_OBJ.get_bool_beamline_cfg_preset("save_progressive_stack_data")
+            if save_progressive_data and scan_type != scan_types.PATTERN_GEN:
+                if scan_class._emitter_cb:
+                    stack_dir = master_seq_dct[0]['stack_dir']
+                    fprefix = master_seq_dct[0]['prefix']
+                    _dct = scan_class.make_progressive_stack_metadata_dict()
+                    MAIN_OBJ.init_progressive_stack_data(stack_dir, fprefix, final_det_nms, _dct)
+                    scan_class._emitter_cb.final_data.connect(MAIN_OBJ.publish_progressive_stack_data)
 
         ####################################################################################################################
         elif scan_type == scan_types.PTYCHOGRAPHY:
@@ -4261,7 +4295,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 # fireoff a thread to handle saving data to an nxstxm file
                 # ONLY if BACKEND is NOT zmq because zmq doesnt
                 worker = Worker(
-                    self.do_data_export, run_uids, "datadir", False
+                    self.do_nx_server_data_export, run_uids, "datadir", False
                 )  # Any other args, kwargs are passed to the run function
                 # # Execute
                 self._threadpool.start(worker)
@@ -4276,46 +4310,40 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 scan_plugin.update_scantime_estimate(self.elapsed_time)
 
 
-    def do_data_export(self, run_uids, datadir, is_stack_dir=False, progress_callback=None):
+    def do_nx_server_data_export(self, run_uids, datadir, is_stack_dir=False, progress_callback=None):
         """
         executes inside a threadpool so it doesnt bog down the main event loop
         :return:CCDViewerPanel
         """
 
-        _logger.info("do_data_export: ok starting export")
-        _logger.debug(f"do_data_export: run_uids {run_uids}")
+        _logger.info("do_nx_server_data_export: ok starting export")
+        _logger.debug(f"do_nx_server_data_export: run_uids {run_uids}")
 
         data_dir = self.active_user.get_data_dir()
         fprefix = str(MAIN_OBJ.get_datafile_prefix()) + str(
             get_next_file_num_in_seq(data_dir, extension="hdf5"))
-        print("fprefix={fprefix}")
-        
-        if 0 in MAIN_OBJ.nx_server_master_seq_dct.keys():
-            data_dir = MAIN_OBJ.nx_server_master_seq_dct[0]['data_dir']
 
         scan_type = self.get_cur_scan_type()
         first_uid = run_uids[0]
         is_stack = False
         nx_app_def = "nxstxm"
 
+        #if 0 in MAIN_OBJ.nx_server_master_seq_dct.keys():
+        if scan_type in [scan_types.SAMPLE_IMAGE_STACK, scan_types.TOMOGRAPHY]:
+            data_dir = stack_dir = MAIN_OBJ.nx_server_master_seq_dct[0]['stack_dir']
+            is_stack = True
+            # set the file prefix from teh stack dir
+            _dc1, fprefix, _dc2 = get_file_path_as_parts(stack_dir)
+
         if scan_type is scan_types.PATTERN_GEN:
             # we only want the information in the main
             # first_uid = run_uids[4]
             # run_uids = [first_uid]
-
-            # pass
             return
 
         if scan_type in [scan_types.SAMPLE_IMAGE_STACK, scan_types.TOMOGRAPHY]:
             print(f"do_data_export: scan_type = {scan_type} is in [scan_types.SAMPLE_IMAGE_STACK, scan_types.TOMOGRAPHY]")
-            # could also just be multiple rois on a single energy
             print(f"do_data_export: data_dir={data_dir} fprefix={fprefix}")
-            data_dir = os.path.join(data_dir, fprefix)
-            print(f"do_data_export: final data_dir={data_dir} ")
-            
-            is_stack = True
-            if not os.path.exists(data_dir):
-                os.makedirs(data_dir)
             ret_msg =  MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
                                    verbose=False)
 
@@ -4335,7 +4363,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                                    verbose=False)
 
         else:
-            print(f"do_data_export: scan_type = {scan_type} in CATCH ALL else block")
+            #print(f"do_data_export: scan_type = {scan_type} in CATCH ALL else block")
             ret_msg = MAIN_OBJ.save_nx_files(run_uids, fprefix, data_dir, nx_app_def=nx_app_def, host='localhost', port='5555',
                                    verbose=False)
 
@@ -4769,10 +4797,13 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             set_progress = self.scan_progress_table.set_progress
             id = sp_id
 
-        if percent >= 95.0:
-            percent = 100.0
-        elif percent < 1.0:
-            #ignore less than 1.0 progress
+        # if percent >= 95.0:
+        #     percent = 100.0
+        # elif percent < 1.0:
+        #     #ignore less than 1.0 progress
+        #     return
+        if percent < 1.0:
+            # ignore less than 1.0 progress
             return
 
         set_progress(cur_img_idx, percent)
@@ -4840,7 +4871,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         """
 
         self.scan_elapsed_timer.stop()
-        self.on_shutterCntrlComboBox(0)  # Auto
+        self.on_shutter_cntrl_combo_box(0)  # Auto
         self.set_buttons_for_starting()
         if self.executingScan:
             self.executingScan.set_scan_as_aborted(True)

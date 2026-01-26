@@ -14,6 +14,7 @@ CNTR2PLOT_PROG_DCT = "prog_dct"
 CNTR2PLOT_ROW = "row"  # a y position
 CNTR2PLOT_COL = "col"  # an x position
 CNTR2PLOT_VAL = "val"  # the point or array of data
+CNTR2PLOT_FUNC_NAME = "func_name"  # name of function sending this data
 
 # CNTR2PLOT_IMG_CNTR = "img_cntr"  # current image counter
 # CNTR2PLOT_EV_CNTR = "ev_idx"  # current energy counter

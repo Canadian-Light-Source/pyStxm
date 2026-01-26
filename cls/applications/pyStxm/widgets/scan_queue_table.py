@@ -3,7 +3,6 @@ Created on Feb 9, 2016
 
 @author: bergr
 """
-
 import os
 from PyQt5 import QtCore, QtGui, QtWidgets
 import math
@@ -719,7 +718,6 @@ class ScanQueueTableWidget(QtWidgets.QWidget):
         """
         global scan_q_model_class
 
-        #print(f"set_progress: prog_col={self.prog_col} percent={val:.2f}")
         self.scroll_to_row(row)
         scan_q_model_class.set_data(row, self.prog_col, val)
         # if val > 90.0:

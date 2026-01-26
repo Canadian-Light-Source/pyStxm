@@ -1430,6 +1430,10 @@ class Serializer(event_model.DocumentRouter):
             # turn 2D into a 1D array
             darr = darr.ravel()
         c = zarr.copy()
+        #c[:darr.size] = darr
+        if darr.size > zarr.size:
+            # limit ti npoints
+            darr = darr[: npoints]
         c[:darr.size] = darr
         return c
 
@@ -1826,6 +1830,7 @@ class Serializer(event_model.DocumentRouter):
                 for ekey in nf.keys():
                     if ekey.find("entry") > -1:
                         _dataset(nf[ekey], "end_time", _stop_time_str, "NX_DATE_TIME")
+                nf.close()
 
 
             # reset scan_type
@@ -1849,9 +1854,9 @@ class Serializer(event_model.DocumentRouter):
                     # the NXdata counter exists
                     cntr_data = egrp[det_prfx]
 
-                    # add the data
-                    # print('add the data here for e_idx=%d' % self._e_idx)
-                    cntr_data["data"][self._e_idx] = data
+                    # add the data using the actual size of the data array in case the scan was aborted
+                    rows, cols = data.shape
+                    cntr_data["data"][self._e_idx, :rows, :cols] = data
 
                 else:
                     _logger.error(

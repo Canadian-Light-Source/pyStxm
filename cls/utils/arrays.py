@@ -4,7 +4,22 @@ Created on Jan 27, 2017
 @author: bergr
 """
 import numpy as np
+import orjson
 
+
+def convert_ndarrays_to_lists(dct):
+    if isinstance(dct, dict):
+        return {k: convert_ndarrays_to_lists(v) for k, v in dct.items()}
+    elif isinstance(dct, list):
+        return [convert_ndarrays_to_lists(v) for v in dct]
+    elif isinstance(dct, np.ndarray):
+        return dct.tolist()
+    elif isinstance(dct, (np.integer, np.int64)):
+        return int(dct)
+    elif isinstance(dct, (np.floating, np.float64)):
+        return float(dct)
+    else:
+        return dct
 
 def flip_data_upsdown(data):
     _data = np.flipud(data).copy()

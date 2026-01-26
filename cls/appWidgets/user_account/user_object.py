@@ -20,7 +20,7 @@ class user_obj(object):
         appConfig = ConfigClass(abs_path_to_ini_file)
         bl_config_nm = appConfig.get_value("MAIN", "bl_config")
         blConfig = load_beamline_preset(bl_config_nm)
-        data_dir = blConfig["BL_CFG_MAIN"]["data_dir"]
+        data_dir = os.path.join(blConfig["BL_CFG_MAIN"]["data_dir"], str(datetime.now().year))
         data_sub_dir = blConfig["BL_CFG_MAIN"]["data_sub_dir"]
         if "ptycho_cam_data_dir" in blConfig["BL_CFG_MAIN"].keys():
             #self.ptycho_cam_data_dir = blConfig["BL_CFG_MAIN"]["ptycho_cam_data_dir"]

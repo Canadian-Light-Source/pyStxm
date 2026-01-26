@@ -57,12 +57,6 @@ class BasePointSpecScanClass(BaseScan):
         #need to call this AFTER the settings are made above as the channel names for SIS3820 need spatial ids
         super().configure_devs(dets)
 
-    def get_num_progress_events(self):
-        """
-        over ride base class def
-        """
-        return self.numSPIDS * self.numE * self.numEPU
-
     def go_to_scan_start(self):
         """
         an API function that will be called if it exists for all scans
@@ -81,9 +75,6 @@ class BasePointSpecScanClass(BaseScan):
         counter_nm = det_lst[0].name
         det = self.main_obj.device(counter_nm)
         if self.scan_type in spectra_type_scans:
-            spid_seq_map = self.gen_spid_seq_map(
-                self._master_sp_id_list, self.ev_setpoints
-            )
             if self.is_zp_scan:
                 mtr_x = self.main_obj.device("DNM_ZONEPLATE_X")
             else:
@@ -91,7 +82,7 @@ class BasePointSpecScanClass(BaseScan):
             self._emitter_cb = SIS3820SpecDataEmitter(det.det_id,
                                                       counter_nm,
                                                       det_dev=det,
-                                                      spid_seq_map=spid_seq_map)
+                                                      spid_seq_map=self.seq_map_dct)
             self._emitter_sub = ew.subscribe_cb(self._emitter_cb)
             self._emitter_cb.new_plot_data.connect(func)
         else:
@@ -268,11 +259,11 @@ class BasePointSpecScanClass(BaseScan):
         self.config_hdr_datarecorder(stack=self.stack)
         self.move_zpxy_to_its_center()
 
-        self.seq_map_dct = self.gen_spectrum_scan_seq_map(
-            self.numE, self.sp_id_list, num_pol=self.numEPU
-        )
+        self.seq_map_dct = self.gen_spid_seq_map(
+                 self._master_sp_id_list, self.ev_setpoints
+             )
 
         # THIS must be the last call
         self.finish_setup()
-        return(ret)
+        return ret
 

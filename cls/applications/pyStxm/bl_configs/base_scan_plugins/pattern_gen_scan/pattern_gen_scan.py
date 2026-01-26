@@ -208,6 +208,8 @@ class BasePatternGeneratorScanParam(ScanParamWidget):
             #update the step size fields
             self.stepXFld.setText(f"{self.sp_db[SPDB_X][ROI_STEP]:.3f}")
             self.stepYFld.setText(f"{self.sp_db[SPDB_Y][ROI_STEP]:.3f}")
+            self.rangeXFld.returnPressed.emit()
+            self.rangeYFld.returnPressed.emit()
 
     def on_plugin_scan_start(self):
         """

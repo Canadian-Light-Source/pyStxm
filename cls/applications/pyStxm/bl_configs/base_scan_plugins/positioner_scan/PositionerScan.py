@@ -191,16 +191,13 @@ class BasePositionerScanClass(BaseScan):
         counter_nm = det_lst[0].name
         det = self.main_obj.device(counter_nm)
         if self.scan_type in spectra_type_scans:
-            spid_seq_map = self.gen_spid_seq_map(
-                self._master_sp_id_list, self.x_roi[SETPOINTS]
-            )
             mtr_x = self.main_obj.device(self.x_roi[POSITIONER])
             # we also need to pass the sp_id because it needs to send it on to the plotter as data comes in
             # spid_seq_map
             self._emitter_cb = SIS3820SpecDataEmitter(det.det_id,
                                        counter_nm,
                                        det_dev=det,
-                                       spid_seq_map=spid_seq_map)
+                                       spid_seq_map=self.seq_map_dct)
             self._emitter_sub = ew.subscribe_cb(self._emitter_cb)
             self._emitter_cb.new_plot_data.connect(func)
         else:
@@ -247,12 +244,12 @@ class BasePositionerScanClass(BaseScan):
 
         self.move_zpxy_to_its_center()
 
-        self.seq_map_dct = self.generate_2d_seq_image_map(
-            1, 1, self.y_roi[NPOINTS], self.x_roi[NPOINTS], lxl=False
+        self.seq_map_dct = self.gen_spid_seq_map(
+            self._master_sp_id_list, self.x_roi[SETPOINTS]
         )
         self.finish_setup()
 
-        return(ret)
+        return ret
 
 
 

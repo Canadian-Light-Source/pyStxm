@@ -1,6 +1,7 @@
 import json
 
 from PyQt5 import QtCore
+import inspect
 import numpy as np
 import copy
 
@@ -10,9 +11,36 @@ from bluesky.callbacks.core import CallbackBase, get_obj_fields
 from cls.plotWidgets.utils import *
 from cls.utils.hash_utils import gen_unique_id_from_string
 from cls.plotWidgets.utils import gen_complete_spec_chan_name
+from cls.utils.prog_dict_utils import make_progress_dict, set_prog_dict
 from bcm.devices.ophyd.sis3820_scalar import sis3820_remove_row_change_extra_point
 
 SIMULATE = False
+
+
+def indices_array_generic(m, n):
+    r0 = np.arange(m)  # Or r0,r1 = np.ogrid[:m,:n], out[:,:,0] = r0
+    r1 = np.arange(n)
+    out = np.empty((m, n, 2), dtype=int)
+    out[:, :, 0] = r0[:, None]
+    out[:, :, 1] = r1
+    return out
+
+
+def gen_seq_num_to_x_y_dict(rows, cols, bi_dir=False):
+    nd = indices_array_generic(rows, cols)
+    idx = 0
+    if bi_dir:
+        for idx in list(range(rows)):
+            if (idx % 2) > 0:
+                # odd
+                arr = nd[idx]
+                up_arr = np.flipud(arr)
+                nd[idx] = up_arr
+    aaa = np.reshape(nd, (rows * cols, 2))
+    enum = [i for i, _ in enumerate(aaa)]
+    x = zip(enum, aaa)
+    dct = dict(x)
+    return dct
 
 
 class QtDataEmitterSignals(QtCore.QObject):
@@ -31,9 +59,8 @@ class QtDataEmitter(CallbackBase):
         self.new_data = self._q_sigs.new_data
         self.final_data = self._q_sigs.final_data
         self.new_plot_data = self._q_sigs.new_plot_data
+        self._prog_dct = make_progress_dict(sp_id=0, percent=0, cur_img_idx=0)
         self._plot_dct = make_counter_to_plotter_com_dct()
-
-
 
 
 class BaseQtSpectraDataEmitter(QtDataEmitter):
@@ -166,6 +193,51 @@ class BaseQtImageDataEmitter(QtDataEmitter):
         self._events.clear()
         self._descriptors.clear()
 
+    def condense_det_data(self, det_data_list):
+        """
+            Condense a list of detector data dictionaries into a single dictionary with stacked arrays.
+
+            Each element in det_data_list is expected to be a dictionary mapping detector names to arrays.
+            This function stacks the arrays for each detector across all dictionaries in the list.
+
+            Parameters:
+                det_data_list (list of dict): List of dictionaries containing detector data.
+
+            Returns:
+                dict: Dictionary where each key is a detector name and the value is a stacked numpy array
+                      of the corresponding data from all input dictionaries. Returns an empty dict if input is empty.
+            """
+        try:
+
+            # if not det_data_list:
+            #     return {}
+            # det_names = det_data_list[0].keys()
+            # condensed = {}
+            # for det in det_names:
+            #     # Stack arrays for this detector from all dicts
+            #     condensed[det] = np.stack([d[det] for d in det_data_list])
+            # return condensed
+            import numpy as np
+
+            if not det_data_list:
+                return {}
+            det_names = det_data_list[0].keys()
+            condensed = {}
+            for det in det_names:
+                arrays = [d[det] for d in det_data_list]
+                #print(f"Detector: {det}")
+                # for i, arr in enumerate(arrays):
+                #     print(f"  Index {i}: type={type(arr)}, shape={getattr(arr, 'shape', 'N/A')}")
+                try:
+                    condensed[det] = np.stack(arrays)
+                except Exception as e:
+                    print(f"Error stacking arrays for detector '{det}': {e}")
+                    raise
+            return condensed
+        except Exception as e:
+            print(f"Error in condense_det_data: det={det} {e}")
+            return {}
+
 
 class SpecDataEmitter(BaseQtSpectraDataEmitter):
     def __init__(self, det, x=None, epoch="run", **kwargs):
@@ -270,73 +342,11 @@ class LineDataEmitter(BaseQtSpectraDataEmitter):
          'uid': 'b389da0f-540f-427e-89bf-bd7c501ee717',
          'filled': {}}
         """
-        # This outer try/except block is needed because multiple event
-        # streams will be emitted by the RunEngine and not all event
-        # streams will have the keys we want.
-        # print('LineDataEmitter: event: ', doc)
-        #
-        # try:
-        #     # This inner try/except block handles seq_num and time, which could
-        #     # be keys in the data or accessing the standard entries in every
-        #     # event.
-        #     try:
-        #         #dct = dict(doc)
-        #         # print(doc['data'].keys())
-        #         new_x = doc['data'][self.x]
-        #     except KeyError:
-        #         # print('SpecDataEmitter: KeyError: ')
-        #         if self.x in ('time', 'seq_num'):
-        #             new_x = doc[self.x]
-        #         else:
-        #             raise
-        #     new_y = doc['data'][self.y]
-        # except KeyError:
-        #     # wrong event stream, skip it
-        #     # print('SpecDataEmitter: KeyError: ')
-        #     return
-        #
-        # # Special-case 'time' to plot against against experiment epoch, not
-        # # UNIX epoch.
-        # if self.x == 'time' and self._epoch == 'run':
-        #     new_x -= self._epoch_offset
-        #
-        # self.update_caches(new_x, new_y)
-        # print('SpecDataEmitter: emit x=%f y=%f' % (new_x, new_y))
-        # # self.new_data.emit(dct)
-        # self.new_data.emit((new_x, new_y))
-        # # self.update_plot()
         super().event(doc)
 
     def update_caches(self, x, y):
         self.y_data.append(y)
         self.x_data.append(x)
-
-
-#######################################################################################
-def indices_array_generic(m, n):
-    r0 = np.arange(m)  # Or r0,r1 = np.ogrid[:m,:n], out[:,:,0] = r0
-    r1 = np.arange(n)
-    out = np.empty((m, n, 2), dtype=int)
-    out[:, :, 0] = r0[:, None]
-    out[:, :, 1] = r1
-    return out
-
-
-def gen_seq_num_to_x_y_dict(rows, cols, bi_dir=False):
-    nd = indices_array_generic(rows, cols)
-    idx = 0
-    if bi_dir:
-        for idx in list(range(rows)):
-            if (idx % 2) > 0:
-                # odd
-                arr = nd[idx]
-                up_arr = np.flipud(arr)
-                nd[idx] = up_arr
-    aaa = np.reshape(nd, (rows * cols, 2))
-    enum = [i for i, _ in enumerate(aaa)]
-    x = zip(enum, aaa)
-    dct = dict(x)
-    return dct
 
 
 class ImageDataEmitter(BaseQtImageDataEmitter):
@@ -410,6 +420,7 @@ class ImageDataEmitter(BaseQtImageDataEmitter):
         # streams will be emitted by the RunEngine and not all event
         # streams will have the keys we want.        new_det = None
         #print(doc)
+        _func_name = "event(self, doc)"
         new_x = None
         new_y = None
         try:
@@ -420,11 +431,7 @@ class ImageDataEmitter(BaseQtImageDataEmitter):
                 # print(doc)
                 # make sure the index is zero based
                 seq_num = doc["seq_num"] - 1
-
                 self.update_idxs(seq_num)
-                # print(self.det)
-                # print(doc['data'].keys())
-
                 klst = list(doc["data"].keys())
                 res = [i for i in klst if self.det in i]
                 # if(self.det in doc['data'].keys()):
@@ -460,8 +467,7 @@ class ImageDataEmitter(BaseQtImageDataEmitter):
         if do_emit:
             self.update_caches(new_x, new_y, new_det)
             # print('ImageDataEmitter: emit x=%f y=%f' % (new_x, new_y))
-            # self.new_data.emit(dct)
-            #self.new_data.emit((new_x, new_y, new_det))
+            self._plot_dct[CNTR2PLOT_FUNC_NAME] = f"{self.__class__.__name__}.{_func_name}"
             self._plot_dct[CNTR2PLOT_DETID] = self.det_id
             self._plot_dct[CNTR2PLOT_ROW] = int(new_y)
             self._plot_dct[CNTR2PLOT_COL] = int(new_x)
@@ -488,9 +494,10 @@ class ImageDataEmitter(BaseQtImageDataEmitter):
         dct = {}
         dct["x_data"] = self.x_data
         dct["y_data"] = self.y_data
-        dct["det_data"] = self.det_data
+        dct["img_idx"] = self.img_idx
+        dct["det_data"] = self.condense_det_data(self.det_data)
         self.final_data.emit(dct)
-        # print('emitting data')
+        print('ImageDataEmitter: emitting data')
 
 
 class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
@@ -504,6 +511,8 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
         self.x_idx = -1
         self.y_idx = 0
         self.img_idx = 0  # linespec scans can be made up of multiple images (ev regions) side by side in a single scan
+        self._image_num = 0
+        self._counter = 0
         self.factor_list = []
         self._seq_dct = None
         self.ch_id_lst = []
@@ -527,6 +536,8 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
         """
         if seq_num in self._seq_dct.keys():
             self.img_idx = self._seq_dct[seq_num]["img_num"]
+            # self.img_idx = self._seq_dct[self._counter]["img_num"]
+            #print(f"SIS3820ImageDataEmitter: update_idxs: seq_num={seq_num}, img_idx={self.img_idx}")
             # self.y_idx = self._seq_dct[seq_num][self.img_idx][0]
             self.y_idx = self._seq_dct[seq_num]["row"]
             # self.x_idx = self._seq_dct[seq_num][self.img_idx][1]
@@ -579,6 +590,8 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
         data_map = self.md['sis3820_data_map']
         num_chans = len(self.md['sis3820_data_map'])
         seq_num = doc['seq_num']
+        # self.seq_num = seq_num
+
         self.skip_first_datapoint = False
         d_keys = list(doc['data'].keys())
         if self.y_idx not in self._acquired_rows:
@@ -597,14 +610,11 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
                     if not self.is_pxp:
                         fix_first_point = True
 
-                    stripped_dat = sis3820_remove_row_change_extra_point(dat, ignore_even_data_points=False, fix_first_point=fix_first_point, remove_first=False, remove_last=False)
-                    # if ch_num == 0:
-                    #     print(f"data_emitters.py: process_sis3820_data(doc): chan 0 data: raw", dat)
-                    #     print(f"data_emitters.py: process_sis3820_data(doc): chan 0 data: STRIPPED", stripped_dat)
-                    #     print()
-                    # print(dat.shape)
-                    # print(stripped_dat.shape)
-
+                    stripped_dat = sis3820_remove_row_change_extra_point(dat,
+                                                                         ignore_even_data_points=False,
+                                                                         fix_first_point=fix_first_point,
+                                                                         remove_first=False,
+                                                                         remove_last=False)
                     data_dct[ch_dct['chan_nm']] = stripped_dat
 
         if self.skip_first_datapoint:
@@ -619,6 +629,8 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
         # streams will be emitted by the RunEngine and not all event
         # streams will have the keys we want.        new_det = None
         #print(doc)
+        # print(f"event: doc[seq_num]={doc['seq_num']}")
+        _func_name = "event(self, doc)"
         new_x = None
         new_y = None
         try:
@@ -626,17 +638,12 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
             # be keys in the data or accessing the standard entries in every
             # event.
             try:
-                # print(doc)
                 # make sure the index is zero based
                 seq_num = doc["seq_num"] - 1
 
-                # self.update_idxs(seq_num)
-                # print(self.det)
-                # print(doc['data'].keys())
-
                 klst = list(doc["data"].keys())
                 res = [i for i in klst if self.det in i]
-                # if(self.det in doc['data'].keys()):
+                # print(f"SIS3820ImageDataEmitter: event: seq_num={seq_num}, self.det={self.det}, klst={klst}, res={res}")
                 if len(res) > 0:
                     if SIMULATE:
                         new_det = np.random.randint(65535)
@@ -650,7 +657,10 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
                             # looks like a line reset array
                             print("SIS3820ImageDataEmitter: event: looks like a line reset array")
                             return
-                    self.update_idxs(seq_num)
+                    #self._counter += 1
+                    #print(f"SIS3820ImageDataEmitter: event: self._counter={self._counter}")
+                    #self.update_idxs(seq_num)
+                    self.update_idxs(self._counter)
                     new_x = self.x_idx
                     new_y = self.y_idx
                     # print('SIS3820ImageDataEmitter: event: seq_num[%d] [%d, %d, %d]' % (seq_num, self.x_idx, self.y_idx, new_det))
@@ -680,18 +690,39 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
             #new_det = self.process_sis3820_data(doc)
             if new_det:
                 self.update_caches(new_x, new_y, new_det)
-                # print('SIS3820ImageDataEmitter: emit x=%f y=%f' % (new_x, new_y))
-                # self.new_data.emit(dct)
-                #self.new_data.emit((new_x, new_y, new_det))
-                self._plot_dct[CNTR2PLOT_DETID] = self.det_id
-                self._plot_dct[CNTR2PLOT_ROW] = int(new_y)
-                self._plot_dct[CNTR2PLOT_COL] = int(new_x)
-                self._plot_dct[CNTR2PLOT_VAL] = new_det
-                self._plot_dct[CNTR2PLOT_IS_LINE] = True
-                self._plot_dct[CNTR2PLOT_IS_POINT] = False
-                #print(f"SIS3820ImageDataEmitter: event:: col = {self._plot_dct[CNTR2PLOT_COL]} row = {self._plot_dct[CNTR2PLOT_ROW]} = {new_det}")
-                self.new_plot_data.emit(self._plot_dct)
-            # self.update_plot()
+
+                percent = 0
+                img_num = 0
+                ev_idx = 0
+                pol_idx = 0
+
+                if self._counter in self._seq_dct:
+                    if 'img_num' in self._seq_dct[self._counter]:
+                        img_num = self._seq_dct[self._counter]["img_num"]
+                    if 'ev_idx' in self._seq_dct[self._counter]:
+                        ev_idx = self._seq_dct[self._counter]["ev_idx"]
+                    if 'pol_idx' in self._seq_dct[self._counter]:
+                        pol_idx = self._seq_dct[self._counter]["pol_idx"]
+                    if 'prog' in self._seq_dct[self._counter]:
+                        percent = self._seq_dct[self._counter]['prog']
+
+                    set_prog_dict(self._prog_dct, sp_id=0, percent=percent, cur_img_idx=img_num, ev_idx=ev_idx,
+                                  pol_idx=pol_idx)
+                    # print('SIS3820ImageDataEmitter: emit x=%f y=%f' % (new_x, new_y))
+                    self._plot_dct[CNTR2PLOT_FUNC_NAME] = f"{self.__class__.__name__}.{_func_name}"
+                    self._plot_dct[CNTR2PLOT_DETID] = self.det_id
+                    self._plot_dct[CNTR2PLOT_ROW] = int(new_y)
+                    self._plot_dct[CNTR2PLOT_COL] = int(new_x)
+                    self._plot_dct[CNTR2PLOT_VAL] = new_det
+                    self._plot_dct[CNTR2PLOT_IS_LINE] = True if not self.is_pxp else False
+                    self._plot_dct[CNTR2PLOT_IS_POINT] = self.is_pxp
+                    self._plot_dct[CNTR2PLOT_PROG_DCT] = self._prog_dct
+                    # print(f"SIS3820ImageDataEmitter: event:: col = {self._plot_dct[CNTR2PLOT_COL]} row = {self._plot_dct[CNTR2PLOT_ROW]} = {new_det}")
+                    # print(f"SIS3820ImageDataEmitter: event: self._prog_dct={self._prog_dct}")
+                    self.new_plot_data.emit(self._plot_dct)
+                # self.update_plot()
+                self._counter += 1
+
         super().event(doc)
 
     def update_caches(self, x, y, det):
@@ -709,9 +740,10 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
         dct = {}
         dct["x_data"] = self.x_data
         dct["y_data"] = self.y_data
-        dct["det_data"] = self.det_data
+        dct["img_idx"] = self.img_idx
+        dct["det_data"] = self.condense_det_data(self.det_data)
         self.final_data.emit(dct)
-        # print('emitting data')
+
 
 class SIS3820SpecDataEmitter(BaseQtSpectraDataEmitter):
 
@@ -767,22 +799,26 @@ class SIS3820SpecDataEmitter(BaseQtSpectraDataEmitter):
         # streams will be emitted by the RunEngine and not all event
         # streams will have the keys we want.
         # print('SpecDataEmitter: event: ')
+        _func_name = "event(self, doc)"
+        _sp_id = 0
+        data_dct = None
+        seq_num = 0
         try:
             # This inner try/except block handles seq_num and time, which could
             # be keys in the data or accessing the standard entries in every
             # event.
             try:
-                data_dct = None
                 # make sure the index is zero based
                 seq_num = doc["seq_num"] - 1
+                self.img_idx = seq_num
                 det_name = self.det + "_waveform_rbv"
                 if det_name in doc["data"].keys():
                     new_y = doc["data"][det_name]
                     if self.x not in doc["data"].keys():
-                        new_x = self._spid_seq_map[seq_num][1]
+                        new_x = self._spid_seq_map[seq_num]['x_pos']
                     else:
                         new_x = doc["seq_num"]
-                    _sp_id = self._spid_seq_map[seq_num][0]
+                    _sp_id = self._spid_seq_map[seq_num]['sp_id']
 
                 else:
                     return
@@ -801,7 +837,7 @@ class SIS3820SpecDataEmitter(BaseQtSpectraDataEmitter):
 
         except Exception as e:
             # wrong event stream, skip it
-            # print(f'SpecDataEmitter: KeyError: 2 exception = {e}')
+            print(f'SpecDataEmitter: KeyError: 2 exception = {e}')
             return
 
         # Special-case 'time' to plot against against experiment epoch, not
@@ -812,13 +848,33 @@ class SIS3820SpecDataEmitter(BaseQtSpectraDataEmitter):
         self.update_caches(new_x, new_y)
         # # print('SpecDataEmitter: emit x=%f y=%f' % (new_x, new_y))
         if data_dct:
+            percent = 0
+            img_num = 0
+            ev_idx = 0
+            pol_idx = 0
+
+            if 'img_num' in self._spid_seq_map[seq_num]:
+                img_num = self._spid_seq_map[seq_num]["img_num"]
+            if 'ev_idx' in self._spid_seq_map[seq_num]:
+                ev_idx = self._spid_seq_map[seq_num]["ev_idx"]
+            if 'pol_idx' in self._spid_seq_map[seq_num]:
+                pol_idx = self._spid_seq_map[seq_num]["pol_idx"]
+            if 'prog' in self._spid_seq_map[seq_num]:
+                percent = self._spid_seq_map[seq_num]['prog']
+
+            set_prog_dict(self._prog_dct, sp_id=_sp_id, percent=percent, cur_img_idx=img_num, ev_idx=ev_idx,
+                          pol_idx=pol_idx)
             #self._plot_dct[CNTR2PLOT_SP_ID] = _sp_id
             self._plot_dct[CNTR2PLOT_ROW] = 0
             # strip the DNM_ if it exists
+            self._plot_dct[CNTR2PLOT_FUNC_NAME] = f"{self.__class__.__name__}.{_func_name}"
             self._plot_dct[CNTR2PLOT_DETID] = self.det.replace("DNM_","")
             self._plot_dct[CNTR2PLOT_COL] = new_x
             self._plot_dct[CNTR2PLOT_VAL] = data_dct
+            self._plot_dct[CNTR2PLOT_PROG_DCT] = self._prog_dct
+
             #self._plot_dct[CNTR2PLOT_SCAN_TYPE] = self._scan_type
+            # print(f"SIS3820SpecDataEmitter: event: emitting new_plot_data self._plot_dct={self._plot_dct}")
             self.new_plot_data.emit(self._plot_dct)
 
         # self.update_plot()

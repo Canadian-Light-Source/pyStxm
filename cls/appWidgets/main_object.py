@@ -138,6 +138,10 @@ class main_object_base(QtCore.QObject):
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
         self.data_sub_context = zmq.Context()
         self.nx_server_master_seq_dct = None
+        self._progressive_stack_data = {} # this is a dict of detector names each containing a list of lists that
+                                          # represent the progressive stack data being built
+        self._progressive_stack_data_dir = None
+        self._progressive_stack_data_file_prefix = None
 
         if DATA_SERVER_HOST is None:
             _logger.error("DATA_SERVER_HOST environment variable is not set, cannot continue")
@@ -217,6 +221,50 @@ class main_object_base(QtCore.QObject):
 
         self.data_sub_message_received.connect(self.on_data_sub_message_received)
         self.start_sub_listener_thread()
+
+    def init_progressive_stack_data(self, stack_dir, file_prefix, detector_names: list, meta_data: dict=None):
+        """
+        initialize the progressive stack data dict with empty lists for each detector name
+        """
+        self._progressive_stack_data['metadata'] = meta_data
+        self._progressive_stack_data_dir = stack_dir
+        self._progressive_stack_data_file_prefix = file_prefix
+        for det_name in detector_names:
+            self._progressive_stack_data[det_name] = []
+
+    def publish_progressive_stack_data(self, final_data_dct):
+        """
+        add_line_to_plot(): a function to take data (a full line) and add it to the configured plotters
+            Needed a flag to monitor when to start a new image
+
+            CNTR2PLOT_ROW = 'row'           #a y position
+            CNTR2PLOT_COL = 'col'           #an x position
+            CNTR2PLOT_VAL = 'val'           #the point or array of data
+            CNTR2PLOT_IS_POINT = 'is_pxp'   #data is from a point by point scan
+            CNTR2PLOT_IS_LINE = 'is_lxl'    #data isfrom a line by line scan
+
+        :returns: None
+        """
+        import orjson
+        from cls.utils.arrays import convert_ndarrays_to_lists
+        # import pprint
+        #print(f'publish_progressive_stack_data: plot_dct={final_data_dct}')
+        # pprint.pprint(final_data_dct)
+
+        if self.get_device_backend() == 'epics':
+
+            cmd_args = {}
+            cmd_args['metadata'] = orjson.dumps(convert_ndarrays_to_lists(self._progressive_stack_data['metadata'])).decode('utf-8')
+            cmd_args['directory'] = self._progressive_stack_data_dir
+            cmd_args['file_prefix'] = f"progressive-stack-{self._progressive_stack_data_file_prefix}"
+            cmd_args['extension'] = '.hdf5'
+            final_data_dct_serializable = convert_ndarrays_to_lists(final_data_dct)
+            cmd_args['data_dct'] = orjson.dumps(final_data_dct_serializable).decode('utf-8')
+            res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.SAVE_PROGRESSIVE_STACK_DATA, [], self._progressive_stack_data_file_prefix, self._progressive_stack_data_dir, nx_app_def='nxstxm',
+                                             host=self.nx_server_host, port=self.nx_server_port,
+                                             verbose=False, cmd_args=cmd_args)
+        else:
+            _logger.info(f"Publishing progressive stack data to Pixeltor not currently supported")
 
     def start_sub_listener_thread(self):
         """
@@ -597,6 +645,23 @@ class main_object_base(QtCore.QObject):
         result = None
         if preset_name:
             result = find_key_in_dict(self.beamline_cfg_dct, preset_name)
+        return result
+
+    def get_bool_beamline_cfg_preset(self, preset_name: str =None):
+        """
+        search the entire bl config dict and return the preset if it exists
+        """
+        result = None
+        if preset_name:
+            result = self.get_beamline_cfg_preset(preset_name)
+        if type(result) == str:
+            if result.lower() == 'true':
+                result = True
+            elif result.lower() == 'false':
+                result = False
+
+        if result is None:
+                raise Exception(f"get_bool_beamline_cfg_preset: preset [{preset_name}] string value [{result}] cannot be converted to bool")
         return result
 
     def set_dcs_zoneplate_definitions(self, zp_defs: dict):

@@ -186,6 +186,9 @@
           <layout class="QHBoxLayout" name="horizontalLayout_4">
            <item>
             <widget class="QGroupBox" name="hdwAccelGrpBox">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="minimumSize">
               <size>
                <width>0</width>
@@ -221,7 +224,7 @@
               <item>
                <widget class="QRadioButton" name="autoDDLRadBtn">
                 <property name="enabled">
-                 <bool>true</bool>
+                 <bool>false</bool>
                 </property>
                 <property name="text">
                  <string>Auto</string>
@@ -234,7 +237,7 @@
               <item>
                <widget class="QRadioButton" name="reinitDDLRadBtn">
                 <property name="enabled">
-                 <bool>true</bool>
+                 <bool>false</bool>
                 </property>
                 <property name="text">
                  <string>Reinitialize</string>
@@ -247,7 +250,7 @@
               <item>
                <widget class="QToolButton" name="hdwAccelDetailsBtn">
                 <property name="enabled">
-                 <bool>true</bool>
+                 <bool>false</bool>
                 </property>
                 <property name="text">
                  <string/>

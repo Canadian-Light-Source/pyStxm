@@ -122,38 +122,7 @@ class BaseSampleFineImageScanClass(BaseScan):
          'sample_pv_nm': {'X': 'PSMTR1610-3-I12-00', 'Y': 'PSMTR1610-3-I12-01'}}
         """
         super().fine_scan_go_to_scan_start()
-        # mtr_dct = self.determine_samplexy_posner_pvs()
-        # mtr_x = self.main_obj.device(mtr_dct["sx_name"])
-        # mtr_y = self.main_obj.device(mtr_dct["sy_name"])
-        #
-        # accel_dist_prcnt_pv, deccel_dist_prcnt_pv = self.get_accel_deccel_pvs()
-        #
-        # ACCEL_DISTANCE = self.x_roi[RANGE] * accel_dist_prcnt_pv.get()
-        # DECCEL_DISTANCE = self.x_roi[RANGE] * deccel_dist_prcnt_pv.get()
-        # xstart = self.x_roi[START] - ACCEL_DISTANCE
-        # xstop = self.x_roi[STOP] + DECCEL_DISTANCE
-        # ystart, ystop = self.y_roi[START], self.y_roi[STOP]
-        #
-        # # check if beyond soft limits
-        # # if the soft limits would be violated then return False else continue and return True
-        # if not mtr_x.check_scan_limits(xstart, xstop, coarse_only=True):
-        #     _logger.error("Scan would violate soft limits of X motor")
-        #     return (False)
-        # if not mtr_y.check_scan_limits(ystart, ystop, coarse_only=True):
-        #     _logger.error("Scan would violate soft limits of Y motor")
-        #     return (False)
-        #
-        # #before starting scan check the interferometers, note BOTH piezo's must be off first
-        # mtr_x.set_piezo_power_off()
-        # mtr_y.set_piezo_power_off()
-        #
-        # mtr_x.do_interferometer_check()
-        # mtr_y.do_interferometer_check()
-        #
-        # mtr_x.move_coarse_to_scan_start(start=xstart, stop= self.x_roi[STOP], npts=self.x_roi[NPOINTS], dwell=self.dwell)
-        # mtr_y.move_coarse_to_position(ystart, False)
-
-        return(True)
+        return True
 
     def verify_scan_velocity(self):
         """
@@ -170,21 +139,6 @@ class BaseSampleFineImageScanClass(BaseScan):
             return(True)
         else:
             return(False)
-
-    def get_num_progress_events(self):
-        """
-        over ride base class def
-        """
-        # if self.is_lxl:
-        #     return self.y_roi[NPOINTS]
-        # else:
-        #     #point scan
-        #     return self.x_roi[NPOINTS] * self.y_roi[NPOINTS]
-        if self.is_lxl:
-            return self.y_roi[NPOINTS] * self.numE * self.numEPU * self.numSPIDS
-        else:
-            # point scan
-            return self.x_roi[NPOINTS] * self.y_roi[NPOINTS] * self.numE * self.numEPU * self.numSPIDS
 
     def make_scan_plan(self, dets, md=None, bi_dir=False):
         """
@@ -365,14 +319,14 @@ class BaseSampleFineImageScanClass(BaseScan):
                     )
                 )
             }
-        print(f"RUSS:make_lxl_scan_plan: self.scan_type={self.scan_type}")
+        # print(f"make_lxl_scan_plan: self.scan_type={self.scan_type}")
         @conditional_decorator(bpp.baseline_decorator(self.dev_list), do_baseline)
         @bpp.stage_decorator(dets)
         @bpp.run_decorator(md=md)
         def do_scan():
             try:
-                print('entering BaseSampleFineImageScanClass: make_lxl_scan_plan')
-                print(f"RUSS:make_lxl_scan_plan:do_scan: self.scan_type={self.scan_type}")
+                # print('entering BaseSampleFineImageScanClass: make_lxl_scan_plan')
+                # print(f"RUSS:make_lxl_scan_plan:do_scan: self.scan_type={self.scan_type}")
 
                 psmtr_x = self.main_obj.device("DNM_SAMPLE_X")
                 psmtr_y = self.main_obj.device("DNM_SAMPLE_Y")
@@ -458,7 +412,7 @@ class BaseSampleFineImageScanClass(BaseScan):
         @conditional_decorator(bpp.baseline_decorator(self.dev_list), do_baseline)
         @bpp.run_decorator(md=md)
         def do_scan():
-            print('entering BaseSampleFineImageScanClass: make_pxp_scan_plan')
+            # print('entering BaseSampleFineImageScanClass: make_pxp_scan_plan')
             # Declare the end of the run.
             # make sure that the positions of the piezos are correct to start
             psmtr_x = self.main_obj.device("DNM_SAMPLE_X")
@@ -584,9 +538,6 @@ class BaseSampleFineImageScanClass(BaseScan):
         self.numImages = 1
 
         # set some flags that are used elsewhere
-        self.stack = False
-        self.is_lxl = False
-        self.is_pxp = False
         self.is_point_spec = False
         self.file_saved = False
         self.sim_point = 0
@@ -595,13 +546,6 @@ class BaseSampleFineImageScanClass(BaseScan):
         # based on the order that requires a certain what for the sscan clases to be assigned in terms of their "level" so handle that in
         # another function
         # self.set_ev_pol_order(self.ev_pol_order)
-        if self.scan_sub_type == scan_sub_types.LINE_UNIDIR:
-            # LINE_UNIDIR
-            self.is_lxl = True
-
-        else:
-            # POINT_BY_POINT
-            self.is_pxp = True
 
         # # depending on the scan size the positioners used in the scan will be different, use a singe
         # # function to find out which we are to use and return those names in a dct

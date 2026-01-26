@@ -178,7 +178,7 @@ class BaseDetectorScanClass(BaseScan):
         # call the base class configure so that all member vars can be initialized
         ret = super().configure(wdg_com, sp_id=sp_id, line=line, z_enabled=z_enabled)
         if not ret:
-            return(ret)
+            return ret
         # force a point by point
         self.is_pxp = True
         # if USE_SIS3820:
@@ -191,5 +191,5 @@ class BaseDetectorScanClass(BaseScan):
         )
         self.move_zpxy_to_its_center()
         self.finish_setup()
-        return(ret)
+        return ret
 

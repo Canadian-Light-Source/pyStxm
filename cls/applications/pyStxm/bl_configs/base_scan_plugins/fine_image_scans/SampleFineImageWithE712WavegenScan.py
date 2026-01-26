@@ -109,8 +109,9 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
 
     def init_subscriptions(self, ew, func, det_lst):
         """
-        over ride the base init_subscriptions because we need to use the number of rows from the self.zz_roi instead of
-        self.y_roi
+        for E712 hardware accelerated scans we cant use the BaseScan init_subscriptions() because that is based
+        on BlueSky 'event' docs, we only get 1 event when the scan is done so we need to connect directly to the
+        detectors data callback and plot from there
         :param ew:
         :param func:
         :param det_lst is a list of detector ophyd objects
@@ -122,18 +123,6 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
             d = det_lst[0]
             d.new_plot_data.connect(func)
             self._det_subscription = d
-
-
-    # def init_progress_subscription(self, ew, func, det_lst):
-    #     """
-    #     connect the SIS3820 and ask it to send us progress dictionarys
-    #     """
-    #     if len(det_lst) > 0 and hasattr(det_lst[0], 'name'):
-    #         d = det_lst[0]
-    #         if hasattr(d, "set_sequence_map"):
-    #             d.set_sequence_map(self.seq_map_dct)
-    #         d.new_progress_data.connect(func)
-    #         self._det_prog_subscription = d
 
     def configure_devs(self, dets):
         """
@@ -221,6 +210,11 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
         :param bi_dir:
         :return:
         """
+        TEST_TRIGGER = False
+
+        if TEST_TRIGGER:
+            return self.make_e712_trigger_plan(dets, md=md, bi_dir=bi_dir)
+
         self.configure_devs(dets)
         self.dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()
         if self.is_point_spec:
@@ -323,8 +317,13 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
         DNM_E712_Y_USE_TBL_NUM = self.main_obj.device("DNM_E712_Y_USE_TBL_NUM")
         DNM_E712_X_START_POS = self.main_obj.device("DNM_E712_X_START_POS")
         DNM_E712_Y_START_POS = self.main_obj.device("DNM_E712_Y_START_POS")
-        #line_counter = self.main_obj.device("DNM_LINE_DET_FLYER")
-        #     md = self.make_standard_metadata(entry_name="entry0", scan_type=self.scan_type, dets=dets)
+        sis3820_det = None
+        for d in dets:
+            print(f"make_single_image_e712_plan: checking detector [{d.name}] for sis3820")
+            if d.name.find('3820') != -1:
+                sis3820_det = d
+                break
+
         if md is None:
             md = {
                 "metadata": dict_to_json(
@@ -339,14 +338,10 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
         @bpp.run_decorator(md=md)
         def do_scan():
 
+
             #print("starting: make_single_image_e712_plan:  do_scan()")
             # load the sp_id for wavegen
             x_tbl_id, y_tbl_id = e712_wdg.get_wg_table_ids(self.sp_id)
-            # print(
-            #     "make_single_image_e712_plan: putting x_tbl_id=%d, y_tbl_id=%d"
-            #     % (x_tbl_id, y_tbl_id)
-            # )
-            #_do_scan_started = True
             DNM_E712_X_USE_TBL_NUM.put(x_tbl_id)
             DNM_E712_Y_USE_TBL_NUM.put(y_tbl_id)
             # get the X motor reset position * /
@@ -363,25 +358,49 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
                 if hasattr(d, "configure_for_scan"):
                     d.configure_for_scan( self.x_roi[NPOINTS], scan_types.SAMPLE_IMAGE)
 
-            for d in dets:
-                #print(f"detector [{d.name}]")
-                yield from bps.stage(d)
-                if hasattr(d, "kickoff"):
-                    _logger.debug(f"Calling KICKOFF for device [{d.name}]")
-                    yield from bps.kickoff(d, group="KICKED_DETECTORS")
-                    _logger.debug(f"DONE Calling KICKOFF for device [{d.name}]")
-                if hasattr(d, "init_indexs"):
-                    # new image so reset row/col indexes for data it emits to plotter
-                    d.init_indexs()
+            call_idx = 0
 
-            yield from bps.wait("KICKED_DETECTORS")
+            yield from bps.stage(sis3820_det)
 
+            yield from bps.kickoff(sis3820_det)
+
+            if hasattr(sis3820_det, "init_indexs"):
+                # new image so reset row/col indexes for data it emits to plotter
+                sis3820_det.init_indexs()
+
+            # for d in dets:
+            #     #print(f"detector [{d.name}]")
+            #     yield from bps.stage(d)
+            #     if hasattr(d, "kickoff"):
+            #         #_logger.debug(f"[{call_idx}] Calling KICKOFF for device [{d.name}]")
+            #         # kickoff start SIS3820 acquisition for flyscan
+            #         yield from bps.kickoff(d, group="KICKED_DETECTORS")
+            #         #_logger.debug(f"[{call_idx}] DONE Calling KICKOFF for device [{d.name}]")
+            #     if hasattr(d, "init_indexs"):
+            #         # new image so reset row/col indexes for data it emits to plotter
+            #         d.init_indexs()
+            #     call_idx += 1
+
+            # yield from bps.wait("KICKED_DETECTORS")
+
+            if sis3820_det:
+                while sis3820_det.run.get() != 1:
+                    _logger.debug(f"make_single_image_e712_plan: waiting for sis3820 to start running")
+                    yield from bps.sleep(0.1)
+                _logger.debug(
+                    f"make_single_image_e712_plan: sis3820 run={sis3820_det.run.get()}")
+            else:
+                _logger.debug(f"make_single_image_e712_plan: no sis3820 detector found among detectors")
+
+
+            # --------- EXECUTE WAVEFORM GENERATOR -------------
             # this starts the wavgen and waits for it to finish without blocking the Qt event loop
             shutter.open()
-            _logger.debug(f"Calling bps.trigger(e712_dev)")
+            #_logger.debug(f"Calling bps.trigger(e712_dev)")
+            _logger.debug("make_single_image_e712_plan: Triggering E712 device to start wavegen")
             yield from bps.trigger(e712_dev)
-            _logger.debug(f"DONE Calling trigger(e712_dev)")
-
+            _logger.debug(f"make_single_image_e712_plan: DONE returned from calling trigger(e712_dev)")
+            # -------- DONE EXECUTING WAVEFORM GENERATOR --------
             shutter.close()
 
             # create an event_page doc in the primary data stream
@@ -392,20 +411,22 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
                 # aborted or not and its already saved one
                 yield from bps.create("primary")
 
+                call_idx = 0
                 for d in dets:
                     #yield from bps.read(d)
                     yield from bps.unstage(d)
                     if hasattr(d, "complete"):
-                        _logger.debug(f"Calling COMPLETE for device [{d.name}]")
+                        #_logger.debug(f"[{call_idx}] Calling COMPLETE for device [{d.name}]")
                         yield from bps.complete(d, group="COMPLETED_DETECTORS")  # stop minting events everytime the line_det publishes new data!
-                        _logger.debug(f"DONE Calling COMPLETE for device [{d.name}]")
+                        #_logger.debug(f"[{call_idx}] DONE Calling COMPLETE for device [{d.name}]")
+                    call_idx += 1
 
                 bps.wait("COMPLETED_DETECTORS")
-
+                call_idx = 0
                 for d in dets:
                     # the collect method on e712_flyer may just return as empty list as a formality, but future proofing!
                     if hasattr(d, "collect"):
-                        _logger.debug(f"Calling COLLECT for device [{d.name}]")
+                        #_logger.debug(f"[{call_idx}] Calling COLLECT for device [{d.name}]")
 
                         # for collect:
                         # stream: boolean, optional
@@ -416,11 +437,64 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
                         #     and return_payload=False together avoids accumulating the documents in memory: they are
                         #     emmitted as they are collected, and they are not accumulated.
                         yield from bps.collect(d, stream=True, return_payload=False)
-
-                        _logger.debug(f"DONE Calling COLLECT for device [{d.name}]")
+                        #_logger.debug(f"[{call_idx}] DONE Calling COLLECT for device [{d.name}]")
+                    call_idx += 1
 
                 # bundle and emit doc
                 yield from bps.save()
+
+                if sis3820_det:
+                    while sis3820_det.run.get() != 0 and sis3820_det.stop_scan.get() != 0:
+                        _logger.debug(f"make_single_image_e712_plan: waiting for sis3820 to stop running")
+                        yield from bps.sleep(0.1)
+                    _logger.debug(f"make_single_image_e712_plan: sis3820 run={sis3820_det.run.get()}, stop_scan={sis3820_det.stop_scan.get()}")
+                else:
+                    _logger.debug(f"make_single_image_e712_plan: no sis3820 detector found among detectors")
+
+        return (yield from do_scan())
+
+    def make_e712_trigger_plan(self, dets, md=None, bi_dir=False):
+        #print("entering: make_stack_image_plan")
+        self._saved_one = False
+        stagers = []
+        for d in dets:
+            stagers.append(d)
+
+        e712_dev = self.main_obj.device("DNM_E712_OPHYD_DEV")
+
+        def do_scan():
+            idx = 0
+            # ev_mtr = self.main_obj.device("DNM_ENERGY")
+            energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
+            pol_mtr = self.main_obj.device("DNM_EPU_POLARIZATION")
+            off_mtr = self.main_obj.device("DNM_EPU_OFFSET")
+            ang_mtr = self.main_obj.device("DNM_EPU_ANGLE")
+
+            self._current_img_idx = 0
+            epu_sps = zip(self.setpointsPol, self.setpointsOff,self.setpointsAngle)
+
+            for pol, off, ang in epu_sps:
+                # switch to new polarization, offset and angle
+                if pol_mtr.get_position() != pol:
+                    yield from bps.mv(pol_mtr, pol)
+                if off_mtr.get_position() != off:
+                    yield from bps.mv(off_mtr, off)
+                if ang_mtr.get_position() != ang:
+                    yield from bps.mv(ang_mtr, ang)
+                # switch to new energy
+                for ev_sp in self.ev_setpoints:
+                    #yield from bps.mv(ev_mtr, ev_sp)
+                    yield from bps.mv(energy_dev, ev_sp)
+                    _logger.debug(f"make_e712_trigger_plan: [{idx}] energy setpoint moved to [{ev_sp:.2f}] eV")
+
+                    # --------- EXECUTE WAVEFORM GENERATOR -------------
+                    # this starts the wavgen and waits for it to finish without blocking the Qt event loop
+                    _logger.debug(f"make_e712_trigger_plan: [{idx}] Triggering E712 device to start wavegen")
+                    yield from bps.trigger(e712_dev)
+                    _logger.debug(f"make_e712_trigger_plan: [{idx}] DONE returned from calling trigger(e712_dev)")
+                    _logger.debug("-")
+                    # -------- DONE EXECUTING WAVEFORM GENERATOR --------
+                    idx += 1
 
         return (yield from do_scan())
 
@@ -461,6 +535,7 @@ class BaseSampleFineImageWithE712WavegenScanClass(BaseScan):
                 for ev_sp in self.ev_setpoints:
                     #yield from bps.mv(ev_mtr, ev_sp)
                     yield from bps.mv(energy_dev, ev_sp)
+                    _logger.debug(f"make_stack_image_plan: energy setpoint moved to {ev_sp} eV")
                     # self.dwell = ev_roi[DWELL]
                     self.dwell = self.setpointsDwell
 

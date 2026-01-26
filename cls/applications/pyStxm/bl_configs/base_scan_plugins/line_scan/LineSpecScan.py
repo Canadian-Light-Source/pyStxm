@@ -97,10 +97,8 @@ class BaseLineSpecScanClass(BaseScan):
                     scan_type=self.scan_type,
                     bi_dir=self._bi_dir,
                 )
-            # self._emitter_cb = ImageDataEmitter(DNM_DEFAULT_COUNTER, y='mtr_y', x='mtr_x',
-            #                                    scan_type=self.scan_type, bi_dir=self._bi_dir)
             self._emitter_cb.set_row_col(
-                rows=self.numE, cols=self.x_roi[NPOINTS], seq_dct=self.seq_map_dct
+                rows=self.x_roi[NPOINTS], cols=self.numE, seq_dct=self.seq_map_dct
             )
             self._emitter_sub = ew.subscribe_cb(self._emitter_cb)
             self._emitter_cb.new_plot_data.connect(func)
@@ -135,20 +133,6 @@ class BaseLineSpecScanClass(BaseScan):
             self._emitter_sub = ew.subscribe_cb(self._emitter_cb)
             self._emitter_cb.new_plot_data.connect(func)
 
-    def get_num_progress_events(self):
-        """
-        each scan needs to indicate how many event documents the RE will produce for the scan
-        as each iteration (based on seq id of event document) makes up the total number of events for this scan,
-        will change if it is point by point, line by line, or executed by the waveform generator where there are
-        no event documents
-
-        To be over ridden by inheriting class
-        """
-        if self.is_pxp:
-            return self.numY * self.numE
-        else:
-            return self.numE
-
     def on_scan_done(self, call_base_class_only=False):
         """
         calls base class on_scan_done() then does some specific stuff
@@ -174,86 +158,9 @@ class BaseLineSpecScanClass(BaseScan):
         """
         # this is now checked earlier by the scan pluggin because the multi region widget needs to update its UI colors
         # accordingly, so we can just assume if it made it this far its good to go
+        super().fine_scan_go_to_scan_start()
         return True
-        # mtr_dct = self.determine_samplexy_posner_pvs()
-        # # mtr_x = self.main_obj.device(mtr_dct["sx_name"])
-        # # mtr_y = self.main_obj.device(mtr_dct["sy_name"])
-        # mtr_x = self.main_obj.get_sample_positioner("X")
-        # mtr_y = self.main_obj.get_sample_positioner("Y")
-        #
-        # # #determine if the scan will violate soft limits
-        # accel_dist_prcnt_pv, deccel_dist_prcnt_pv = self.get_accel_deccel_pvs()
-        #
-        # ACCEL_DISTANCE = self.x_roi[RANGE] * accel_dist_prcnt_pv.get()
-        # DECCEL_DISTANCE = self.x_roi[RANGE] * deccel_dist_prcnt_pv.get()
-        # xstart = self.x_roi[START] - ACCEL_DISTANCE
-        # xstop = self.x_roi[STOP] + DECCEL_DISTANCE
-        # ystart, ystop = self.y_roi[START] , self.y_roi[STOP]
-        #
-        # #check if beyond soft limits
-        # # if the soft limits would be violated then return False else continue and return True
-        # if not mtr_x.check_scan_limits(xstart, xstop):
-        #     _logger.error("Scan would violate soft limits of X motor")
-        #     return(False)
-        # if not mtr_y.check_scan_limits(ystart, ystop):
-        #     _logger.error("Scan would violate soft limits of Y motor")
-        #     return(False)
-        #
-        # if self.is_fine_scan:
-        #     super().fine_scan_go_to_scan_start()
-        # else:
-        #
-        #     # before starting scan check the interferometers, note BOTH piezo's must be off first
-        #     mtr_x.set_piezo_power_off()
-        #     mtr_y.set_piezo_power_off()
-        #
-        #     if not mtr_x.do_voltage_check():
-        #         self.mtr_recenter_msg.show()
-        #         mtr_x.do_autozero()
-        #     if not mtr_y.do_voltage_check():
-        #         self.mtr_recenter_msg.show()
-        #         mtr_y.do_autozero()
-        #
-        #     mtr_x.do_interferometer_check()
-        #     mtr_y.do_interferometer_check()
-        #
-        #     self.mtr_recenter_msg.hide()
-        #
-        #     mtr_x.move_coarse_to_scan_start(start=xstart, stop=self.x_roi[STOP], npts=self.x_roi[NPOINTS], dwell=self.dwell)
-        #     mtr_y.move_coarse_to_position(ystart, False)
-        #
-        #     #coarse focus scan
-        #     mtr_x.set_piezo_power_off()
-        #     mtr_y.set_piezo_power_off()
-        #
-        # return(True)
 
-    # def configure_devs(self, dets):
-    #     """
-    #     configure_devs(): description
-    #
-    #     :param dets: dets description
-    #     :type dets: dets type
-    #
-    #     :returns: None
-    #     """
-    #     super().configure_devs(dets)
-    #
-    #     for d in dets:
-    #         if hasattr(d, "set_dwell"):
-    #             d.set_dwell(self.dwell)
-    #         if hasattr(d, "set_config"):
-    #             if self.is_horiz_line:
-    #                 is_pxp_scan = False
-    #             else:
-    #                 is_pxp_scan = True
-    #             d.set_config(self.y_roi[NPOINTS], self.x_roi[NPOINTS], is_pxp_scan=is_pxp_scan)
-    #         if self.is_pxp:
-    #             if hasattr(d, "setup_for_software_triggered"):
-    #                 d.setup_for_software_triggered()
-    #         else:
-    #             if hasattr(d, "setup_for_hdw_triggered"):
-    #                 d.setup_for_hdw_triggered()
     def configure_devs(self, dets):
         """
         configure_devs(): description
@@ -607,13 +514,6 @@ class BaseLineSpecScanClass(BaseScan):
         # #testing
         self.seq_map_dct = self.generate_linespec_seq_image_map(
                            self.e_rois, self.x_roi, self.y_roi)
-        # if self.is_pxp:
-        #     self.seq_map_dct = self.generate_pxp_ev_roi_seq_image_map(
-        #                    self.e_rois, self.x_roi, self.y_roi)
-        # else:
-        #     self.seq_map_dct = self.generate_ev_roi_seq_image_map(
-        #         self.e_rois, self.x_roi[NPOINTS]
-        #     )
 
         # THIS must be the last call
         self.finish_setup()
@@ -636,17 +536,17 @@ class BaseLineSpecScanClass(BaseScan):
         dct = {}
         ev_idx = 0
         seq_num = 0
-        nxpnts = int(x_roi[NPOINTS])
+        nypnts = int(y_roi[NPOINTS])
         ttl_ev_npnts = 0
         for eroi in erois:
             #this needs to include polarization points as well
             ttl_ev_npnts += int(eroi[NPOINTS])
 
-        row_lst = list(range(0, nxpnts))
+        row_lst = list(range(0, nypnts))
         if self.is_pxp:
-            seq = get_sequence_nums(seq_num, ttl_ev_npnts * nxpnts)
+            seq = get_sequence_nums(seq_num, ttl_ev_npnts * nypnts)
             rows = get_rows(row_lst, ttl_ev_npnts)
-            cols = get_columns(ttl_ev_npnts, nxpnts)
+            cols = get_columns(ttl_ev_npnts, nypnts)
 
             ttl = zip(seq, rows, cols)
             for s, r, c in ttl:

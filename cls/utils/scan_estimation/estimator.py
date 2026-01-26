@@ -169,7 +169,7 @@ class EstimateScanTimeClass(QObject):
             return sdc.estimate_scan_time(npoints_x, npoints_y, dwell_time)
         else:
 
-            _logger.error(f"Scan name [{scan_name}] does not exist in the data")
+            _logger.debug(f"Scan name [{scan_name}] does not exist in the data")
             print(f"EstimateScanTimeClass: Scan name [{scan_name}] does not exist in the data")
             return None
 
@@ -180,7 +180,7 @@ class EstimateScanTimeClass(QObject):
         if scan_name in self.scans_dct.keys():
             return self.scans_dct[scan_name]
         else:
-            _logger.error(f"Scan name [{scan_name}] does not exist in the data")
+            _logger.debug(f"Scan name [{scan_name}] does not exist in the data")
             return None
 
     def add_scan(self, scan_name: str, data: tuple):
@@ -243,7 +243,7 @@ class EstimateScanTimeClass(QObject):
         if scan_name in self.scans_dct.keys():
             sdc = self.scans_dct[scan_name]
         else:
-            _logger.error(f"Scan data does not exist for scan name [{scan_name}]")
+            _logger.debug(f"Scan data does not exist for scan name [{scan_name}]")
             return
         # dont add duplicates
         if data_tpl not in sdc.data:

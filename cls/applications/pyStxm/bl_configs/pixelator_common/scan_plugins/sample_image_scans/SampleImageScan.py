@@ -22,7 +22,7 @@ _logger = get_module_logger(__name__)
 ACCEL_DISTANCE = MAIN_OBJ.get_preset_as_float("fine_accel_distance")
 
 
-class FineSampleImageScanClass(BaseSampleFineImageScanClass):
+class SampleImageScanClass(BaseSampleFineImageScanClass):
     """
     This class is used to implement Coarse scans for conventional mode scanning
     """

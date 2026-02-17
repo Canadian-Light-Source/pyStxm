@@ -1032,14 +1032,14 @@ dev_dct["DIO"] = [
 
 dev_dct["DETECTORS"] = [
     {
+        "name": "DNM_COUNTER0",
+        "class": "Counter",
+        "dcs_nm": "Counter0",
+    },
+    {
         "name": "DNM_COUNTER1",
         "class": "Counter",
         "dcs_nm": "Counter1",
-    },
-    {
-        "name": "DNM_COUNTER2",
-        "class": "Counter",
-        "dcs_nm": "Counter2",
     },
     {
         "name": "DNM_ANALOG0",

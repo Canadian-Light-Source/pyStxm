@@ -660,8 +660,6 @@ class main_object_base(QtCore.QObject):
             elif result.lower() == 'false':
                 result = False
 
-        if result is None:
-                raise Exception(f"get_bool_beamline_cfg_preset: preset [{preset_name}] string value [{result}] cannot be converted to bool")
         return result
 
     def set_dcs_zoneplate_definitions(self, zp_defs: dict):

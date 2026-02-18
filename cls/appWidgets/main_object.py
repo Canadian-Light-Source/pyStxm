@@ -388,11 +388,15 @@ class main_object_base(QtCore.QObject):
                 #update the dcs server
                 # self.engine_widget.engine.set_data_directory(self.data_dir)
 
-            if int(settings['dataPublisherPort']) != int(DATA_SUB_PORT):
-                _logger.error(f"Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{DATA_SUB_PORT}]")
-                print(f"ERROR: Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{DATA_SUB_PORT}]")
-                #update the dcs server
-                #self.engine_widget.engine.set_data_publisher_port(DATA_SUB_PORT)
+            if 'dataPublisherPort' in settings.keys():
+                if int(settings['dataPublisherPort']) != int(DATA_SUB_PORT):
+                    _logger.error(f"Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{DATA_SUB_PORT}]")
+                    print(f"ERROR: Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{DATA_SUB_PORT}]")
+                    #update the dcs server
+                    #self.engine_widget.engine.set_data_publisher_port(DATA_SUB_PORT)
+            else:
+                    _logger.error(f"Data publisher port not found in DCS server settings")
+                    print(f"ERROR: Data publisher port not found in DCS server settings")
 
             if int(settings['publisherPort']) != DCS_SUB_PORT:
                 _logger.error(f"Command publisher port in DCS server [{settings['publisherPort']}] does not match the one in the GUI [{DCS_SUB_PORT}]")

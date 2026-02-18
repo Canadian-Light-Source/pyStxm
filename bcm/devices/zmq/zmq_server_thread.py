@@ -68,7 +68,7 @@ class ZMQServerThread(QThread):
         #self.message_received.emit(reply_dict)
         if not (type(response) is list and response[0] == {'status': 'ok'}):
             print(f"ZMQ ERROR >> {response[0]['message']}")
-        #socket.close()
+
         return response
 
     def send_receive(self, message_dict):

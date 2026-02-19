@@ -69,8 +69,8 @@ class ZMQCounter(ZMQBaseDevice):
         """
         self.seq_map = map
         #now init x_data
-        for k, tpl in self.seq_map.items():
-            self.x_data.append(tpl[1])
+        for k, dct in self.seq_map.items():
+            self.x_data.append(dct['x_pos'])
 
     def set_spec_scan(self):
         """
@@ -138,14 +138,15 @@ class ZMQCounter(ZMQBaseDevice):
         # so this will need to get sorted
         if self.return_all_spec:
             # use the X axis from sequence map so that it plots in units
-            sp_id, self.col = self.seq_map[dct['row']]
+            sp_id = self.seq_map[dct['row']]['sp_id']
             # det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
             det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix='spid-')
             # assign all of x_data to col so that the plotter can use it for the x axis
             self.col = self.x_data
         elif self.is_point_spec_scan and not self.return_all_spec:
             # use the X axis from sequence map so that it plots in units
-            sp_id, self.col = self.seq_map[dct['col']]
+            sp_id = self.seq_map[dct['col']]['sp_id']
+            self.col = self.seq_map[dct['col']]['x_pos']
             # det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
             det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix='spid-')
         # elif self.is_line_spec_scan and not self.return_all_spec:

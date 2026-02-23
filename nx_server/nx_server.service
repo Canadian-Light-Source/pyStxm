@@ -10,6 +10,7 @@ Type=simple
 ExecStart=/home/sm-user/.conda/envs/nx_server/bin/python /home/sm-user/git_sandbox/branches/278/pyStxm3/nx_server/nx_server.py
 WorkingDirectory=/home/sm-user/git_sandbox/pyStxm3/
 Environment=PYTHONUNBUFFERED=1
+Environment=HDF5_USE_FILE_LOCKING=FALSE
 Environment=PYTHONPATH=/home/sm-user/git_sandbox/pyStxm3
 Environment="PATH=/home/sm-user/.conda/envs/nx_server/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Restart=always

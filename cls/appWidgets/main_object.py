@@ -252,17 +252,20 @@ class main_object_base(QtCore.QObject):
         # pprint.pprint(final_data_dct)
 
         if self.get_device_backend() == 'epics':
-
-            cmd_args = {}
-            cmd_args['metadata'] = orjson.dumps(convert_ndarrays_to_lists(self._progressive_stack_data['metadata'])).decode('utf-8')
-            cmd_args['directory'] = self._progressive_stack_data_dir
-            cmd_args['file_prefix'] = f"progressive-stack-{self._progressive_stack_data_file_prefix}"
-            cmd_args['extension'] = '.hdf5'
-            final_data_dct_serializable = convert_ndarrays_to_lists(final_data_dct)
-            cmd_args['data_dct'] = orjson.dumps(final_data_dct_serializable).decode('utf-8')
-            res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.SAVE_PROGRESSIVE_STACK_DATA, [], self._progressive_stack_data_file_prefix, self._progressive_stack_data_dir, nx_app_def='nxstxm',
-                                             host=self.nx_server_host, port=self.nx_server_port,
-                                             verbose=False, cmd_args=cmd_args)
+            try:
+                cmd_args = {}
+                cmd_args['metadata'] = orjson.dumps(convert_ndarrays_to_lists(self._progressive_stack_data['metadata'])).decode('utf-8')
+                cmd_args['directory'] = self._progressive_stack_data_dir
+                cmd_args['file_prefix'] = f"progressive-stack-{self._progressive_stack_data_file_prefix}"
+                cmd_args['extension'] = '.hdf5'
+                final_data_dct_serializable = convert_ndarrays_to_lists(final_data_dct)
+                cmd_args['data_dct'] = orjson.dumps(final_data_dct_serializable).decode('utf-8')
+                res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.SAVE_PROGRESSIVE_STACK_DATA, [], self._progressive_stack_data_file_prefix, self._progressive_stack_data_dir, nx_app_def='nxstxm',
+                                                 host=self.nx_server_host, port=self.nx_server_port,
+                                                 verbose=False, cmd_args=cmd_args)
+                print(f"Successful publish of progressive stack data to nx_server, response: {res_dct}")
+            except Exception as e:
+                _logger.error(f"Error publishing progressive stack data to Pixeltor: {e}")
         else:
             _logger.info(f"Publishing progressive stack data to Pixeltor not currently supported")
 

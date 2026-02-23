@@ -1,5 +1,5 @@
 
-SIM = True
+SIM = False
 dev_dct = {}
 dev_dct["POSITIONERS"] = [
     {

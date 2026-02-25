@@ -1490,6 +1490,9 @@ class dev_config_base(QtCore.QObject):
 
         # provide a variable that will hold a list of positioners that are excluded from being offered on the GUI
         self.exclude_list = []
+        # provide a variable that will hold a list of positioners that are offered on the GUI but have their setpoints
+        # disabled, useful to provide only the moving status and stop button for certain positioners
+        self.disable_list = []
 
         self.sscan_rec_prfx = None  # either 'ambient' or 'uhv'
         self.es_id = None  # needs to be defined by inheriting class
@@ -1727,6 +1730,12 @@ class dev_config_base(QtCore.QObject):
 
     def get_exclude_positioners_list(self):
         return self.exclude_list
+
+    def set_disabled_positioners_list(self, disable_lst):
+        self.disable_list = disable_lst
+
+    def get_disabled_positioners_list(self):
+        return self.disable_list
 
     def get_all_pvs_of_type(self, category_name=None):
         # first check for cetegory then in PV_DONT_RECORD

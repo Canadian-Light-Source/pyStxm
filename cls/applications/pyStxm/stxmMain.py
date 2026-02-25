@@ -1068,6 +1068,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             # endstation positioners panel
             dev_obj = MAIN_OBJ.get_device_obj()
             exclude_list = dev_obj.get_exclude_positioners_list()
+            disabled_list = dev_obj.get_disabled_positioners_list()
 
             # #beamline positioners panel
             bl_posners = MAIN_OBJ.get_devices_in_category(
@@ -1077,7 +1078,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             # overwrite the base energy motor with the actual energy device so that if the setpoint changes focus can change
             bl_posners['DNM_ENERGY'] = energy_dev
 
-            self.blPosPanel = PositionersPanel(bl_posners, exclude_list, parent=self, main_obj=MAIN_OBJ)
+            self.blPosPanel = PositionersPanel(bl_posners, exclude_list, disabled_list=disabled_list, parent=self, main_obj=MAIN_OBJ)
 
             # prevent Energy from being displayed int the Endstation positioners panel below
             exclude_list.append('DNM_ENERGY')
@@ -1169,7 +1170,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             )
 
 
-            self.esPosPanel = PositionersPanel(es_posners, exclude_list, parent=self, main_obj=MAIN_OBJ)
+            self.esPosPanel = PositionersPanel(es_posners, exclude_list, disabled_list=disabled_list, parent=self, main_obj=MAIN_OBJ)
             self.esPosPanel.setObjectName("esPosPanel")
             # spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
             spacer = QtWidgets.QSpacerItem(

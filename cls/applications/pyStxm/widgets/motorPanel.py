@@ -85,9 +85,10 @@ class PositionersPanel(QtWidgets.QWidget):
     # changes value outside of being set here in motorPanel
 
     # def __init__(self, positioner_set='ES', exclude_list=[], main_obj=None, parent=None):
-    def __init__(self, devs_dct, exclude_list=[], main_obj=None, parent=None):
+    def __init__(self, devs_dct, exclude_list=[], main_obj=None, disabled_list=[], parent=None):
         super().__init__(parent)
         self.exclude_list = exclude_list
+        self.disabled_list = disabled_list
         self.enum_list = ["EPUPolarization", "EPUHarmonic", "Branch"]
         self.main_obj = main_obj
 
@@ -131,8 +132,12 @@ class PositionersPanel(QtWidgets.QWidget):
         row = 0
         for dev_nm in pos_keys:
             # print dev
+            disable_setpoint = False
             if dev_nm in self.exclude_list:
                 continue
+            if dev_nm in self.disabled_list:
+                disable_setpoint = True
+
             mtr = devs_dct[dev_nm]
             widg = QtWidgets.QWidget()
             if hasattr(mtr, "enums"):
@@ -142,7 +147,10 @@ class PositionersPanel(QtWidgets.QWidget):
                 self.connect_combobox_widgets(dev_nm, dev_ui, widg, mtr, row)
             else:
                 dev_ui = uic.loadUi(os.path.join(mtrDetailDir, "spfbk_small.ui"), widg)
-                dev_ui.setPosFld.installEventFilter(self)
+                if disable_setpoint:
+                    dev_ui.setPosFld.setEnabled(False)
+                else:
+                    dev_ui.setPosFld.installEventFilter(self)
                 dev_ui.setPosFld.mtr_info = (dev_nm, dev_ui, widg, mtr)
                 self.update_setpoint_field_range(dev_ui.setPosFld, mtr)
                 self.connect_motor_widgets(dev_nm, dev_ui, widg, mtr, row)

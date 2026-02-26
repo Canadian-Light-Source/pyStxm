@@ -67,7 +67,8 @@ class device_config(dev_config_base):
         bl_config_nm=None,
         sample_pos_mode=sample_positioning_modes.COARSE,
         fine_sample_pos_mode=sample_fine_positioning_modes.SAMPLEFINE,
-        posner_panel_exclusion_list=[]
+        posner_panel_exclusion_list=[],
+        posner_panel_disable_list=[],
     ):
         super(device_config, self).__init__(splash=splash)
 
@@ -95,6 +96,7 @@ class device_config(dev_config_base):
         # self.perform_device_connection_check(verbose=True)
 
         self.set_exclude_positioners_list(posner_panel_exclusion_list)
+        self.set_disabled_positioners_list(posner_panel_disable_list)
 
         # init_posner_snapshot_cbs(self.devices['POSITIONERS'])
         # self.close_splash()

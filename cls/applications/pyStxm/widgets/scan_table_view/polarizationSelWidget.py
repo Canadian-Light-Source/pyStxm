@@ -20,7 +20,7 @@ class PolarizationSelWidget(BaseSelectionWidget):
     A QWidget that contains an PolarizationTableView
     """
 
-    def __init__(self, single_pol_model=False):
+    def __init__(self, single_pol_model=False, pol: int=0, offset: float=0.0, angle: float=0.0):
         """
         __init__(): description
 
@@ -42,9 +42,9 @@ class PolarizationSelWidget(BaseSelectionWidget):
         self.single_pol_model = single_pol_model
         self.single_pol_model_id = None
 
-        self.dflt_polarization = 0
-        self.dflt_offset = 0.0
-        self.dflt_angle = 0.0
+        self.dflt_polarization = pol
+        self.dflt_offset = offset
+        self.dflt_angle = angle
 
         self.scan_id = 0
         self.table_view = PolarizationTableView()

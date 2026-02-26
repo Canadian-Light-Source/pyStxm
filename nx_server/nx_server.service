@@ -6,17 +6,18 @@ After=network.target
 User=sm-user
 Group=acl_prj14g03649_rw
 Type=simple
-#ExecStart=/home/sm-user/.conda/envs/nx_server/bin/python /home/sm-user/git_sandbox/pyStxm3/cls/data_io/nx_server.py
-ExecStart=/home/sm-user/.conda/envs/nx_server/bin/python /home/sm-user/git_sandbox/branches/278/pyStxm3/nx_server/nx_server.py
-WorkingDirectory=/home/sm-user/git_sandbox/pyStxm3/
-Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/sm-user/miniforge3/envs/pyStxm/bin/python /home/sm-user/srv-unix-home/git_sandbox/pyStxm/nx_server/nx_server.py
+WorkingDirectory=/home/sm-user/srv-unix-home/git_sandbox/pyStxm/
 Environment=HDF5_USE_FILE_LOCKING=FALSE
-Environment=PYTHONPATH=/home/sm-user/git_sandbox/pyStxm3
-Environment="PATH=/home/sm-user/.conda/envs/nx_server/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/home/sm-user/srv-unix-home/git_sandbox/pyStxm
+Environment=PATH=/home/sm-user/miniforge3/envs/pyStxm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+EnvironmentFile=/home/sm-user/srv-unix-home/git_sandbox/pyStxm/nx_server/nx_server.env
+
 Restart=always
 StandardOutput=journal
 StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
-

@@ -493,15 +493,18 @@ class BaseSampleImageScansParam(MultiRegionScanParamBase):
 
             if not ev_only:
                 if has_scan_subtype_selector:
-                    if (
-                        dct_get(sp_db, SPDB_SCAN_PLUGIN_SUBTYPE)
-                        == scan_sub_types.LINE_UNIDIR
-                    ):
-                        # image Line by Line
-                        self.scanTypeSelComboBox.setCurrentIndex(1)
-                    else:
-                        # image Point by Point
-                        self.scanTypeSelComboBox.setCurrentIndex(0)
+                    # if (
+                    #     dct_get(sp_db, SPDB_SCAN_PLUGIN_SUBTYPE)
+                    #     == scan_sub_types.LINE_UNIDIR
+                    # ):
+                    #     # image Line by Line
+                    #     self.scanTypeSelComboBox.setCurrentIndex(1)
+                    # else:
+                    #     # image Point by Point
+                    #     self.scanTypeSelComboBox.setCurrentIndex(0)
+                    # default to loading images as Line by Line until such time that NXstxm supports loading the
+                    # subtype of the scan in the NeXus file
+                    self.scanTypeSelComboBox.setCurrentIndex(1)
 
                     if dct_get(sp_db, SPDB_HDW_ACCEL_AUTO_DDL):
                         self.autoDDLRadBtn.setChecked(True)

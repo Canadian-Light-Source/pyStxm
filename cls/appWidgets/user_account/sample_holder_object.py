@@ -17,7 +17,7 @@ class sample_pos_obj(object):
 
 
 class sample_holder_obj(object):
-    def __init__(self, userName, id="H110212", base_data_dir="c:\data"):
+    def __init__(self, userName, id="H110212", base_data_dir="/data"):
         super(sample_holder_obj, self).__init__()
         self.id = id
         self._userName = userName

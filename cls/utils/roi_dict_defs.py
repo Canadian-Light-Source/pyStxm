@@ -310,6 +310,7 @@ ADO_CFG_IMG_IDX_MAP = "CFG.IMG_IDX_MAP"
 ADO_CFG_DATA_STATUS = "CFG.DATA_STATUS"
 
 # needed a common location to keep this constant which relates to the ev scan boundary between succcssesive ev regions
-EV_SCAN_EDGE_RANGE = 0.01
+# EV_SCAN_EDGE_RANGE = 0.01
+EV_SCAN_EDGE_RANGE = 0.00
 
 

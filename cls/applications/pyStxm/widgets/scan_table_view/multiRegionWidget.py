@@ -108,8 +108,16 @@ class MultiRegionWidget(BaseSelectionWidget):
         )
 
         self.ev_total_lbl = QtWidgets.QLabel()
+        # get current feedback for polarization and use to set default values in the polarization widget
+        pol, offset, angle = self.get_polorization_fbk(main_obj)
+        if pol:
+            self.pol_widg = PolarizationSelWidget(single_pol_model, pol, offset, angle)
+        else:
+            # if there is no polarization device in the config then just initialize the polarization widget with
+            # default values and disable it
+            self.pol_widg = PolarizationSelWidget(single_pol_model)
+            self.pol_widg.setEnabled(False)
 
-        self.pol_widg = PolarizationSelWidget(single_pol_model)
         self.ev_widg = EnergySelWidget(
             self.pol_widg, main_obj=self.main_obj, single_pol_model=single_pol_model, min_dwell_ms=min_dwell_ms,
             single_dwell=single_dwell
@@ -209,6 +217,26 @@ class MultiRegionWidget(BaseSelectionWidget):
         self.disable_polarization_table(False)
         self.on_ev_total_changed(1)
         self.setLayout(v_layout)
+
+    def get_polorization_fbk(self, main_obj):
+        """
+        check to see if the polarization device exists in config, if so return the current values for :
+        - polarization: integer representing an enum
+        - offset: float representing the offset of the polarization device (usually in mm)
+        - angle: float representing the angle of the polarization device (usually in degrees)
+        """
+        pol = None
+        offset = None
+        angle = None
+        pol_dev = main_obj.device('DNM_EPU_POLARIZATION')
+        pol_angle_dev = main_obj.device('DNM_EPU_ANGLE')
+        pol_offset_dev = main_obj.device('DNM_EPU_OFFSET')
+        if pol_dev:
+            pol = pol_dev.get()
+            angle = pol_angle_dev.get()
+            offset = pol_offset_dev.get()
+        return pol, offset, angle
+
 
     def get_multi_region_widget_scan_time_params(self):
         """

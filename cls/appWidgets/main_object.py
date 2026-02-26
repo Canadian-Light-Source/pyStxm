@@ -252,17 +252,20 @@ class main_object_base(QtCore.QObject):
         # pprint.pprint(final_data_dct)
 
         if self.get_device_backend() == 'epics':
-
-            cmd_args = {}
-            cmd_args['metadata'] = orjson.dumps(convert_ndarrays_to_lists(self._progressive_stack_data['metadata'])).decode('utf-8')
-            cmd_args['directory'] = self._progressive_stack_data_dir
-            cmd_args['file_prefix'] = f"progressive-stack-{self._progressive_stack_data_file_prefix}"
-            cmd_args['extension'] = '.hdf5'
-            final_data_dct_serializable = convert_ndarrays_to_lists(final_data_dct)
-            cmd_args['data_dct'] = orjson.dumps(final_data_dct_serializable).decode('utf-8')
-            res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.SAVE_PROGRESSIVE_STACK_DATA, [], self._progressive_stack_data_file_prefix, self._progressive_stack_data_dir, nx_app_def='nxstxm',
-                                             host=self.nx_server_host, port=self.nx_server_port,
-                                             verbose=False, cmd_args=cmd_args)
+            try:
+                cmd_args = {}
+                cmd_args['metadata'] = orjson.dumps(convert_ndarrays_to_lists(self._progressive_stack_data['metadata'])).decode('utf-8')
+                cmd_args['directory'] = self._progressive_stack_data_dir
+                cmd_args['file_prefix'] = f"progressive-stack-{self._progressive_stack_data_file_prefix}"
+                cmd_args['extension'] = '.hdf5'
+                final_data_dct_serializable = convert_ndarrays_to_lists(final_data_dct)
+                cmd_args['data_dct'] = orjson.dumps(final_data_dct_serializable).decode('utf-8')
+                res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.SAVE_PROGRESSIVE_STACK_DATA, [], self._progressive_stack_data_file_prefix, self._progressive_stack_data_dir, nx_app_def='nxstxm',
+                                                 host=self.nx_server_host, port=self.nx_server_port,
+                                                 verbose=False, cmd_args=cmd_args)
+                print(f"Successful publish of progressive stack data to nx_server, response: {res_dct}")
+            except Exception as e:
+                _logger.error(f"Error publishing progressive stack data to Pixeltor: {e}")
         else:
             _logger.info(f"Publishing progressive stack data to Pixeltor not currently supported")
 
@@ -1489,6 +1492,9 @@ class dev_config_base(QtCore.QObject):
 
         # provide a variable that will hold a list of positioners that are excluded from being offered on the GUI
         self.exclude_list = []
+        # provide a variable that will hold a list of positioners that are offered on the GUI but have their setpoints
+        # disabled, useful to provide only the moving status and stop button for certain positioners
+        self.disable_list = []
 
         self.sscan_rec_prfx = None  # either 'ambient' or 'uhv'
         self.es_id = None  # needs to be defined by inheriting class
@@ -1726,6 +1732,12 @@ class dev_config_base(QtCore.QObject):
 
     def get_exclude_positioners_list(self):
         return self.exclude_list
+
+    def set_disabled_positioners_list(self, disable_lst):
+        self.disable_list = disable_lst
+
+    def get_disabled_positioners_list(self):
+        return self.disable_list
 
     def get_all_pvs_of_type(self, category_name=None):
         # first check for cetegory then in PV_DONT_RECORD

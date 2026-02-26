@@ -531,6 +531,10 @@ class ScanClass(object):
         # calc the progress
         all_scans_progress = int(float((self.ttl_points_received / self._total_num_points) * 100.0)/len(selected_det_names))
         cur_img_progress = int(float((self.cur_img_points_received / (self.npoints_rows * self.npoints_cols)) * 100.0)/len(selected_det_names))
+        # cur_img_progress keeps a running total so reset it to zero on start of every new image
+        if sl_dct['img_idx'] > 0:
+            cur_img_progress = cur_img_progress - 100.0 * sl_dct['img_idx']
+
         self._scan_line_data_cntr += 1
         return {'det_name': selected_det_names[sl_dct['det_chan_idx']], 'row': sl_dct['row'], 'col': sl_dct['col'], 'shape': sl_dct['data_shape'],
                 'value': sl_dct['data'], 'is_tiled': self.tiling, 'is_partial': True if not self.tiling else False,
@@ -1322,6 +1326,9 @@ class DcsServerApi(BaseDcsServerApi):
 
         if reply[0]['status'] == 'ok':
             selected = True
+        else:
+            # error so push it up to the UI
+            self.on_msg_to_app(reply)
 
 
     def load_file(self, directory, filename):
@@ -1381,15 +1388,27 @@ class DcsServerApi(BaseDcsServerApi):
         reply = self.parent.zmq_dev_server_thread.send_receive(['loadFile directory', json.dumps(dct)])
 
         if reply[0]['status'] == 'ok':
-            # filter out the directories that do not match the date pattern
-            strings = reply[1]['directories']
-            date_strings = [s for s in strings if re.match(RE_DATA_DIR_PATTERN, s)]
-            reply[1]['directories'] = date_strings
-            print(f"pixelator_dcs_server_api:load_directory: success: loaded files from directory [{directory}]")
+            if len(reply) > 1:
+                # filter out the directories that do not match the date pattern
+                strings = reply[1]['directories']
+                date_strings = [s for s in strings if re.match(RE_DATA_DIR_PATTERN, s)]
+                reply[1]['directories'] = date_strings
+                print(f"pixelator_dcs_server_api:load_directory: success: loaded files from directory [{directory}]")
+                # only return the list of filenames
+                return reply[1]['files']
+            else:
+                print(
+                    f"pixelator_dcs_server_api:load_directory: FAILED: could not list sub directories from directory [{directory}]\n"
+                    f"Check that Pixelator has set the dataPublisherPort in its settings file.")
+                _logger.error(  f"pixelator_dcs_server_api:load_directory: ERROR: could not list sub directories from directory [{directory}]\n"
+                                f"Check that Pixelator has set the dataPublisherPort in its settings file."
+                              )
+
+                return None
         else:
             print(f"pixelator_dcs_server_api:load_directory: FAILED: could not load files from directory [{directory}]")
-        # only return the list of filenames
-        return reply[1]['files']
+            # only return the list of filenames
+            return reply[1]['files']
 
     def request_data_directory_list(self, directory: str, extension: str='.hdf5'):
         """
@@ -1400,12 +1419,21 @@ class DcsServerApi(BaseDcsServerApi):
         reply = self.parent.zmq_dev_server_thread.send_receive(['listDirectory', json.dumps(dct)])
 
         if reply[0]['status'] == 'ok':
-            # filter out the directories that do not match the date pattern
-            sub_dir_lst = reply[1]['sub_directories']
-            sorted_sub_dir_lst = sorted(sub_dir_lst, key=lambda x: x['sub_dir'], reverse=True)
-            # only return the list of dicts [{"sub_dir": "2025-07-04", "num_h5_files": 5}, ..]
-            # in reverse order newest first
-            return sorted_sub_dir_lst
+            if len(reply) > 1:
+                # filter out the directories that do not match the date pattern
+                sub_dir_lst = reply[1]['sub_directories']
+                sorted_sub_dir_lst = sorted(sub_dir_lst, key=lambda x: x['sub_dir'], reverse=True)
+                # only return the list of dicts [{"sub_dir": "2025-07-04", "num_h5_files": 5}, ..]
+                # in reverse order newest first
+                return sorted_sub_dir_lst
+            else:
+                print(
+                    f"pixelator_dcs_server_api:request_data_directory_list: FAILED: could not list sub directories from directory [{directory}]\n"
+                    f"Check that Pixelator has set the dataPublisherPort in its settings file.")
+                _logger.error(  f"pixelator_dcs_server_api:request_data_directory_list: ERROR: could not list sub directories from directory [{directory}]\n"
+                                f"Check that Pixelator has set the dataPublisherPort in its settings file."
+                              )
+                return None
         else:
             print(f"pixelator_dcs_server_api:request_data_directory_list: FAILED: could not list sub directories from directory [{directory}]")
             return None

@@ -4198,18 +4198,32 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         :param msg:
         :return:
         """
-        # print(msg)
-        # self.rr(msg[0], msg)
+        # print(f"print_dcs_server_msg: {msg}")
+        # # self.rr(msg[0], msg)
         hdr = msg[0]
+        is_error = False
+
+        if hdr == 'message':
+            if msg[1].find('Exception') > -1 or msg[1].find('Error') > -1:
+                is_error = True
+
         if hdr not in self._dcs_server_msg_headers.keys():
             # set it as not selected
-            self._dcs_server_msg_headers[hdr] = False
+            if hdr == 'message':
+                # if its a message lets turn it on by default because it is the most general and contains all messages
+                self._dcs_server_msg_headers[hdr] = True
+            else:
+                self._dcs_server_msg_headers[hdr] = False
 
+        # always pass 'message' header to window because it is the most general and contains all messages
         if self._dcs_server_msg_headers[hdr]:
             #add the message to the dcsServerWindow
-            #self.add_to_dcs_server_window(QtGui.QColor("black"), f"> {msg}")
-            s = f'<font color="black"><b>> </b>{msg}</font>'
-            self.add_to_dcs_server_window(QtGui.QColor("black"), f"{s}")
+            if is_error:
+                s = f'<font color="red"><b>> </b>{msg}</font>'
+                self.add_to_dcs_server_window(QtGui.QColor("red"), f"{s}")
+            else:
+                s = f'<font color="black"><b>> </b>{msg}</font>'
+                self.add_to_dcs_server_window(QtGui.QColor("black"), f"{s}")
 
 
 
@@ -4227,9 +4241,15 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         """
         print(f"on_dcs_msg_to_app: received[{msg}]")
         # do something to the scan_q_table if the message is 'filename'
-        msg_key = list(msg.keys())[0]
-        if msg_key == 'filename':
-            self.scan_progress_table.override_filenames(msg['filename']['name'])
+        if type(msg) == dict:
+            msg_key = list(msg.keys())[0]
+            if msg_key == 'filename':
+                self.scan_progress_table.override_filenames(msg['filename']['name'])
+
+        elif type(msg) == list:
+            msg_dct = msg[0]
+            if 'message' in msg_dct.keys():
+                self.print_dcs_server_msg(['message', msg_dct['message']])
 
     def on_new_dcs_server_data(self, h5_file_dct: dict) -> None:
         """
@@ -4798,11 +4818,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             set_progress = self.scan_progress_table.set_progress
             id = sp_id
 
-        # if percent >= 95.0:
-        #     percent = 100.0
-        # elif percent < 1.0:
-        #     #ignore less than 1.0 progress
-        #     return
         if percent < 1.0:
             # ignore less than 1.0 progress
             return

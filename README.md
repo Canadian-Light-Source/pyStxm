@@ -152,6 +152,21 @@ The nx_server service must be installed on a computer that
 has a mount point to the data computer such that the ```/etc/fstab``` file contains the entry in its list of mount 
 points.
 
+The service relies on the environment variable set in the file ```nx_server.env``` to determine the port to listen on 
+and the base data directory. 
+
+Create the file in the nx_server directory called ```nx_server.env``` and add the following entry to tell the service
+the IP address of nx_server:
+
+```shell
+vi pyStxm/nx_server/nx_server.env
+```
+Then in nx_server.env add the following line, replacing the IP address with the IP address of the computer that is 
+running nx_server:
+```shell
+NX_SERVER_HOST=IP-ADDR-HERE
+```
+
 **Service Commands**:
 
     - Enable the service: 
@@ -170,6 +185,34 @@ points.
         >sudo systemctl restart nx_server.service 
 
 
+In order for the logs of nx_server service to not use all diskspace on **/var/log**
+the messages will be sent to **/etc/var/log/nx_server.log** and **logrotate** will be used
+to rotate the logs when they reach 10MB in size, keeping 5 rotated logs and
+compressing them to save space. 
+
+
+Create the file **/etc/logrotate.d/nx_server** and add the contents below:
+
+```
+/var/log/nx_server.log {
+    size 10M
+    rotate 5
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+````
+
+Then run:
+```shell
+    sudo logrotate -f /etc/logrotate.d/nx_server
+````
+
+You can continue to view live output with:
+```shell
+    tail -f /var/log/nx_server.log
+````
 --------------------------------------
 ### Configure pyStxm with Pixelator
 

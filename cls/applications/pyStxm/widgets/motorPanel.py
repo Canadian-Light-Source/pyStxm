@@ -728,15 +728,23 @@ class PositionersPanel(QtWidgets.QWidget):
         """
         convert zmq args to kwargs like epics uses
         """
-        dct['obj'].parent = QtCore.QObject()
-        dct['obj'].parent.name = dct['obj'].get_name()
+        # dct['obj'].parent = QtCore.QObject()
+        # dct['obj'].parent.name = dct['obj'].get_name()
+        # self.update_limit_le_ds(**dct)
+        dct['obj'].pvname = dct['obj'].get_name()
         self.update_limit_le_ds(**dct)
 
     def update_limit_le_ds(self, **kwargs):
+        if hasattr(kwargs['obj'], 'pvname'):
+            pvname = kwargs['obj'].pvname.split('.')[0]
+        else:
+            pvname = kwargs["obj"].parent.name
+
         if not self.fbk_enabled:
             return
 
-        pvname = kwargs["obj"].parent.name
+        if pvname not in self.mtr_dict.keys():
+            return
         (dev, dev_ui, widg, mtr) = self.mtr_dict[pvname]
 
         clr_high_limit = _fbk_at_limit_true if mtr.at_high_limit() else _fbk_at_limit_false

@@ -12,7 +12,7 @@ def dirlist(path, suffix, fname=None, remove_suffix=False):
     """
     Takes a path and a file suffix as a filter and returns a list of the files in
     that path that match the filter
-    ex: alist = dirlist(r'C:\pythonxy\workspace\PyQtStxmViewer\src\data\101207\A101207022', '.xim')
+
     """
     ret = []
     containsStr = suffix
@@ -38,7 +38,7 @@ def dirlist_withdirs(path, suffix, fname=None, remove_suffix=False, exclude=[".t
     """
     Takes a path and a file suffix as a filter and returns a list of the files in
     that path that match the filter
-    ex: alist = dirlist(r'C:\pythonxy\workspace\PyQtStxmViewer\src\data\101207\A101207022', '.xim')
+
     """
     ret = []
     containsStr = suffix

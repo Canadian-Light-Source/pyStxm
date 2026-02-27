@@ -143,7 +143,7 @@ class TUCSEN_TIFFPluginWithFileStore(TUCSEN_TIFFPlugin, TUCSEN_FileStoreTIFFIter
             Path that the IOC can write to or is it the path that this application can write to?
 
             ('a9b3ed47-bd2e-47af-ab20',
-             '\/opt/test_data/C167092/',
+             '/opt/test_data/C167092/',
              '/opt/test_data/C167092')
         '''
         #dont over ride what was previously set to these signals likely from the scan plan
@@ -269,7 +269,7 @@ class TUCSEN_HDF5_Plugin(HDF5Plugin_V22, FileStoreHDF5SingleIterativeWrite):
             Path that the IOC can write to or is it the path that this application can write to?
 
             ('a9b3ed47-bd2e-47af-ab20',
-             '\directory\\test_data\\C167092\\',
+             '/directory/test_data/C167092/',
              '/opt/test_data/C167092')
         '''
         #dont over ride what was previously set to these signals likely from the scan plan

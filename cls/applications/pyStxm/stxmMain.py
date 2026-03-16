@@ -852,7 +852,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
     def enable_energy_change(self, en):
         # devices = MAIN_OBJ.get_devices()
         # ev_en = devices['PVS'][DNM_ENERGY_ENABLE]
-        ev_en = MAIN_OBJ.device("DNM_ENERGY_ENABLE")
+        ev_en = MAIN_OBJ.device("DNM_ENERGY_ENABLE", do_warn=False)
         # todo: this is a hassle during commissioning, uncomment when done commissioning
         # zpz = MAIN_OBJ.device("DNM_ZONEPLATE_Z")
         #
@@ -2678,7 +2678,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         # self.beamStatusLayout.insertWidget(0, w)
         # self.beamStatusLayout.insertSpacing(0, 10)
         # only show the ring current if device exists
-        if MAIN_OBJ.device("DNM_RING_CURRENT"):
+        if MAIN_OBJ.device("DNM_RING_CURRENT", do_warn=False):
             w = ophyd_aiLabelWidget(
                 MAIN_OBJ.device("DNM_RING_CURRENT"),
                 hdrText="Ring Current:",
@@ -2739,7 +2739,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 )
             )
 
-        if MAIN_OBJ.device("DNM_SFX_PIEZO_VOLTS"):
+        if MAIN_OBJ.device("DNM_SFX_PIEZO_VOLTS", do_warn=False):
             self.status_list.append(
                 ophyd_aiRangeLabelWidget(
                     MAIN_OBJ.device("DNM_SFX_PIEZO_VOLTS"),
@@ -2751,7 +2751,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     warn=(-15, 115),
                 )
             )
-        if MAIN_OBJ.device("DNM_SFY_PIEZO_VOLTS"):
+        if MAIN_OBJ.device("DNM_SFY_PIEZO_VOLTS", do_warn=False):
             self.status_list.append(
                 ophyd_aiRangeLabelWidget(
                     MAIN_OBJ.device("DNM_SFY_PIEZO_VOLTS"),
@@ -2764,7 +2764,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 )
             )
 
-        if MAIN_OBJ.device("DNM_AX1_INTERFER_VOLTS"):
+        if MAIN_OBJ.device("DNM_AX1_INTERFER_VOLTS", do_warn=False):
             self.status_list.append(
                 ophyd_aiLabelWidget(
                     MAIN_OBJ.device("DNM_AX1_INTERFER_VOLTS"),
@@ -2777,7 +2777,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 )
             )
 
-        if MAIN_OBJ.device("DNM_AX2_INTERFER_VOLTS"):
+        if MAIN_OBJ.device("DNM_AX2_INTERFER_VOLTS", do_warn=False):
             self.status_list.append(
                 ophyd_aiLabelWidget(
                     MAIN_OBJ.device("DNM_AX2_INTERFER_VOLTS"),

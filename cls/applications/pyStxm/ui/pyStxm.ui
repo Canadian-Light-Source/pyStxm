@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1954</width>
-    <height>858</height>
+    <width>1951</width>
+    <height>1501</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -109,7 +109,7 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
               <enum>QTabWidget::North</enum>
              </property>
              <property name="currentIndex">
-              <number>3</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="imageTab">
               <attribute name="title">
@@ -555,8 +555,8 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1954</width>
-     <height>22</height>
+     <width>1951</width>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1317,7 +1317,7 @@ background-color:rgb(177, 177, 177)
    <property name="minimumSize">
     <size>
      <width>168</width>
-     <height>88</height>
+     <height>90</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1843,7 +1843,7 @@ background-color:rgb(177, 177, 177)
    <property name="minimumSize">
     <size>
      <width>850</width>
-     <height>135</height>
+     <height>142</height>
     </size>
    </property>
    <property name="maximumSize">

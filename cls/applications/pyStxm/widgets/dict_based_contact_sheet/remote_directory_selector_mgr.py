@@ -10,7 +10,7 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
     #new_data_dir = QtCore.pyqtSignal(str)  # Signal to emit the new data directory path
     create_scenes = QtCore.pyqtSignal(str)
     loading_data = QtCore.pyqtSignal(bool)
-    new_data_dir = QtCore.pyqtSignal(str)  # Signal to emit the new data directory path
+    new_data_dir = QtCore.pyqtSignal(str, bool)  # Signal to emit the new data directory path, add to history or not
 
     def __init__(self, main_obj, base_data_dir, data_dir):
         """
@@ -53,16 +53,18 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
             sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
             self.list_subdirectories(sub_dirs)
 
-    def update_data_dir(self, data_dir):
+    def update_data_dir(self, data_dir, add_to_history=True):
         """
         Update the data directory and reload the subdirectories.
 
         Args:
             data_dir: The new data directory path.
+            add_to_history: add this directory to the history list that appears as a destination directory in the
+            directory combobox at the top?
         """
         self.data_dir = data_dir
         self.dir_label.setText(data_dir)
-        self.new_data_dir.emit(data_dir)
+        self.new_data_dir.emit(data_dir, add_to_history)
 
     def reload_directory(self, data_dir=None):
         """
@@ -126,7 +128,7 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
                 self.subdir_list_wdg.clear()
                 sub_dirs = self.main_obj.request_data_dir_list(base_dir=_new_data_dir)
                 self.list_subdirectories(sub_dirs)
-                self.update_data_dir(_new_data_dir)
+                self.update_data_dir(_new_data_dir, add_to_history=False)
             elif sel_txt.find("h5 files") > -1:
                 #_new_data_dir = os.path.dirname(self.data_dir)
                 _new_data_dir = os.path.join(self.data_dir, subdir_name)
@@ -157,7 +159,7 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
         """
         self.data_dir = self.base_data_dir
         self.dir_label.setText(self.data_dir)
-        self.new_data_dir.emit(self.data_dir)
+        self.new_data_dir.emit(self.data_dir, False)
         if self.main_obj:
             sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
             self.list_subdirectories(sub_dirs)

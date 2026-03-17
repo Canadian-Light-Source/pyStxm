@@ -279,12 +279,15 @@ class ContactSheet(QtWidgets.QWidget):
         self.setWindowTitle("Contact Sheet Viewer")
         self.resize(800, 600)
 
-    def on_new_data_dir(self, directory: str):
+    def on_new_data_dir(self, directory: str, add_to_history: bool=True):
         """
         when a new data directory is selected in the directory selector widget
         """
-        if directory != self.base_data_dir:
-            # skip the base data directory
+
+        # if directory != self.base_data_dir:
+        #     # skip the base data directory
+        #     self.add_directory_to_combo(directory)
+        if add_to_history:
             self.add_directory_to_combo(directory)
 
 

@@ -1,4 +1,3 @@
-
 from PyQt5 import QtWidgets, QtCore
 import os
 
@@ -31,8 +30,20 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
 
         self.layout = QtWidgets.QVBoxLayout(self)
 
+        # Add a horizontal layout for label and reset button
+        top_layout = QtWidgets.QHBoxLayout()
         self.dir_label = QtWidgets.QLabel(data_dir)
-        self.layout.addWidget(self.dir_label)
+        top_layout.addWidget(self.dir_label)
+
+        # Reset to base directory button
+        self.resetBtn = QtWidgets.QToolButton()
+        self.resetBtn.setToolTip("Reset to base directory")
+        self.resetBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_ArrowUp))
+        self.resetBtn.setIconSize(QtCore.QSize(20, 20))
+        self.resetBtn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
+        self.resetBtn.clicked.connect(self.on_reset_to_base_dir_clicked)
+        top_layout.addWidget(self.resetBtn)
+        self.layout.addLayout(top_layout)
 
         self.subdir_list_wdg = QtWidgets.QListWidget()
         self.subdir_list_wdg.itemClicked.connect(self.on_subdir_selected)
@@ -139,3 +150,14 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
                 sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
                 self.list_subdirectories(sub_dirs)
                 self.hide()
+
+    def on_reset_to_base_dir_clicked(self):
+        """
+        Reset the data directory to the base data directory and update the UI.
+        """
+        self.data_dir = self.base_data_dir
+        self.dir_label.setText(self.data_dir)
+        self.new_data_dir.emit(self.data_dir)
+        if self.main_obj:
+            sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
+            self.list_subdirectories(sub_dirs)

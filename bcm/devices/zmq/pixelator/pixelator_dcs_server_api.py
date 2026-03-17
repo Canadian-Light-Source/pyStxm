@@ -531,13 +531,16 @@ class ScanClass(object):
         # calc the progress
         all_scans_progress = int(float((self.ttl_points_received / self._total_num_points) * 100.0)/len(selected_det_names))
         cur_img_progress = int(float((self.cur_img_points_received / (self.npoints_rows * self.npoints_cols)) * 100.0)/len(selected_det_names))
+        # cur_img_progress keeps a running total so reset it to zero on start of every new image
+        if sl_dct['img_idx'] > 0:
+            cur_img_progress = cur_img_progress - 100.0 * sl_dct['img_idx']
+
         self._scan_line_data_cntr += 1
         return {'det_name': selected_det_names[sl_dct['det_chan_idx']], 'row': sl_dct['row'], 'col': sl_dct['col'], 'shape': sl_dct['data_shape'],
                 'value': sl_dct['data'], 'is_tiled': self.tiling, 'is_partial': True if not self.tiling else False,
                 'img_idx': sl_dct['img_idx'],
                 "tile_num": sl_dct['tile_num'], "ev_idx": sl_dct['outer_idx'], "prog": cur_img_progress, "pol_idx": sl_dct['tile_num'],
                 "total_prog": all_scans_progress}
-
 
     def handle_scanStarted(self, scan_request):
         """

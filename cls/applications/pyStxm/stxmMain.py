@@ -2154,6 +2154,25 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
             self.lineByLineImageDataWidget.blockSignals(False)
 
+    def showEvent(self, event):
+        """
+        override the showEvent to force the dock widgets to resize to the proper
+        dimensions
+        """
+
+        super(pySTXMWindow, self).showEvent(event)
+        # Resize right dock widgets to minimal width, central widget gets most space
+        right_docks = []
+        for dock in self.findChildren(QtWidgets.QDockWidget):
+            area = self.dockWidgetArea(dock)
+            if area == QtCore.Qt.RightDockWidgetArea:
+                right_docks.append(dock)
+        if right_docks:
+            total_width = self.width()
+            central_width = int(total_width * 0.75)
+            dock_width = int(total_width * 0.25) // len(right_docks)
+            self.resizeDocks(right_docks, [dock_width] * len(right_docks), QtCore.Qt.Horizontal)
+
     def show_pattern_generator_pattern(self, tple):
         """
         called by the pattern generator scan plugin
@@ -4857,7 +4876,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 # request a pause
                 if hasattr(self, "scan_progress_table"):
                     self.scan_progress_table.set_pixmap(idx, scan_status_types.RUNNING)
-                    
+
                 if MAIN_OBJ.get_device_backend().find("zmq") > -1:
                     MAIN_OBJ.engine_widget.engine.resume_scan()
                 else:

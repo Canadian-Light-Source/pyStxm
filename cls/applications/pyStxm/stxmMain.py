@@ -1039,7 +1039,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                                              energy_fbk_dev=MAIN_OBJ.device("DNM_ENERGY"),
                                                labelHeader="Energy:",
                                                parent=self,
-                                               scale_factor=10)
+                                               scale_factor=MAIN_OBJ.striptool_scaling_factor)
         self.stripToolWidget.setObjectName("stripToolWidget")
         plot = self.stripToolWidget.scanplot.get_plot()
         pcan = plot.canvas()
@@ -3017,7 +3017,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         det_name = counter_to_plotter_com_dct[CNTR2PLOT_DETNAME]
         is_tiled = counter_to_plotter_com_dct[CNTR2PLOT_IS_TILED]
         is_partial = counter_to_plotter_com_dct[CNTR2PLOT_IS_PARTIAL]
-        # print(f'add_line_to_plot: called from {inspect.stack()[1].function}, prog_dct={prog_dct}')
+        #print(f'add_line_to_plot: called from {inspect.stack()[1].function}, prog_dct={prog_dct}')
 
         emit_do_integrations = False
         if self.executingScan.scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
@@ -3053,12 +3053,19 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         elif det_name is not None:
             # added to support SLS Pixelator
+            update_plot = False
+            # for performance reasons limit the update rate of the plot
+            if ((prog_dct['PROG']['PERCENT'] % self.executingScan.get_plot_update_divisor()) == 0 and
+                    ( self.executingScan._already_plotted != prog_dct['PROG']['PERCENT'])):
+                self.executingScan._already_plotted = prog_dct['PROG']['PERCENT']
+                update_plot = True
+
             if (col == 0) and (row == 0):
                 # print(f"reset_item_data 2:[{det_name}] col == {col} & row == {row}")
                 self.do_roi_update(det_name, prog_dct)
                 self.lineByLineImageDataWidget.reset_item_data(det_name)
             data = val[det_name]
-            self.lineByLineImageDataWidget.add_line_at_row_col(det_name, row, col, data, True)
+            self.lineByLineImageDataWidget.add_line_at_row_col(det_name, row, col, data, update_plot)
             # print(f"self.lineByLineImageDataWidget.addLineAtRowCol({det_name}, {row}, {col}, {val[det_name]}, True)")
         else:
             if row > 0:
@@ -3806,6 +3813,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             ret = scan_class.configure(self.cur_wdg_com, sp_id=sp_id, ev_idx=0, line=line)
             if not ret:
                 # the configuration did not pass validation, most likely the scan velocity
+                _logger.warn("The configuration did not pass validation, Configure() did not return True")
                 self.set_buttons_for_starting()
                 return
 

@@ -136,6 +136,7 @@ class main_object_base(QtCore.QObject):
         self.dcs_settings = None
         self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
+        self.striptool_scaling_factor = float(beamline_cfg_dct["BL_CFG_MAIN"].get('striptool_scaling_factor', 1))
         self.data_sub_context = zmq.Context()
         self.nx_server_master_seq_dct = None
         self._progressive_stack_data = {} # this is a dict of detector names each containing a list of lists that

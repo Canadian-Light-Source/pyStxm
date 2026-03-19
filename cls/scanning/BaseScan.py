@@ -184,6 +184,7 @@ class BaseScan(QtCore.QObject):
         self._current_img_idx = 0
         self.sproi_idx_mutex = Lock()
         self._current_sp_id = 0
+        self._already_plotted = 0
 
         self._consecutive_scan_mutex = Lock()
         self._consecutive_scan_cntr = 0

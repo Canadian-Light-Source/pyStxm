@@ -1,4 +1,3 @@
-
 from PyQt5 import QtWidgets, QtCore
 import os
 
@@ -11,7 +10,7 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
     #new_data_dir = QtCore.pyqtSignal(str)  # Signal to emit the new data directory path
     create_scenes = QtCore.pyqtSignal(str)
     loading_data = QtCore.pyqtSignal(bool)
-    new_data_dir = QtCore.pyqtSignal(str)  # Signal to emit the new data directory path
+    new_data_dir = QtCore.pyqtSignal(str, bool)  # Signal to emit the new data directory path, add to history or not
 
     def __init__(self, main_obj, base_data_dir, data_dir):
         """
@@ -31,8 +30,20 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
 
         self.layout = QtWidgets.QVBoxLayout(self)
 
+        # Add a horizontal layout for label and reset button
+        top_layout = QtWidgets.QHBoxLayout()
         self.dir_label = QtWidgets.QLabel(data_dir)
-        self.layout.addWidget(self.dir_label)
+        top_layout.addWidget(self.dir_label)
+
+        # Reset to base directory button
+        self.resetBtn = QtWidgets.QToolButton()
+        self.resetBtn.setToolTip("Reset to base directory")
+        self.resetBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_ArrowUp))
+        self.resetBtn.setIconSize(QtCore.QSize(20, 20))
+        self.resetBtn.setToolButtonStyle(QtCore.Qt.ToolButtonIconOnly)
+        self.resetBtn.clicked.connect(self.on_reset_to_base_dir_clicked)
+        top_layout.addWidget(self.resetBtn)
+        self.layout.addLayout(top_layout)
 
         self.subdir_list_wdg = QtWidgets.QListWidget()
         self.subdir_list_wdg.itemClicked.connect(self.on_subdir_selected)
@@ -42,16 +53,18 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
             sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
             self.list_subdirectories(sub_dirs)
 
-    def update_data_dir(self, data_dir):
+    def update_data_dir(self, data_dir, add_to_history=True):
         """
         Update the data directory and reload the subdirectories.
 
         Args:
             data_dir: The new data directory path.
+            add_to_history: add this directory to the history list that appears as a destination directory in the
+            directory combobox at the top?
         """
         self.data_dir = data_dir
         self.dir_label.setText(data_dir)
-        self.new_data_dir.emit(data_dir)
+        self.new_data_dir.emit(data_dir, add_to_history)
 
     def reload_directory(self, data_dir=None):
         """
@@ -115,7 +128,7 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
                 self.subdir_list_wdg.clear()
                 sub_dirs = self.main_obj.request_data_dir_list(base_dir=_new_data_dir)
                 self.list_subdirectories(sub_dirs)
-                self.update_data_dir(_new_data_dir)
+                self.update_data_dir(_new_data_dir, add_to_history=False)
             elif sel_txt.find("h5 files") > -1:
                 #_new_data_dir = os.path.dirname(self.data_dir)
                 _new_data_dir = os.path.join(self.data_dir, subdir_name)
@@ -139,3 +152,14 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
                 sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
                 self.list_subdirectories(sub_dirs)
                 self.hide()
+
+    def on_reset_to_base_dir_clicked(self):
+        """
+        Reset the data directory to the base data directory and update the UI.
+        """
+        self.data_dir = self.base_data_dir
+        self.dir_label.setText(self.data_dir)
+        self.new_data_dir.emit(self.data_dir, False)
+        if self.main_obj:
+            sub_dirs = self.main_obj.request_data_dir_list(base_dir=self.data_dir)
+            self.list_subdirectories(sub_dirs)

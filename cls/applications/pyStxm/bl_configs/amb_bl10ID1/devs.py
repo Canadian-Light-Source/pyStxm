@@ -1,5 +1,5 @@
 
-SIM =False 
+SIM =  True
 dev_dct = {}
 
 
@@ -9,16 +9,16 @@ dev_dct["POSITIONERS"] = [
         "name": "DNM_SAMPLE_FINE_X",
         "desc": "Fine_X",
         "class": "e712_sample_motor",
-        #"dcs_nm": "PZAC1610-3-I12-40",
-        "dcs_nm": "TB_ASTXMIOC:m700" if SIM else "PZAC1610-3-I12-40",
+        "dcs_nm": "PZAC1610-3-I12-40",
+        #"dcs_nm": "TB_ASTXMIOC:m700" if SIM else "PZAC1610-3-I12-40",
         "pos_type": "POS_TYPE_ES",
     },
     {
         "name": "DNM_SAMPLE_FINE_Y",
         "desc": "Fine_Y",
         "class": "e712_sample_motor",
-        #"dcs_nm": "PZAC1610-3-I12-41",
-        "dcs_nm": "TB_ASTXMIOC:m701" if SIM else "PZAC1610-3-I12-41",
+        "dcs_nm": "PZAC1610-3-I12-41",
+        #"dcs_nm": "TB_ASTXMIOC:m701" if SIM else "PZAC1610-3-I12-41",
         "pos_type": "POS_TYPE_ES",
     },
     {
@@ -34,7 +34,7 @@ dev_dct["POSITIONERS"] = [
         "desc": "OSA_Y",
         "class": "MotorQt",
         #"dcs_nm": "PZAC1610-3-I12-44",
-        "dcs_nm": "TB_ASTXMIOC:m702" if SIM else "PZAC1610-3-I12-44",
+        "dcs_nm": "TB_ASTXMIOC:m703" if SIM else "PZAC1610-3-I12-44",
         "pos_type": "POS_TYPE_ES",
     },
     {
@@ -42,23 +42,23 @@ dev_dct["POSITIONERS"] = [
         "Zoneplate_Z": "FineX",
         "class": "MotorQt",
         #"dcs_nm": "SMTR1610-3-I12-51",
-        "dcs_nm": "TB_ASTXMIOC:m703" if SIM else "SMTR1610-3-I12-51",
+        "dcs_nm": "TB_ASTXMIOC:m704" if SIM else "SMTR1610-3-I12-51",
         "pos_type": "POS_TYPE_ES",
     },
     {
         "name": "DNM_COARSE_X",
         "desc": "Coarse_X",
         "class": "MotorQt",
-        #"dcs_nm": "SMTR1610-3-I12-45",
-        "dcs_nm": "TB_ASTXMIOC:m704" if SIM else "SMTR1610-3-I12-45",
+        "dcs_nm": "SMTR1610-3-I12-45",
+        #"dcs_nm": "TB_ASTXMIOC:m705" if SIM else "SMTR1610-3-I12-45",
         "pos_type": "POS_TYPE_ES",
     },
     {
         "name": "DNM_COARSE_Y",
         "desc": "Coarse_Y",
         "class": "MotorQt",
-        #"dcs_nm": "SMTR1610-3-I12-46",
-        "dcs_nm": "TB_ASTXMIOC:m705" if SIM else "SMTR1610-3-I12-46",
+        "dcs_nm": "SMTR1610-3-I12-46",
+        #"dcs_nm": "TB_ASTXMIOC:m706" if SIM else "SMTR1610-3-I12-46",
         "pos_type": "POS_TYPE_ES",
     },
     {
@@ -66,7 +66,7 @@ dev_dct["POSITIONERS"] = [
         "desc": "Coarse_Z",
         "class": "MotorQt",
         #"dcs_nm": "SMTR1610-3-I12-47",
-        "dcs_nm": "TB_ASTXMIOC:m706" if SIM else "SMTR1610-3-I12-47",
+        "dcs_nm": "TB_ASTXMIOC:m707" if SIM else "SMTR1610-3-I12-47",
         "pos_type": "POS_TYPE_ES",
     },
     {
@@ -74,7 +74,7 @@ dev_dct["POSITIONERS"] = [
         "desc": "Detector_X",
         "class": "MotorQt",
         #"dcs_nm": "SMTR1610-3-I12-48",
-        "dcs_nm": "TB_ASTXMIOC:m707" if SIM else "SMTR1610-3-I12-48",
+        "dcs_nm": "TB_ASTXMIOC:m708" if SIM else "SMTR1610-3-I12-48",
         "pos_type": "POS_TYPE_ES",
     },
     {
@@ -82,7 +82,7 @@ dev_dct["POSITIONERS"] = [
         "desc": "Detector_Y",
         "class": "MotorQt",
         #"dcs_nm": "SMTR1610-3-I12-49",
-        "dcs_nm": "TB_ASTXMIOC:m708" if SIM else "SMTR1610-3-I12-49",
+        "dcs_nm": "TB_ASTXMIOC:m709" if SIM else "SMTR1610-3-I12-49",
         "pos_type": "POS_TYPE_ES",
     },
     {
@@ -90,15 +90,15 @@ dev_dct["POSITIONERS"] = [
         "desc": "Detector_Z",
         "class": "MotorQt",
         #"dcs_nm": "SMTR1610-3-I12-50",
-        "dcs_nm": "TB_ASTXMIOC:m709" if SIM else "SMTR1610-3-I12-50",
+        "dcs_nm": "TB_ASTXMIOC:m710" if SIM else "SMTR1610-3-I12-50",
         "pos_type": "POS_TYPE_ES",
     },
     {
         "name": "DNM_SAMPLE_X",
         "desc": "Sample_X",
         "class": "sample_abstract_motor",
-        #"dcs_nm": "PSMTR1610-3-I12-00",
-        "dcs_nm": "TB_ASTXMIOC:m710" if SIM else "PSMTR1610-3-I12-00",
+        "dcs_nm": "PSMTR1610-3-I12-00",
+        #"dcs_nm": "TB_ASTXMIOC:m711" if SIM else "PSMTR1610-3-I12-00",
         "pos_type": "POS_TYPE_ES",
         "fine_mtr_name": "DNM_SAMPLE_FINE_X",
         "coarse_mtr_name": "DNM_COARSE_X"
@@ -107,8 +107,8 @@ dev_dct["POSITIONERS"] = [
         "name": "DNM_SAMPLE_Y",
         "desc": "Sample_Y",
         "class": "sample_abstract_motor",
-        #"dcs_nm": "PSMTR1610-3-I12-01",
-        "dcs_nm": "TB_ASTXMIOC:m711" if SIM else "PSMTR1610-3-I12-01",
+        "dcs_nm": "PSMTR1610-3-I12-01",
+        #"dcs_nm": "TB_ASTXMIOC:m712" if SIM else "PSMTR1610-3-I12-01",
         "pos_type": "POS_TYPE_ES",
         "fine_mtr_name": "DNM_SAMPLE_FINE_Y",
         "coarse_mtr_name": "DNM_COARSE_Y"
@@ -188,7 +188,8 @@ dev_dct["POSITIONERS"] = [
         "name": "DNM_EPU_ANGLE",
         "desc": "Epu_Angle",
         "class": "MotorQt",
-        "dcs_nm": "SIM_VBL1610-I12:epuAngle" if SIM else "BL1610-I10:epuAngle",
+        #"dcs_nm": "SIM_VBL1610-I12:epuAngle" if SIM else "BL1610-I10:epuAngle",
+        "dcs_nm": "BL1610-I10:epuAngle",
         "abstract_mtr": True,
         "pos_type": "POS_TYPE_BL",
     },
@@ -208,7 +209,7 @@ dev_dct["DIO"] = [
         "name": "DNM_SHUTTERTASKRUN",
         "class": "make_basedevice",
         # "dcs_nm": "ASTXM1610:Dio:shutter:Run",
-        "dcs_nm": "uhvDIO:shutter:Run",
+        "dcs_nm": "ASTXM1610:Dio:shutter:Run" if SIM else "uhvDIO:shutter:Run",
     },
 ]
 

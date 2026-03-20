@@ -16,8 +16,10 @@ Environment=PATH=/home/sm-user/miniforge3/envs/pyStxm/bin:/usr/local/sbin:/usr/l
 EnvironmentFile=/home/sm-user/srv-unix-home/git_sandbox/pyStxm/nx_server/nx_server.env
 
 Restart=always
-StandardOutput=journal
-StandardError=journal
+StandardOutput=append:/var/log/nx_server.log
+StandardError=append:/var/log/nx_server.log
+UMask=0002
+
 
 [Install]
 WantedBy=multi-user.target

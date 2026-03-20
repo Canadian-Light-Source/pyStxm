@@ -4929,7 +4929,7 @@ def load_NXstxm_file(filename, only_roi_and_data=False):
     try:
         # print(f"load_NXstxm_file: calling hdf5_to_dict for file {filename}")
         file_dct = hdf5_to_dict(filename)
-        file_dct = ensure_default_attrs_exist(file_dct)
+        # file_dct = ensure_default_attrs_exist(file_dct)
         h5_file_dct = create_h5_file_dct_from_file_dct(file_dct)
         return h5_file_dct
 

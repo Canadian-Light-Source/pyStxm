@@ -1,3 +1,35 @@
+"""
+Contact Sheet Viewer for STXM Data
+
+This module provides a PyQt5-based GUI widget for browsing, visualizing, and interacting with STXM (Scanning Transmission X-ray Microscopy) data directories and files. It features a contact sheet layout with image and spectra thumbnails, navigation between directories, and integration with custom viewers for detailed data inspection.
+
+Key Features:
+- Directory navigation and history management for STXM data folders
+- Thumbnail generation for images, spectra, and stacks
+- Drag-and-drop support for launching viewers with scan data
+- Integration with custom image and spectra viewer widgets
+- Responsive layout for thumbnails with dynamic resizing
+- Toolbar for refreshing and changing directories
+- Print and preview support for thumbnails
+
+Classes:
+- ThumbnailSceneManager: Manages QGraphicsScene objects for image and spectra thumbnails, with browser-like navigation history.
+- ContactSheet: Main widget providing the contact sheet interface, directory selection, thumbnail management, and viewer launching.
+
+Dependencies:
+- PyQt5
+- Custom modules from the pyStxm project (e.g., thumbnail creation, data IO, plotting, etc.)
+
+Usage:
+    Run as a standalone application or integrate as a widget in a larger PyQt5 application.
+
+Example:
+    app = QtWidgets.QApplication(sys.argv)
+    window = ContactSheet('/tmp', data_io=STXMDataIo)
+    window.show()
+    sys.exit(app.exec_())
+"""
+
 from PyQt5 import QtCore, QtWidgets
 import simplejson as json
 
@@ -247,12 +279,15 @@ class ContactSheet(QtWidgets.QWidget):
         self.setWindowTitle("Contact Sheet Viewer")
         self.resize(800, 600)
 
-    def on_new_data_dir(self, directory: str):
+    def on_new_data_dir(self, directory: str, add_to_history: bool=True):
         """
         when a new data directory is selected in the directory selector widget
         """
-        if directory != self.base_data_dir:
-            # skip the base data directory
+
+        # if directory != self.base_data_dir:
+        #     # skip the base data directory
+        #     self.add_directory_to_combo(directory)
+        if add_to_history:
             self.add_directory_to_combo(directory)
 
 

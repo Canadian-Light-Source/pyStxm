@@ -23,6 +23,13 @@ from cls.utils.cfgparser import ConfigClass
 
 from cls.data_io.nxstxm_h5_to_dict import load_nxstxm_file_to_h5_file_dct
 from cls.utils.file_system_tools import master_get_seq_names
+import logging
+
+logging.basicConfig(
+    filename='/var/log/nx_server.log',
+    format='%(asctime)s - %(message)s',
+    level=logging.INFO
+)
 
 appConfig = ConfigClass(abs_path_to_ini_file)
 MONGO_DB_NM = appConfig.get_value("MAIN", "mongo_db_nm")
@@ -135,7 +142,7 @@ def determine_exporter(nx_app_def):
     elif nx_app_def.lower().find("nxptycho") > -1:
         return nxptycho
     else:
-        print(f"determine_exporter: the NeXus application definition string [{nx_app_def}] is not supported")
+        logging.info(f"determine_exporter: the NeXus application definition string [{nx_app_def}] is not supported")
         return None
 
 
@@ -148,10 +155,10 @@ def process_and_publish_files(pub_socket, files):
         data_lst.append(jstr)
         ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "load_file_data": jstr})
         pub_socket.send_string(ret_msg)  # Publish each jstr
-        print(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published load_file_data for [{fname}]")
+        logging.info(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published load_file_data for [{fname}]")
         time.sleep(0.1)
 
-    print(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published [{len(data_lst)}] files")
+    logging.info(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published [{len(data_lst)}] files")
     return data_lst
 
 def save_data_to_hdf5(data_dct, data_dir, fprefix, metadata):
@@ -212,7 +219,7 @@ def save_data_to_hdf5(data_dct, data_dir, fprefix, metadata):
                     scan_grp.create_dataset('step_size_x', data=metadata['x_roi']['STEP'])
                     scan_grp.create_dataset('step_size_y', data=metadata['y_roi']['STEP'])
                 except AssertionError as e:
-                    print(f"Warning: {e}. scan_parameters group not written.")
+                    logging.warn(f"Warning: {e}. scan_parameters group not written.")
 
             img_idx = str(data_dct['img_idx'])
             grp = h5f.require_group(img_idx)
@@ -224,7 +231,7 @@ def save_data_to_hdf5(data_dct, data_dir, fprefix, metadata):
                     del det_grp['data']
                 det_grp.create_dataset('data', data=arr_np)
     except Exception as e:
-        print(f"Error in save_data_to_hdf5: {e}")
+        logging.error(f"Error in save_data_to_hdf5: {e}")
 
 def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, is_windows=True):
     """
@@ -240,11 +247,11 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
 
     db = Broker.named(db_name)
     if not db:
-        print(f"[{HOSTNAME}]Unable to connect to the database [{db_name}]")
+        logging.error(f"[{HOSTNAME}]Unable to connect to the database [{db_name}]")
         exit(1)
 
-    print(f"NX Server is running on host [{HOSTNAME}] and connected to database [{db_name}] listening on port {rep_port}...")
-    print(f"PUB socket bound to port [{pub_port}.")
+    logging.info(f"NX Server is running on host [{HOSTNAME}] and connected to database [{db_name}] listening on port {rep_port}...")
+    logging.info(f"PUB socket bound to port [{pub_port}.")
 
     while True:
         # Wait for the next request from a client
@@ -253,7 +260,8 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
 
         # Deserialize the JSON message to a Python dictionary
         data = json.loads(message)
-        print(f"\t[{HOSTNAME}, {rep_port}]Deserialized data:", data)
+
+        logging.info(f"Deserialized data: [cmnd]={data['cmnd']}, [fprefix]: {data['fprefix']}, [data_dir]: {data['data_dir']}")
 
         # Do something with the data (here we  just print it)
         cmnd = data['cmnd']
@@ -270,9 +278,9 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
             if exporter:
                 first_uid = run_uids[0]
                 last_uid = run_uids[-1]
-                print(f"starting export of {nx_app_def}  file with uid[{first_uid}]")
+                logging.info(f"\tstarting export of {nx_app_def}  file with uid[{first_uid}]")
                 for _uid in run_uids:
-                    print("processing [%s]" % _uid)
+                    logging.info("\tprocessing [%s]" % _uid)
                     header = db[_uid]
                     md = json.loads(header["start"]["metadata"])
                     _img_idx_map = json.loads(md["img_idx_map"])
@@ -292,7 +300,7 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
             # extension = cmd_args['extension']
             data_dct = json.loads(cmd_args['data_dct'])
             save_data_to_hdf5(data_dct, data_dir, fprefix, metadata)
-            print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: save_progressive_stack_data called with fprefix=[{fprefix}], data_dir=[{data_dir}]")
+            logging.info(f"\tNX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: save_progressive_stack_data called with fprefix=[{fprefix}], data_dir=[{data_dir}]")
             ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS})
 
         elif cmnd == NX_SERVER_CMNDS.REMOVE_FILES:
@@ -306,9 +314,9 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
                 if os.path.exists(fpath):
                     rm_files.append(fpath)
                     os.remove(fpath)
-                    print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: Removed the following file [{fpath}]")
+                    logging.info(f"\tNX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: Removed the following file [{fpath}]")
             ret_msg = f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: Removed {len(rm_files)} files"
-            print(ret_msg)
+            logging.info(ret_msg)
 
         elif cmnd == NX_SERVER_CMNDS.TEST_CONNECTION:
             ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS})
@@ -321,13 +329,13 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
 
         #DCS server support
         elif cmnd == NX_SERVER_CMNDS.LOADFILE_DIRECTORY:
-            print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: loadfile_directory called with data={data}")
+            logging.info(f"\tNX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: loadfile_directory called with data={data}")
             cmd_args = data['cmd_args']
             directory_dct = get_files_with_extension_and_subdirs(cmd_args['directory'], cmd_args['extension'])
             ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "directories": directory_dct})
 
         elif cmnd == NX_SERVER_CMNDS.LOADFILE_FILE:
-            print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: loadfile_file called with data={data}")
+            logging.info(f"\tNX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: loadfile_file called with data={data}")
             cmd_args = data['cmd_args']
             fname = cmd_args['file']
             # jstr = load_nxstxm_file_to_h5_file_dct(fname, ret_as_jstr=True)
@@ -341,7 +349,8 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
             ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS})
 
         elif cmnd == NX_SERVER_CMNDS.LOADFILE_FILES:
-            print(f"\n\nNX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: loadfile_files called: data={data}")
+
+            logging.info(f"\tNX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: loadfile_files called: data={data}")
             cmd_args = data['cmd_args']
             def worker():
                 complete_msg = json.dumps({"load_files_status": "in_progress"})
@@ -350,7 +359,7 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
                 data_lst = process_and_publish_files(pub_socket, files)
                 # Publish completion message
                 #complete_msg = json.dumps({"status": "data_loading_complete"})
-                print(f"\n\n load_files_status: Published all files, sending complete message")
+                logging.info(f"\n\n\tload_files_status: Published all files, sending complete message")
                 complete_msg = json.dumps({"load_files_status": "complete"})
                 pub_socket.send_string(complete_msg)
 
@@ -359,7 +368,7 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
             ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS})
 
         elif cmnd == NX_SERVER_CMNDS.LIST_DIRECTORY:
-            print(f"\nNX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: list_directory called with data={data}")
+            logging.info(f"\n\tNX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: list_directory called with data={data}")
             cmd_args = data['cmd_args']
             directory = cmd_args['directory']
             extension = cmd_args['fileExtension']
@@ -367,10 +376,12 @@ def start_server(db_name, host=HOSTNAME, rep_port=REP_PORT, pub_port=PUB_PORT, i
             # ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "sub_directories": subdirs_jstr})
             subdirs = get_data_subdirectories(directory, extension=extension)
             ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "sub_directories": subdirs})
-            print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: list_directory returning ret_msg={ret_msg}\n")
+            logging.info(f"\tNX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: list_directory returning ret_msg={ret_msg}\n")
 
         elif cmnd == NX_SERVER_CMNDS.GET_FILE_SEQUENCE_NAMES:
-            print(f"NX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: get_file_sequence_names called with data={data}")
+            logging.info("")  # newline
+            logging.info("")  # newline
+            logging.info(f"\tNX_SERVER[{HOSTNAME}, {rep_port}]:nxstxm: get_file_sequence_names called with data={data}")
             cmd_args = data['cmd_args']
             data_dir = cmd_args['data_dir']
             thumb_ext = cmd_args['thumb_ext']

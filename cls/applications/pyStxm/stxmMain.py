@@ -852,7 +852,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
     def enable_energy_change(self, en):
         # devices = MAIN_OBJ.get_devices()
         # ev_en = devices['PVS'][DNM_ENERGY_ENABLE]
-        ev_en = MAIN_OBJ.device("DNM_ENERGY_ENABLE")
+        ev_en = MAIN_OBJ.device("DNM_ENERGY_ENABLE", do_warn=False)
         # todo: this is a hassle during commissioning, uncomment when done commissioning
         # zpz = MAIN_OBJ.device("DNM_ZONEPLATE_Z")
         #
@@ -1039,7 +1039,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                                              energy_fbk_dev=MAIN_OBJ.device("DNM_ENERGY"),
                                                labelHeader="Energy:",
                                                parent=self,
-                                               scale_factor=10)
+                                               scale_factor=MAIN_OBJ.striptool_scaling_factor)
         self.stripToolWidget.setObjectName("stripToolWidget")
         plot = self.stripToolWidget.scanplot.get_plot()
         pcan = plot.canvas()
@@ -2154,6 +2154,25 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
             self.lineByLineImageDataWidget.blockSignals(False)
 
+    def showEvent(self, event):
+        """
+        override the showEvent to force the dock widgets to resize to the proper
+        dimensions
+        """
+
+        super(pySTXMWindow, self).showEvent(event)
+        # Resize right dock widgets to minimal width, central widget gets most space
+        right_docks = []
+        for dock in self.findChildren(QtWidgets.QDockWidget):
+            area = self.dockWidgetArea(dock)
+            if area == QtCore.Qt.RightDockWidgetArea:
+                right_docks.append(dock)
+        if right_docks:
+            total_width = self.width()
+            central_width = int(total_width * 0.75)
+            dock_width = int(total_width * 0.25) // len(right_docks)
+            self.resizeDocks(right_docks, [dock_width] * len(right_docks), QtCore.Qt.Horizontal)
+
     def show_pattern_generator_pattern(self, tple):
         """
         called by the pattern generator scan plugin
@@ -2678,7 +2697,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         # self.beamStatusLayout.insertWidget(0, w)
         # self.beamStatusLayout.insertSpacing(0, 10)
         # only show the ring current if device exists
-        if MAIN_OBJ.device("DNM_RING_CURRENT"):
+        if MAIN_OBJ.device("DNM_RING_CURRENT", do_warn=False):
             w = ophyd_aiLabelWidget(
                 MAIN_OBJ.device("DNM_RING_CURRENT"),
                 hdrText="Ring Current:",
@@ -2739,7 +2758,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 )
             )
 
-        if MAIN_OBJ.device("DNM_SFX_PIEZO_VOLTS"):
+        if MAIN_OBJ.device("DNM_SFX_PIEZO_VOLTS", do_warn=False):
             self.status_list.append(
                 ophyd_aiRangeLabelWidget(
                     MAIN_OBJ.device("DNM_SFX_PIEZO_VOLTS"),
@@ -2751,7 +2770,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                     warn=(-15, 115),
                 )
             )
-        if MAIN_OBJ.device("DNM_SFY_PIEZO_VOLTS"):
+        if MAIN_OBJ.device("DNM_SFY_PIEZO_VOLTS", do_warn=False):
             self.status_list.append(
                 ophyd_aiRangeLabelWidget(
                     MAIN_OBJ.device("DNM_SFY_PIEZO_VOLTS"),
@@ -2764,7 +2783,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 )
             )
 
-        if MAIN_OBJ.device("DNM_AX1_INTERFER_VOLTS"):
+        if MAIN_OBJ.device("DNM_AX1_INTERFER_VOLTS", do_warn=False):
             self.status_list.append(
                 ophyd_aiLabelWidget(
                     MAIN_OBJ.device("DNM_AX1_INTERFER_VOLTS"),
@@ -2777,7 +2796,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 )
             )
 
-        if MAIN_OBJ.device("DNM_AX2_INTERFER_VOLTS"):
+        if MAIN_OBJ.device("DNM_AX2_INTERFER_VOLTS", do_warn=False):
             self.status_list.append(
                 ophyd_aiLabelWidget(
                     MAIN_OBJ.device("DNM_AX2_INTERFER_VOLTS"),
@@ -2998,7 +3017,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         det_name = counter_to_plotter_com_dct[CNTR2PLOT_DETNAME]
         is_tiled = counter_to_plotter_com_dct[CNTR2PLOT_IS_TILED]
         is_partial = counter_to_plotter_com_dct[CNTR2PLOT_IS_PARTIAL]
-        # print(f'add_line_to_plot: called from {inspect.stack()[1].function}, prog_dct={prog_dct}')
+        #print(f'add_line_to_plot: called from {inspect.stack()[1].function}, prog_dct={prog_dct}')
 
         emit_do_integrations = False
         if self.executingScan.scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
@@ -3034,12 +3053,19 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         elif det_name is not None:
             # added to support SLS Pixelator
+            update_plot = False
+            # for performance reasons limit the update rate of the plot
+            if ((prog_dct['PROG']['PERCENT'] % self.executingScan.get_plot_update_divisor()) == 0 and
+                    ( self.executingScan._already_plotted != prog_dct['PROG']['PERCENT'])):
+                self.executingScan._already_plotted = prog_dct['PROG']['PERCENT']
+                update_plot = True
+
             if (col == 0) and (row == 0):
                 # print(f"reset_item_data 2:[{det_name}] col == {col} & row == {row}")
                 self.do_roi_update(det_name, prog_dct)
                 self.lineByLineImageDataWidget.reset_item_data(det_name)
             data = val[det_name]
-            self.lineByLineImageDataWidget.add_line_at_row_col(det_name, row, col, data, True)
+            self.lineByLineImageDataWidget.add_line_at_row_col(det_name, row, col, data, update_plot)
             # print(f"self.lineByLineImageDataWidget.addLineAtRowCol({det_name}, {row}, {col}, {val[det_name]}, True)")
         else:
             if row > 0:
@@ -3787,6 +3813,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             ret = scan_class.configure(self.cur_wdg_com, sp_id=sp_id, ev_idx=0, line=line)
             if not ret:
                 # the configuration did not pass validation, most likely the scan velocity
+                _logger.warn("The configuration did not pass validation, Configure() did not return True")
                 self.set_buttons_for_starting()
                 return
 
@@ -4857,7 +4884,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 # request a pause
                 if hasattr(self, "scan_progress_table"):
                     self.scan_progress_table.set_pixmap(idx, scan_status_types.RUNNING)
-                    
+
                 if MAIN_OBJ.get_device_backend().find("zmq") > -1:
                     MAIN_OBJ.engine_widget.engine.resume_scan()
                 else:

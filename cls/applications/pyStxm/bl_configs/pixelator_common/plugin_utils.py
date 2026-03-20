@@ -213,10 +213,12 @@ def set_spin_box(self, name, val):
         a.setValue(val)
 
 def set_combo_box(self, name, val):
-
     if hasattr(self.scan_req_wdg, f'{name}ComboBox'):
         a = getattr(self.scan_req_wdg, f'{name}ComboBox')
-        a.setChecked(val)
+        if type(val) is int:
+            a.setCurrentIndex(val)
+        elif type(val) is str:
+            a.setCurrentText(val)
 
 def on_close_button(self):
     """

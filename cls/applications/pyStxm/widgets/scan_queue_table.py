@@ -320,11 +320,6 @@ class ScanQTableView(QtWidgets.QTableView):
         self.model().modify_data(row, self.pmap_col, pmap)
 
     def init_delegates(self):
-        # num_cols = len(self.hdr_list)
-        # always the last 2
-        # self.setItemDelegateForColumn(num_cols -1, ProgressBarDelegate(self))
-        # self.setItemDelegateForColumn(num_cols -2 , PixmapDelegate(self))
-        self.setItemDelegateForColumn(self.pmap_col, PixmapDelegate(self))
         self.setItemDelegateForColumn(self.prog_col, ProgressBarDelegate(self))
 
     def set_header(self, hdr_list):
@@ -413,84 +408,6 @@ def get_pixmap(fname):
     # pmap.scaled(64, 64)#, aspectRatioMode=Qt_IgnoreAspectRatio, transformMode=Qt_FastTransformation)
     pmap = pmap.scaled(QtCore.QSize(16, 16), QtCore.Qt.KeepAspectRatio)
     return pmap
-
-
-class PixmapDelegate(QtWidgets.QItemDelegate):
-    """
-    A delegate that places a fully functioning QProgressBar in every
-    cell of the column to which it's applied
-
-    need an icon for each status
-    scan_status_types = Enum('STOPPED', 'PAUSED', 'RUNNING', 'ABORTED', 'DONE')
-    """
-
-    def __init__(self, parent):
-
-        QtWidgets.QItemDelegate.__init__(self, parent)
-
-        self.dir = iconsDir
-        self.psize = "64x64"
-        self.pause_clr = "yellow"
-        self.running_clr = "blue"
-        self.stopped_clr = "gray"
-        self.aborted_clr = "red"
-        self.done_clr = "blue"
-
-        self.paused_pmap = get_pixmap(
-            os.path.join(self.dir, self.pause_clr, self.psize, "pause.png")
-        )
-        self.running_pmap = get_pixmap(
-            os.path.join(self.dir, self.running_clr, self.psize, "loop.png")
-        )
-        self.stopped_pmap = get_pixmap(
-            os.path.join(self.dir, self.stopped_clr, self.psize, "stop.png")
-        )
-        self.aborted_pmap = get_pixmap(
-            os.path.join(self.dir, self.aborted_clr, self.psize, "flag.png")
-        )
-        self.done_pmap = get_pixmap(
-            os.path.join(self.dir, self.done_clr, self.psize, "check.png")
-        )
-
-        self.pmap = self.paused_pmap
-
-    def createEditor(self, parent, option, index):
-        label = QtWidgets.QLabel(parent)
-        #label.setMaximumHeight(15)
-        self.pmap = self.paused_pmap
-        label.setPixmap(self.pmap)
-        return label
-
-    def get_cur_pixmap(self):
-        return self.pmap
-
-    def set_cur_pixmap(self, pmap):
-        self.pmap = pmap
-
-    def setEditorData(self, editor, index):
-        """
-        scan_status_types = Enum('STOPPED', 'PAUSED', 'RUNNING', 'ABORTED', 'DONE')
-        """
-        editor.blockSignals(True)
-        data = int(index.model().data(index, QtCore.Qt.DisplayRole))
-        if data == scan_status_types.STOPPED:
-            editor.setPixmap(self.stopped_pmap)
-        elif data == scan_status_types.PAUSED:
-            editor.setPixmap(self.paused_pmap)
-        elif data == scan_status_types.RUNNING:
-            editor.setPixmap(self.running_pmap)
-        elif data == scan_status_types.ABORTED:
-            editor.setPixmap(self.aborted_pmap)
-        elif data == scan_status_types.DONE:
-            editor.setPixmap(self.done_pmap)
-        else:
-            _logger.error("scan status [%d] not supported" % data)
-        editor.update()
-        editor.blockSignals(False)
-
-    def setModelData(self, editor, model, index):
-        data = index.model().data(index, QtCore.Qt.DisplayRole)
-        model.setData(index, data, QtCore.Qt.EditRole)
 
 
 class ScanQueueTableWidget(QtWidgets.QWidget):

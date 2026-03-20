@@ -1199,21 +1199,12 @@ dev_dct["PVS"] = [
         "cat": "PVS",
         "dcs_nm": "PIXELATOR_SRSTATUS_SHUTTERS",
     },
-
-    # {
-    #     "name": "DNM_RING_CURRENT",
-    #     "class": "make_basedevice",
-    #     "cat": "PVS",
-    #     "dcs_nm": "PIXELATOR_RING_CURRENT" if SIM else "PIXELATOR_RING_CURRENT",
-    #     "units": "mA",
-    # },
-    # {
-    #     "name": "DNM_BASELINE_RING_CURRENT",
-    #     "class": "make_basedevice",
-    #     "cat": "PVS",
-    #     "dcs_nm": "PIXELATOR_BASELINE_RING_CURRENT" if SIM else "PIXELATOR_BASELINE_RING_CURRENT",
-    #     "units": "mA",
-    # },
+    {
+        "name": "DNM_RING_CURRENT",
+        "class": "make_basedevice",
+        "cat": "PVS",
+        "dcs_nm": "Ring_Current",
+    },
     {
         "name": "DNM_DFLT_PMT_DWELL",
         "class": "make_basedevice",

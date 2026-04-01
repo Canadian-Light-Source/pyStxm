@@ -3675,18 +3675,19 @@ class MultiRegionScanParamBase(ScanParamWidget):
                 self.multi_region_widget.ev_widg.table_view.set_roi_is_valid(ev_id, valid=True)
 
         # test EPU limits
-        pol_regions = self.multi_region_widget.get_just_pol_regions()
-        for pol_id, pol_roi in enumerate(pol_regions):
-            if not mtr_offset.check_scan_limits(pol_roi[OFF], pol_roi[OFF]):
-                _logger.error("Scan would violate soft limits of EPU offset")
-                self.multi_region_widget.pol_widg.table_view.set_offset_is_valid(pol_id, valid=False)
-                ret = False
-            else:
-                self.multi_region_widget.pol_widg.table_view.set_offset_is_valid(pol_id, valid=True)
-                if not mtr_angle.check_scan_limits(pol_roi[ANGLE], pol_roi[ANGLE]):
-                    _logger.error("Scan would violate soft limits of EPU angle")
-                    self.multi_region_widget.pol_widg.table_view.set_angle_is_valid(pol_id, valid=False)
+        if mtr_offset:
+            pol_regions = self.multi_region_widget.get_just_pol_regions()
+            for pol_id, pol_roi in enumerate(pol_regions):
+                if not mtr_offset.check_scan_limits(pol_roi[OFF], pol_roi[OFF]):
+                    _logger.error("Scan would violate soft limits of EPU offset")
+                    self.multi_region_widget.pol_widg.table_view.set_offset_is_valid(pol_id, valid=False)
                     ret = False
                 else:
-                    self.multi_region_widget.pol_widg.table_view.set_angle_is_valid(pol_id, valid=True)
+                    self.multi_region_widget.pol_widg.table_view.set_offset_is_valid(pol_id, valid=True)
+                    if not mtr_angle.check_scan_limits(pol_roi[ANGLE], pol_roi[ANGLE]):
+                        _logger.error("Scan would violate soft limits of EPU angle")
+                        self.multi_region_widget.pol_widg.table_view.set_angle_is_valid(pol_id, valid=False)
+                        ret = False
+                    else:
+                        self.multi_region_widget.pol_widg.table_view.set_angle_is_valid(pol_id, valid=True)
         return ret

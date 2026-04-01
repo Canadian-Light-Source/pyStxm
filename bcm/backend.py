@@ -5,4 +5,4 @@
 
 # set the backend that should be used
 
-BACKEND='epics'
+BACKEND='zmq'

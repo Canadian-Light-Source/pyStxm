@@ -487,10 +487,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         self.set_buttons_for_starting()
 
-        bright = master_colors["btn_danger_bright"]["rgb_str"]
-        dark = master_colors["btn_danger_dark"]["rgb_str"]
-        self.emergStopAllBtn.setStyleSheet(f"border: 4px solid {dark}; color: {bright}")
-        self.emergStopAllBtn.clicked.connect(self.on_emergency_stop)
+        # bright = master_colors["btn_danger_bright"]["rgb_str"]
+        # dark = master_colors["btn_danger_dark"]["rgb_str"]
+        # self.emergStopAllBtn.setStyleSheet(f"border: 4px solid {dark}; color: {bright}")
+        # self.emergStopAllBtn.clicked.connect(self.on_emergency_stop)
 
         # Install event filter for all child widgets for debugging
         # event_filter = MouseOverEventFilter()
@@ -499,6 +499,20 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         # .children()
 
         self.enable_energy_change(True)
+
+        screen_size = get_default_screen_size()
+        # 2564
+        if screen_size[0] < 2564:
+            self.hide_all_docks()
+            self.setGeometry(QtCore.QRect(50,50,1000,1000))
+
+    
+    def hide_all_docks(self):
+        """
+        on startup only show central widget and let user decide what docks they want to see
+        """
+        for dock in self.findChildren(QtWidgets.QDockWidget):
+            dock.hide()
 
     def on_update_rois(self, dct):
         """
@@ -1330,7 +1344,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             rset_intfer_dev = dev_obj.device("DNM_RESET_INTERFERS", do_warn=False)
             if rset_intfer_dev:
                 self.esPosPanel.append_toggle_btn_device(
-                    "  AutoZero and Reset Interferometers  ",
+                    "  Reset Interferometers  ",
                     "Reset Interferometer positions to coarse positions",
                     rset_intfer_dev,
                     off_val=0,
@@ -3055,7 +3069,9 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             # added to support SLS Pixelator
             update_plot = False
             # for performance reasons limit the update rate of the plot
-            if ((prog_dct['PROG']['PERCENT'] % self.executingScan.get_plot_update_divisor()) == 0 and
+            if self.executingScan.get_plot_update_divisor() == 0:
+                update_plot = True
+            elif ((prog_dct['PROG']['PERCENT'] % self.executingScan.get_plot_update_divisor()) == 0 and
                     ( self.executingScan._already_plotted != prog_dct['PROG']['PERCENT'])):
                 self.executingScan._already_plotted = prog_dct['PROG']['PERCENT']
                 update_plot = True
@@ -4224,19 +4240,39 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         simple msg handler for debugging
         :param msg:
         :return:
-        """
-        # print(msg)
-        # self.rr(msg[0], msg)
-        hdr = msg[0]
-        if hdr not in self._dcs_server_msg_headers.keys():
-            # set it as not selected
-            self._dcs_server_msg_headers[hdr] = False
 
-        if self._dcs_server_msg_headers[hdr]:
-            #add the message to the dcsServerWindow
-            #self.add_to_dcs_server_window(QtGui.QColor("black"), f"> {msg}")
-            s = f'<font color="black"><b>> </b>{msg}</font>'
-            self.add_to_dcs_server_window(QtGui.QColor("black"), f"{s}")
+        Error in msg: 
+        [{'message': 'JsonException: ScanController::moveRequest : TangoPositioner::setPosition : set position of FocalLength not possible : PyDs_PythonError Exception: Cannot move: already in motion\n, API_AttributeFailed Failed to write_attribute on device motor/dummy_mot_ctrl/3, attribute Position', 'status': 'failure'}] unhashable type: 'dict'
+
+        
+        """
+        #print(f"print_dcs_server_msg: {msg}")
+        # self.rr(msg[0], msg)
+        try:
+            if type(msg) == dict:
+                hdr = list(msg.keys())[0]
+                msg = msg[hdr]
+            else:
+                hdr = msg[0]
+            if hdr not in self._dcs_server_msg_headers.keys():
+                # set it as not selected
+                self._dcs_server_msg_headers[hdr] = False
+                if hdr == "message":
+                    self._dcs_server_msg_headers[hdr] = True
+                    
+            if self._dcs_server_msg_headers[hdr] or hdr == "message":
+                #add the message to the dcsServerWindow
+                color = "black"
+                if type(msg) == str:
+                    if msg.find('Exception') > -1:
+                        color = "red"        
+                s = f'<font color="{color}"><b>> </b>{msg}</font>'
+                self.add_to_dcs_server_window(QtGui.QColor(color), f"{s}")
+        except Exception as e:
+            if type(msg) == dict:
+                hdr = list(msg.keys())[0]
+                msg = msg[hdr]
+            print(f"print_dcs_server_msg: \n\thdr={hdr}: \n\tmsg={msg} \n\t{e}")
 
 
 

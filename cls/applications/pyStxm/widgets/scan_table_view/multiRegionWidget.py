@@ -228,9 +228,9 @@ class MultiRegionWidget(BaseSelectionWidget):
         pol = None
         offset = None
         angle = None
-        pol_dev = main_obj.device('DNM_EPU_POLARIZATION')
-        pol_angle_dev = main_obj.device('DNM_EPU_ANGLE')
-        pol_offset_dev = main_obj.device('DNM_EPU_OFFSET')
+        pol_dev = main_obj.device('DNM_EPU_POLARIZATION', do_warn=False)
+        pol_angle_dev = main_obj.device('DNM_EPU_ANGLE', do_warn=False)
+        pol_offset_dev = main_obj.device('DNM_EPU_OFFSET', do_warn=False)
         if pol_dev:
             pol = pol_dev.get()
             angle = pol_angle_dev.get()

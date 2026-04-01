@@ -8,8 +8,8 @@ from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QLineEdit, QPushButton, QLabel
 from PyQt5.QtCore import QTimer, pyqtSignal, QThread
 
-from cls.applications.pyStxm.widgets.dict_based_contact_sheet.contact_sheet import ContactSheet
-from bcm.devices.zmq.pixelator.loadfile_reponse import LoadFileResponseClass
+#from cls.applications.pyStxm.widgets.dict_based_contact_sheet.contact_sheet import ContactSheet
+#from bcm.devices.zmq.pixelator.loadfile_reponse import LoadFileResponseClass
 
 # from cls.applications.pyStxm.widgets.dict_based_contact_sheet.contact_sheet import ContactSheet
 from cls.data_io.stxm_data_io import STXMDataIo

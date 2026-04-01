@@ -259,18 +259,20 @@ def get_scan_request_dct(self):
     dct['prec_field'] = float(self.scan_req_wdg.precisionFld.text())
     dct['defocus_diam_field'] = float(self.scan_req_wdg.defocusDiamFld.text())
     dct['accel_dist'] = float(self.scan_req_wdg.accelDistFld.text())
-    dct['tile_delay'] = float(self.scan_req_wdg.tileDelayFld.text())
-    dct['line_delay'] = float(self.scan_req_wdg.lineDelayFld.text())
-    dct['point_delay'] = float(self.scan_req_wdg.pointDelayFld.text())
+    dct['tile_delay'] = float(self.scan_req_wdg.tileDelayFld.text()) * 0.001
+    dct['line_delay'] = float(self.scan_req_wdg.lineDelayFld.text()) * 0.001
+    dct['point_delay'] = float(self.scan_req_wdg.pointDelayFld.text()) * 0.001
     dct['line_repeat'] = int(self.scan_req_wdg.lineRepSpinBox.value())
     dct['coarse_only'] = True if self.scan_req_wdg.coarseOnlyChkBox.isChecked() else False
     dct['scan_point_or_line_mode'] = 'Point by Point' if self.scan_req_wdg.scanTypeSelComboBox.currentIndex() == scan_sub_types.POINT_BY_POINT else 'Constant Velocity'
     dct['polarization'] = "" # self.scan_req_wdg.polComboBox.currentText()
 
-    for k, v in self.default_scan_rec_setting_dct.items():
-        if v:
-            # if the value is not None it was overridden in the plugin constructor to be used as a default value
-            dct[k] = v
+    # for k, v in self.default_scan_rec_setting_dct.items():
+    #     if v:
+    #         # if the value is not None it was overridden in the plugin constructor to be used as a default value
+    #         if k.find("_delay") > -1:
+    #             v = v * 0.001
+    #         dct[k] = v
 
     return dct
 

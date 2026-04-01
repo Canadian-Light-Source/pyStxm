@@ -120,7 +120,7 @@ class BaseDcsServerApi(QtCore.QObject):
         if app_devname in self.parent.devs.keys():
             #print(f"_update_device_feedback: updating [{app_devname}={value}]")
             dev = self.parent.devs[app_devname]['dev']
-            #print(f"_update_device_feedback: dev.name={dev.name} dcs_devname={dcs_devname} app_devname={app_devname} value={value}")
+            # print(f"_update_device_feedback: dev.name={dev.name} dcs_devname={dcs_devname} app_devname={app_devname} value={value}")
             dev.update_position(value, False)
 
     def _update_device_status(self, dcs_devname: str, value: Union[int, float, str], app_devname: str=None) -> None:

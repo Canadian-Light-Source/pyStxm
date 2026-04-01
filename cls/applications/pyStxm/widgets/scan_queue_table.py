@@ -27,8 +27,8 @@ iconsDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons", "pn
 # setup module logger with a default do-nothing handler
 _logger = get_module_logger(__name__)
 
-HDR_FONT_SIZE = 11
-TABLE_FONT_SIZE = 11
+HDR_FONT_SIZE = 6 #11
+TABLE_FONT_SIZE = 6 #11
 
 DEFAULT_PIXMAP_COLUMN = 5
 DEFAULT_PROGESS_BAR_COLUMN = 6

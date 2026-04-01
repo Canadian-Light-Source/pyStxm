@@ -1,89 +1,138 @@
 
-/* base QFrame that the plotTabWidget sits on */
-
-QFrame{
-background-color: gray_210;
+QStackedWidget{
+   background-color: rgb(115,115,115);
 }
 
 
-QFrame#centralFrame, .QWidget{
-    background-color: rgb(115,115,115);
+#imagePlotFrame{
+   background-color: rgb(115,115,115);
+}/*
+TableView#scan_q_tv QHeaderView{ 
+	font-size: 8pt; 
+		
 }
-
-/*QFrame:hover {
-     background-color: rgb(100,100,100);
- }
 */
 
-QFrame#loadscan_frame:hover{
-     /*background-color: rgb(10,10,10);*/
-	background-color: rgb(150,150,150);
-	border: 2px solid rgb(180,180,180);
-    border-radius: 4px;
-    padding: 2px;
+#SpatialScanTableView{
+	 font-size: 8pt;
 }
 
-QFrame#loadscan_frame{
-     /*background-color: rgb(100,100,100);*/
-	border: 2px solid rgb(130,130,130);
-    border-radius: 4px;
-    padding: 2px;
+#SpatialScanTableView,#EnergyScanTableView, #PolarizationTableView{
+	background-color: rgb(165, 165, 165);
+	color: rgb(240,240,240);
+}
+
+#SpatialScanTableView,#EnergyScanTableView, #PolarizationTableView::!selected{
+	background-color: rgb(165, 165, 165);
+	color: rgb(240,240,240);
+}
+
+#ScanQTableView{
+	background-color: rgb(12, 12, 12);
+	color: rgb(240,240,240);
 }
 
 
-
-
-QWidget	.QToolButton{
-    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(90,90,90), stop:1 rgb(60,60,60));
-    border: 1px solid rgb(0,0,0);
-    color: rgb(220,220,220);
-    /*padding: 1ex 2ex;*/
-    font: 16px "MS Shell Dlg 2"; 
+QTableView QHeaderView::section {
+	background-color: rgb(57, 60, 57);
+	color: rgb(240,240,240);
+}
+QTableView QHeaderView::section:checked {
+	background-color: rgb(57, 60, 57);
+	color: rgb(240,240,240);
 }
 
-QWidget	.QToolButton#helpBtn{
-    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(200,200,200), stop:1 rgb(170,170,170));
+/*QHeaderView::section {
+    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                      stop:0 #616161, stop: 0.5 #505050,
+                                      stop: 0.6 #434343, stop:1 #656565);
+    color: rgb(255,255,255);
+    padding-left: 4px;
+    border: 1px solid #6c6c6c;
+}*/
+
+
+CameraRuler#calibCamWidget QFrame{
+    background-color: rgb(115,115,115);
 }
-QToolButton::hover{
-    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(114, 148, 240), stop:1 rgb(92, 119, 194));
-    color:rgb(25,25,25);
+CameraRuler#calibCamWidget .QWidget{
+    background-color: rgb(115,115,115);
+}
+/* the area just below the area with the axis ticks */
+ImageWidgetPlot#lineByLineImageDataWidget QFrame > QWidget{
+    color: rgb(255,255,255);
+   background-color: rgb(115,115,115);
 }
 
-QToolButton::checked{
-    border: 1.5px solid rgb(115, 150, 247);
+/* the outer area where the axis ticks strings are for the contrast tool 
+for main LineByLineimageWidget*/
+ImageWidgetPlot#lineByLineImageDataWidget QFrame{
+   background-color: rgb(115,115,115);
 }
+
+/* the outer area where the axis ticks strings are for the contrast tool 
+for ptycho ptychoCamPlot*/
+ImageWidgetPlot#ptychoCamPlot QFrame{
+   background-color: rgb(115,115,115);
+}
+
+
+/*
+ImageWidgetPlot#lineByLineImageDataWidget QFrame > QFrame{
+   background-color: rgb(115,115,115);
+}
+*/
+
+ImageDialog{
+   background-color: rgb(115,115,115);
+}
+
+#contrastPlotCanvasBgrnd{
+	background-color: rgb(20,20,20);
+}
+
+
+/*
+ImageWidgetPlot#lineByLineImageDataWidget > QwtPlotCanvas{
+
+	background-color: rgb(20,20,20);
+}
+
+#imagePlotBgrnd{
+    background-color: rgb(20,20,20);
+}
+*/
+QToolBox::tab{
+    /*background-color: rgb(85,85,85);*/
+    background-color: qlineargradient(x1:0, y1:-1, x2:0, y2:1, stop:0 rgb(170,170,170), stop:1 rgb(190,190,190));
+    color: rgb(25,25,25);
+    border: 1px solid rgb(75,75,75);
+    font: bold 16px "MS Shell Dlg 2";
+
+}
+
+QToolBox::tab:selected{
+	/*color: rgb(115, 150, 247);*/
+	border-bottom-color: rgb(65,65,65);
+	color: rgb(255,255,255);
+	background-color: rgb(30,30,30);
+	font: bold 16px;
+}
+
+
+QToolBox::tab:!selected{
+	color: rgb(180,180,180);
+	background-color: rgb(90,90,90);
+    border-bottom-color: rgb(75,75,75);
+    font: 16px;
+ 	/*border-left-radius: 4px;
+    border-right-radius: 4px;
+   */
+}
+
+
 
 /*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-QMainWindow{
-	 background-color: rgb(65,65,65);
-}
-
-/* this is the area around main widgets that provide spacer type widgets */
-QMainWindow::separator {
-	background-color: rgb(70,70,70);
-}
-
-QMainWindow::separator:hover {
-}
-/*----------------------------------------------------------------------------*/
-:disabled{
-   color: rgb(130,130,130);
-}
-
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
- QLineEdit {
-     border: 2px solid gray;
-     border-radius: 2px;
-     padding: 0 8px;
-     color: rgb(0,0,0);
-     background-color:  rgb(240,240,240);
-     font: 16px;
- }
-QGraphicsView {
- background-color: rgb(145,145,145);
- }/*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
 QDockWidget
 { 
@@ -125,32 +174,59 @@ QDockWidget::title
    border: 2px groove rgb(70,70,70);
    padding: 0.1em;
 }
-QToolBar{
-    background-color: rgb(85,85,85);
-    border: 0px;
-    
+
+/* the are outside the actual plot where the axis and tick strings are */
+BaseStripToolWidget#chartspectraWidget	QFrame {
+    background-color: rgb(115,115,115);
 }
 
-QToolBar:horizontal{
-    /*background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(60,60,60), stop:1 rgb(90,90,90));*/
-    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(100,100,100), stop:1 rgb(85,85,85));
-   border-bottom: 2px groove rgb(70,70,70);
+BaseStripToolWidget#chartspectraWidget QFrame > QWidget{
+    color: rgb(255,255,255);
+    background-color: rgb(115,115,115);
+    font:  16px;
+ }
+
+
+QGraphicsView {
+ background-color: rgb(145,145,145);
+ }
+/* this is needed for the ItemList in a plotpy plotter, the scrollable area is rgb(0,0,0) otherwise*/
+QListWidget{
+    border: 0px solid rgb(30,30,30);
+    background-color: rgb(255,255,255);
+
 }
-
-QToolBar:vertical{
-    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(100,100,100), stop:1 rgb(85,85,85));
-}
-
-QToolBar:separator{
-   background-color:qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgb(180,180,180), stop:1 rgb(90,90,90));;
-   border-bottom: 1px solid rgb(0,0,0);
-   width:1px;
-   height:1px;
-   margin:5px;
-}
-
-
 /*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+/*QRadioButton::indicator:unchecked{
+     image: url(UI:checkbox_unchecked.png);
+ }
+
+QRadioButton::indicator:unchecked:disabled{
+     image: url(UI:checkbox_unchecked_disabled.png);
+ }
+
+QRadioButton::indicator:checked{
+     image: url(UI:checkbox_checked.png);
+ }
+
+QRadioButton::indicator:checked:disabled{
+     image: url(UI:checkbox_checked_disabled.png);
+ }*/
+
+QRadioButton{
+    font: 16px;
+    color: rgb(255,255,255);
+}/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+ QLineEdit {
+     border: 2px solid gray;
+     border-radius: 2px;
+     padding: 0 8px;
+     color: rgb(0,0,0);
+     background-color:  rgb(240,240,240);
+     font: 16px;
+ }/*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
 /*enum
 QTabBar::RoundedNorth			0	The normal rounded look above the pages
@@ -240,197 +316,51 @@ QTabBar::tab:!selected {
 
 
 
-QToolBox::tab{
-    /*background-color: rgb(85,85,85);*/
-    background-color: qlineargradient(x1:0, y1:-1, x2:0, y2:1, stop:0 rgb(170,170,170), stop:1 rgb(190,190,190));
-    color: rgb(25,25,25);
-    border: 1px solid rgb(75,75,75);
-    font: bold 16px "MS Shell Dlg 2";
+/* base QFrame that the plotTabWidget sits on */
 
-}
-
-QToolBox::tab:selected{
-	/*color: rgb(115, 150, 247);*/
-	border-bottom-color: rgb(65,65,65);
-	color: rgb(255,255,255);
-	background-color: rgb(30,30,30);
-	font: bold 16px;
+QFrame{
+background-color: gray_210;
 }
 
 
-QToolBox::tab:!selected{
-	color: rgb(180,180,180);
-	background-color: rgb(90,90,90);
-    border-bottom-color: rgb(75,75,75);
-    font: 16px;
- 	/*border-left-radius: 4px;
-    border-right-radius: 4px;
-   */
+QFrame#centralFrame, .QWidget{
+    background-color: rgb(115,115,115);
 }
 
+/*QFrame:hover {
+     background-color: rgb(100,100,100);
+ }
+*/
+
+QFrame#loadscan_frame:hover{
+     /*background-color: rgb(10,10,10);*/
+	background-color: rgb(150,150,150);
+	border: 2px solid rgb(180,180,180);
+    border-radius: 4px;
+    padding: 2px;
+}
+
+QFrame#loadscan_frame{
+     /*background-color: rgb(100,100,100);*/
+	border: 2px solid rgb(130,130,130);
+    border-radius: 4px;
+    padding: 2px;
+}
 
 
 
 /* the are outside the actual plot where the axis and tick strings are */
-
-CurveViewerWidget#CurveViewerWidget QFrame,
-CurveViewerWidget#spectraWidget QFrame {
-   color: rgb(255,255,255);
-   background-color: rgb(115,115,115);
-}
-/* the area just below the area with the axis ticks , rgb(255,255,255) tick font*/
-CurveViewerWidget#CurveViewerWidget QFrame > QWidget,
-CurveViewerWidget#spectraWidget QFrame > QWidget {
-   color: rgb(255,255,255);
-   background-color: rgb(115,115,115);
-}
-CurveViewerWidget#CurveViewerWidget #curvePlotBgrnd,
-CurveViewerWidget#spectraWidget #spectraPlotCanvasBgrnd {
-   color: rgb(255,255,255);
-	background-color: gray_55;
-}
-
-E712ControlWidget QFrame > QWidget{
-   color: rgb(255,255,255);
-   background-color: rgb(115,115,115);
-   font:  18px;
-}
-
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/* fix group box */
-QGroupBox{
-  color: rgb(200, 200, 200);
-  background-color: rgb(115,115,115);
-	border: 2px groove rgb(70, 70, 70); 
-
-  margin-top: 1.1em; /* leave space at the top for the title */ 
-  margin-bottom: 0.1em; /* leave space at the top for the title */ 
-	font: bold 16px "MS Shell Dlg 2";  
-  font-weight: bold;
-}
-
-QFrame	.QGroupBox{
-    background-color: rgb(90, 90, 90);
-    color: rgb(220,220,220);
-    /*border: 2px groove rgb(70, 70, 70);*/
-
-   selection-background-color:  rgb(60, 60, 60) ;
-   selection-color: rgb(220, 220, 220);
-	 /*margin: 3px 0px 3px 0px;*/
-}
-
-
-
-/* Scan Status groupbox control */
-QFrame	.QGroupBox	.QLabel{
-    background-color: transparent;
-    color: rgb(220,220,220);
-} 
-
-/* Scan Status groupbox control */
-QFrame	.QGroupBox	#scanActionLbl{
-    background-color: rgb(40,40,40);
-    color: rgb(250,250,250);
-}
-
-QGroupBox::title{
-  border: 0px solid red;
-
-  subcontrol-origin: margin;
-  top: 0px;
-}
-
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-QTextEdit{
-    background-color: rgb(210,210,210);
-    color: rgb(220,220,220);
-    border: 2px groove rgb(70,70,70);
-
-    selection-background-color: rgb(60,60,60);
-    selection-color: rgb(220,220,220);
-	margin: 3px 0px 3px 0px;
-	font: 16px "MS Shell Dlg 2";
-}
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*QRadioButton::indicator:unchecked{
-     image: url(UI:checkbox_unchecked.png);
- }
-
-QRadioButton::indicator:unchecked:disabled{
-     image: url(UI:checkbox_unchecked_disabled.png);
- }
-
-QRadioButton::indicator:checked{
-     image: url(UI:checkbox_checked.png);
- }
-
-QRadioButton::indicator:checked:disabled{
-     image: url(UI:checkbox_checked_disabled.png);
- }*/
-
-QRadioButton{
-    font: 16px;
-    color: rgb(255,255,255);
-}
-CameraRuler#calibCamWidget QFrame{
+StripToolWidget#stripToolWidget	QFrame {
     background-color: rgb(115,115,115);
 }
-CameraRuler#calibCamWidget .QWidget{
-    background-color: rgb(115,115,115);
-}
-/* the area just below the area with the axis ticks */
-ImageWidgetPlot#lineByLineImageDataWidget QFrame > QWidget{
+
+StripToolWidget#stripToolWidget QFrame > QWidget{
     color: rgb(255,255,255);
-   background-color: rgb(115,115,115);
-}
-
-/* the outer area where the axis ticks strings are for the contrast tool 
-for main LineByLineimageWidget*/
-ImageWidgetPlot#lineByLineImageDataWidget QFrame{
-   background-color: rgb(115,115,115);
-}
-
-/* the outer area where the axis ticks strings are for the contrast tool 
-for ptycho ptychoCamPlot*/
-ImageWidgetPlot#ptychoCamPlot QFrame{
-   background-color: rgb(115,115,115);
-}
+    background-color: rgb(115,115,115);
+    font:  16px;
+ }
 
 
-/*
-ImageWidgetPlot#lineByLineImageDataWidget QFrame > QFrame{
-   background-color: rgb(115,115,115);
-}
-*/
-
-ImageDialog{
-   background-color: rgb(115,115,115);
-}
-
-#contrastPlotCanvasBgrnd{
-	background-color: rgb(20,20,20);
-}
-
-
-/*
-ImageWidgetPlot#lineByLineImageDataWidget > QwtPlotCanvas{
-
-	background-color: rgb(20,20,20);
-}
-
-#imagePlotBgrnd{
-    background-color: rgb(20,20,20);
-}
-*/
-/* this is needed for the ItemList in a plotpy plotter, the scrollable area is rgb(0,0,0) otherwise*/
-QListWidget{
-    border: 0px solid rgb(30,30,30);
-    background-color: rgb(255,255,255);
-
-}
 /* this is the background for the list that is displayed for a QCombobox */
 
 
@@ -544,6 +474,39 @@ QComboBox QListView
 
 
 
+
+/* the are outside the actual plot where the axis and tick strings are */
+
+CurveViewerWidget#CurveViewerWidget QFrame,
+CurveViewerWidget#spectraWidget QFrame {
+   color: rgb(255,255,255);
+   background-color: rgb(115,115,115);
+}
+/* the area just below the area with the axis ticks , rgb(255,255,255) tick font*/
+CurveViewerWidget#CurveViewerWidget QFrame > QWidget,
+CurveViewerWidget#spectraWidget QFrame > QWidget {
+   color: rgb(255,255,255);
+   background-color: rgb(115,115,115);
+}
+CurveViewerWidget#CurveViewerWidget #curvePlotBgrnd,
+CurveViewerWidget#spectraWidget #spectraPlotCanvasBgrnd {
+   color: rgb(255,255,255);
+	background-color: gray_55;
+}
+
+E712ControlWidget QFrame > QWidget{
+   color: rgb(255,255,255);
+   background-color: rgb(115,115,115);
+   font:  18px;
+}
+
+QSpinBox{
+    font: bold 16px "MS Shell Dlg 2";
+    font-weight: bold;
+}
+#Form{
+    background-color: rgb(115,115,115);
+}
 /*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
 QWidget	.QPushButton{
@@ -597,9 +560,89 @@ QPushButton#m_pbAdvancedSetting{
    padding: 0ex 0ex;
 }
 
-#Form{
-    background-color: rgb(115,115,115);
+/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+/* fix group box */
+QGroupBox{
+  color: rgb(200, 200, 200);
+  background-color: rgb(115,115,115);
+	border: 2px groove rgb(70, 70, 70); 
+
+  margin-top: 1.1em; /* leave space at the top for the title */ 
+  margin-bottom: 0.1em; /* leave space at the top for the title */ 
+	font: bold 16px "MS Shell Dlg 2";  
+  font-weight: bold;
 }
+
+QFrame	.QGroupBox{
+    background-color: rgb(90, 90, 90);
+    color: rgb(220,220,220);
+    /*border: 2px groove rgb(70, 70, 70);*/
+
+   selection-background-color:  rgb(60, 60, 60) ;
+   selection-color: rgb(220, 220, 220);
+	 /*margin: 3px 0px 3px 0px;*/
+}
+
+
+
+/* Scan Status groupbox control */
+QFrame	.QGroupBox	.QLabel{
+    background-color: transparent;
+    color: rgb(220,220,220);
+} 
+
+/* Scan Status groupbox control */
+QFrame	.QGroupBox	#scanActionLbl{
+    background-color: rgb(40,40,40);
+    color: rgb(250,250,250);
+}
+
+QGroupBox::title{
+  border: 0px solid red;
+
+  subcontrol-origin: margin;
+  top: 0px;
+}
+
+/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+QTextEdit{
+    background-color: rgb(210,210,210);
+    color: rgb(220,220,220);
+    border: 2px groove rgb(70,70,70);
+
+    selection-background-color: rgb(60,60,60);
+    selection-color: rgb(220,220,220);
+	margin: 3px 0px 3px 0px;
+	font: 16px "MS Shell Dlg 2";
+}
+/* changing this color affects a lot of the QLabels
+Especially the plot axis ticks color
+*/
+QWidget > QLabel{
+
+	color: rgb(255,255,255);
+	background-color: transparent;
+	
+}
+
+#stripToolFbkLbl{
+	color: rgb(255,255,255);
+	background-color: transparent;
+	
+}
+
+ca_aiLabelWidget{
+	color: rgb(255,255,255);
+	background-color: rgb(115,115,115);
+	
+}
+
+
+
+
+
 
 /* changing this color affects a lot of the QLabels */
 QDialog{
@@ -612,6 +655,143 @@ QDialog{
 	color: rgb(255, 255, 255);
 	background-color: rgb(115,115,115);
 	
+}
+
+/*----------------------------------------------------------------------------*/
+
+
+/*
+QTabWidget	QWidget{
+   background-color: transparent; 
+   selection-background-color: rgb(60,60,60);
+   selection-color: rgb(220,220,220);
+	 
+}
+*/
+QTabWidget::pane { /* The tab widget frame */
+    background-color: rgb(20,20,20);
+    border: 1px solid transparent;
+    margin:0px 0px 0px 0px;
+}
+
+QTabWidget::title
+{
+   background-color: transparent;
+   /*border: 2px groove rgb(70,70,70);
+   padding: 0.4em;*/
+}
+
+/*
+QTabWidget	.QTextEdit{
+
+    background-color: transparent;
+    color: gray_220;
+    border: 2px groove rgb(70,70,70);
+
+   selection-background-color: rgb(60,60,60);
+   selection-color: rgb(220,220,220);
+   margin: 3px 0px 3px 0px;
+}
+*/
+/* this is the area below the guiqwt plot dialogs */
+#plotTabWidget,#spectraPlotFrame{
+    background-color: rgb(115,115,115);
+}
+
+#plotTabWidget,#chartPlotFrame{
+    background-color: rgb(115,115,115);
+}
+
+QWidget #chartPlotFrame{
+    background-color: rgb(115,115,115);
+}
+
+
+/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+/*QCheckBox::indicator:unchecked{
+     image: url(UI:checkbox_unchecked.png);
+ }
+
+QCheckBox::indicator:unchecked:disabled{
+     image: url(UI:checkbox_unchecked_disabled.png);
+ }
+
+QCheckBox::indicator:checked{
+     image: url(UI:checkbox_checked.png);
+ }
+
+QCheckBox::indicator:checked:disabled{
+     image: url(UI:checkbox_checked_disabled.png);
+ }*/
+
+QCheckBox{
+    font: 16px;
+    color: rgb(255,255,255);
+}
+/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+QWidget	.QProgressBar{
+    background-color:  qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(90, 90, 90), stop:1 rgb(60, 60, 60));
+    border: 1px solid rgb(0,0,0);
+	  font-size: 10px;
+	  margin: -5px -5px -5px -5px;
+	  text-align: center;
+	  color: rgb(240,240,240);
+	  
+}
+
+QProgressBar::chunk{
+    /*background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgba(180, 180, 180, 100), stop:1 rgba(60, 60, 60, 60));*/
+    background-color:rgb(80, 135, 255);
+    /*border: 1px solid rgba(180, 180, 180, 200);*/
+    
+    margin: 1px 1px 1px 1px;
+
+}
+
+#scan_progbar{
+    background-color:  qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(90, 90, 90), stop:1 rgb(60, 60, 60));
+    border: 1px solid rgb(0,0,0);
+	  font-size: 12px;
+	  margin: -5px -5px -5px -5px;
+	  text-align: center;
+	  color: rgb(240,240,240);
+	  
+}
+
+#scan_progbar::chunk{
+    /*background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgba(180, 180, 180, 100), stop:1 rgba(60, 60, 60, 60));*/
+    background-color:rgb(60, 115, 235);
+    /*border: 1px solid rgba(180, 180, 180, 200);*/
+    
+    margin: 1px 1px 1px 1px;
+
+}
+
+
+QSplitter{
+background-color: rgb(10,10,10);
+}
+
+QWidget	.QToolButton{
+    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(90,90,90), stop:1 rgb(60,60,60));
+    border: 1px solid rgb(0,0,0);
+    color: rgb(220,220,220);
+    /*padding: 1ex 2ex;*/
+    font: 16px "MS Shell Dlg 2"; 
+}
+
+QWidget	.QToolButton#helpBtn{
+    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(200,200,200), stop:1 rgb(170,170,170));
+}
+QToolButton::hover{
+    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(114, 148, 240), stop:1 rgb(92, 119, 194));
+    color:rgb(25,25,25);
+}
+
+QToolButton::checked{
+    border: 1.5px solid rgb(115, 150, 247);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -692,112 +872,29 @@ QLabel#stripToolCountsFbkLbl{
 
 
 
-
-/* changing this color affects a lot of the QLabels
-Especially the plot axis ticks color
-*/
-QWidget > QLabel{
-
-	color: rgb(255,255,255);
-	background-color: transparent;
-	
+/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+QMainWindow{
+	 background-color: rgb(65,65,65);
 }
 
-#stripToolFbkLbl{
-	color: rgb(255,255,255);
-	background-color: transparent;
-	
+/* this is the area around main widgets that provide spacer type widgets */
+QMainWindow::separator {
+	background-color: rgb(70,70,70);
 }
 
-ca_aiLabelWidget{
-	color: rgb(255,255,255);
+QMainWindow::separator:hover {
+}
+/*----------------------------------------------------------------------------*/
+:disabled{
+   color: rgb(130,130,130);
+}
+
+
+PolaritySelWidget,EnergySelWidget,SpatialSelWidget {
 	background-color: rgb(115,115,115);
-	
+
 }
-
-
-
-
-
-/*
-TableView#scan_q_tv QHeaderView{ 
-	font-size: 8pt; 
-		
-}
-*/
-
-#SpatialScanTableView{
-	 font-size: 8pt;
-}
-
-#SpatialScanTableView,#EnergyScanTableView, #PolarizationTableView{
-	background-color: rgb(165, 165, 165);
-	color: rgb(240,240,240);
-}
-
-#SpatialScanTableView,#EnergyScanTableView, #PolarizationTableView::!selected{
-	background-color: rgb(165, 165, 165);
-	color: rgb(240,240,240);
-}
-
-#ScanQTableView{
-	background-color: rgb(12, 12, 12);
-	color: rgb(240,240,240);
-}
-
-
-QTableView QHeaderView::section {
-	background-color: rgb(57, 60, 57);
-	color: rgb(240,240,240);
-}
-QTableView QHeaderView::section:checked {
-	background-color: rgb(57, 60, 57);
-	color: rgb(240,240,240);
-}
-
-/*QHeaderView::section {
-    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                      stop:0 #616161, stop: 0.5 #505050,
-                                      stop: 0.6 #434343, stop:1 #656565);
-    color: rgb(255,255,255);
-    padding-left: 4px;
-    border: 1px solid #6c6c6c;
-}*/
-
-
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-/*QCheckBox::indicator:unchecked{
-     image: url(UI:checkbox_unchecked.png);
- }
-
-QCheckBox::indicator:unchecked:disabled{
-     image: url(UI:checkbox_unchecked_disabled.png);
- }
-
-QCheckBox::indicator:checked{
-     image: url(UI:checkbox_checked.png);
- }
-
-QCheckBox::indicator:checked:disabled{
-     image: url(UI:checkbox_checked_disabled.png);
- }*/
-
-QCheckBox{
-    font: 16px;
-    color: rgb(255,255,255);
-}
-/* the are outside the actual plot where the axis and tick strings are */
-StripToolWidget#stripToolWidget	QFrame {
-    background-color: rgb(115,115,115);
-}
-
-StripToolWidget#stripToolWidget QFrame > QWidget{
-    color: rgb(255,255,255);
-    background-color: rgb(115,115,115);
-    font:  16px;
- }
-
 /*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
 
@@ -842,125 +939,28 @@ QStatusBar  .QLabel{
 
 QStatusBar#statusbar{
      background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(60, 60, 60), stop:1 rgb(90, 90, 90));
-}/*----------------------------------------------------------------------------*/
-
-
-/*
-QTabWidget	QWidget{
-   background-color: transparent; 
-   selection-background-color: rgb(60,60,60);
-   selection-color: rgb(220,220,220);
-	 
-}
-*/
-QTabWidget::pane { /* The tab widget frame */
-    background-color: rgb(20,20,20);
-    border: 1px solid transparent;
-    margin:0px 0px 0px 0px;
-}
-
-QTabWidget::title
-{
-   background-color: transparent;
-   /*border: 2px groove rgb(70,70,70);
-   padding: 0.4em;*/
-}
-
-/*
-QTabWidget	.QTextEdit{
-
-    background-color: transparent;
-    color: gray_220;
-    border: 2px groove rgb(70,70,70);
-
-   selection-background-color: rgb(60,60,60);
-   selection-color: rgb(220,220,220);
-   margin: 3px 0px 3px 0px;
-}
-*/
-/* this is the area below the guiqwt plot dialogs */
-#plotTabWidget,#spectraPlotFrame{
-    background-color: rgb(115,115,115);
-}
-
-#plotTabWidget,#chartPlotFrame{
-    background-color: rgb(115,115,115);
-}
-
-QWidget #chartPlotFrame{
-    background-color: rgb(115,115,115);
-}
-
-
-/* the are outside the actual plot where the axis and tick strings are */
-BaseStripToolWidget#chartspectraWidget	QFrame {
-    background-color: rgb(115,115,115);
-}
-
-BaseStripToolWidget#chartspectraWidget QFrame > QWidget{
-    color: rgb(255,255,255);
-    background-color: rgb(115,115,115);
-    font:  16px;
- }
-
-
-/*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-QWidget	.QProgressBar{
-    background-color:  qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(90, 90, 90), stop:1 rgb(60, 60, 60));
-    border: 1px solid rgb(0,0,0);
-	  font-size: 10px;
-	  margin: -5px -5px -5px -5px;
-	  text-align: center;
-	  color: rgb(240,240,240);
-	  
-}
-
-QProgressBar::chunk{
-    /*background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgba(180, 180, 180, 100), stop:1 rgba(60, 60, 60, 60));*/
-    background-color:rgb(80, 135, 255);
-    /*border: 1px solid rgba(180, 180, 180, 200);*/
+}QToolBar{
+    background-color: rgb(85,85,85);
+    border: 0px;
     
-    margin: 1px 1px 1px 1px;
-
 }
 
-#scan_progbar{
-    background-color:  qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(90, 90, 90), stop:1 rgb(60, 60, 60));
-    border: 1px solid rgb(0,0,0);
-	  font-size: 12px;
-	  margin: -5px -5px -5px -5px;
-	  text-align: center;
-	  color: rgb(240,240,240);
-	  
+QToolBar:horizontal{
+    /*background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(60,60,60), stop:1 rgb(90,90,90));*/
+    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(100,100,100), stop:1 rgb(85,85,85));
+   border-bottom: 2px groove rgb(70,70,70);
 }
 
-#scan_progbar::chunk{
-    /*background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgba(180, 180, 180, 100), stop:1 rgba(60, 60, 60, 60));*/
-    background-color:rgb(60, 115, 235);
-    /*border: 1px solid rgba(180, 180, 180, 200);*/
-    
-    margin: 1px 1px 1px 1px;
+QToolBar:vertical{
+    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 rgb(100,100,100), stop:1 rgb(85,85,85));
+}
 
+QToolBar:separator{
+   background-color:qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgb(180,180,180), stop:1 rgb(90,90,90));;
+   border-bottom: 1px solid rgb(0,0,0);
+   width:1px;
+   height:1px;
+   margin:5px;
 }
 
 
-QStackedWidget{
-   background-color: rgb(115,115,115);
-}
-
-
-#imagePlotFrame{
-   background-color: rgb(115,115,115);
-}
-QSplitter{
-background-color: rgb(10,10,10);
-}
-QSpinBox{
-    font: bold 16px "MS Shell Dlg 2";
-    font-weight: bold;
-}
-PolaritySelWidget,EnergySelWidget,SpatialSelWidget {
-	background-color: rgb(115,115,115);
-
-}

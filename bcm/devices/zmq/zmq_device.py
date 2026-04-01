@@ -367,6 +367,8 @@ class ZMQBaseDevice(ZMQBaseSignal):
         """
         for backward compatability
         """
+        if self.dcs_name == "FocalLength":
+            return
         if value == None:
             # no attr specified so assume its the setpoint and also assign trhe readback because this may only be an
             # app device meaning there is no corresponding DCS server devices

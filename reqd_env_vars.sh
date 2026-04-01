@@ -3,13 +3,13 @@
 export OPHYD_CONTROL_LAYER="caproto"
 
 # this is the host name of the computer that is running the DCS (Pixelator Controller)
-export DCS_HOST="IP ADDR HERE"
+export DCS_HOST="b-softimax-ctl-ioc-01"
 export DCS_HOST_PROC_NAME="Pixelator"
 export DCS_SUB_PORT="56561"
 export DCS_REQ_PORT="56562"
 
 #this is the IP addr of the computer that is running the NXserver or Pixelator depending on your setup
-export DATA_SERVER_HOST="IP ADDR HERE"
+export DATA_SERVER_HOST="b-softimax-ctl-ioc-01"
 # this is the port that the data will be published on for pyStxm to display
 export DATA_SUB_PORT="56563"
 

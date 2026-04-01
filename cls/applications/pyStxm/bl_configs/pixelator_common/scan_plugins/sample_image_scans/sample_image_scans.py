@@ -35,8 +35,13 @@ class SampleImageScanParam(BaseSampleImageScansParam):
         self.name = "Sample Scan"
         init_scan_req_member_vars(self)
         # the default scan rec settings dict was created above now force tiling to be True for this plugin
-        set_scan_rec_default(self, 'tiling', True)
+        # set_scan_rec_default(self, 'tiling', True)
         set_scan_rec_default(self, 'scan_point_or_line_mode', 'Constant Velocity') # Constant Velocity
+        set_scan_rec_default(self, 'tiling', False)
+        set_scan_rec_default(self, 'accel_dist', 1.0) 
+        set_scan_rec_default(self, 'line_delay', 10.0) 
+        set_scan_rec_default(self, 'tile_delay', 100.0) 
+
 
         connect_scan_req_detail_flds_to_validator(self)
         
@@ -62,8 +67,9 @@ class SampleImageScanParam(BaseSampleImageScansParam):
                 sp_db = get_sp_db_from_wdg_com(self.wdg_com, _id)
                 x_roi = dct_get(sp_db, SPDB_X)
                 x_roi[POSITIONER] = posner_name_x
-                x_roi[IS_POINT] = True if dct['scan_point_or_line_mode'] == 0 else False
+                x_roi[IS_POINT] = True if dct['scan_point_or_line_mode'] == "Point by Point" else False
                 y_roi = dct_get(sp_db, SPDB_Y)
                 y_roi[POSITIONER] = posner_name_y
+                #dct_put(sp_db, SPDB_SCAN_PLUGIN_SUBTYPE, self.sub_type)
 
         return self.wdg_com

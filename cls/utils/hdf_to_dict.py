@@ -459,22 +459,26 @@ def hdf5_to_dict(file_path, load_only_default_data=True):
         return group_dict
 
     with h5py.File(file_path, 'r') as h5_file:
-        if 'default' not in h5_file.attrs:
-            print("Default attribute not found in HDF5 file. Adding default attribute with value 'entry1'.")
-            return {}
+        # if 'default' not in h5_file.attrs:
+        #     print("Default attribute not found in HDF5 file. Adding default attribute with value 'entry1'.")
+        #     return {}
 
-        entry_name = h5_file.attrs['default'].decode()
-        if entry_name not in h5_file:
-            print(f"Default entry '{entry_name}' not found in HDF5 file. Cannot proceed.")
-            return {}
+        # entry_name = h5_file.attrs['default'].decode()
+        # if entry_name not in h5_file:
+        #     print(f"Default entry '{entry_name}' not found in HDF5 file. Cannot proceed.")
+        #     return {}
+        # entry = h5_file[entry_name]
+        entry_name = list(h5_file.keys())[0]
         entry = h5_file[entry_name]
-        if 'default' not in entry.attrs:
-            print(f"Default attribute not found in entry '{entry_name}'. Adding default attribute with value 'counter0'.")
-            return {}
-        default_data_name = entry.attrs['default'].decode()
-        if default_data_name not in entry:
-            print(f"Default data '{default_data_name}' not found in entry '{entry_name}'. Cannot proceed.")
-            return {}
+        # if 'default' not in entry.attrs:
+        #     print(f"Default attribute not found in entry '{entry_name}'. Adding default attribute with value 'counter0'.")
+        #     return {}
+        # default_data_name = entry.attrs['default'].decode()
+        # if default_data_name not in entry:
+        #     print(f"Default data '{default_data_name}' not found in entry '{entry_name}'. Cannot proceed.")
+        #     return {}
+
+        default_data_name = "counter0"
         data_group = entry[default_data_name]
         #hdf5_dict = traverse_h5_group(data_group)
         def_data_dict = traverse_h5_group(data_group)

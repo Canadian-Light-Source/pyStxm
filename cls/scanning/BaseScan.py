@@ -811,25 +811,28 @@ class BaseScan(QtCore.QObject):
         If so, calculates and displays the minimum dwell time, minimum number of points,
         and the maximum allowed range for the given dwell and number of points.
         """
+    
         ret = True
-        if hasattr(mtr, "get_max_velo"):
-            vmax = mtr.get_max_velo()
-            if desired_velo > vmax:
-                min_dwell = (rng / (npoints * vmax)) * 1000.0
-                min_npoints = int((rng / (dwell * 0.001 * vmax)) + 1)
-                max_range = vmax * npoints * (dwell * 0.001)
-                msg = (
-                    f"Calculated scan velocity {desired_velo:.2f} is too fast (max is {vmax:.2f}).\n"
-                    f"Increase number of points, dwell time, or reduce the range and try again.\n\n"
-                    f"Minimum dwell time (ms) for [{npoints}] points: set dwell={min_dwell:.2f}\n"
-                    f"Minimum number of points for [{dwell}] ms dwell: set npoints={min_npoints}\n"
-                    f"To use current dwell and points, range must be below {max_range:.2f} um"
-                )
-                notify("Error: scan velocity exceeds motor's max velocity", msg, "Ok")
+        # if it is a pxp scan then skip this check
+        if self.is_lxl:
+            if hasattr(mtr, "get_max_velo"):
+                vmax = mtr.get_max_velo()
+                if desired_velo > vmax:
+                    min_dwell = (rng / (npoints * vmax)) * 1000.0
+                    min_npoints = int((rng / (dwell * 0.001 * vmax)) + 1)
+                    max_range = vmax * npoints * (dwell * 0.001)
+                    msg = (
+                        f"Calculated scan velocity {desired_velo:.2f} is too fast (max is {vmax:.2f}).\n"
+                        f"Increase number of points, dwell time, or reduce the range and try again.\n\n"
+                        f"Minimum dwell time (ms) for [{npoints}] points: set dwell={min_dwell:.2f}\n"
+                        f"Minimum number of points for [{dwell}] ms dwell: set npoints={min_npoints}\n"
+                        f"To use current dwell and points, range must be below {max_range:.2f} um"
+                    )
+                    notify("Error: scan velocity exceeds motor's max velocity", msg, "Ok")
+                    ret = False
+            else:
+                notify("Warning: unable to check scan velocity", "The motor does not have the get_max_velo() method", "Ok")
                 ret = False
-        else:
-            notify("Warning: unable to check scan velocity", "The motor does not have the get_max_velo() method", "Ok")
-            ret = False
         return ret
 
 
@@ -4452,16 +4455,16 @@ class BaseScan(QtCore.QObject):
         self.numEPU = len(dct_get(e_roi, EPU_POL_PNTS))
         self.dwell = self.e_rois[0][DWELL]
 
-        self.is_lxl = False
-        self.is_pxp = False
+        self.is_pxp = dct_get(self.sp_db, SPDB_X)[IS_POINT]
+        self.is_lxl = True if self.is_pxp == False else False
         self.is_point_spec = False
         self.is_line_spec = False
         self.file_saved = False
         self.stack = False
         self.is_horiz_line = (self.sp_db["Y"]["RANGE"] <  0.0001)
 
-
-        if self.scan_sub_type == scan_sub_types.LINE_UNIDIR:
+        # allow a calling configure to override the self.scan_sub_type by passing line
+        if (self.scan_sub_type == scan_sub_types.LINE_UNIDIR) or (line):
             # LINE_UNIDIR
             self.is_lxl = True
             self.is_pxp = False

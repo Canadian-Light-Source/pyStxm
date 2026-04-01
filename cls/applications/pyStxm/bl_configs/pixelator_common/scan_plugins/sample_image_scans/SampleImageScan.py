@@ -49,7 +49,8 @@ class SampleImageScanClass(BaseSampleFineImageScanClass):
         self.data_plot_type = 'line'  # or point
 
         # set it so that the plotter updates every 5 percent
-        self.set_plot_update_divisor(5)
+        #self.set_plot_update_divisor(5)
+        self.set_plot_update_divisor(0)
 
     def init_subscriptions(self, ew, func, det_lst):
         """
@@ -68,13 +69,24 @@ class SampleImageScanClass(BaseSampleFineImageScanClass):
                 self._det_subscriptions.append(d)
 
     def configure(self, wdg_com, sp_id=0, ev_idx=0, line=True, block_disconnect_emit=False):
-        super().configure(wdg_com, sp_id=sp_id, ev_idx=ev_idx, line=line, block_disconnect_emit=block_disconnect_emit)
+        # the wdg_com here should already have its [IS_POINT] set from the scan_request dict, 
+        #line = wdg_com x_roi[IS_POINT]
+        from cls.utils.roi_utils import wdg_to_sp
+        ret = True
+        (sp_roi_dct, sp_ids, sp_id, sp_db) = wdg_to_sp(wdg_com)
+        if sp_db['X']['IS_POINT']:
+            line = False
+        else: 
+            line = True
+
+        ret = super().configure(wdg_com, sp_id=sp_id, ev_idx=ev_idx, line=line, block_disconnect_emit=block_disconnect_emit)
         if self.x_roi[IS_POINT]:
             self.is_pxp = True
+            self.is_lxl = False
         else:
             self.is_pxp = False
-
-        return True
+            self.is_lxl = True
+        return ret
 
 
 

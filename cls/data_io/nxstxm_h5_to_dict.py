@@ -53,7 +53,10 @@ def load_nxstxm_file_to_h5_file_dct(filename, *, ret_as_dict=False, ret_as_jstr=
 
 if __name__ == '__main__':
     #import pprint
+    # fname = "/home/softimax-user/OSA_2026-04-01_038.hdf5"
+    
     load_nxstxm_file_to_h5_file_dct(sys.argv[1])
+    # load_nxstxm_file_to_h5_file_dct(fname)
     #dct = load_nxstxm_file_to_h5_file_dct('/tmp/2025-08-06/Motor_2025-08-06_021.hdf5', ret_as_dict=True)
     #pprint.pprint(dct)
 

@@ -414,8 +414,8 @@ class ScanClass(object):
         scan_request["osaInFocus"] = 0 #needs to be set proper;y
         scan_request["tiling"] = 1 if self.wdg_scan_req['tiling'] else 0
         scan_request["accelerationDistance"] = self.wdg_scan_req['accel_dist']
-        scan_request["tileDelay"] = self.wdg_scan_req['tile_delay']
-        scan_request["lineDelay"] = self.wdg_scan_req['line_delay']
+        scan_request["tileDelay"] = self.wdg_scan_req['tile_delay'] 
+        scan_request["lineDelay"] = self.wdg_scan_req['line_delay'] 
         scan_request["pointDelay"] = self.wdg_scan_req['point_delay']
         scan_request["lineRepetition"] = self.wdg_scan_req['line_repeat']
         scan_request["positionPrecision"] = {"precision": self.wdg_scan_req['prec_field']}
@@ -800,13 +800,18 @@ class DcsServerApi(BaseDcsServerApi):
             # print(f"positionerStatus: resp={resp}")
             #values = json.loads(resp[1])
             values = json.loads(resp[1].replace('NaN', 'null'))
+            #print(f"\n\npositionerStatus: resp={resp}")
+            #print(f"list(self.parent.devices['POSITIONERS'].keys()={list(self.parent.devices['POSITIONERS'].keys())}")
+            #print(f"len(values)={len(values)}")
             if len(self.parent.devices['POSITIONERS']) > 0 and (len(self.parent.devices['POSITIONERS']) == len(values)):
                 #self.parent.devices['POSITIONERS'], values)
                 i = 0
                 for app_devname in list(self.parent.devices['POSITIONERS'].keys()):
                     pos = values[i]['position']
+                    # print(f"positionerStatus: [{app_devname}]  value={pos}")
                     if pos is None or pos == 'null':
                         pos = -909090.9090909
+                    # print(f"positionerStatus: [{app_devname}]  value={pos}")
                     status = values[i]['status']
                     self._update_device_feedback(app_devname, pos, app_devname=app_devname)
                     self._update_device_status(app_devname, status, app_devname=app_devname)
@@ -816,7 +821,17 @@ class DcsServerApi(BaseDcsServerApi):
                     self.devices[app_devname]['position'] = pos
                     self.devices[app_devname]['status'] = status
                     i += 1
+            else:
+                
+                names = []
+                for positioner_dct in self.parent.positioner_definition:
+                    names.append(positioner_dct['name'])
 
+                s = f"Config Error: cannot update feedback values: the configuration is not correct, \
+                      check pyStxm devs.py file and make sure it contains devices for the following Pixelator device names: {names}"
+                print(s)
+                _logger.error(s)
+        
         elif resp[0].find("moveStatus") > -1:
             values = json.loads(resp[1])
             print(f"process_SUB_rcv_messages:moveStatus: response: {resp}")
@@ -888,7 +903,7 @@ class DcsServerApi(BaseDcsServerApi):
             self.on_msg_to_app(dct)
 
         elif resp[0].find("focalStatus") > -1:
-            print(f"process_SUB_rcv_messages: {resp}")
+            # print(f"process_SUB_rcv_messages: {resp}")
             # this returns the current A0 value
             # ['focalStatus', '{"maxDOsa":296.4372357791096}']
             dct = json.loads(resp[1])

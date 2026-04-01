@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1951</width>
+    <width>1966</width>
     <height>1501</height>
    </rect>
   </property>
@@ -555,8 +555,8 @@ QMainWindow,QPushButton, QLabel, QWidget { background-color: #DFDFE0 }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1951</width>
-     <height>30</height>
+     <width>1966</width>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1639,76 +1639,6 @@ background-color:rgb(177, 177, 177)
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="dockWidget_StopAll">
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>248</width>
-     <height>100</height>
-    </size>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>650</width>
-     <height>100</height>
-    </size>
-   </property>
-   <property name="floating">
-    <bool>false</bool>
-   </property>
-   <property name="features">
-    <set>QDockWidget::DockWidgetMovable</set>
-   </property>
-   <property name="allowedAreas">
-    <set>Qt::LeftDockWidgetArea</set>
-   </property>
-   <property name="windowTitle">
-    <string>Emergency Stop</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>1</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents_10">
-    <layout class="QVBoxLayout" name="verticalLayout_17">
-     <property name="sizeConstraint">
-      <enum>QLayout::SetMaximumSize</enum>
-     </property>
-     <property name="leftMargin">
-      <number>10</number>
-     </property>
-     <property name="topMargin">
-      <number>10</number>
-     </property>
-     <property name="rightMargin">
-      <number>10</number>
-     </property>
-     <property name="bottomMargin">
-      <number>10</number>
-     </property>
-     <item>
-      <widget class="QPushButton" name="emergStopAllBtn">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">border: 4px solid red; color: red; font-weight: bold;</string>
-       </property>
-       <property name="text">
-        <string>EMERGENCY STOP ALL</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-  </widget>
   <widget class="QDockWidget" name="dockWidget_Info">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
@@ -1842,7 +1772,7 @@ background-color:rgb(177, 177, 177)
    </property>
    <property name="minimumSize">
     <size>
-     <width>850</width>
+     <width>860</width>
      <height>142</height>
     </size>
    </property>

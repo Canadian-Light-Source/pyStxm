@@ -770,7 +770,7 @@ class PositionersPanel(QtWidgets.QWidget):
         """
         convert zmq args to kwargs like epics uses
         """
-        #print(f"motorPanel: zmq_updateFbk: dct={dct}")
+        # print(f"motorPanel: zmq_update_fbk: dct={dct}")
         dct['obj']._read_pv = QtCore.QObject()
         dct['obj']._read_pv.pvname = dct['obj'].get_name()
         dct["pvname"] = dct['obj'].get_name()
@@ -782,7 +782,7 @@ class PositionersPanel(QtWidgets.QWidget):
         it will eventually screw up the main GUI thread
         Hence the use of a Queue and QTimer
         """
-        #print(f"motorPanel: updateFbk: [{kwargs}]")
+        # print(f"motorPanel: update_fbk: [{kwargs}]")
         if 'obj' not in kwargs.keys():
             print(f"motorPanel: updateFbk: NO obj in kwargs.keys()=[{kwargs}]")
             return

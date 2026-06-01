@@ -88,6 +88,7 @@ QComboBox QListView
 
 #shutterCntrlComboBox
 {
+    color:rgb(255,255,255);
     font: bold 16px ;
 	/* top, right, bottom, left*/
 	padding: 0px 0px 0px 10px;

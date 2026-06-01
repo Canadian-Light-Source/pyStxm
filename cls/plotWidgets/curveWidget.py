@@ -426,7 +426,7 @@ class CurveViewerWidget(PlotDialog):
         # self.get_itemlist_panel().show()
         # self.plot.set_items_readonly(False)
 
-        self.setMinimumSize(100, 150)
+        # self.setMinimumSize(100, 150)
         self.curve = None
         self.datFileData = None
         self.plotData = None

@@ -172,27 +172,32 @@ class StripToolWidget(QtWidgets.QWidget):
             units = self.signal._units
         else:
             units = ""
-
-        self.energyFbkLbl = ophyd_aiLabelWidget(
-            self.signal,
-            hdrText=labelHeader,
-            egu=units,
-            format="%.1f",
-            title_color=master_colors["app_superltblue"]["rgb_str"],
-            var_clr=var_clr,
-            font=f,
-            scale_factor=1
-        )
-        self.countsFbkLbl = ophyd_aiLabelWidget(
-            self.counts_signal,
-            hdrText="",
-            egu="",
-            format="%d",
-            title_color=master_colors["gray_255_rgb"]["rgb_str"],
-            var_clr=master_colors["gray_255_rgb"]["rgb_str"],
-            font=f,
-            scale_factor=self.scale_factor
-        )
+        if self.signal is None:
+            self.energyFbkLbl = QtWidgets.QLabel("650.0")
+        else:
+            self.energyFbkLbl = ophyd_aiLabelWidget(
+                self.signal,
+                hdrText=labelHeader,
+                egu=units,
+                format="%.1f",
+                title_color=master_colors["app_superltblue"]["rgb_str"],
+                var_clr=var_clr,
+                font=f,
+                scale_factor=1
+            )
+        if self.counts_signal is None:
+            self.countsFbkLbl = QtWidgets.QLabel("0")
+        else:
+            self.countsFbkLbl = ophyd_aiLabelWidget(
+                self.counts_signal,
+                hdrText="",
+                egu="",
+                format="%d",
+                title_color=master_colors["gray_255_rgb"]["rgb_str"],
+                var_clr=master_colors["gray_255_rgb"]["rgb_str"],
+                font=f,
+                scale_factor=self.scale_factor
+            )
         self.energyFbkLbl.setObjectName("stripToolFbkLbl")
         self.countsFbkLbl.setObjectName("stripToolCountsFbkLbl")
 
@@ -201,8 +206,9 @@ class StripToolWidget(QtWidgets.QWidget):
 
         hlayout = QtWidgets.QHBoxLayout()
         hlayout.setContentsMargins(2, 0, 0, 0)
+        # spacer expands horizontally only, not vertically
         spacer = QtWidgets.QSpacerItem(
-            20, 40, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+            20, 40, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
         )
         hlayout.addWidget(self.resetBtn)
         hlayout.addWidget(self.autoscaleBtn)
@@ -223,6 +229,19 @@ class StripToolWidget(QtWidgets.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         #
         self.setLayout(layout)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.scanplot.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self._startup_size_policy = QtWidgets.QSizePolicy(
+            self.sizePolicy().horizontalPolicy(), self.sizePolicy().verticalPolicy()
+        )
+        self._startup_minimum_size = QtCore.QSize(self.minimumSize())
+        self._startup_maximum_size = QtCore.QSize(self.maximumSize())
+        self._startup_scanplot_size_policy = QtWidgets.QSizePolicy(
+            self.scanplot.sizePolicy().horizontalPolicy(),
+            self.scanplot.sizePolicy().verticalPolicy(),
+        )
+        self._startup_scanplot_minimum_size = QtCore.QSize(self.scanplot.minimumSize())
+        self._startup_scanplot_maximum_size = QtCore.QSize(self.scanplot.maximumSize())
         self.total_points = 0
         self.data = []
 
@@ -255,6 +274,32 @@ class StripToolWidget(QtWidgets.QWidget):
     def update_stlye(self):
         ss = get_style()
         self.setStyleSheet(ss)
+
+    def restore_startup_resizing(self):
+        """
+        Restore the widget sizing state captured during startup.
+        """
+        self.setSizePolicy(self._startup_size_policy)
+        self.setMinimumSize(self._startup_minimum_size)
+        self.setMaximumSize(self._startup_maximum_size)
+        self.scanplot.setSizePolicy(self._startup_scanplot_size_policy)
+        self.scanplot.setMinimumSize(self._startup_scanplot_minimum_size)
+        self.scanplot.setMaximumSize(self._startup_scanplot_maximum_size)
+        self.updateGeometry()
+        self.scanplot.updateGeometry()
+
+    def enable_expanding_resizing(self):
+        """
+        Allow the widget to expand freely while it is undocked.
+        """
+        self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.setMinimumSize(0, 0)
+        self.setMaximumSize(16777215, 16777215)
+        self.scanplot.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.scanplot.setMinimumSize(0, 0)
+        self.scanplot.setMaximumSize(16777215, 16777215)
+        self.updateGeometry()
+        self.scanplot.updateGeometry()
 
     def get_py_console(self):
         """

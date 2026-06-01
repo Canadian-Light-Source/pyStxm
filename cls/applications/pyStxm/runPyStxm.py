@@ -1,6 +1,9 @@
 import sys
 import os
 
+# Ensure Qt uses a consistent font DPI unless user/environment already set one.
+os.environ.setdefault("QT_FONT_DPI", "96")
+
 #make sure that the applications modules can be found, used to depend on PYTHONPATH environ var
 sys.path.append( os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..") )
 

@@ -1045,36 +1045,11 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         plot = self.stripToolWidget.scanplot.get_plot()
         pcan = plot.canvas()
         pcan.setObjectName("stripToolWidgetCanvasBgrnd")
-        # self.stripToolWidget.scanplot.plot.setTitle('stripToolPlot')
-        # self.get_children_of_widget(self.stripToolWidget)
-
-        # self.test_dock = uic.loadUi(os.path.join(uiDir, "tst-dock.ui"))
-        # vb = QtWidgets.QVBoxLayout()
-        # tst_stw = StripToolWidget(1, sigList=[MAIN_OBJ.device(MAIN_OBJ.default_detector)],
-        #                 # energy_fbk_dev=MAIN_OBJ.device("DNM_MONO_EV_FBK"),
-        #                 energy_fbk_dev=MAIN_OBJ.device("DNM_ENERGY"),
-        #                 labelHeader="Energy:",
-        #                 parent=self,
-        #                 scale_factor=MAIN_OBJ.striptool_scaling_factor)
-        #
-        # vb.addWidget(tst_stw)
-        # self.test_dock.counterPlotFrame.setLayout(vb)
-        # tst_stw.show()
-        # self.test_dock.show()
-
 
         self.enable_detfbk = False
         self.enable_osafbk = False
 
         if LOAD_ALL:
-            # self.sample_selector = SampleSelectorWidget(scaler=0.80, parent=self)
-            #
-            # hbox = QtWidgets.QHBoxLayout()
-            # hbox.addWidget(self.sample_selector)
-            # hbox.setContentsMargins(0, 0, 0, 0)
-            # hbox.addStretch()
-            # self.sampleSelFrame.setLayout(hbox)
-
             if hasattr(self, "stripToolWidget"):
                 vbox2 = QtWidgets.QVBoxLayout()
                 vbox2.addWidget(self.stripToolWidget)
@@ -1100,7 +1075,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             exclude_list.append('DNM_ENERGY')
 
             self.blPosPanel.setObjectName("blPosPanel")
-            # spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
             spacer = QtWidgets.QSpacerItem(
                 1, 1, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding
             )
@@ -1116,8 +1090,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             if temps:
                 self.esTempPanel = DevsPanel(temps, egu="deg C", parent=None)
                 self.esTempPanel.setObjectName("esTempPanel")
-                # self.esTempPanel = TemperaturesPanel(POS_TYPE_ES)
-                # spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
                 spacer = QtWidgets.QSpacerItem(
                     1, 1, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding
                 )
@@ -1165,21 +1137,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 vbox7.addItem(spacer)
                 self.blPressuresFrame.setLayout(vbox7)
 
-            # tools panel
-            #             self.toolsPanel = ToolsPanel()
-            #             spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-            #             vbox4 = QtWidgets.QVBoxLayout()
-            #             vbox4.addWidget(self.toolsPanel)
-            #             vbox4.addItem(spacer)
-            #             self.toolsPositionersFrame.setLayout(vbox4)
-
-            # self.detectorsPanel = DetectorsPanel(self)
-            # spacer = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-            # vbox5 = QtWidgets.QVBoxLayout()
-            # vbox5.addWidget(self.detectorsPanel)
-            # vbox5.addItem(spacer)
-            # self.detectorsFrame.setLayout(vbox5)
-
             #### setup Endstation Panel
             es_posners = MAIN_OBJ.get_devices_in_category(
                 "POSITIONERS", pos_type="POS_TYPE_ES"
@@ -1188,7 +1145,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
             self.esPosPanel = PositionersPanel(es_posners, exclude_list, disabled_list=disabled_list, parent=self, main_obj=MAIN_OBJ)
             self.esPosPanel.setObjectName("esPosPanel")
-            # spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
             spacer = QtWidgets.QSpacerItem(
                 1, 1, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding
             )

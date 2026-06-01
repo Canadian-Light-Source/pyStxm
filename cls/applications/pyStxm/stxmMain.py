@@ -1040,12 +1040,28 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                                                labelHeader="Energy:",
                                                parent=self,
                                                scale_factor=MAIN_OBJ.striptool_scaling_factor)
+
         self.stripToolWidget.setObjectName("stripToolWidget")
         plot = self.stripToolWidget.scanplot.get_plot()
         pcan = plot.canvas()
         pcan.setObjectName("stripToolWidgetCanvasBgrnd")
         # self.stripToolWidget.scanplot.plot.setTitle('stripToolPlot')
         # self.get_children_of_widget(self.stripToolWidget)
+
+        # self.test_dock = uic.loadUi(os.path.join(uiDir, "tst-dock.ui"))
+        # vb = QtWidgets.QVBoxLayout()
+        # tst_stw = StripToolWidget(1, sigList=[MAIN_OBJ.device(MAIN_OBJ.default_detector)],
+        #                 # energy_fbk_dev=MAIN_OBJ.device("DNM_MONO_EV_FBK"),
+        #                 energy_fbk_dev=MAIN_OBJ.device("DNM_ENERGY"),
+        #                 labelHeader="Energy:",
+        #                 parent=self,
+        #                 scale_factor=MAIN_OBJ.striptool_scaling_factor)
+        #
+        # vb.addWidget(tst_stw)
+        # self.test_dock.counterPlotFrame.setLayout(vb)
+        # tst_stw.show()
+        # self.test_dock.show()
+
 
         self.enable_detfbk = False
         self.enable_osafbk = False

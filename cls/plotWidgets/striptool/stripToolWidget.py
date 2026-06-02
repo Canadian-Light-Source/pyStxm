@@ -116,6 +116,7 @@ class StripToolWidget(QtWidgets.QWidget):
             parent=parent,
         )
         self.scanplot.setObjectName("stripToolWidgetPlot")
+        self.scanplot.enable_auto_scale(True)
         self.scanplot.reg_striptool_tools()
         self.updateInterval = 0.25
         self.timeSpan = timespan  # minutes
@@ -141,14 +142,23 @@ class StripToolWidget(QtWidgets.QWidget):
         self.resetBtn.clicked.connect(self.on_reset_btn)
 
         # self.autoscaleBtn = QtWidgets.QPushButton("AutoScale")
-        self.autoscaleBtn = QtWidgets.QToolButton()
-        pmap = get_pixmap(os.path.join(icoDir, "autoScale.ico"), ICONSIZE, ICONSIZE)
-        self.autoscaleBtn.setIcon(QtGui.QIcon(QtGui.QPixmap(pmap)))
-        self.autoscaleBtn.setFixedSize(BTNSIZE, BTNSIZE)
-        self.autoscaleBtn.setToolTip("Toggle autoscaling")
-        self.autoscaleBtn.setCheckable(True)
-        self.autoscaleBtn.setChecked(True)
-        self.autoscaleBtn.clicked.connect(self.on_autoscale_enable)
+        self.x_autoscaleBtn = QtWidgets.QToolButton()
+        pmap = get_pixmap(os.path.join(icoDir, "horiz_autoScale.png"), ICONSIZE+15, ICONSIZE+15)
+        self.x_autoscaleBtn.setIcon(QtGui.QIcon(QtGui.QPixmap(pmap)))
+        self.x_autoscaleBtn.setFixedSize(BTNSIZE, BTNSIZE)
+        self.x_autoscaleBtn.setToolTip("Toggle horizontal autoscaling")
+        self.x_autoscaleBtn.setCheckable(True)
+        self.x_autoscaleBtn.setChecked(True)
+        self.x_autoscaleBtn.clicked.connect(self.x_on_autoscale_enable)
+
+        self.y_autoscaleBtn = QtWidgets.QToolButton()
+        pmap = get_pixmap(os.path.join(icoDir, "vert_autoScale.png"), ICONSIZE+15, ICONSIZE+15)
+        self.y_autoscaleBtn.setIcon(QtGui.QIcon(QtGui.QPixmap(pmap)))
+        self.y_autoscaleBtn.setFixedSize(BTNSIZE, BTNSIZE)
+        self.y_autoscaleBtn.setToolTip("Toggle vertical autoscaling")
+        self.y_autoscaleBtn.setCheckable(True)
+        self.y_autoscaleBtn.setChecked(True)
+        self.y_autoscaleBtn.clicked.connect(self.y_on_autoscale_enable)
 
         self.updateQueue = queue.Queue()
 
@@ -211,7 +221,8 @@ class StripToolWidget(QtWidgets.QWidget):
             20, 40, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
         )
         hlayout.addWidget(self.resetBtn)
-        hlayout.addWidget(self.autoscaleBtn)
+        hlayout.addWidget(self.x_autoscaleBtn)
+        hlayout.addWidget(self.y_autoscaleBtn)
         hlayout.addItem(spacer)
         hlayout.addWidget(self.countsFbkLbl)
         hlayout.addItem(spacer)
@@ -320,11 +331,17 @@ class StripToolWidget(QtWidgets.QWidget):
         for curve_name in self.signalNames:
             self.scanplot.reset_curve(curve_name)
 
-    def on_autoscale_enable(self, checked):
-        if checked:
-            self.scanplot.enable_auto_scale(True)
-        else:
-            self.scanplot.enable_auto_scale(False)
+    def x_on_autoscale_enable(self, checked):
+        # Keep global autoscale enabled; this button controls vertical autoscale only.
+        self.scanplot.enable_auto_scale(True)
+        self.scanplot.set_autoscale_axes(x_enabled=checked)
+        self.scanplot.set_autoscale()
+
+    def y_on_autoscale_enable(self, checked):
+        # Keep global autoscale enabled; this button controls vertical autoscale only.
+        self.scanplot.enable_auto_scale(True)
+        self.scanplot.set_autoscale_axes(y_enabled=checked)
+        self.scanplot.set_autoscale()
 
     def set_grid_parameters(self, bkgrnd_color, min_color, maj_color):
         """

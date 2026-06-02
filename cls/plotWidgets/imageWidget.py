@@ -19,7 +19,7 @@ from PyQt5.QtCore import pyqtSignal, QObject, QTimer, QPointF, QRectF, Qt
 from PyQt5 import uic
 
 from plotpy.plot import PlotOptions
-from plotpy.mathutils.colormap import get_cmap, register_extra_colormap
+#from plotpy.mathutils.colormap import get_cmap, register_extra_colormap
 from plotpy.plot import  PlotDialog
 from plotpy.tools import *
 from plotpy.styles import (
@@ -612,11 +612,12 @@ class ImageWidgetPlot(PlotDialog):
         """
         used to indicate errors
         """
-        red_cmap = get_cmap("hsv")
-        qclr = QtGui.QColor()
-        qclr.setRgb(255, 0, 0)
-        red_cmap.setColorInterval(qclr, qclr)
-        register_extra_colormap("allred", red_cmap)
+        pass
+        # red_cmap = get_cmap("hsv")
+        # qclr = QtGui.QColor()
+        # qclr.setRgb(255, 0, 0)
+        # red_cmap.setColorInterval(qclr, qclr)
+        # register_extra_colormap("allred", red_cmap)
 
 
     def get_selected_detectors(self):

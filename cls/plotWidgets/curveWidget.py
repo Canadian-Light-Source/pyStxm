@@ -441,6 +441,8 @@ class CurveViewerWidget(PlotDialog):
         self.drop_enabled = True
         self.max_seconds = 300  # 5 minute rolling window
         self.autoscale_enabled = True
+        self.autoscale_x_enabled = True
+        self.autoscale_y_enabled = True
         self._data_dir = ""
         self.data_io = None
         self.selected_detectors = []
@@ -882,6 +884,22 @@ class CurveViewerWidget(PlotDialog):
     def enable_auto_scale(self, val):
         self.autoscale_enabled = bool(val)
 
+    def set_autoscale_axes(self, x_enabled=None, y_enabled=None):
+        """Minimal API to control per-axis autoscale without changing callers."""
+        if x_enabled is not None:
+            self.autoscale_x_enabled = bool(x_enabled)
+        if y_enabled is not None:
+            self.autoscale_y_enabled = bool(y_enabled)
+
+    def _axis_id(self, plot, axis_name, qwt_axis):
+        """Resolve PlotPy axis ID, with Qwt fallback for older behavior."""
+        if hasattr(plot, "get_axis_id"):
+            try:
+                return plot.get_axis_id(axis_name)
+            except Exception:
+                pass
+        return qwt_axis
+
     def do_clear_plot(self, val):
         self.reset_curve()
 
@@ -1148,6 +1166,15 @@ class CurveViewerWidget(PlotDialog):
     def set_autoscale(self):
         plot = self.get_plot()
         if self.autoscale_enabled:
+            if hasattr(plot, "set_axis_autoscale_strategy"):
+                x_axis = self._axis_id(plot, "bottom", Qwt.QwtPlot.xBottom)
+                y_axis = self._axis_id(plot, "left", Qwt.QwtPlot.yLeft)
+                plot.set_axis_autoscale_strategy(
+                    x_axis, "auto" if self.autoscale_x_enabled else "none"
+                )
+                plot.set_axis_autoscale_strategy(
+                    y_axis, "auto" if self.autoscale_y_enabled else "none"
+                )
             plot.do_autoscale(replot=True)
         # else:
         #    plot.do_autoscale(replot=False)
@@ -1744,7 +1771,7 @@ if __name__ == "__main__":
     # filename = 'G:/SM/test_data/guest/0718/test_dr18.dat' # 5000ms 50 pts
     # filename = 'G:/SM/test_data/guest/0718/test_dr19.dat'  # 1ms 50 pts
     # filename = 'G:/SM/test_data/guest/0718/test_dr20.dat'  # 10ms 50 pts
-    filename = "G:\e712_ASTXM_vibration\XY-new-mirror-bracket/xy-Jul10-2024-new-mirrot-bracket.dat"
+    filename = "G:/e712_ASTXM_vibration/XY-new-mirror-bracket/xy-Jul10-2024-new-mirrot-bracket.dat"
     win = test_plotting_datarecorder_file(filename)
     #
     # win.style_btn = QtWidgets.QPushButton("Set Style")

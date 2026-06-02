@@ -20,6 +20,7 @@ from cls.utils.hdf_to_dict import get_sp_db_dct_from_file_dict, hdf5_to_dict
 import numpy as np
 import h5py
 import importlib.metadata
+from importlib.resources import files as importlib_resources_files
 import nexpy
 
 from cls.utils.json_threadsave import dict_to_json_string
@@ -61,11 +62,14 @@ def readin_contributed_definition_classes(desired_class=None):
 
 
 def get_classes(class_dir, desired_class=None):
-    base_class_path = pkg_resources.resource_filename(
-        "nexpy", "definitions/%s" % class_dir
+    base_class_path = importlib_resources_files("nexpy").joinpath(
+        "definitions", class_dir
     )
     nxdl_files = list(
-        map(os.path.basename, glob.glob(os.path.join(base_class_path, "*.nxdl.xml")))
+        map(
+            os.path.basename,
+            glob.glob(os.path.join(str(base_class_path), "*.nxdl.xml")),
+        )
     )
     pattern = re.compile(r"[\t\n ]+")
     nxclasses = {}
@@ -77,7 +81,7 @@ def get_classes(class_dir, desired_class=None):
 
     for nxdl_file in nxdl_files:
         class_name = nxdl_file.split(".")[0]
-        xml_root = ET.parse(os.path.join(base_class_path, nxdl_file)).getroot()
+        xml_root = ET.parse(base_class_path / nxdl_file).getroot()
         class_doc = ""
         class_groups = {}
         class_fields = {}
@@ -102,15 +106,12 @@ def get_classes(class_dir, desired_class=None):
                             doc = re.sub(pattern, " ", element.text).strip()
                         except TypeError:
                             pass
-                # class_fields[name] = (dtype, units, doc)
                 class_fields[name] = {"type": dtype, "units": units, "doc": doc}
             elif child.tag.endswith("group"):
-                #
                 gdoc = ""
                 try:
                     dtype = child.attrib["type"]
                     name = child.attrib["name"]
-
                 except KeyError:
                     pass
 
@@ -151,7 +152,6 @@ def get_classes(class_dir, desired_class=None):
                                 "units": funits,
                                 "doc": fdoc,
                             }
-
                         except KeyError:
                             pass
 
@@ -303,7 +303,7 @@ def translate_scan_type(old_type):
     """
     old scan_types = Enum('Detector_Scan','OSA_Scan','OSA_Focus_Scan','Focus_Scan','Point_Scan', 'ImagePointByPoint','ImageLineByLine')
 
-    new scan_types = Enum('Detector_Image','OSA_Image','OSA_Focus','Sample_Focus','Sample_Point_Spectrum', 'Sample_Line_Spectrum', 'Sample_Image', 'Sample_Line_Spectrum', 'Sample_Image_Stack', 'Generic_Scan')
+    new scan_types = Enum('Detector_Image','OSA_IMAGE','OSA_FOCUS','Sample_Focus','Sample_Point_Spectrum', 'Sample_Line_Spectrum', 'Sample_Image', 'Sample_Line_Spectrum', 'Sample_Image_Stack', 'Generic_Scan')
 
     """
 
@@ -376,7 +376,7 @@ def print_node(root):
 
             if node.nodeType == node.TEXT_NODE:
                 print("text node value = ", node.nodeValue)
-                # if((node.tagName is None) or (node.tagName is None) or (node.tagName is None)):
+                # if((node.tagName is None) or (node.tagName is None) or (node.tagName is None):
                 #    print '[',node.tagName,']',"has value: [", node.nodeValue,']', "and is child of: [", node.parentNode.tagName, ']'
                 # else:
                 #    print '[%s] has value = [%s] and is child of: [%s]' % (str(node.tagName).upper(), str(node.nodeValue).upper(), str(node.parentNode.tagName).upper())
@@ -387,13 +387,12 @@ def print_node(root):
 
 
 def walk_xml():
-    base_class_path = pkg_resources.resource_filename(
-        "nexpy", "definitions/applications"
+    base_class_path = importlib_resources_files("nexpy").joinpath(
+        "definitions", "applications"
     )
     fname = "NXstxm.nxdl.xml"
 
-    tree = ET.parse(os.path.join(base_class_path, fname))
-    # tree = ET.fromstring("""...""")
+    tree = ET.parse(base_class_path / fname)
     for elt in tree.iter():
         if elt.text is not None:
             print("%s: '%s'" % (elt.tag, elt.text.strip()))
@@ -402,15 +401,15 @@ def walk_xml():
 def try_this():
     from xmlutils.xml2json import xml2json
 
-    base_class_path = pkg_resources.resource_filename(
-        "nexpy", "definitions/applications"
+    base_class_path = importlib_resources_files("nexpy").joinpath(
+        "definitions", "applications"
     )
     fname = "NXstxm.nxdl.xml"
     # converter = xml2json(base_class_path+ '/' + fname, "samples/fruits.sql", encoding="utf-8")
     # converter.convert()
 
     # to get a json string
-    fstr = os.path.join(base_class_path, fname)
+    fstr = str(base_class_path / fname)
     converter = xml2json(fstr, encoding="utf-8")
     print(converter.get_json())
 
@@ -511,23 +510,22 @@ def _data_as_1D(data_dct, sp_id=None):
     if sp_id is not None:
         sp_rois = dct_get(data_dct, ADO_SP_ROIS)
         sp_db = sp_rois[sp_id]
-        x_roi = dct_get(sp_db, SPDB_X)
-        y_roi = dct_get(sp_db, SPDB_Y)
-        z_roi = dct_get(sp_db, SPDB_Z)
-        e_rois = dct_get(sp_db, SPDB_EV_ROIS)
+        x_roi = dct.get(sp_db, SPDB_X)
+        y_roi = dct.get(sp_db, SPDB_Y)
+        z_roi = dct.get(sp_db, SPDB_Z)
+        e_rois = dct.get(sp_db, SPDB_EV_ROIS)
     else:
-        x_roi = dct_get(data_dct, ADO_CFG_X)
-        y_roi = dct_get(data_dct, ADO_CFG_Y)
-        z_roi = dct_get(data_dct, ADO_CFG_Z)
-        e_rois = dct_get(data_dct, ADO_CFG_EV_ROIS)
+        x_roi = dct.get(data_dct, ADO_CFG_X)
+        y_roi = dct.get(data_dct, ADO_CFG_Y)
+        z_roi = dct.get(data_dct, ADO_CFG_Z)
+        e_rois = dct.get(data_dct, ADO_CFG_EV_ROIS)
 
     numX = int(x_roi[NPOINTS])
     numY = int(y_roi[NPOINTS])
     numZ = int(z_roi[NPOINTS])
 
-    # if (numZ > 0):
-    if (numZ > 0) and (dct_get(data_dct, SPDB_ZENABLED)):
-        zp1ra = dct_get(data_dct, "DATA.SSCANS.Z.P1RA")
+    if numZ > 0:
+        zp1ra = dct.get(data_dct, "DATA.SSCANS.Z.P1RA")
         if zp1ra is None:
             zpnts = np.linspace(z_roi[START], z_roi[STOP], numZ)
         else:
@@ -535,9 +533,9 @@ def _data_as_1D(data_dct, sp_id=None):
     # else:
     #     numZ = 0
 
-    positioners_dct = dct_get(data_dct, "POSITIONERS")
-    detectors_dct = dct_get(data_dct, "DETECTORS")
-    temps_dct = dct_get(data_dct, "TEMPERATURES")
+    positioners_dct = dct.get(data_dct, "POSITIONERS")
+    detectors_dct = dct.get(data_dct, "DETECTORS")
+    temps_dct = dct.get(data_dct, "TEMPERATURES")
     sr_current = detectors_dct[DNM_RING_CURRENT][RBV]
 
     for e_roi in e_rois:
@@ -573,7 +571,7 @@ def _data_as_1D(data_dct, sp_id=None):
             off_pnts = _o1
             angle_pnts = _a1
 
-    data_numE = dct_get(data_dct, ADO_DATA_POINTS)
+    data_numE = dct.get(data_dct, ADO_DATA_POINTS)
     if isinstance(data_numE, list):
         data_numE = np.array(data_numE)
         data_numP = data_numE.flatten()
@@ -598,20 +596,20 @@ def _data_as_1D(data_dct, sp_id=None):
     if DNM_GONI_THETA in list(positioners_dct.keys()):
         GoniTheta = positioners_dct[DNM_GONI_THETA][RBV]
 
-    x_sscan_npnts = dct_get(data_dct, "DATA.SSCANS.X.NPTS")
+    x_sscan_npnts = dct.get(data_dct, "DATA.SSCANS.X.NPTS")
     # check if the sscan was a line scan (2 points start and stop) or a point by point scan
 
     if x_sscan_npnts == 2:
         xpnts = np.linspace(x_roi[START], x_roi[STOP], numX)
     else:
         # point by point so read out the points
-        # xp1ra = dct_get(data_dct, 'DATA.SSCANS.X.P1RA')
+        # xp1ra = dct.get(data_dct, 'DATA.SSCANS.X.P1RA')
         # if (xp1ra is None):
         xpnts = np.linspace(x_roi[START], x_roi[STOP], numX)
         # else:
         #    xpnts = xp1ra[: numX]
     if numY > 0:
-        # yp1ra = dct_get(data_dct, 'DATA.SSCANS.Y.P1RA')
+        # yp1ra = dct.get(data_dct, 'DATA.SSCANS.Y.P1RA')
         # if (yp1ra is None):
         ypnts = np.linspace(y_roi[START], y_roi[STOP], numY)
         # else:
@@ -630,12 +628,8 @@ def _data_as_1D(data_dct, sp_id=None):
         # the order of the data shape is different than other scans
         # (numPol, numEv, numX) or ( # images, # rows per image, #cols per image)
         # so translate so that the shape will be standard, where numEV typically is # images
-        # numY = int(e_roi[NPOINTS])
-        numY = int(numX)
-        numX = int(numE)
-        # numE = int(numPolarities)
-        # only support single polarity linespec scans for now
-        numE = 1
+        numY = int(e_roi[NPOINTS])
+        numE = int(numPolarities)
         if numZ <= 0:
             numP = int(numE * numY * numX)
         else:
@@ -672,6 +666,10 @@ def _data_as_1D(data_dct, sp_id=None):
     dct_put(dct, "SYMBOLS.numY", numY)
     dct_put(dct, "SYMBOLS.numE", numE)
 
+    dct_put(dct, "DETECTORS.%s.DATA_E" % name, data_E)
+    dct_put(dct, "DETECTORS.%s.DATA_P" % name, data_P)
+    dct_put(dct, "NUM_P.STOKES", stokes_P)
+
     # create numE and numP versions of data so they can just be pulled out later in
     # [numE] versions
     dct_put(dct, "NUM_E.EV", epnts)
@@ -701,7 +699,7 @@ def _data_as_1D(data_dct, sp_id=None):
     twod_sdata = []
     thrd_sdata = []
 
-    data_E = dct_get(dct, "NUM_E.DATA")
+    data_E = dct.get(dct, "NUM_E.DATA")
     data_E_shape = data_E.shape
     if len(data_E_shape) == 1:
         cols = data_E_shape[0]
@@ -749,13 +747,20 @@ def _data_as_1D(data_dct, sp_id=None):
 
     # now [numP] versions
     # dct_put(dct, 'NUM_P.EV', np.tile(epnts, (numY * numX)))
-    dct_put(dct, "NUM_P.EV", np.repeat(epnts, (numY * numX)))
-    dct_put(dct, "NUM_P.COUNT_TIME", np.repeat(count_time, (numY * numX)))
-    dct_put(dct, "NUM_P.EPU_POL", np.repeat(pol_pnts, (numY * numX)))
-    dct_put(dct, "NUM_P.EPU_OFFSET", np.repeat(off_pnts, (numY * numX)))
-    dct_put(dct, "NUM_P.EPU_POL_ANGLE", np.repeat(angle_pnts, (numY * numX)))
-    dct_put(dct, "NUM_P.EPU_GAP", make_1d_array(numP, EPUGap))
-    dct_put(dct, "NUM_P.EPU_HARMONIC", make_1d_array(numP, EPUHarmonic))
+    _numXY = int(numY * numX)
+    dct_put(dct, "NUM_P.EV", np.repeat(epnts, _numXY))
+    dct_put(dct, "NUM_P.COUNT_TIME", np.repeat(count_time, _numXY))
+    dct_put(dct, "NUM_P.EPU_POL", np.repeat(pol_pnts, _numXY))
+    dct_put(dct, "NUM_P.EPU_OFFSET", np.repeat(off_pnts, _numXY))
+    dct_put(dct, "NUM_P.EPU_POL_ANGLE", np.repeat(angle_pnts, _numXY))
+    dct_put(dct, "NUM_P.EPU_GAP", np.repeat(epugap_pnts, _numXY))
+    dct_put(dct, "NUM_P.EPU_HARMONIC", np.repeat(harm_pnts, _numXY))
+
+    dct_put(dct, "NUM_P.STOKES", np.tile(stokes, (numE, 1)))
+    # dct_put(dct, 'NUM_P.STOKES_S0', np.repeat(s0, _numXY))
+    # dct_put(dct, 'NUM_P.STOKES_S1', np.repeat(s1, _numXY))
+    # dct_put(dct, 'NUM_P.STOKES_S2', np.repeat(s2, _numXY))
+    # dct_put(dct, 'NUM_P.STOKES_S3', np.repeat(s3, _numXY))
 
     if scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
         xpnts2 = np.tile(xpnts, numY)
@@ -831,38 +836,35 @@ def _data_as_1D_new(data_dct, entry_name=None, sp_id=None, sp_idx=None, pol_idx=
     off_pnts = None
     angle_pnts = None
     # sp_idx = int(sp_id)
-    scan_type = dct_get(data_dct, ADO_CFG_SCAN_TYPE)
+    scan_type = dct.get(data_dct, ADO_CFG_SCAN_TYPE)
 
     if sp_id is not None:
-        sp_rois = dct_get(data_dct, ADO_SP_ROIS)
+        sp_rois = dct.get(data_dct, ADO_SP_ROIS)
         sp_db = sp_rois[sp_id]
-        x_roi = dct_get(sp_db, SPDB_X)
-        y_roi = dct_get(sp_db, SPDB_Y)
-        # z_roi = dct_get(sp_db, SPDB_Z)
-        # zoneplate z
-        z_roi = dct_get(sp_db, SPDB_ZZ)
-        e_rois = dct_get(sp_db, SPDB_EV_ROIS)
+        x_roi = dct.get(sp_db, SPDB_X)
+        y_roi = dct.get(sp_db, SPDB_Y)
+        z_roi = dct.get(sp_db, SPDB_Z)
+        e_rois = dct.get(sp_db, SPDB_EV_ROIS)
     else:
-        x_roi = dct_get(data_dct, ADO_CFG_X)
-        y_roi = dct_get(data_dct, ADO_CFG_Y)
-        # z_roi = dct_get(data_dct, ADO_CFG_Z)
-        z_roi = dct_get(data_dct, ADO_CFG_ZZ)
-        e_rois = dct_get(data_dct, ADO_CFG_EV_ROIS)
+        x_roi = dct.get(data_dct, ADO_CFG_X)
+        y_roi = dct.get(data_dct, ADO_CFG_Y)
+        z_roi = dct.get(data_dct, ADO_CFG_Z)
+        e_rois = dct.get(data_dct, ADO_CFG_EV_ROIS)
 
     numX = int(x_roi[NPOINTS])
     numY = int(y_roi[NPOINTS])
     numZ = int(z_roi[NPOINTS])
 
     if numZ > 0:
-        zp1ra = dct_get(data_dct, "DATA.SSCANS.Z.P1RA")
+        zp1ra = dct.get(data_dct, "DATA.SSCANS.Z.P1RA")
         if zp1ra is None:
             zpnts = np.linspace(z_roi[START], z_roi[STOP], numZ)
         else:
             zpnts = zp1ra[:numZ]
 
-    positioners_dct = dct_get(data_dct, "POSITIONERS")
-    detectors_dct = dct_get(data_dct, "DETECTORS")
-    temps_dct = dct_get(data_dct, "TEMPERATURES")
+    positioners_dct = dct.get(data_dct, "POSITIONERS")
+    detectors_dct = dct.get(data_dct, "DETECTORS")
+    temps_dct = dct.get(data_dct, "TEMPERATURES")
     sr_current = detectors_dct[DNM_RING_CURRENT][RBV]
     tod = data_dct["TIME_ORGANIZED_DATA"]
     entry = tod[entry_name]
@@ -907,7 +909,7 @@ def _data_as_1D_new(data_dct, entry_name=None, sp_id=None, sp_idx=None, pol_idx=
 
     srcurrent_pnts = entry[DNM_RING_CURRENT][pol_idx][sp_idx]
 
-    # data_numE = dct_get(data_dct, ADO_DATA_POINTS)
+    # data_numE = dct.get(data_dct, ADO_DATA_POINTS)
     data_numE = tod[entry_name][DNM_DEFAULT_COUNTER][pol_idx][sp_idx]
 
     if isinstance(data_numE, list):
@@ -934,20 +936,20 @@ def _data_as_1D_new(data_dct, entry_name=None, sp_id=None, sp_idx=None, pol_idx=
     if DNM_GONI_THETA in list(positioners_dct.keys()):
         GoniTheta = positioners_dct[DNM_GONI_THETA][RBV]
 
-    x_sscan_npnts = dct_get(data_dct, "DATA.SSCANS.X.NPTS")
+    x_sscan_npnts = dct.get(data_dct, "DATA.SSCANS.X.NPTS")
     # check if the sscan was a line scan (2 points start and stop) or a point by point scan
     if x_sscan_npnts == 2:
         xpnts = np.linspace(x_roi[START], x_roi[STOP], numX)
     else:
         # point by point so read out the points
-        # xp1ra = dct_get(data_dct, 'DATA.SSCANS.X.P1RA')
+        # xp1ra = dct.get(data_dct, 'DATA.SSCANS.X.P1RA')
         # if (xp1ra is None):
         xpnts = np.linspace(x_roi[START], x_roi[STOP], numX)
         # else:
         #    xpnts = xp1ra[: numX]
 
     if numY > 0:
-        # yp1ra = dct_get(data_dct, 'DATA.SSCANS.Y.P1RA')
+        # yp1ra = dct.get(data_dct, 'DATA.SSCANS.Y.P1RA')
         # if (yp1ra is None):
         ypnts = np.linspace(y_roi[START], y_roi[STOP], numY)
         # else:
@@ -973,7 +975,7 @@ def _data_as_1D_new(data_dct, entry_name=None, sp_id=None, sp_idx=None, pol_idx=
         else:
             numP = int(numE * numY * numX * numZ)
     else:
-        # numE = int(numE * numPolarities)
+        # numE = numE * numPolarities
         numE = int(numE)
         if numZ <= 0:
             numP = int(numE * numY * numX)
@@ -1048,7 +1050,7 @@ def _data_as_1D_new(data_dct, entry_name=None, sp_id=None, sp_idx=None, pol_idx=
     twod_sdata = []
     thrd_sdata = []
 
-    data_E = dct_get(dct, "NUM_E.DATA")
+    data_E = dct.get(dct, "NUM_E.DATA")
     data_E_shape = data_E.shape
     if len(data_E_shape) == 1:
         cols = data_E_shape[0]
@@ -1061,19 +1063,13 @@ def _data_as_1D_new(data_dct, entry_name=None, sp_id=None, sp_idx=None, pol_idx=
         twod_sdata.fill(sr_current)
 
     elif len(data_E_shape) == 3:
-        # print '_data_as_1D: 3D data not totally supported yet'
-        if (scan_type == scan_types.SAMPLE_POINT_SPECTRUM) or (
-            scan_type == scan_types.GENERIC_SCAN
-        ):
+        print("_data_as_1D: 3D data not totally supported yet")
+        if scan_type == scan_types.SAMPLE_POINT_SPECTRUM:
             cols = data_E_shape[0]
             oned_sdata = np.zeros(cols, dtype=np.float32)
             oned_sdata.fill(sr_current)
         else:
             numI = data_E_shape[0]
-            # setting the following to 1 for now because for stacks I larger numI will generate a memory exception because the
-            # array would be too large
-            # numI = 1
-
             rows = data_E_shape[1]
             cols = data_E_shape[2]
             twod_sdata = np.zeros((rows, cols), dtype=np.float32)
@@ -1171,22 +1167,22 @@ def _data_as_1D_polarities_are_entries(data_dct):
     pol_pnts = None
     off_pnts = None
     angle_pnts = None
-    scan_type = dct_get(data_dct, ADO_CFG_SCAN_TYPE)
-    x_roi = dct_get(data_dct, ADO_CFG_X)
-    y_roi = dct_get(data_dct, ADO_CFG_Y)
-    z_roi = dct_get(data_dct, ADO_CFG_Z)
-    e_rois = dct_get(data_dct, ADO_CFG_EV_ROIS)
-    pol_roi = dct_get(data_dct, ADO_CFG_POL_ROI)
+    scan_type = dct.get(data_dct, ADO_CFG_SCAN_TYPE)
+    x_roi = dct.get(data_dct, ADO_CFG_X)
+    y_roi = dct.get(data_dct, ADO_CFG_Y)
+    z_roi = dct.get(data_dct, ADO_CFG_Z)
+    e_rois = dct.get(data_dct, ADO_CFG_EV_ROIS)
+    pol_roi = dct.get(data_dct, ADO_CFG_POL_ROI)
     numX = int(x_roi[NPOINTS])
     numY = int(y_roi[NPOINTS])
     numZ = int(z_roi[NPOINTS])
 
     if numZ > 0:
-        zp1ra = dct_get(data_dct, "DATA.SSCANS.Z.P1RA")
+        zp1ra = dct.get(data_dct, "DATA.SSCANS.Z.P1RA")
         zpnts = zp1ra[:numZ]
 
-    positioners_dct = dct_get(data_dct, "POSITIONERS")
-    detectors_dct = dct_get(data_dct, "DETECTORS")
+    positioners_dct = dct.get(data_dct, "POSITIONERS")
+    detectors_dct = dct.get(data_dct, "DETECTORS")
     sr_current = detectors_dct[DNM_RING_CURRENT][RBV]
 
     e_roi = e_rois[0]
@@ -1221,7 +1217,7 @@ def _data_as_1D_polarities_are_entries(data_dct):
         off_pnts = _o1
         angle_pnts = _a1
     ###
-    data_numE = dct_get(data_dct, ADO_DATA_POINTS)
+    data_numE = dct.get(data_dct, ADO_DATA_POINTS)
     data_numP = data_numE.flatten()
 
     # make the array for the line_position used in Line Spectrum Scans
@@ -1241,17 +1237,17 @@ def _data_as_1D_polarities_are_entries(data_dct):
     if DNM_GONI_THETA in list(positioners_dct.keys()):
         GoniTheta = positioners_dct[DNM_GONI_THETA][RBV]
 
-    x_sscan_npnts = dct_get(data_dct, "DATA.SSCANS.X.NPTS")
+    x_sscan_npnts = dct.get(data_dct, "DATA.SSCANS.X.NPTS")
     # check if the sscan was a line scan (2 points start and stop) or a point by point scan
     if x_sscan_npnts == 2:
         xpnts = np.linspace(x_roi[START], x_roi[STOP], numX)
     else:
         # point by point so read out the points
-        xp1ra = dct_get(data_dct, "DATA.SSCANS.X.P1RA")
+        xp1ra = dct.get(data_dct, "DATA.SSCANS.X.P1RA")
         xpnts = xp1ra[:numX]
 
     if numY > 0:
-        yp1ra = dct_get(data_dct, "DATA.SSCANS.Y.P1RA")
+        yp1ra = dct.get(data_dct, "DATA.SSCANS.Y.P1RA")
         ypnts = yp1ra[:numY]
     else:
         yp1ra = []
@@ -1321,7 +1317,7 @@ def _data_as_1D_polarities_are_entries(data_dct):
     twod_sdata = []
     thrd_sdata = []
 
-    data_E = dct_get(dct, "NUM_E.DATA")
+    data_E = dct.get(dct, "NUM_E.DATA")
     data_E_shape = data_E.shape
     if len(data_E_shape) == 1:
         cols = data_E_shape[0]
@@ -1363,13 +1359,20 @@ def _data_as_1D_polarities_are_entries(data_dct):
 
     # now [numP] versions
     # dct_put(dct, 'NUM_P.EV', np.tile(epnts, (numY * numX)))
-    dct_put(dct, "NUM_P.EV", np.repeat(epnts, (numY * numX)))
-    dct_put(dct, "NUM_P.COUNT_TIME", np.repeat(count_time, (numY * numX)))
-    dct_put(dct, "NUM_P.EPU_POL", np.repeat(pol_pnts, (numY * numX)))
-    dct_put(dct, "NUM_P.EPU_OFFSET", np.repeat(off_pnts, (numY * numX)))
-    dct_put(dct, "NUM_P.EPU_POL_ANGLE", np.repeat(angle_pnts, (numY * numX)))
-    dct_put(dct, "NUM_P.EPU_GAP", make_1d_array(numP, EPUGap))
-    dct_put(dct, "NUM_P.EPU_HARMONIC", make_1d_array(numP, EPUHarmonic))
+    _numXY = int(numY * numX)
+    dct_put(dct, "NUM_P.EV", np.repeat(epnts, _numXY))
+    dct_put(dct, "NUM_P.COUNT_TIME", np.repeat(count_time, _numXY))
+    dct_put(dct, "NUM_P.EPU_POL", np.repeat(pol_pnts, _numXY))
+    dct_put(dct, "NUM_P.EPU_OFFSET", np.repeat(off_pnts, _numXY))
+    dct_put(dct, "NUM_P.EPU_POL_ANGLE", np.repeat(angle_pnts, _numXY))
+    dct_put(dct, "NUM_P.EPU_GAP", np.repeat(epugap_pnts, _numXY))
+    dct_put(dct, "NUM_P.EPU_HARMONIC", np.repeat(harm_pnts, _numXY))
+
+    dct_put(dct, "NUM_P.STOKES", np.tile(stokes, (numE, 1)))
+    # dct_put(dct, 'NUM_P.STOKES_S0', np.repeat(s0, _numXY))
+    # dct_put(dct, 'NUM_P.STOKES_S1', np.repeat(s1, _numXY))
+    # dct_put(dct, 'NUM_P.STOKES_S2', np.repeat(s2, _numXY))
+    # dct_put(dct, 'NUM_P.STOKES_S3', np.repeat(s3, _numXY))
 
     if scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
         xpnts2 = np.tile(xpnts, numY)
@@ -1378,9 +1381,15 @@ def _data_as_1D_polarities_are_entries(data_dct):
         sample_y = np.tile(ypnts2, numE)
         dct_put(dct, "NUM_P.MOTOR_X", sample_x)
         dct_put(dct, "NUM_P.MOTOR_Y", sample_y)
+
+        dct_put(dct, "NUM_P.SAMPLE_X", sample_x)
+        dct_put(dct, "NUM_P.SAMPLE_Y", sample_y)
     else:
         dct_put(dct, "NUM_P.MOTOR_X", sample_x)
         dct_put(dct, "NUM_P.MOTOR_Y", sample_y)
+
+        dct_put(dct, "NUM_P.SAMPLE_X", sample_x)
+        dct_put(dct, "NUM_P.SAMPLE_Y", sample_y)
 
     if numZ > 0:
         dct_put(dct, "NUM_P.MOTOR_Z", np.repeat(zpnts, (numY * numX)))
@@ -1388,7 +1397,7 @@ def _data_as_1D_polarities_are_entries(data_dct):
     dct_put(dct, "NUM_P.SLIT_Y", make_1d_array(numP, SlitY))
     dct_put(dct, "NUM_P.M3_PITCH", make_1d_array(numP, M3STXMPitch))
     dct_put(dct, "NUM_P.DATA", data_numP)
-    dct_put(dct, "NUM_P.SR_CURRENT", make_1d_array(numP, sr_current))
+    dct_put(dct, "NUM_P.SR_CURRENT", np.repeat(srcurrent_pnts, _numXY))
     # dct_put(dct, 'NUM_P.ROTATION_ANGLE', make_1d_array(numP, GoniTheta))
 
     dct_put(dct, "NUM_P.LINE_POSITION", line_position)
@@ -1514,7 +1523,7 @@ def make_data_section(
 
 
     """
-    nume_pnts = dct_get(data_dct, "SYMBOLS.numE")
+    nume_pnts = dct.get(data_dct, "SYMBOLS.numE")
     # if((scan_type == scan_types.SAMPLE_IMAGE + IMAGE_PXP) or (scan_type == scan_types.SAMPLE_IMAGE + IMAGE_LXL)):
     if scan_type == scan_types.SAMPLE_IMAGE:
         if nume_pnts > 1:
@@ -1522,40 +1531,41 @@ def make_data_section(
         else:
             scan_type = scan_types.SAMPLE_IMAGE
 
-    x_roi = dct_get(data_dct, ADO_CFG_X)
-    y_roi = dct_get(data_dct, ADO_CFG_Y)
-    z_roi = dct_get(data_dct, ADO_CFG_Z)
+    x_roi = dct.get(data_dct, ADO_CFG_X)
+    y_roi = dct.get(data_dct, ADO_CFG_Y)
+    z_roi = dct.get(data_dct, ADO_CFG_Z)
 
-    data_E = dct_get(data_dct, "NUM_E.DATA")
-    e_pnts_E = dct_get(data_dct, "NUM_E.EV")
-    pol_pnts_E = dct_get(data_dct, "NUM_E.EPU_POL")
-    off_pnts_E = dct_get(data_dct, "NUM_E.EPU_OFFSET")
-    count_time_E = dct_get(data_dct, "NUM_E.COUNT_TIME")
-    xpnts_E = dct_get(data_dct, "NUM_E.MOTOR_X")
-    ypnts_E = dct_get(data_dct, "NUM_E.MOTOR_Y")
-    zpnts_E = dct_get(data_dct, "NUM_E.MOTOR_Z")
+    data_E = dct.get(data_dct, "NUM_E.DATA")
+    e_pnts_E = dct.get(data_dct, "NUM_E.EV")
+    pol_pnts_E = dct.get(data_dct, "NUM_E.EPU_POL")
+    off_pnts_E = dct.get(data_dct, "NUM_E.EPU_OFFSET")
+    count_time_E = dct.get(data_dct, "NUM_E.COUNT_TIME")
+    xpnts_E = dct.get(data_dct, "NUM_E.MOTOR_X")
+    ypnts_E = dct.get(data_dct, "NUM_E.MOTOR_Y")
+    zpnts_E = dct.get(data_dct, "NUM_E.MOTOR_Z")
+    stokes_E = dct.get(data_dct, "NUM_E.STOKES")
 
-    sxpnts_E = dct_get(data_dct, "NUM_E.SAMPLE_X")
-    sypnts_E = dct_get(data_dct, "NUM_E.SAMPLE_Y")
+    sxpnts_E = dct.get(data_dct, "NUM_E.SAMPLE_X")
+    sypnts_E = dct.get(data_dct, "NUM_E.SAMPLE_Y")
 
-    data_P = dct_get(data_dct, "NUM_P.DATA")
-    e_pnts_P = dct_get(data_dct, "NUM_P.EV")
-    pol_pnts_P = dct_get(data_dct, "NUM_P.EPU_POL")
-    off_pnts_P = dct_get(data_dct, "NUM_P.EPU_OFFSET")
-    count_time_P = dct_get(data_dct, "NUM_P.COUNT_TIME")
-    xpnts_P = dct_get(data_dct, "NUM_P.MOTOR_X")
-    ypnts_P = dct_get(data_dct, "NUM_P.MOTOR_Y")
-    sxpnts_P = dct_get(data_dct, "NUM_P.SAMPLE_X")
-    sypnts_P = dct_get(data_dct, "NUM_P.SAMPLE_Y")
+    data_P = dct.get(data_dct, "NUM_P.DATA")
+    e_pnts_P = dct.get(data_dct, "NUM_P.EV")
+    pol_pnts_P = dct.get(data_dct, "NUM_P.EPU_POL")
+    off_pnts_P = dct.get(data_dct, "NUM_P.EPU_OFFSET")
+    count_time_P = dct.get(data_dct, "NUM_P.COUNT_TIME")
+    xpnts_P = dct.get(data_dct, "NUM_P.MOTOR_X")
+    ypnts_P = dct.get(data_dct, "NUM_P.MOTOR_Y")
+    sxpnts_P = dct.get(data_dct, "NUM_P.SAMPLE_X")
+    sypnts_P = dct.get(data_dct, "NUM_P.SAMPLE_Y")
 
-    line_position_P = dct_get(data_dct, "NUM_P.LINE_POSITION")
+    line_position_P = dct.get(data_dct, "NUM_P.LINE_POSITION")
 
-    oneD_srdata = dct_get(data_dct, "NUM_E.SR_CURRENT.ONE_D")
-    twoD_srdata = dct_get(data_dct, "NUM_E.SR_CURRENT.TWO_D")
-    thrD_srdata = dct_get(data_dct, "NUM_E.SR_CURRENT.THREE_D")
+    oneD_srdata = dct.get(data_dct, "NUM_E.SR_CURRENT.ONE_D")
+    twoD_srdata = dct.get(data_dct, "NUM_E.SR_CURRENT.TWO_D")
+    thrD_srdata = dct.get(data_dct, "NUM_E.SR_CURRENT.THREE_D")
 
     if z_roi[NPOINTS] > 0:
-        zpnts = dct_get(data_dct, "NUM_E.MOTOR_Z")
+        zpnts = dct.get(data_dct, "NUM_E.MOTOR_Z")
 
     # type_a_scans = [scan_types.SAMPLE_POINT_SPECTRUM, scan_types.SAMPLE_LINE_SPECTRUM, scan_types.SAMPLE_IMAGE, scan_types.SAMPLE_IMAGE_STACK] #, scan_types.SAMPLE_FOCUS]
     type_a_scans = [
@@ -1600,6 +1610,8 @@ def make_data_section(
             src_grp["sample_y"][()] = ypnts_E
             src_grp["epu_polarization"][()] = pol_pnts_E
             src_grp["epu_offset"][()] = off_pnts_E
+            src_grp["stokes"][()] = stokes_E
+
             # src_grp['signal'][()] = nxkd.NXD_DATA
             # replace_string_data(src_grp, 'src_grp', 'zone plate #%d' % zp_sel[RBV])
 
@@ -1617,6 +1629,7 @@ def make_data_section(
             _dataset(src_grp, "sample_y", ypnts_E, "NX_FLOAT")
             _dataset(src_grp, "epu_polarization", pol_pnts_E, "NX_FLOAT")
             _dataset(src_grp, "epu_offset", off_pnts_E, "NX_FLOAT")
+            _dataset(src_grp, "stokes", stokes_E, "NX_FLOAT")
             _string_attr(src_grp, "signal", nxkd.NXD_DATA)
 
             _dataset(ctrl_grp, "energy", e_pnts_E, "NX_FLOAT")
@@ -1651,26 +1664,26 @@ def make_data_section(
                 # ctrl_grp['sample_y_indices'][()] = '1'
                 # ctrl_grp['sample_x_indices'][()] = '1'
             else:
-                _list_attr(src_grp, "axes", ["energy", "line_position"])
-                #                _dataset(src_grp, 'line_position', line_position_P, 'NX_FLOAT')
-                _dataset(
-                    src_grp, "line_position", list(range(xpnts_E.shape[0])), "NX_FLOAT"
-                )
-                _dataset(src_grp, nxkd.NXD_DATA, data_E, "NX_NUMBER")
+                # NOTE that the order that the axes appear in the folling list determines what is in teh shape of the data
+                # axes = [ axis0, axis1, axis2, axis3, ...]
+                # data.shape = (axis0, axis1, axis2, axis3, ...)
+                # so for default numpy it uses C type-style which is (row, column)
+                # Fortran is (column, row)
+                # anyway the following defines the data to be (rows=line_position, columns=energy)
+                _list_attr(src_grp, "axes", ["line_position", "energy"])
                 # the shape for a line spec scan that is for a line that has 150x150 points and is over 40 eV
                 # has the shape 1x150x40 so set the indices accordingly
-                _string_attr(src_grp, "energy_indices", "0")
-                #                _string_attr(src_grp, 'line_position_indices', '1')
-                _string_attr(src_grp, "sample_y_indices", "1")
-                _string_attr(src_grp, "sample_x_indices", "1")
+                # BUT it should only be two D so it should be 150x40
+                _dataset(src_grp, "line_position", line_position_P, "NX_FLOAT")
+                # _dataset(src_grp, 'line_position', range(xpnts_E.shape[0]), 'NX_FLOAT')
+                # _dataset(src_grp, nxkd.NXD_DATA, data_E, 'NX_NUMBER')
+                _dataset(src_grp, nxkd.NXD_DATA, data_E[0], "NX_NUMBER")
 
-                _dataset(ctrl_grp, nxkd.NXD_DATA, data_E, "NX_NUMBER")
-                _dataset(ctrl_grp, "line_position", line_position_P, "NX_FLOAT")
-                _list_attr(ctrl_grp, "axes", ["energy", "line_position"])
-                _string_attr(ctrl_grp, "energy_indices", "0")
-                #                _string_attr(ctrl_grp, 'line_position_indices', '1')
-                _string_attr(ctrl_grp, "sample_y_indices", "1")
-                _string_attr(ctrl_grp, "sample_x_indices", "1")
+                # these appear to be ignored by axis2000 but make sure they are correct anyway
+                _string_attr(src_grp, "line_position_indices", "0")
+                _string_attr(src_grp, "sample_y_indices", "0")
+                _string_attr(src_grp, "sample_x_indices", "0")
+                _string_attr(src_grp, "energy_indices", "1")
 
         elif scan_type == scan_types.SAMPLE_IMAGE:
             if modify:
@@ -1689,11 +1702,6 @@ def make_data_section(
                 _list_attr(src_grp, "axes", ["sample_y", "sample_x"])
                 _string_attr(src_grp, "sample_y_indices", "0")
                 _string_attr(src_grp, "sample_x_indices", "1")
-
-                _dataset(ctrl_grp, nxkd.NXD_DATA, twoD_srdata, "NX_NUMBER")
-                _list_attr(ctrl_grp, "axes", ["sample_y", "sample_x"])
-                _string_attr(ctrl_grp, "sample_y_indices", "0")
-                _string_attr(ctrl_grp, "sample_x_indices", "1")
 
         elif (scan_type == scan_types.SAMPLE_IMAGE_STACK) or (
             scan_type == scan_types.TOMOGRAPHY
@@ -1734,546 +1742,6 @@ def make_data_section(
                 # _dataset(src_grp, 'sample_x', sxpnts_E, 'NX_FLOAT')
                 # _dataset(src_grp, 'sample_y', sypnts_E, 'NX_FLOAT')
 
-                if dddata is not None:
-                    _dataset(ctrl_grp, nxkd.NXD_DATA, dddata, "NX_NUMBER")
-                else:
-                    _dataset(ctrl_grp, nxkd.NXD_DATA, thrD_srdata, "NX_NUMBER")
-
-                _list_attr(ctrl_grp, "axes", ["energy", "sample_y", "sample_x"])
-                _string_attr(ctrl_grp, "energy_indices", "0")
-                _string_attr(ctrl_grp, "sample_y_indices", "1")
-                _string_attr(ctrl_grp, "sample_x_indices", "2")
-                # _dataset(ctrl_grp, 'sample_x', sxpnts_E, 'NX_FLOAT')
-                # _dataset(ctrl_grp, 'sample_y', sypnts_E, 'NX_FLOAT')
-
-    elif scan_type == scan_types.SAMPLE_POINT_SPECTRUM:
-        if modify:
-            src_grp["count_time"][()] = count_time_E
-            src_grp["energy"][()] = e_pnts_E
-            src_grp["sample_x"][()] = xpnts_E
-            src_grp["sample_y"][()] = ypnts_E
-            src_grp["epu_polarization"][()] = pol_pnts_E
-            src_grp["epu_offset"][()] = off_pnts_E
-            src_grp[nxkd.NXD_DATA][()] = data_P
-            src_grp["sample_x"][()] = sxpnts_E
-            src_grp["sample_y"][()] = sypnts_E
-            # src_grp['axes'][()] = ['energy']
-            # src_grp['energy_indices'][()] = '0'
-            # src_grp['sample_y_indices'][()] = '1'
-            # src_grp['sample_x_indices'][()] = '2'
-
-            ctrl_grp["energy"][()] = e_pnts_E
-            ctrl_grp["sample_x"][()] = xpnts_E
-            ctrl_grp["sample_y"][()] = ypnts_E
-            ctrl_grp["epu_polarization"][()] = pol_pnts_E
-            ctrl_grp["epu_offset"][()] = off_pnts_E
-            ctrl_grp[nxkd.NXD_DATA][()] = oneD_srdata
-            ctrl_grp["sample_x"][()] = sxpnts_E
-            ctrl_grp["sample_y"][()] = sypnts_E
-            # ctrl_grp['axes'][()] = ['energy']
-            # ctrl_grp['energy_indices'][()] = '0'
-        else:
-            _dataset(src_grp, "count_time", count_time_E, "NX_FLOAT")
-            _dataset(src_grp, "energy", e_pnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_x", sxpnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_y", sypnts_E, "NX_FLOAT")
-            _dataset(src_grp, "epu_polarization", pol_pnts_E, "NX_FLOAT")
-            _dataset(src_grp, "epu_offset", off_pnts_E, "NX_FLOAT")
-            _string_attr(src_grp, "signal", nxkd.NXD_DATA)
-            _dataset(src_grp, nxkd.NXD_DATA, data_P, "NX_NUMBER")
-            _list_attr(src_grp, "axes", ["energy"])
-            _string_attr(src_grp, "energy_indices", "0")
-            _string_attr(src_grp, "sample_y_indices", "1")
-            _string_attr(src_grp, "sample_x_indices", "2")
-
-            _dataset(ctrl_grp, "energy", e_pnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_x", sxpnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_y", sypnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "epu_polarization", pol_pnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "epu_offset", off_pnts_E, "NX_FLOAT")
-            _string_attr(ctrl_grp, "signal", nxkd.NXD_DATA)
-            _dataset(ctrl_grp, nxkd.NXD_DATA, oneD_srdata, "NX_NUMBER")
-            _list_attr(ctrl_grp, "axes", ["energy"])
-            _string_attr(ctrl_grp, "energy_indices", "0")
-
-    elif scan_type == scan_types.OSA_IMAGE:
-        if modify:
-            src_grp[nxkd.NXD_DATA][()] = data_E
-            src_grp["count_time"][()] = count_time_E
-            src_grp["osa_x"][()] = xpnts_E
-            src_grp["osa_y"][()] = ypnts_E
-            src_grp["sample_x"][()] = sxpnts_E
-            src_grp["sample_y"][()] = sypnts_E
-            # src_grp['axes'][()] = ['osa_y', 'osa_x']
-            # src_grp['osa_y_indices'][()] = '0'
-            # src_grp['osa_x_indices'][()] = '1'
-            # src_grp['signal'][()] =  nxkd.NXD_DATA
-            # src_grp['sample_y_indices'][()] = '1'
-            # src_grp['sample_x_indices'][()] = '2'
-            src_grp["energy"][()] = e_pnts_E
-
-            ctrl_grp["energy"][()] = e_pnts_E
-            ctrl_grp[nxkd.NXD_DATA][()] = twoD_srdata
-            ctrl_grp["osa_x"][()] = xpnts_E
-            ctrl_grp["osa_y"][()] = ypnts_E
-            ctrl_grp["sample_x"][()] = sxpnts_E
-            ctrl_grp["sample_y"][()] = sypnts_E
-            # ctrl_grp['axes'][()] =  ['osa_y', 'osa_x']
-            # ctrl_grp['osa_y_indices'][()] = '0'
-            # ctrl_grp['osa_x_indices'][()] = '1'
-            # ctrl_grp['signal'][()] = nxkd.NXD_DATA
-            # ctrl_grp['sample_y_indices'][()] = '1'
-            # ctrl_grp['sample_x_indices'][()] = '2'
-            ctrl_grp["energy"][()] = e_pnts_E
-
-        else:
-            _dataset(src_grp, nxkd.NXD_DATA, data_E, "NX_NUMBER")
-            _dataset(src_grp, "count_time", count_time_E, "NX_FLOAT")
-            _dataset(src_grp, "osa_x", xpnts_E, "NX_FLOAT")
-            _dataset(src_grp, "osa_y", ypnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_x", sxpnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_y", sypnts_E, "NX_FLOAT")
-            _list_attr(src_grp, "axes", ["osa_y", "osa_x"])
-            _string_attr(src_grp, "osa_y_indices", "0")
-            _string_attr(src_grp, "osa_x_indices", "1")
-            _string_attr(src_grp, "signal", nxkd.NXD_DATA)
-            #            _string_attr(src_grp, 'sample_y_indices', '1')
-            #            _string_attr(src_grp, 'sample_x_indices', '2')
-            _dataset(src_grp, "energy", e_pnts_E, "NX_FLOAT")
-
-            _dataset(ctrl_grp, "energy", e_pnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, nxkd.NXD_DATA, twoD_srdata, "NX_NUMBER")
-            _dataset(ctrl_grp, "osa_x", xpnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "osa_y", ypnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_x", sxpnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_y", sypnts_E, "NX_FLOAT")
-            _list_attr(ctrl_grp, "axes", ["osa_y", "osa_x"])
-            _string_attr(ctrl_grp, "osa_y_indices", "0")
-            _string_attr(ctrl_grp, "osa_x_indices", "1")
-            _string_attr(ctrl_grp, "signal", nxkd.NXD_DATA)
-
-    elif scan_type == scan_types.OSA_FOCUS:
-        if modify:
-            src_grp[nxkd.NXD_DATA][()] = data_E
-            src_grp["count_time"][()] = count_time_E
-            src_grp["osa_x"][()] = xpnts_E
-            src_grp["osa_y"][()] = ypnts_E
-            src_grp["zoneplate_z"][()] = zpnts_E
-            src_grp["sample_x"][()] = sxpnts_E
-            src_grp["sample_y"][()] = sypnts_E
-            # src_grp['axes'][()] = ['zoneplate_z', 'osa_y', 'osa_x']
-            # src_grp['zoneplate_z_indices'][()] = '0'
-            # src_grp['osa_y_indices'][()] = '1'
-            # src_grp['osa_x_indices'][()] = '2'
-            # src_grp['signal'][()] = nxkd.NXD_DATA
-            # src_grp['sample_y_indices'][()] = '1'
-            # src_grp['sample_x_indices'][()] = '2'
-            src_grp["energy"][()] = e_pnts_E
-
-            ctrl_grp["energy"][()] = e_pnts_E
-            ctrl_grp[nxkd.NXD_DATA][()] = twoD_srdata
-            ctrl_grp["osa_x"][()] = xpnts_E
-            ctrl_grp["osa_y"][()] = ypnts_E
-            ctrl_grp["zoneplate_z"][()] = zpnts_E
-            ctrl_grp["sample_x"][()] = sxpnts_E
-            ctrl_grp["sample_y"][()] = sypnts_E
-            # ctrl_grp['axes'][()] = ['zoneplate_z', 'osa_y', 'osa_x']
-            # ctrl_grp['zoneplate_z_indices'][()] = '0'
-            # ctrl_grp['osa_y_indices'][()] = '1'
-            # ctrl_grp['osa_x_indices'][()] =  '2'
-            # ctrl_grp['signal'][()] =  nxkd.NXD_DATA
-
-        else:
-            _dataset(src_grp, nxkd.NXD_DATA, data_E, "NX_NUMBER")
-            _dataset(src_grp, "count_time", count_time_E, "NX_FLOAT")
-            _dataset(src_grp, "osa_x", xpnts_E, "NX_FLOAT")
-            _dataset(src_grp, "osa_y", ypnts_E, "NX_FLOAT")
-            _dataset(src_grp, "zoneplate_z", zpnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_x", sxpnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_y", sypnts_E, "NX_FLOAT")
-            _list_attr(src_grp, "axes", ["zoneplate_z", "osa_y", "osa_x"])
-            _string_attr(src_grp, "zoneplate_z_indices", "0")
-            _string_attr(src_grp, "osa_y_indices", "1")
-            _string_attr(src_grp, "osa_x_indices", "2")
-            _string_attr(src_grp, "signal", nxkd.NXD_DATA)
-            # _string_attr(src_grp, 'sample_y_indices', '1')
-            # _string_attr(src_grp, 'sample_x_indices', '2')
-
-            _dataset(src_grp, "energy", e_pnts_E, "NX_FLOAT")
-
-            _dataset(ctrl_grp, "energy", e_pnts_E, "NX_FLOAT")
-
-            _dataset(ctrl_grp, nxkd.NXD_DATA, twoD_srdata, "NX_NUMBER")
-            _dataset(ctrl_grp, "osa_x", xpnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "osa_y", ypnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "zoneplate_z", zpnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_x", sxpnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_y", sypnts_E, "NX_FLOAT")
-            _list_attr(ctrl_grp, "axes", ["zoneplate_z", "osa_y", "osa_x"])
-            _string_attr(ctrl_grp, "zoneplate_z_indices", "0")
-            _string_attr(ctrl_grp, "osa_y_indices", "1")
-            _string_attr(ctrl_grp, "osa_x_indices", "2")
-            _string_attr(ctrl_grp, "signal", nxkd.NXD_DATA)
-
-    elif scan_type == scan_types.SAMPLE_FOCUS:
-        if modify:
-            src_grp[nxkd.NXD_DATA][()] = data_E
-            src_grp["count_time"][()] = count_time_E
-            src_grp["sample_x"][()] = xpnts_E
-            src_grp["sample_y"][()] = ypnts_E
-            src_grp["zoneplate_z"][()] = zpnts_E
-            # src_grp['axes'] = ['zoneplate_z', 'sample_y', 'sample_x']
-            # _string_attr(src_grp, 'zoneplate_z_indices', '0')
-            # _string_attr(src_grp, 'sample_y_indices', '1')
-            # _string_attr(src_grp, 'sample_x_indices', '2')
-            # _string_attr(src_grp, 'signal', nxkd.NXD_DATA)
-            src_grp["energy"][()] = e_pnts_E
-            # _string_attr(src_grp, 'sample_y_indices', '1')
-            # _string_attr(src_grp, 'sample_x_indices', '2')
-
-            ctrl_grp["energy"][()] = e_pnts_E
-            ctrl_grp[nxkd.NXD_DATA][()] = twoD_srdata
-            ctrl_grp["sample_x"][()] = xpnts_E
-            ctrl_grp["sample_y"][()] = ypnts_E
-            ctrl_grp["zoneplate_z"][()] = zpnts_E
-            # ctrl_grp['axes'] = ['zoneplate_z', 'sample_y', 'sample_x']
-            # _string_attr(ctrl_grp, 'zoneplate_z_indices', '0')
-            # _string_attr(ctrl_grp, 'sample_y_indices', '1')
-            # _string_attr(ctrl_grp, 'sample_x_indices', '2')
-            # _string_attr(ctrl_grp, 'signal', nxkd.NXD_DATA)
-        else:
-            _dataset(src_grp, nxkd.NXD_DATA, data_E, "NX_NUMBER")
-            _dataset(src_grp, "count_time", count_time_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_x", xpnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_y", ypnts_E, "NX_FLOAT")
-            _dataset(src_grp, "zoneplate_z", zpnts_E, "NX_FLOAT")
-            _list_attr(src_grp, "axes", ["zoneplate_z", "sample_y", "sample_x"])
-            _string_attr(src_grp, "zoneplate_z_indices", "0")
-            _string_attr(src_grp, "sample_y_indices", "1")
-            _string_attr(src_grp, "sample_x_indices", "2")
-            _string_attr(src_grp, "signal", nxkd.NXD_DATA)
-            _dataset(src_grp, "energy", e_pnts_E, "NX_FLOAT")
-
-            _dataset(ctrl_grp, "energy", e_pnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, nxkd.NXD_DATA, twoD_srdata, "NX_NUMBER")
-            _dataset(ctrl_grp, "sample_x", xpnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_y", ypnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "zoneplate_z", zpnts_E, "NX_FLOAT")
-            _list_attr(ctrl_grp, "axes", ["zoneplate_z", "sample_y", "sample_x"])
-            _string_attr(ctrl_grp, "zoneplate_z_indices", "0")
-            _string_attr(ctrl_grp, "sample_y_indices", "1")
-            _string_attr(ctrl_grp, "sample_x_indices", "2")
-            _string_attr(ctrl_grp, "signal", nxkd.NXD_DATA)
-
-    elif scan_type == scan_types.DETECTOR_IMAGE:
-        if modify:
-            src_grp[nxkd.NXD_DATA][()] = data_E
-            src_grp["count_time"][()] = count_time_E
-            src_grp["detector_x"][()] = xpnts_E
-            src_grp["detector_y"][()] = ypnts_E
-            # src_grp['axes'] = ['detector_y', 'detector_x']
-            # _string_attr(src_grp, 'detector_y_indices', '0')
-            # _string_attr(src_grp, 'detector_x_indices', '1')
-            # _string_attr(src_grp, 'signal', nxkd.NXD_DATA)
-            src_grp["energy"][()] = e_pnts_E
-            src_grp["sample_x"][()] = sxpnts_E
-            src_grp["sample_y"][()] = sypnts_E
-            # _string_attr(src_grp, 'sample_y_indices', '1')
-            # _string_attr(src_grp, 'sample_x_indices', '2')
-
-            ctrl_grp["energy"][()] = e_pnts_E
-            ctrl_grp[nxkd.NXD_DATA][()] = twoD_srdata
-            ctrl_grp["detector_x"][()] = xpnts_E
-            ctrl_grp["detector_y"][()] = ypnts_E
-            ctrl_grp["sample_x"][()] = sxpnts_E
-            ctrl_grp["sample_y"][()] = sypnts_E
-            # ctrl_grp['axes'] = ['detector_y', 'detector_x']
-            # _string_attr(ctrl_grp, 'detector_y_indices', '0')
-            # _string_attr(ctrl_grp, 'detector_x_indices', '1')
-            # _string_attr(ctrl_grp, 'signal', nxkd.NXD_DATA)
-        else:
-            _dataset(src_grp, nxkd.NXD_DATA, data_E, "NX_NUMBER")
-            _dataset(src_grp, "count_time", count_time_E, "NX_FLOAT")
-            _dataset(src_grp, "detector_x", xpnts_E, "NX_FLOAT")
-            _dataset(src_grp, "detector_y", ypnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_x", sxpnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_y", sypnts_E, "NX_FLOAT")
-            _list_attr(src_grp, "axes", ["detector_y", "detector_x"])
-            _string_attr(src_grp, "detector_y_indices", "0")
-            _string_attr(src_grp, "detector_x_indices", "1")
-            _string_attr(src_grp, "signal", nxkd.NXD_DATA)
-            _dataset(src_grp, "energy", e_pnts_E, "NX_FLOAT")
-            # _string_attr(src_grp, 'sample_y_indices', '1')
-            # _string_attr(src_grp, 'sample_x_indices', '2')
-
-            _dataset(ctrl_grp, "energy", e_pnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, nxkd.NXD_DATA, twoD_srdata, "NX_NUMBER")
-            _dataset(ctrl_grp, "detector_x", xpnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "detector_y", ypnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_x", sxpnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_y", sypnts_E, "NX_FLOAT")
-            _list_attr(ctrl_grp, "axes", ["detector_y", "detector_x"])
-            _string_attr(ctrl_grp, "detector_y_indices", "0")
-            _string_attr(ctrl_grp, "detector_x_indices", "1")
-            _string_attr(ctrl_grp, "signal", nxkd.NXD_DATA)
-    else:
-        if modify:
-            #'generic scan'
-            src_grp[nxkd.NXD_DATA][()] = data_E
-            src_grp["count_time"][()] = count_time_E
-            src_grp["energy"][()] = e_pnts_E
-            src_grp["sample_x"][()] = xpnts_E
-            src_grp["sample_y"][()] = ypnts_E
-            src_grp["epu_polarization"][()] = pol_pnts_E
-            src_grp["epu_offset"][()] = off_pnts_E
-            # src_grp['axes'] = ['energy', 'sample_y', 'sample_x']
-            # _string_attr(src_grp, 'energy_indices', '0')
-            # _string_attr(src_grp, 'sample_y_indices', '1')
-            # _string_attr(src_grp, 'sample_x_indices', '2')
-            # _string_attr(src_grp, 'signal', nxkd.NXD_DATA)
-            # _string_attr(src_grp, 'sample_y_indices', '1')
-            # _string_attr(src_grp, 'sample_x_indices', '2')
-
-            ctrl_grp[nxkd.NXD_DATA][()] = oneD_srdata
-            ctrl_grp["energy"][()] = e_pnts_E
-            ctrl_grp["sample_x"][()] = xpnts_E
-            ctrl_grp["sample_y"][()] = ypnts_E
-            ctrl_grp["epu_polarization"][()] = pol_pnts_E
-            ctrl_grp["epu_offset"][()] = off_pnts_E
-            # ctrl_grp['axes'] = ['energy', 'sample_y', 'sample_x']
-            # _string_attr(ctrl_grp, 'energy_indices', '0')
-            # _string_attr(ctrl_grp, 'sample_y_indices', '1')
-            # _string_attr(ctrl_grp, 'sample_x_indices', '2')
-            # _string_attr(ctrl_grp, 'signal', nxkd.NXD_DATA)
-        else:
-            #'generic scan'
-            _dataset(src_grp, nxkd.NXD_DATA, data_E, "NX_NUMBER")
-            _dataset(src_grp, "count_time", count_time_E, "NX_FLOAT")
-            _dataset(src_grp, "energy", e_pnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_x", xpnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_y", ypnts_E, "NX_FLOAT")
-            _dataset(src_grp, "epu_polarization", pol_pnts_E, "NX_FLOAT")
-            _dataset(src_grp, "epu_offset", off_pnts_E, "NX_FLOAT")
-            _list_attr(src_grp, "axes", ["energy", "sample_y", "sample_x"])
-            _string_attr(src_grp, "energy_indices", "0")
-            _string_attr(src_grp, "sample_y_indices", "1")
-            _string_attr(src_grp, "sample_x_indices", "2")
-            _string_attr(src_grp, "signal", nxkd.NXD_DATA)
-
-            _dataset(ctrl_grp, nxkd.NXD_DATA, oneD_srdata, "NX_NUMBER")
-            _dataset(ctrl_grp, "energy", e_pnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_x", xpnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_y", ypnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "epu_polarization", pol_pnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "epu_offset", off_pnts_E, "NX_FLOAT")
-            _list_attr(ctrl_grp, "axes", ["energy", "sample_y", "sample_x"])
-            _string_attr(ctrl_grp, "energy_indices", "0")
-            _string_attr(ctrl_grp, "sample_y_indices", "1")
-            _string_attr(ctrl_grp, "sample_x_indices", "2")
-            _string_attr(ctrl_grp, "signal", nxkd.NXD_DATA)
-
-
-def make_data_section_new(
-    nf, name, data_dct={}, scan_type=scan_types.SAMPLE_IMAGE, modify=False, dddata=None
-):
-    """
-    supported scan types from NXstxm def
-    sample point spectrum: (photon_energy,)
-    sample line spectrum: (photon_energy, sample_y/sample_x)
-    sample image: (sample_y, sample_x)
-    sample image stack: (photon_energy, sample_y, sample_x)
-    sample focus: (zoneplate_z, sample_y/sample_x)
-    osa image: (osa_y, osa_x)
-    osa focus: (zoneplate_z, osa_y/osa_x)
-    detector image: (detector_y, detector_x)
-
-    because the /control section is required to be closely tied to the data section we also build the /control group here
-
-    NOTE: the axis2000 read_nexus.pro file assumes that the axis '_indices' are in the following order:
-        2D data: y,  x or 0, 1
-        3D data: e, y, x or 0, 1, 2
-
-    Also NOTE that every NXdata group MUST contain:
-        _string_attr(src_grp, 'sample_y_indices', '1')
-        _string_attr(src_grp, 'sample_x_indices', '2')
-
-        as per Ben's email from March 30 2016
-        Hi Russ,
-       Sorry to take so long to reply (email got buried). The 'sample_x' and 'sample_y' fields will contain
-       what it says, not a copy of what is being scanned. If the sample is not being scanned, then there will
-       only be a single value in each, as the position of the sample will be fixed.
-
-        Cheers,
-        Ben
-
-
-
-    """
-    nume_pnts = dct_get(data_dct, "SYMBOLS.numE")
-
-    if scan_type == scan_types.SAMPLE_IMAGE:
-        if nume_pnts > 1:
-            scan_type = scan_types.SAMPLE_IMAGE_STACK
-        else:
-            scan_type = scan_types.SAMPLE_IMAGE
-
-    x_roi = dct_get(data_dct, ADO_CFG_X)
-    y_roi = dct_get(data_dct, ADO_CFG_Y)
-    z_roi = dct_get(data_dct, ADO_CFG_Z)
-
-    data_E = dct_get(data_dct, "DETECTORS.%s.DATA_E" % name)
-    data_P = dct_get(data_dct, "DETECTORS.%s.DATA_P" % name)
-    stokes_P = dct_get(data_dct, "NUM_P.STOKES")
-
-    # data_E = dct_get(data_dct, 'NUM_E.DATA')
-    e_pnts_E = dct_get(data_dct, "NUM_E.EV")
-    pol_pnts_E = dct_get(data_dct, "NUM_E.EPU_POL")
-    off_pnts_E = dct_get(data_dct, "NUM_E.EPU_OFFSET")
-    count_time_E = dct_get(data_dct, "NUM_E.COUNT_TIME")
-    xpnts_E = dct_get(data_dct, "NUM_E.MOTOR_X")
-    ypnts_E = dct_get(data_dct, "NUM_E.MOTOR_Y")
-    zpnts_E = dct_get(data_dct, "NUM_E.MOTOR_Z")
-    stokes_E = dct_get(data_dct, "NUM_E.STOKES")
-
-    sxpnts_E = dct_get(data_dct, "NUM_E.SAMPLE_X")
-    sypnts_E = dct_get(data_dct, "NUM_E.SAMPLE_Y")
-
-    # #data_P = dct_get(data_dct, 'NUM_P.DATA')
-    # e_pnts_P = dct_get(data_dct, 'NUM_P.EV')
-    # pol_pnts_P = dct_get(data_dct, 'NUM_P.EPU_POL')
-    # off_pnts_P = dct_get(data_dct, 'NUM_P.EPU_OFFSET')
-    # count_time_P = dct_get(data_dct, 'NUM_P.COUNT_TIME')
-    # xpnts_P = dct_get(data_dct, 'NUM_P.MOTOR_X')
-    # ypnts_P = dct_get(data_dct, 'NUM_P.MOTOR_Y')
-    # sxpnts_P = dct_get(data_dct, 'NUM_P.SAMPLE_X')
-    # sypnts_P = dct_get(data_dct, 'NUM_P.SAMPLE_Y')
-
-    line_position_P = dct_get(data_dct, "NUM_P.LINE_POSITION")
-
-    # oneD_srdata = dct_get(data_dct, 'NUM_E.SR_CURRENT.ONE_D')
-    # twoD_srdata = dct_get(data_dct, 'NUM_E.SR_CURRENT.TWO_D')
-    # thrD_srdata = dct_get(data_dct, 'NUM_E.SR_CURRENT.THREE_D')
-
-    if z_roi[NPOINTS] > 0:
-        zpnts = dct_get(data_dct, "NUM_E.MOTOR_Z")
-
-    # type_a_scans = [scan_types.SAMPLE_POINT_SPECTRUM, scan_types.SAMPLE_LINE_SPECTRUM, scan_types.SAMPLE_IMAGE, scan_types.SAMPLE_IMAGE_STACK] #, scan_types.SAMPLE_FOCUS]
-    type_a_scans = [
-        scan_types.SAMPLE_LINE_SPECTRUM,
-        scan_types.SAMPLE_IMAGE,
-        scan_types.SAMPLE_IMAGE_STACK,
-    ]  # , scan_types.SAMPLE_FOCUS]
-
-    if name not in list(nf.keys()):
-        src_grp = _group(nf, name, "NXdata")
-        _dataset(
-            src_grp,
-            "stxm_scan_type",
-            scan_types[scan_type].replace("_", " "),
-            "NX_CHAR",
-        )
-    else:
-        src_grp = nf[name]
-
-    if scan_type in type_a_scans:
-        if modify:
-            # modify existing nexus file
-            src_grp["count_time"][()] = count_time_E
-            src_grp["energy"][()] = e_pnts_E
-            src_grp["sample_x"][()] = xpnts_E
-            src_grp["sample_y"][()] = ypnts_E
-            src_grp["epu_polarization"][()] = pol_pnts_E
-            src_grp["epu_offset"][()] = off_pnts_E
-            src_grp["stokes"][()] = stokes_E
-
-            # src_grp['signal'][()] = nxkd.NXD_DATA
-            # replace_string_data(src_grp, 'src_grp', 'zone plate #%d' % zp_sel[RBV])
-        else:
-            _dataset(src_grp, "count_time", count_time_E, "NX_FLOAT")
-            _dataset(src_grp, "energy", e_pnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_x", xpnts_E, "NX_FLOAT")
-            _dataset(src_grp, "sample_y", ypnts_E, "NX_FLOAT")
-            _dataset(src_grp, "epu_polarization", pol_pnts_E, "NX_FLOAT")
-            _dataset(src_grp, "epu_offset", off_pnts_E, "NX_FLOAT")
-            _dataset(src_grp, "stokes", stokes_E, "NX_FLOAT")
-            _string_attr(src_grp, "signal", nxkd.NXD_DATA)
-
-        # set attributes
-        if scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
-            if modify:
-                # src_grp['axes'][()] = ['energy','line_position']
-                src_grp["line_position"][()] = line_position_P
-                src_grp[nxkd.NXD_DATA][()] = data_E
-                # the shape for a line spec scan that is for a line that has 150x150 points and is over 40 eV
-                # has the shape 1x150x40 so set the indices accordingly
-                # src_grp['energy_indices'][()] = '0'
-                # src_grp['line_position_indices'][()] = '1'
-                # src_grp['sample_y_indices'][()] = '1'
-                # src_grp['sample_x_indices'][()] = '1'
-                # src_grp['sample_x'] = sxpnts_E
-                # src_grp['sample_y'] = sypnts_E
-
-            else:
-                # NOTE that the order that the axes appear in the folling list determines what is in teh shape of the data
-                # axes = [ axis0, axis1, axis2, axis3, ...]
-                # data.shape = (axis0, axis1, axis2, axis3, ...)
-                # so for default numpy it uses C type-style which is (row, column)
-                # Fortran is (column, row)
-                # anyway the following defines the data to be (rows=line_position, columns=energy)
-                _list_attr(src_grp, "axes", ["line_position", "energy"])
-                # the shape for a line spec scan that is for a line that has 150x150 points and is over 40 eV
-                # has the shape 1x150x40 so set the indices accordingly
-                # BUT it should only be two D so it should be 150x40
-                _dataset(src_grp, "line_position", line_position_P, "NX_FLOAT")
-                # _dataset(src_grp, 'line_position', range(xpnts_E.shape[0]), 'NX_FLOAT')
-                # _dataset(src_grp, nxkd.NXD_DATA, data_E, 'NX_NUMBER')
-                _dataset(src_grp, nxkd.NXD_DATA, data_E[0], "NX_NUMBER")
-
-                # these appear to be ignored by axis2000 but make sure they are correct anyway
-                _string_attr(src_grp, "line_position_indices", "0")
-                _string_attr(src_grp, "sample_y_indices", "0")
-                _string_attr(src_grp, "sample_x_indices", "0")
-                _string_attr(src_grp, "energy_indices", "1")
-
-        elif scan_type == scan_types.SAMPLE_IMAGE:
-            if modify:
-                src_grp[nxkd.NXD_DATA][()] = data_E
-                # src_grp['axes'][()] =  ['sample_y', 'sample_x']
-                # src_grp['sample_y_indices'][()] = '0'
-                # src_grp['sample_x_indices'][()] = '1'
-
-            else:
-                _dataset(src_grp, nxkd.NXD_DATA, data_E, "NX_NUMBER")
-                _list_attr(src_grp, "axes", ["sample_y", "sample_x"])
-                _string_attr(src_grp, "sample_y_indices", "0")
-                _string_attr(src_grp, "sample_x_indices", "1")
-
-        elif scan_type == scan_types.SAMPLE_IMAGE_STACK:
-            if modify:
-                if dddata is not None:
-                    src_grp[nxkd.NXD_DATA][()] = dddata
-                else:
-                    src_grp[nxkd.NXD_DATA][()] = data_E
-                # src_grp['axes'][()] =  ['energy', 'sample_y', 'sample_x']
-                # src_grp['energy_indices'][()] = '0'
-                # src_grp['sample_y_indices'][()] = '1'
-                # src_grp['sample_x_indices'][()] = '2'
-                src_grp["sample_x"][()] = sxpnts_E
-                src_grp["sample_y"][()] = sypnts_E
-
-            else:
-                if dddata is not None:
-                    _dataset(src_grp, nxkd.NXD_DATA, dddata, "NX_NUMBER")
-                else:
-                    _dataset(src_grp, nxkd.NXD_DATA, data_E, "NX_NUMBER")
-
-                _list_attr(src_grp, "axes", ["energy", "sample_y", "sample_x"])
-                _string_attr(src_grp, "energy_indices", "0")
-                _string_attr(src_grp, "sample_y_indices", "1")
-                _string_attr(src_grp, "sample_x_indices", "2")
-                # _dataset(src_grp, 'sample_x', sxpnts_E, 'NX_FLOAT')
-                # _dataset(src_grp, 'sample_y', sypnts_E, 'NX_FLOAT')
-
     elif scan_type == scan_types.SAMPLE_POINT_SPECTRUM:
         if modify:
             src_grp["count_time"][()] = count_time_E
@@ -2347,8 +1815,8 @@ def make_data_section_new(
             # src_grp['axes'][()] = ['zoneplate_z', 'osa_y', 'osa_x']
             # src_grp['zoneplate_z_indices'][()] = '0'
             # src_grp['osa_y_indices'][()] = '1'
-            # src_grp['osa_x_indices'][()] = '2'
-            # src_grp['signal'][()] = nxkd.NXD_DATA
+            # src_grp['osa_x_indices'][()] =  '2'
+            # src_grp['signal'][()] =  nxkd.NXD_DATA
             # src_grp['sample_y_indices'][()] = '1'
             # src_grp['sample_x_indices'][()] = '2'
             src_grp["energy"][()] = e_pnts_E
@@ -2366,10 +1834,6 @@ def make_data_section_new(
             _string_attr(src_grp, "osa_y_indices", "1")
             _string_attr(src_grp, "osa_x_indices", "2")
             _string_attr(src_grp, "signal", nxkd.NXD_DATA)
-            # _string_attr(src_grp, 'sample_y_indices', '1')
-            # _string_attr(src_grp, 'sample_x_indices', '2')
-
-            _dataset(src_grp, "energy", e_pnts_E, "NX_FLOAT")
 
     elif scan_type == scan_types.SAMPLE_FOCUS:
         if modify:
@@ -2398,7 +1862,6 @@ def make_data_section_new(
             _string_attr(src_grp, "sample_y_indices", "1")
             _string_attr(src_grp, "sample_x_indices", "2")
             _string_attr(src_grp, "signal", nxkd.NXD_DATA)
-            _dataset(src_grp, "energy", e_pnts_E, "NX_FLOAT")
 
     elif scan_type == scan_types.DETECTOR_IMAGE:
         if modify:
@@ -2406,15 +1869,12 @@ def make_data_section_new(
             src_grp["count_time"][()] = count_time_E
             src_grp["detector_x"][()] = xpnts_E
             src_grp["detector_y"][()] = ypnts_E
+            src_grp["sample_x"][()] = sxpnts_E
+            src_grp["sample_y"][()] = sypnts_E
             # src_grp['axes'] = ['detector_y', 'detector_x']
             # _string_attr(src_grp, 'detector_y_indices', '0')
             # _string_attr(src_grp, 'detector_x_indices', '1')
             # _string_attr(src_grp, 'signal', nxkd.NXD_DATA)
-            src_grp["energy"][()] = e_pnts_E
-            src_grp["sample_x"][()] = sxpnts_E
-            src_grp["sample_y"][()] = sypnts_E
-            # _string_attr(src_grp, 'sample_y_indices', '1')
-            # _string_attr(src_grp, 'sample_x_indices', '2')
         else:
             _dataset(src_grp, nxkd.NXD_DATA, data_E, "NX_NUMBER")
             _dataset(src_grp, "count_time", count_time_E, "NX_FLOAT")
@@ -2426,46 +1886,13 @@ def make_data_section_new(
             _string_attr(src_grp, "detector_y_indices", "0")
             _string_attr(src_grp, "detector_x_indices", "1")
             _string_attr(src_grp, "signal", nxkd.NXD_DATA)
-            _dataset(src_grp, "energy", e_pnts_E, "NX_FLOAT")
-            # _string_attr(src_grp, 'sample_y_indices', '1')
-            # _string_attr(src_grp, 'sample_x_indices', '2')
 
     elif scan_type == scan_types.GENERIC_SCAN:
-        posner_nm = dct_get(data_dct, "CFG.ROI.X.POSITIONER")
-        _setpoints = dct_get(data_dct, "CFG.ROI.X.SETPOINTS")
-        if modify:
-            src_grp["count_time"][()] = count_time_E
-            # src_grp['energy'][()] = e_pnts_E
-            # src_grp['sample_x'][()] = xpnts_E
-            # src_grp['sample_y'][()] = ypnts_E
-            # src_grp['epu_polarization'][()] = pol_pnts_E
-            # src_grp['epu_offset'][()] = off_pnts_E
-            src_grp[nxkd.NXD_DATA][()] = data_P
-            # src_grp['sample_x'][()] = sxpnts_E
-            # src_grp['sample_y'][()] = sypnts_E
-            src_grp["axes"][()] = [posner_nm]
-            src_grp["%s_indices" % posner_nm][()] = "0"
-            # src_grp['sample_y_indices'][()] = '1'
-            # src_grp['sample_x_indices'][()] = '2'
+        posner_nm = dct.get(data_dct, "CFG.ROI.X.POSITIONER")
+        _setpoints = dct.get(data_dct, "CFG.ROI.X.SETPOINTS")
+        if _setpoints is None:
+            _setpoints = [0.0]
 
-        else:
-            _dataset(src_grp, "count_time", count_time_E, "NX_FLOAT")
-            _dataset(src_grp, "energy", e_pnts_E, "NX_FLOAT")
-            _dataset(src_grp, posner_nm, _setpoints, "NX_FLOAT")
-            # _dataset(src_grp, 'sample_x', sxpnts_E, 'NX_FLOAT')
-            # _dataset(src_grp, 'sample_y', sypnts_E, 'NX_FLOAT')
-            # _dataset(src_grp, 'epu_polarization', pol_pnts_E, 'NX_FLOAT')
-            # _dataset(src_grp, 'epu_offset', off_pnts_E, 'NX_FLOAT')
-            _list_attr(src_grp, "axes", [posner_nm])
-            _string_attr(src_grp, "%s_indices" % posner_nm, "0")
-            _string_attr(src_grp, "signal", nxkd.NXD_DATA)
-            _dataset(src_grp, nxkd.NXD_DATA, data_P, "NX_NUMBER")
-
-            # _string_attr(src_grp, 'energy_indices', '0')
-            # _string_attr(src_grp, 'sample_y_indices', '1')
-            # _string_attr(src_grp, 'sample_x_indices', '2')
-
-    else:
         if modify:
             # 'generic scan'
             src_grp[nxkd.NXD_DATA][()] = data_E
@@ -2503,7 +1930,7 @@ def make_control_section_new(
     nf, name, data_dct={}, scan_type=scan_types.SAMPLE_IMAGE, modify=False, dddata=None
 ):
     """ """
-    nume_pnts = dct_get(data_dct, "SYMBOLS.numE")
+    nume_pnts = dct.get(data_dct, "SYMBOLS.numE")
     # if((scan_type == scan_types.SAMPLE_IMAGE + IMAGE_PXP) or (scan_type == scan_types.SAMPLE_IMAGE + IMAGE_LXL)):
     if scan_type == scan_types.SAMPLE_IMAGE:
         if nume_pnts > 1:
@@ -2511,32 +1938,32 @@ def make_control_section_new(
         else:
             scan_type = scan_types.SAMPLE_IMAGE
 
-    x_roi = dct_get(data_dct, ADO_CFG_X)
-    y_roi = dct_get(data_dct, ADO_CFG_Y)
-    z_roi = dct_get(data_dct, ADO_CFG_Z)
+    x_roi = dct.get(data_dct, ADO_CFG_X)
+    y_roi = dct.get(data_dct, ADO_CFG_Y)
+    z_roi = dct.get(data_dct, ADO_CFG_Z)
 
-    data_E = dct_get(data_dct, "DETECTORS.%s.DATA_E" % name)
-    data_P = dct_get(data_dct, "DETECTORS.%s.DATA_P" % name)
+    data_E = dct.get(data_dct, "DETECTORS.%s.DATA_E" % name)
+    data_P = dct.get(data_dct, "DETECTORS.%s.DATA_P" % name)
 
-    e_pnts_E = dct_get(data_dct, "NUM_E.EV")
-    pol_pnts_E = dct_get(data_dct, "NUM_E.EPU_POL")
-    off_pnts_E = dct_get(data_dct, "NUM_E.EPU_OFFSET")
-    count_time_E = dct_get(data_dct, "NUM_E.COUNT_TIME")
-    xpnts_E = dct_get(data_dct, "NUM_E.MOTOR_X")
-    ypnts_E = dct_get(data_dct, "NUM_E.MOTOR_Y")
-    zpnts_E = dct_get(data_dct, "NUM_E.MOTOR_Z")
+    e_pnts_E = dct.get(data_dct, "NUM_E.EV")
+    pol_pnts_E = dct.get(data_dct, "NUM_E.EPU_POL")
+    off_pnts_E = dct.get(data_dct, "NUM_E.EPU_OFFSET")
+    count_time_E = dct.get(data_dct, "NUM_E.COUNT_TIME")
+    xpnts_E = dct.get(data_dct, "NUM_E.MOTOR_X")
+    ypnts_E = dct.get(data_dct, "NUM_E.MOTOR_Y")
+    zpnts_E = dct.get(data_dct, "NUM_E.MOTOR_Z")
 
-    sxpnts_E = dct_get(data_dct, "NUM_E.SAMPLE_X")
-    sypnts_E = dct_get(data_dct, "NUM_E.SAMPLE_Y")
+    sxpnts_E = dct.get(data_dct, "NUM_E.SAMPLE_X")
+    sypnts_E = dct.get(data_dct, "NUM_E.SAMPLE_Y")
 
-    line_position_P = dct_get(data_dct, "NUM_P.LINE_POSITION")
+    line_position_P = dct.get(data_dct, "NUM_P.LINE_POSITION")
 
-    oneD_srdata = dct_get(data_dct, "NUM_E.SR_CURRENT.ONE_D")
-    twoD_srdata = dct_get(data_dct, "NUM_E.SR_CURRENT.TWO_D")
-    thrD_srdata = dct_get(data_dct, "NUM_E.SR_CURRENT.THREE_D")
+    oneD_srdata = dct.get(data_dct, "NUM_E.SR_CURRENT.ONE_D")
+    twoD_srdata = dct.get(data_dct, "NUM_E.SR_CURRENT.TWO_D")
+    thrD_srdata = dct.get(data_dct, "NUM_E.SR_CURRENT.THREE_D")
 
     if z_roi[NPOINTS] > 0:
-        zpnts = dct_get(data_dct, "NUM_E.MOTOR_Z")
+        zpnts = dct.get(data_dct, "NUM_E.MOTOR_Z")
 
     # type_a_scans = [scan_types.SAMPLE_POINT_SPECTRUM, scan_types.SAMPLE_LINE_SPECTRUM, scan_types.SAMPLE_IMAGE, scan_types.SAMPLE_IMAGE_STACK] #, scan_types.SAMPLE_FOCUS]
     type_a_scans = [
@@ -2699,6 +2126,9 @@ def make_control_section_new(
             # ctrl_grp['osa_y_indices'][()] = '1'
             # ctrl_grp['osa_x_indices'][()] =  '2'
             # ctrl_grp['signal'][()] =  nxkd.NXD_DATA
+            # ctrl_grp['sample_y_indices'][()] = '1'
+            # ctrl_grp['sample_x_indices'][()] = '2'
+            ctrl_grp["energy"][()] = e_pnts_E
 
         else:
             _dataset(ctrl_grp, "energy", e_pnts_E, "NX_FLOAT")
@@ -2764,885 +2194,43 @@ def make_control_section_new(
             _string_attr(ctrl_grp, "signal", nxkd.NXD_DATA)
 
     elif scan_type == scan_types.GENERIC_SCAN:
-        posner_nm = dct_get(data_dct, "CFG.ROI.X.POSITIONER")
-        _setpoints = dct_get(data_dct, "CFG.ROI.X.SETPOINTS")
-        _units = dct_get(data_dct, "CFG.ROI.X.UNITS")
+        posner_nm = dct.get(data_dct, "CFG.ROI.X.POSITIONER")
+        _setpoints = dct.get(data_dct, "CFG.ROI.X.SETPOINTS")
+        _units = dct.get(data_dct, "CFG.ROI.X.UNITS")
         if _units is None:
             _units = "um"
 
         if modify:
-            # ctrl_grp[nxkd.NXD_DATA][()] = data_P
-            # ctrl_grp['axes'][()] = [posner_nm]
-            # ctrl_grp['%s_indices' %posner_nm ][()] = '0'
-            pass
+            # 'generic scan'
+            src_grp[nxkd.NXD_DATA][()] = data_E
+            src_grp["count_time"][()] = count_time_E
+            src_grp["energy"][()] = e_pnts_E
+            src_grp["sample_x"][()] = xpnts_E
+            src_grp["sample_y"][()] = ypnts_E
+            src_grp["epu_polarization"][()] = pol_pnts_E
+            src_grp["epu_offset"][()] = off_pnts_E
+            # src_grp['axes'] = ['energy', 'sample_y', 'sample_x']
+            # _string_attr(src_grp, 'energy_indices', '0')
+            # _string_attr(src_grp, 'sample_y_indices', '1')
+            # _string_attr(src_grp, 'sample_x_indices', '2')
+            # _string_attr(src_grp, 'signal', nxkd.NXD_DATA)
+            # _string_attr(src_grp, 'sample_y_indices', '1')
+            # _string_attr(src_grp, 'sample_x_indices', '2')
 
         else:
-            _evpoints = np.repeat(e_pnts_E, len(_setpoints))
-            _dataset(ctrl_grp, "energy", _evpoints, "NX_FLOAT")
-            _datapoints = np.repeat(oneD_srdata, len(_setpoints))
-            _list_attr(ctrl_grp, "axes", [posner_nm])
-            _string_attr(ctrl_grp, "%s_indices" % posner_nm, "0")
-            _string_attr(ctrl_grp, "signal", nxkd.NXD_DATA)
-            _dataset(ctrl_grp, nxkd.NXD_DATA, _datapoints, "NX_NUMBER")
-            posner_grp = _dataset(ctrl_grp, posner_nm, _setpoints, "NX_NUMBER")
-            _string_attr(posner_grp, "units", _units)
-
-    else:
-        if modify:
-            ctrl_grp[nxkd.NXD_DATA][()] = oneD_srdata
-            ctrl_grp["energy"][()] = e_pnts_E
-            ctrl_grp["sample_x"][()] = xpnts_E
-            ctrl_grp["sample_y"][()] = ypnts_E
-            ctrl_grp["epu_polarization"][()] = pol_pnts_E
-            ctrl_grp["epu_offset"][()] = off_pnts_E
-            # ctrl_grp['axes'] = ['energy', 'sample_y', 'sample_x']
-            # _string_attr(ctrl_grp, 'energy_indices', '0')
-            # _string_attr(ctrl_grp, 'sample_y_indices', '1')
-            # _string_attr(ctrl_grp, 'sample_x_indices', '2')
-            # _string_attr(ctrl_grp, 'signal', nxkd.NXD_DATA)
-        else:
-            _dataset(ctrl_grp, nxkd.NXD_DATA, oneD_srdata, "NX_NUMBER")
-            _dataset(ctrl_grp, "energy", e_pnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_x", xpnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "sample_y", ypnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "epu_polarization", pol_pnts_E, "NX_FLOAT")
-            _dataset(ctrl_grp, "epu_offset", off_pnts_E, "NX_FLOAT")
-            _list_attr(ctrl_grp, "axes", ["energy", "sample_y", "sample_x"])
-            _string_attr(ctrl_grp, "energy_indices", "0")
-            _string_attr(ctrl_grp, "sample_y_indices", "1")
-            _string_attr(ctrl_grp, "sample_x_indices", "2")
-            _string_attr(ctrl_grp, "signal", nxkd.NXD_DATA)
-
-
-def update_data_section(
-    fname,
-    entry_str,
-    counter_str="counter0",
-    data_dct={},
-    scan_type=scan_types.SAMPLE_IMAGE,
-):
-    """
-    supported scan types from NXstxm def
-    sample point spectrum: (photon_energy,)
-    sample line spectrum: (photon_energy, sample_y/sample_x)
-    sample image: (sample_y, sample_x)
-    sample image stack: (photon_energy, sample_y, sample_x)
-    sample focus: (zoneplate_z, sample_y/sample_x)
-    osa image: (osa_y, osa_x)
-    osa focus: (zoneplate_z, osa_y/osa_x)
-    detector image: (detector_y, detector_x)
-
-    because the /control section is required to be closely tied to the data section we also build the /control group here
-
-    NOTE: the axis2000 read_nexus.pro file assumes that the axis '_indices' are in the following order:
-        2D data: y,  x or 0, 1
-        3D data: e, y, x or 0, 1, 2
-
-    Also NOTE that every NXdata group MUST contain:
-        _string_attr(src_grp, 'sample_y_indices', '1')
-        _string_attr(src_grp, 'sample_x_indices', '2')
-
-    fname : the nexus file that has been opened for writing
-    entry_str : the entry string that is to receive this data
-    counter_str : the name of the counter to use to place the data in the 'counter' NXData section
-    data_dct : the incoming data
-    scan_type : the type of the scan data being saved
-
-
-    """
-    nf = h5py.File(fname, "r+")
-    if nf is None:
-        _logger.error("unable to open file [%s]" % fname)
-
-    data_dct = _data_as_1D(data_dct)
-    nume_pnts = dct_get(data_dct, "SYMBOLS.numE")
-    # if((scan_type == scan_types.SAMPLE_IMAGE + IMAGE_PXP) or (scan_type == scan_types.SAMPLE_IMAGE + IMAGE_LXL)):
-    if scan_type == scan_types.SAMPLE_IMAGE:
-        if nume_pnts > 1:
-            scan_type = scan_types.SAMPLE_IMAGE_STACK
-        else:
-            scan_type = scan_types.SAMPLE_IMAGE
-
-    x_roi = dct_get(data_dct, ADO_CFG_X)
-    y_roi = dct_get(data_dct, ADO_CFG_Y)
-    z_roi = dct_get(data_dct, ADO_CFG_Z)
-
-    data_E = dct_get(data_dct, "NUM_E.DATA")
-    e_pnts_E = dct_get(data_dct, "NUM_E.EV")
-    pol_pnts_E = dct_get(data_dct, "NUM_E.EPU_POL")
-    off_pnts_E = dct_get(data_dct, "NUM_E.EPU_OFFSET")
-    count_time_E = dct_get(data_dct, "NUM_E.COUNT_TIME")
-    xpnts_E = dct_get(data_dct, "NUM_E.MOTOR_X")
-    ypnts_E = dct_get(data_dct, "NUM_E.MOTOR_Y")
-    zpnts_E = dct_get(data_dct, "NUM_E.MOTOR_Z")
-
-    data_P = dct_get(data_dct, "NUM_P.DATA")
-    e_pnts_P = dct_get(data_dct, "NUM_P.EV")
-    pol_pnts_P = dct_get(data_dct, "NUM_P.EPU_POL")
-    off_pnts_P = dct_get(data_dct, "NUM_P.EPU_OFFSET")
-    count_time_P = dct_get(data_dct, "NUM_P.COUNT_TIME")
-    xpnts_P = dct_get(data_dct, "NUM_P.MOTOR_X")
-    ypnts_P = dct_get(data_dct, "NUM_P.MOTOR_Y")
-
-    line_position_P = dct_get(data_dct, "NUM_P.LINE_POSITION")
-
-    oneD_srdata = dct_get(data_dct, "NUM_E.SR_CURRENT.ONE_D")
-    twoD_srdata = dct_get(data_dct, "NUM_E.SR_CURRENT.TWO_D")
-    thrD_srdata = dct_get(data_dct, "NUM_E.SR_CURRENT.THREE_D")
-
-    if z_roi[NPOINTS] > 0:
-        zpnts = dct_get(data_dct, "NUM_E.MOTOR_Z")
-
-    type_a_scans = [
-        scan_types.SAMPLE_POINT_SPECTRUM,
-        scan_types.SAMPLE_LINE_SPECTRUM,
-        scan_types.SAMPLE_IMAGE,
-        scan_types.SAMPLE_IMAGE_STACK,
-    ]  # , scan_types.SAMPLE_FOCUS]
-
-    if entry_str in list(nf.keys()):
-        if counter_str in list(nf[entry_str].keys()):
-            src_grp = nf[entry_str]["control"][nxkd.NXD_DATA]
-            ctrl_grp = nf[entry_str][counter_str][nxkd.NXD_DATA]
-        else:
-            _logger.error(
-                "update_data_section: counter string [%s] does not exist in nexus entry"
-                % counter_str
-            )
-            nf.close()
-            return False
-    else:
-        _logger.error(
-            "update_data_section: entry string [%s] does not exist in nexus file"
-            % entry_str
-        )
-        nf.close()
-        return False
-
-    if scan_type in type_a_scans:
-
-        if scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
-            src_grp[()] = data_E
-            ctrl_grp[()] = data_E
-
-        elif scan_type == scan_types.SAMPLE_POINT_SPECTRUM:
-            src_grp[()] = data_P
-            ctrl_grp[()] = oneD_srdata
-
-        elif scan_type == scan_types.SAMPLE_IMAGE:
-            src_grp[()] = data_E
-            ctrl_grp[()] = twoD_srdata
-        elif scan_type == scan_types.SAMPLE_IMAGE_STACK:
-            src_grp[()] = data_E
-            ctrl_grp[()] = thrD_srdata
-        else:
-            # modify existing nexus file
-            src_grp[()] = data_P
-
-    elif scan_type == scan_types.OSA_IMAGE:
-        src_grp[()] = data_E
-        ctrl_grp[()] = twoD_srdata
-
-    elif scan_type == scan_types.OSA_FOCUS:
-        src_grp[()] = data_E
-        ctrl_grp[()] = twoD_srdata
-
-    elif scan_type == scan_types.SAMPLE_FOCUS:
-        src_grp[()] = data_E
-        ctrl_grp[()] = twoD_srdata
-
-    elif scan_type == scan_types.DETECTOR_IMAGE:
-        src_grp[()] = data_E
-        ctrl_grp[()] = twoD_srdata
-
-    else:
-        #'generic scan'
-        src_grp[()] = data_E
-        ctrl_grp[()] = oneD_srdata
-
-    nf.close()
-
-    return True
-
-
-def make_detector(
-    nf, name, data=None, data_dct={}, count_time=[], unit="counts", modify=False
-):
-    if not modify:
-        grp = _group(nf, name, "NXdetector")
-
-        if data is None:
-            _dataset(grp, nxkd.NXD_DATA, np.zeros(200, dtype=np.float32), "NX_FLOAT")
-        else:
-            _dataset(grp, nxkd.NXD_DATA, data, "NX_FLOAT")
-
-        _dataset(grp, "count_time", count_time, "NX_FLOAT")
-        _dataset(grp, "unit", unit, "NX_CHAR")
-    else:
-        grp = nf[name]
-        del grp[nxkd.NXD_DATA]
-        # grp[nxkd.NXD_DATA][()] = data
-        _dataset(grp, nxkd.NXD_DATA, data, "NX_FLOAT")
-
-
-def make_source(nf, data_dct={}, modify=False):
-    if not modify:
-        src_grp = _group(nf, "source", "NXsource")
-        _dataset(src_grp, "type", "Synchrotron X-ray Source", "NX_CHAR")
-        _dataset(src_grp, "name", "Canadian Lightsource Inc.", "NX_CHAR")
-        _dataset(src_grp, "probe", "x-ray", "NX_CHAR")
-        # devices = dct_get(data_dct,ADO_DEVICES)
-        detectors = dct_get(data_dct, "DETECTORS")
-        d = detectors[DNM_RING_CURRENT]
-        _dataset(src_grp, "current", d[RBV], "NX_FLOAT", "NX_CURRENT")
-
-    else:
-        # nothing to modify
-        pass
-
-
-def make_source_new(nf, data_dct={}, modify=False):
-    if not modify:
-        src_grp = _group(nf, "source", "NXsource")
-        _dataset(src_grp, "type", "Synchrotron X-ray Source", "NX_CHAR")
-        _dataset(src_grp, "name", "Canadian Lightsource Inc.", "NX_CHAR")
-        _dataset(src_grp, "probe", "x-ray", "NX_CHAR")
-        # devices = dct_get(data_dct,ADO_DEVICES)
-        sr_current = dct_get(data_dct, "NUM_P.SR_CURRENT")
-        _dataset(src_grp, "current", sr_current, "NX_FLOAT", "NX_CURRENT")
-    else:
-        # nothing to modify
-        pass
-
-
-def make_monochromator(nf, data_dct={}, modify=False):
-    epnts = dct_get(data_dct, "NUM_P.EV")
-
-    if modify:
-        del nf["monochromator"]["energy"]
-        grp = nf["monochromator"]
-    else:
-        grp = _group(nf, "monochromator", "NXmonochromator")
-
-    _dataset(grp, "energy", epnts, "NX_FLOAT")
-
-
-def make_epu(nf, data_dct={}, modify=False, pol_pnt=0):
-    """
-    The epu polaraization is a confusing situation, the implementation of the polarization number
-    """
-    pvs = dct_get(data_dct, "PVS")
-    #     pol_pnts = dct_get(data_dct, 'NUM_P.EPU_POL')
-    #     off_pnts = dct_get(data_dct, 'NUM_P.EPU_OFFSET')
-    #     angle_pnts = dct_get(data_dct, 'NUM_P.EPU_POL_ANGLE')
-    #     gap_pnts = dct_get(data_dct, 'NUM_P.EPU_GAP')
-    #     harmonic_pnts = dct_get(data_dct, 'NUM_P.EPU_HARMONIC')
-    s0 = 0
-    s1 = 0
-    s2 = 0
-    s3 = 0
-
-    # (use_pol_angle, mode_str) = get_nx_standard_epu_mode(pvs[DNM_EPU_POL_FBK][RBV])
-    (use_pol_angle, mode_str) = get_nx_standard_epu_mode(pol_pnt)
-    if use_pol_angle:
-        pol_angle = pvs[DNM_EPU_POL_ANGLE][RBV]
-    else:
-        pol_angle = 0.0
-
-    epu_gap_fbk = pvs[DNM_EPU_GAP_FBK][RBV]
-    epu_gap_offset = pvs[DNM_EPU_GAP_OFFSET][RBV]
-    epu_harmonic = get_nx_standard_epu_harmonic(pvs[DNM_EPU_HARMONIC_PV][RBV])
-
-    if not modify:
-        grp = _group(nf, "epu", "NXinsertion_device")
-        # _dataset(nxgrp, name, data, nxdata_type, nx_units='NX_ANY', dset={}):
-        _dataset(grp, "type", "elliptically polarizing undulator", "NX_CHAR")
-        _dataset(grp, "mode", mode_str, "NX_CHAR")
-        _dataset(grp, "linear_inclined_angle", pol_angle, "NX_ANGLE")
-        _dataset(grp, "gap", epu_gap_fbk, "NX_FLOAT", nx_units="NX_LENGTH")
-        _dataset(grp, "gap_offset", epu_gap_offset, "NX_FLOAT", nx_units="NX_LENGTH")
-        _dataset(grp, "harmonic", epu_harmonic, "NX_INT", nx_units="NX_UNITLESS")
-
-        # stokes_grp = _group(grp, 'stokes', 'NXstokes_parameters')
-        # _dataset(stokes_grp, 's0', s0, 'NX_INT', nx_units='NX_UNITLESS')
-        # _dataset(stokes_grp, 's1', s1, 'NX_INT', nx_units='NX_UNITLESS')
-        # _dataset(stokes_grp, 's2', s2, 'NX_INT', nx_units='NX_UNITLESS')
-        # _dataset(stokes_grp, 's3', s3, 'NX_INT', nx_units='NX_UNITLESS')
-    else:
-        # only modify the fields that would have changed
-        grp = nf["epu"]
-        # stokes_grp = nf['epu']['stokes']
-        # grp['mode'][()] = mode_str
-        replace_string_data(grp, "mode", mode_str)
-        grp["linear_inclined_angle"][()] = pol_angle
-        grp["gap"][()] = epu_gap_fbk
-        grp["gap_offset"][()] = epu_gap_offset
-        grp["harmonic"][()] = epu_harmonic
-        # stokes_grp['s0'][()] = s0
-        # stokes_grp['s1'][()] = s1
-        # stokes_grp['s2'][()] = s2
-        # stokes_grp['s3'][()] = s3
-
-
-def make_epu_new(nf, data_dct={}, modify=False, pol_pnt=0):
-    """
-    The epu polaraization is a confusing situation, the implementation of the polarization number
-    """
-    pvs = dct_get(data_dct, "PVS")
-    #     pol_pnts = dct_get(data_dct, 'NUM_P.EPU_POL')
-    #     off_pnts = dct_get(data_dct, 'NUM_P.EPU_OFFSET')
-    #     angle_pnts = dct_get(data_dct, 'NUM_P.EPU_POL_ANGLE')
-    #     gap_pnts = dct_get(data_dct, 'NUM_P.EPU_GAP')
-    #     harmonic_pnts = dct_get(data_dct, 'NUM_P.EPU_HARMONIC')
-
-    ang = dct_get(data_dct, "NUM_P.EPU_POL")
-    epu_gap_offset = dct_get(data_dct, "NUM_P.EPU_OFFSET")
-    ang = dct_get(data_dct, "NUM_P.EPU_POL_ANGLE")
-    epu_gap_fbk = dct_get(data_dct, "NUM_P.EPU_GAP")
-    harm = dct_get(data_dct, "NUM_P.EPU_HARMONIC")
-
-    stokes = dct_get(data_dct, "NUM_P.STOKES")
-    # s0 = dct_get(data_dct, 'NUM_P.STOKES_S0')
-    # s1 = dct_get(data_dct, 'NUM_P.STOKES_S1')
-    # s2 = dct_get(data_dct, 'NUM_P.STOKES_S2')
-    # s3 = dct_get(data_dct, 'NUM_P.STOKES_S3')
-
-    # (use_pol_angle, mode_str) = get_nx_standard_epu_mode(pvs[DNM_EPU_POL_FBK][RBV])
-    (use_pol_angle, mode_str) = get_nx_standard_epu_mode(pol_pnt)
-    if use_pol_angle:
-        pol_angle = ang
-    else:
-        pol_angle = ang
-        pol_angle.fill(0.0)
-
-    epu_harmonic = get_nx_standard_epu_harmonic_new(harm)
-
-    if not modify:
-        grp = _group(nf, "epu", "NXinsertion_device")
-        # _dataset(nxgrp, name, data, nxdata_type, nx_units='NX_ANY', dset={}):
-        _dataset(grp, "type", "elliptically polarizing undulator", "NX_CHAR")
-        _dataset(grp, "mode", mode_str, "NX_CHAR")
-        _dataset(grp, "linear_inclined_angle", pol_angle, "NX_ANGLE")
-        _dataset(grp, "gap", epu_gap_fbk, "NX_FLOAT", nx_units="NX_LENGTH")
-        _dataset(grp, "gap_offset", epu_gap_offset, "NX_FLOAT", nx_units="NX_LENGTH")
-        _dataset(grp, "harmonic", epu_harmonic, "NX_INT", nx_units="NX_UNITLESS")
-
-        _dataset(grp, "stokes", stokes, "NX_FLOAT", nx_units="NX_UNITLESS")
-        # stokes_grp = _group(grp, 'stokes', 'NXstokes_parameters')
-        # _dataset(stokes_grp, 's0', s0, 'NX_INT', nx_units='NX_UNITLESS')
-        # _dataset(stokes_grp, 's1', s1, 'NX_INT', nx_units='NX_UNITLESS')
-        # _dataset(stokes_grp, 's2', s2, 'NX_INT', nx_units='NX_UNITLESS')
-        # _dataset(stokes_grp, 's3', s3, 'NX_INT', nx_units='NX_UNITLESS')
-    else:
-        # only modify the fields that would have changed
-        grp = nf["epu"]
-        stokes_grp = nf["epu"]["stokes"]
-        # grp['mode'][()] = mode_str
-        replace_string_data(grp, "mode", mode_str)
-        grp["linear_inclined_angle"][()] = pol_angle
-        grp["gap"][()] = epu_gap_fbk
-        grp["gap_offset"][()] = epu_gap_offset
-        grp["harmonic"][()] = epu_harmonic
-        grp["stokes"][()] = stokes
-        # stokes_grp['s0'][()] = s0
-        # stokes_grp['s1'][()] = s1
-        # stokes_grp['s2'][()] = s2
-        # stokes_grp['s3'][()] = s3
-
-
-def replace_string_data(grp, fld_str, data_str):
-    del grp[fld_str]
-    grp[fld_str] = data_str
-
-
-def make_zoneplate(nf, data_dct={}, modify=False):
-    """
-    The fresnel zoneplate definition, only a subset of standard used because
-    I don't not have all the info to populate all fields
-
-    fields:
-    central_stop_diameter:NX_FLOAT
-                central_stop_material:NX_CHAR
-              central_stop_thickness:NX_FLOAT
-    fabrication:NX_CHAR
-              focus_parameters:NX_FLOAT[]
-              mask_material:NX_CHAR
-              mask_thickness:NX_FLOAT
-    outer_diameter:NX_FLOAT
-    outermost_zone_width:NX_FLOAT
-              support_membrane_material:NX_CHAR
-              support_membrane_thickness:NX_FLOAT
-              zone_height:NX_FLOAT
-              zone_material:NX_CHAR
-              zone_support_material:NX_CHAR
-
-
-
-
-    """
-    pvs = dct_get(data_dct, "PVS")
-    # get the epics trasnform record for the zoneplate definiiton
-    zp_pvs = pvs[DNM_ZP_DEF]
-    zp_sel = pvs[DNM_ZP_SELECT]
-
-    # these zp_pvs are a transform record
-    zp_B = zp_pvs[RBV]["B"]
-    zp_C = zp_pvs[RBV]["C"]
-    zp_D = zp_pvs[RBV]["D"]
-
-    if not modify:
-        grp = _group(nf, "zoneplate", "NXfresnel_zone_plate")
-        _dataset(grp, "name", "zone plate #%d" % zp_sel[RBV], "NX_CHAR")
-        # _dataset(nxgrp, name, data, nxdata_type, nx_units='NX_ANY', dset={}):
-        _dataset(grp, "outer_diameter", zp_B["B"], "NX_FLOAT", nx_units="NX_LENGTH")
-        _dataset(
-            grp, "central_stop_diameter", zp_C["C"], "NX_FLOAT", nx_units="NX_LENGTH"
-        )
-        _dataset(
-            grp, "outermost_zone_width", zp_D["D"], "NX_FLOAT", nx_units="NX_LENGTH"
-        )
-        _dataset(grp, "fabrication", "etched", "NX_CHAR")
-
-        # these are part of the standard but I do not have the info to populate them
-    #         _dataset(grp, 'central_stop_diameter', -1, 'NX_FLOAT')
-    #         _dataset(grp, 'central_stop_material', 'Pb', 'NX_CHAR')
-    #         _dataset(grp, 'central_stop_thickness', -1, 'NX_FLOAT')
-    #         _dataset(grp, 'focus_parameters', 0.0, 'NX_FLOAT[]')
-    #         _dataset(grp, 'mask_material', 0.0, 'NX_CHAR')
-    #         _dataset(grp, 'mask_thickness', 0.0, 'NX_FLOAT')
-    #         _dataset(grp, 'support_membrane_material', 0.0, 'NX_CHAR')
-    #         _dataset(grp, 'support_membrane_thickness', 0.0, 'NX_FLOAT')
-    #         _dataset(grp, 'zone_height', 0.0, 'NX_FLOAT')
-    #         _dataset(grp, 'zone_material', 0.0, 'NX_CHAR')
-    #         _dataset(grp, 'zone_support_material', 0.0, 'NX_CHAR')
-
-    else:
-        # only modify the fields that would have changed
-        grp = nf["zoneplate"]
-        # grp['name'][()] = 'zone plate #%d' % zp_sel[RBV]
-        replace_string_data(grp, "name", "zone plate #%d" % zp_sel[RBV])
-
-        grp["outer_diameter"][()] = zp_B["B"]
-        grp["central_stop_diameter"][()] = zp_C["C"]
-        grp["outermost_zone_width"][()] = zp_D["D"]
-
-
-def get_nx_standard_epu_mode(mode):
-    """
-    Define polarization as either
-        cir. right, point of view of source,
-        cir. left, point of view of source, or
-        linear. If the linear case is selected, there is an additional value in degrees for
-            the angle (number is meaningless if circular is chosen, or may not be filled in, I do not know).
-    """
-    linear_lst = [2, 3, 4, 5]
-    if mode == 0:
-        return (False, "cir. left, point of view of source")
-    elif mode == 1:
-        return (False, "cir. right, point of view of source")
-    elif mode in linear_lst:
-        return (True, "linear")
-    else:
-        return (False, "UNKNOWN")
-
-
-def get_nx_standard_epu_harmonic(harm):
-    """map the epics mbbo enumeration to the actual harmonic num"""
-    if harm == 0:
-        return 1
-    elif harm == 1:
-        return 3
-    elif harm == 2:
-        return 5
-    elif harm == 3:
-        return 7
-    elif harm == 4:
-        return 9
-    else:
-        return 0
-
-
-def get_nx_standard_epu_harmonic_new(harm_arr):
-    """map the epics mbbo enumeration to the actual harmonic num
-    harm_lst is an array
-    """
-    l = []
-    for harm in harm_arr[::-1]:
-        if harm == 0:
-            l.append(1)
-        elif harm == 1:
-            l.append(3)
-        elif harm == 2:
-            l.append(5)
-        elif harm == 3:
-            l.append(7)
-        elif harm == 4:
-            l.append(9)
-        else:
-            l.append(0)
-    return l
-
-
-def make_monitor(nf, data_dct={}):
-    grp = _group(nf, "control", "NXmonitor")
-    _dataset(grp, nxkd.NXD_DATA, -1.0, "NX_FLOAT")
-
-
-def make_sample(nf, data_dct={}, modify=False):
-    """ """
-    positioners_dct = dct_get(data_dct, "POSITIONERS")
-    if DNM_GONI_THETA in list(positioners_dct.keys()):
-        rotation_angle = positioners_dct[DNM_GONI_THETA][RBV]
-    else:
-        rotation_angle = 0.0
-
-    if not modify:
-        grp = _group(nf, nxkd.NXD_SAMPLE, "NXsample")
-        _dataset(grp, "rotation_angle", rotation_angle, "NX_FLOAT")
-    else:
-        grp = nf[nxkd.NXD_SAMPLE]
-        grp["rotation_angle"][()] = rotation_angle
-
-
-def make_counter(nf, name, data_dct, nx_class_name, nx_dtype, modify=False):
-    if nx_class_name == "NXdetector":
-        # all data stored as a a single dimension array
-        # epnts = dct_get(data_dct, 'NUM_E.EV')
-        count_time = dct_get(data_dct, "NUM_P.COUNT_TIME")
-        data = dct_get(data_dct, "NUM_P.DATA")
-        make_detector(
-            nf, name, data, count_time=count_time, unit="counts", modify=modify
-        )
-
-    else:
-        # assume its for the NXdata section
-        # all data stored as a normal ExYxX array
-        count_time = dct_get(data_dct, "NUM_E.COUNT_TIME")
-        data = dct_get(data_dct, "NUM_E.DATA")
-        make_nxdata(nf, name, data, count_time, nx_dtype, modify=modify)
-
-
-def make_counter_new(nf, name, data_dct, nx_class_name, nx_dtype, modify=False):
-    if nx_class_name == "NXdetector":
-        # all data stored as a a single dimension array
-        # epnts = dct_get(data_dct, 'NUM_E.EV')
-        count_time = dct_get(data_dct, "NUM_P.COUNT_TIME")
-        # data = dct_get(data_dct, 'NUM_P.DATA')
-        data = dct_get(data_dct, "DETECTORS.%s.DATA_P" % name)
-        make_detector(
-            nf, name, data, count_time=count_time, unit="counts", modify=modify
-        )
-
-    else:
-        # assume its for the NXdata section
-        # all data stored as a normal ExYxX array
-        count_time = dct_get(data_dct, "NUM_E.COUNT_TIME")
-        # data = dct_get(data_dct, 'NUM_E.DATA')
-        data = dct_get(data_dct, "DETECTORS.%s.DATA_E" % name)
-        make_nxdata(nf, name, data, count_time, nx_dtype, modify=modify)
-
-
-def make_nxdata(nf, name, data, count_time, nx_dtype, modify=False):
-    if not modify:
-        grp = _group(nf, name, "NXdata")
-        _dataset(grp, nxkd.NXD_DATA, data, nx_dtype)
-        _dataset(grp, "count_time", count_time, "NX_FLOAT")
-    else:
-        grp = nf[name]
-        grp[nxkd.NXD_DATA][()] = data
-        grp["count_time"][()] = count_time
-
-
-def make_instrument(
-    nf, data_dct={}, scan_type=scan_types.SAMPLE_IMAGE, modify=False, pol_pnt=0
-):
-    """
-    The data stored under each instrument is of the form <data>[numP]
-
-    The modify parameter determines if the data is to be created in a new
-    Nexus file or if it is to simply modify data to an existing Nexus file, HDF5
-    does not allow the creation of a group or dataset that already exists in an HDF5 file
-    """
-    if not modify:
-        nx_inst_grp = _group(nf, nxkd.NXD_INSTRUMENT, "NXinstrument")
-    else:
-        nx_inst_grp = nf[nxkd.NXD_INSTRUMENT]
-
-    # make source entry
-    make_source(nx_inst_grp, data_dct=data_dct, modify=modify)
-    # make mono
-    make_monochromator(nx_inst_grp, data_dct=data_dct, modify=modify)
-    make_epu(nx_inst_grp, data_dct=data_dct, modify=modify, pol_pnt=pol_pnt)
-    make_zoneplate(nx_inst_grp, data_dct=data_dct, modify=modify)
-    count_time = dct_get(data_dct, "NUM_P.COUNT_TIME")
-
-    make_counter(
-        nx_inst_grp, "counter0", data_dct, "NXdetector", "NX_FLOAT", modify=modify
-    )
-
-    type_a_scans = [
-        scan_types.SAMPLE_POINT_SPECTRUM,
-        scan_types.SAMPLE_LINE_SPECTRUM,
-        scan_types.SAMPLE_IMAGE,
-        scan_types.SAMPLE_IMAGE_STACK,
-        scan_types.SAMPLE_FOCUS,
-    ]
-
-    xpnts = dct_get(data_dct, "NUM_P.MOTOR_X")
-    ypnts = dct_get(data_dct, "NUM_P.MOTOR_Y")
-
-    zmtr_name = None
-
-    if scan_type in type_a_scans:
-        if scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
-            xmtr_name = "sample_x"
-            ymtr_name = "sample_y"
-            # _dataset(src_grp, 'line_position', np.linspace(ystart, ystop, num=numy_pnts), 'NX_FLOAT')
-            # _string_attr(src_grp, 'axes', '"energy","line_position"')
-        else:
-            xmtr_name = "sample_x"
-            ymtr_name = "sample_y"
-            # _string_attr(src_grp, 'axes', '"energy","sample_y","sample_x"')
-    elif scan_type == scan_types.OSA_IMAGE:
-        xmtr_name = "osa_x"
-        ymtr_name = "osa_y"
-        make_detector(
-            nx_inst_grp,
-            "sample_x",
-            xpnts,
-            count_time=count_time,
-            unit="um",
-            modify=modify,
-        )
-        make_detector(
-            nx_inst_grp,
-            "sample_y",
-            ypnts,
-            count_time=count_time,
-            unit="um",
-            modify=modify,
-        )
-        # Ben says every scan type requires a sample_x sample_y section
-
-    elif scan_type == scan_types.OSA_FOCUS:
-        zpnts = dct_get(data_dct, "NUM_P.MOTOR_Z")
-        xmtr_name = "osa_x"
-        ymtr_name = "osa_y"
-        zmtr_name = "zoneplate_z"
-        make_detector(
-            nx_inst_grp,
-            zmtr_name,
-            zpnts,
-            count_time=count_time,
-            unit="um",
-            modify=modify,
-        )
-        make_detector(
-            nx_inst_grp,
-            "sample_x",
-            xpnts,
-            count_time=count_time,
-            unit="um",
-            modify=modify,
-        )
-        make_detector(
-            nx_inst_grp,
-            "sample_y",
-            ypnts,
-            count_time=count_time,
-            unit="um",
-            modify=modify,
-        )
-        # Ben says every scan type requires a sample_x sample_y section
-
-    elif scan_type == scan_types.DETECTOR_IMAGE:
-        xmtr_name = "detector_x"
-        ymtr_name = "detector_y"
-        make_detector(
-            nx_inst_grp,
-            "sample_x",
-            xpnts,
-            count_time=count_time,
-            unit="um",
-            modify=modify,
-        )
-        make_detector(
-            nx_inst_grp,
-            "sample_y",
-            ypnts,
-            count_time=count_time,
-            unit="um",
-            modify=modify,
-        )
-        # Ben says every scan type requires a sample_x sample_y section
-
-    else:
-        xmtr_name = "sample_x"
-        ymtr_name = "sample_y"
-
-    make_detector(
-        nx_inst_grp, xmtr_name, xpnts, count_time=count_time, unit="um", modify=modify
-    )
-    make_detector(
-        nx_inst_grp, ymtr_name, ypnts, count_time=count_time, unit="um", modify=modify
-    )
-
-
-def make_instrument_new(
-    nf,
-    data_dct={},
-    counter="counter0",
-    scan_type=scan_types.SAMPLE_IMAGE,
-    modify=False,
-    pol_pnt=0,
-):
-    """
-    The data stored under each instrument is of the form <data>[numP]
-
-    The modify parameter determines if the data is to be created in a new
-    Nexus file or if it is to simply modify data to an existing Nexus file, HDF5
-    does not allow the creation of a group or dataset that already exists in an HDF5 file
-    """
-    if nxkd.NXD_INSTRUMENT in list(nf.keys()):
-        modify = True
-    if not modify:
-        nx_inst_grp = _group(nf, nxkd.NXD_INSTRUMENT, "NXinstrument")
-        make_source_new(nx_inst_grp, data_dct=data_dct, modify=modify)
-        # make mono
-        make_monochromator(nx_inst_grp, data_dct=data_dct, modify=modify)
-        make_epu_new(nx_inst_grp, data_dct=data_dct, modify=modify, pol_pnt=pol_pnt)
-        make_zoneplate(nx_inst_grp, data_dct=data_dct, modify=modify)
-        count_time = dct_get(data_dct, "NUM_P.COUNT_TIME")
-        type_a_scans = [
-            scan_types.SAMPLE_POINT_SPECTRUM,
-            scan_types.SAMPLE_LINE_SPECTRUM,
-            scan_types.SAMPLE_IMAGE,
-            scan_types.SAMPLE_IMAGE_STACK,
-            scan_types.SAMPLE_FOCUS,
-        ]
-
-        xpnts = dct_get(data_dct, "NUM_P.MOTOR_X")
-        ypnts = dct_get(data_dct, "NUM_P.MOTOR_Y")
-
-        zmtr_name = None
-
-        if scan_type in type_a_scans:
-            if scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
-                xmtr_name = "sample_x"
-                ymtr_name = "sample_y"
-                # _dataset(src_grp, 'line_position', np.linspace(ystart, ystop, num=numy_pnts), 'NX_FLOAT')
-                # _string_attr(src_grp, 'axes', '"energy","line_position"')
-            else:
-                xmtr_name = "sample_x"
-                ymtr_name = "sample_y"
-                # _string_attr(src_grp, 'axes', '"energy","sample_y","sample_x"')
-        elif scan_type == scan_types.OSA_IMAGE:
-            xmtr_name = "osa_x"
-            ymtr_name = "osa_y"
-            make_detector(
-                nx_inst_grp,
-                "sample_x",
-                xpnts,
-                count_time=count_time,
-                unit="um",
-                modify=modify,
-            )
-            make_detector(
-                nx_inst_grp,
-                "sample_y",
-                ypnts,
-                count_time=count_time,
-                unit="um",
-                modify=modify,
-            )
-            # Ben says every scan type requires a sample_x sample_y section
-
-        elif scan_type == scan_types.OSA_FOCUS:
-            zpnts = dct_get(data_dct, "NUM_P.MOTOR_Z")
-            xmtr_name = "osa_x"
-            ymtr_name = "osa_y"
-            zmtr_name = "zoneplate_z"
-            make_detector(
-                nx_inst_grp,
-                zmtr_name,
-                zpnts,
-                count_time=count_time,
-                unit="um",
-                modify=modify,
-            )
-            make_detector(
-                nx_inst_grp,
-                "sample_x",
-                xpnts,
-                count_time=count_time,
-                unit="um",
-                modify=modify,
-            )
-            make_detector(
-                nx_inst_grp,
-                "sample_y",
-                ypnts,
-                count_time=count_time,
-                unit="um",
-                modify=modify,
-            )
-            # Ben says every scan type requires a sample_x sample_y section
-
-        elif scan_type == scan_types.DETECTOR_IMAGE:
-            xmtr_name = "detector_x"
-            ymtr_name = "detector_y"
-            make_detector(
-                nx_inst_grp,
-                "sample_x",
-                xpnts,
-                count_time=count_time,
-                unit="um",
-                modify=modify,
-            )
-            make_detector(
-                nx_inst_grp,
-                "sample_y",
-                ypnts,
-                count_time=count_time,
-                unit="um",
-                modify=modify,
-            )
-            # Ben says every scan type requires a sample_x sample_y section
-
-        else:
-            xmtr_name = "sample_x"
-            ymtr_name = "sample_y"
-
-        make_detector(
-            nx_inst_grp,
-            xmtr_name,
-            xpnts,
-            count_time=count_time,
-            unit="um",
-            modify=modify,
-        )
-        make_detector(
-            nx_inst_grp,
-            ymtr_name,
-            ypnts,
-            count_time=count_time,
-            unit="um",
-            modify=modify,
-        )
-
-    else:
-        nx_inst_grp = nf[nxkd.NXD_INSTRUMENT]
-
-        # make source entry
-
-    if counter in list(nx_inst_grp.keys()):
-        modify = True
-    else:
-        modify = False
-
-    make_counter_new(
-        nx_inst_grp, counter, data_dct, "NXdetector", "NX_FLOAT", modify=modify
-    )
+            # 'generic scan'
+            _dataset(src_grp, nxkd.NXD_DATA, data_E, "NX_NUMBER")
+            _dataset(src_grp, "count_time", count_time_E, "NX_FLOAT")
+            _dataset(src_grp, "energy", e_pnts_E, "NX_FLOAT")
+            _dataset(src_grp, "sample_x", xpnts_E, "NX_FLOAT")
+            _dataset(src_grp, "sample_y", ypnts_E, "NX_FLOAT")
+            _dataset(src_grp, "epu_polarization", pol_pnts_E, "NX_FLOAT")
+            _dataset(src_grp, "epu_offset", off_pnts_E, "NX_FLOAT")
+            _list_attr(src_grp, "axes", ["energy", "sample_y", "sample_x"])
+            _string_attr(src_grp, "energy_indices", "0")
+            _string_attr(src_grp, "sample_y_indices", "1")
+            _string_attr(src_grp, "sample_x_indices", "2")
+            _string_attr(src_grp, "signal", nxkd.NXD_DATA)
 
 
 def make_positioner(nf, name, mtr):  # name, desc, pos, softmin, softmax):
@@ -4058,7 +2646,7 @@ def create_h5_file_dct_from_file_dct(file_dct):
                     z_roi = generate_spatial_roi_from_data(positioner_nm, sp_db_dct[ax_nm].astype(float), roi_nm, enable=False)
                 elif positioner_nm in ['DNM_ENERGY']:
                     # need to make sure data contains ALL ev_regions
-                    ev_setpoint_region_arr = create_ev_region_data_from_1D_array(sp_db_dct[ax_nm].astype(float))
+                    ev_setpoint_region_arr = create_ev_region_data_from_1D_array(sp_db_dct['energy'].astype(float))
                     e_roi = generate_energy_roi_from_data(sp_db_dct['count_time'], ev_setpoint_region_arr, polarization=sp_db_dct['polarization'])
 
                 elif positioner_nm in ['line_position']:
@@ -4177,33 +2765,38 @@ def make_stxm_entry(nf, name, scan_type, data_dct={}):
     entry_nxgrp = _group(nf, name, "NXentry")
     _dataset(entry_nxgrp, "title", "NeXus sample", "NX_CHAR")
     _dataset(
-        entry_nxgrp, "start_time", dct_get(data_dct, ADO_START_TIME), "NX_DATE_TIME"
+        entry_nxgrp, "start_time", dct.get(data_dct, ADO_START_TIME), "NX_DATE_TIME"
     )
-    _dataset(entry_nxgrp, "end_time", dct_get(data_dct, ADO_END_TIME), "NX_DATE_TIME")
+    _dataset(
+        entry_nxgrp,
+        "end_time",
+        dct.get(data_dct, ADO_END_TIME),
+        "NX_DATE_TIME",
+    )
     _dataset(entry_nxgrp, "definition", "NXstxm", "NX_CHAR")
     _dataset(entry_nxgrp, "version", "1.0", "NX_CHAR")
-    # _dataset(entry_nxgrp, 'data_status', dct_get(data_dct, ADO_CFG_DATA_STATUS), 'NX_CHAR')
+    # _dataset(entry_nxgrp, 'data_status', dct.get(data_dct, ADO_CFG_DATA_STATUS), 'NX_CHAR')
 
     make_instrument(entry_nxgrp, data_dct, scan_type=scan_type)
     make_sample(entry_nxgrp, data_dct)
     make_data_section(entry_nxgrp, "counter0", data_dct=data_dct, scan_type=scan_type)
 
-    positioners_dct = dct_get(data_dct, "POSITIONERS")
+    positioners_dct = dct.get(data_dct, "POSITIONERS")
     col_grp = _group(entry_nxgrp, nxkd.NXD_COLLECTION, "NXcollection")
     make_positioners(col_grp, positioners_dct)
 
     # todo
-    temperatures_dct = dct_get(data_dct, "TEMPERATURES")
+    temperatures_dct = dct.get(data_dct, "TEMPERATURES")
     make_temperatures(col_grp, temperatures_dct)
-    pressures_dct = dct_get(data_dct, "PRESSURES")
+    pressures_dct = dct.get(data_dct, "PRESSURES")
     make_pressures(col_grp, pressures_dct)
 
-    wdg_com = dct_get(data_dct, ADO_CFG_WDG_COM)
+    wdg_com = dct.get(data_dct, ADO_CFG_WDG_COM)
 
     # update start/stop times as well as other base items
     wdg_com["title"] = "NeXus sample"
-    wdg_com["start_time"] = dct_get(data_dct, ADO_START_TIME)
-    wdg_com["end_time"] = dct_get(data_dct, ADO_END_TIME)
+    wdg_com["start_time"] = dct.get(data_dct, ADO_START_TIME)
+    wdg_com["end_time"] = dct.get(data_dct, ADO_END_TIME)
     wdg_com["definition"] = "NXstxm"
     wdg_com["version"] = "1.0"
     # end update
@@ -4253,13 +2846,13 @@ def make_stxm_stack_entries(nf, name, scan_type, data_dct={}):
     so given the data in the ADO_STACK_DATA_POINTS create the required nxstxm structure
     """
 
-    stack_data = dct_get(data_dct, ADO_STACK_DATA_POINTS)
+    stack_data = dct.get(data_dct, ADO_STACK_DATA_POINTS)
 
     counter_lst = list(stack_data.keys())
 
     # num_spids = len(spid_data)
     num_pols = len(stack_data[counter_lst[0]][0])
-    sp_rois = dct_get(data_dct, ADO_SP_ROIS)
+    sp_rois = dct.get(data_dct, ADO_SP_ROIS)
     entry_idx = 0
 
     for p in range(num_pols):
@@ -4278,18 +2871,18 @@ def make_stxm_stack_entries(nf, name, scan_type, data_dct={}):
             _dataset(
                 entry_nxgrp,
                 "start_time",
-                dct_get(_data_dct, ADO_START_TIME),
+                dct.get(_data_dct, ADO_START_TIME),
                 "NX_DATE_TIME",
             )
             _dataset(
                 entry_nxgrp,
                 "end_time",
-                dct_get(_data_dct, ADO_END_TIME),
+                dct.get(_data_dct, ADO_END_TIME),
                 "NX_DATE_TIME",
             )
             _dataset(entry_nxgrp, "definition", "NXstxm", "NX_CHAR")
             _dataset(entry_nxgrp, "version", "1.0", "NX_CHAR")
-            # _dataset(entry_nxgrp, 'data_status', dct_get(data_dct, ADO_CFG_DATA_STATUS), 'NX_CHAR')
+            # _dataset(entry_nxgrp, 'data_status', dct.get(data_dct, ADO_CFG_DATA_STATUS), 'NX_CHAR')
 
             make_instrument(
                 entry_nxgrp, _data_dct, scan_type=scan_type, pol_pnt=pol_pnt
@@ -4309,17 +2902,17 @@ def make_stxm_stack_entries(nf, name, scan_type, data_dct={}):
                 dddata=data,
             )
 
-            positioners_dct = dct_get(_data_dct, "POSITIONERS")
+            positioners_dct = dct.get(_data_dct, "POSITIONERS")
             col_grp = _group(entry_nxgrp, nxkd.NXD_COLLECTION, "NXcollection")
             make_positioners(col_grp, positioners_dct)
 
             # todo
-            temperatures_dct = dct_get(_data_dct, "TEMPERATURES")
+            temperatures_dct = dct.get(_data_dct, "TEMPERATURES")
             make_temperatures(col_grp, temperatures_dct)
-            pressures_dct = dct_get(_data_dct, "PRESSURES")
+            pressures_dct = dct.get(_data_dct, "PRESSURES")
             make_pressures(col_grp, pressures_dct)
 
-            wdg_com = dct_get(_data_dct, ADO_CFG_WDG_COM)
+            wdg_com = dct.get(_data_dct, ADO_CFG_WDG_COM)
             js_str = dict_to_json_string(wdg_com, to_unicode=True)
             scan_grp = _group(col_grp, "scan_request", "NXscanDefinition")
             _dataset(scan_grp, "scan_request", js_str, "NXchar")
@@ -4352,22 +2945,27 @@ def make_polarization_stxm_entry(nf, name, scan_type, data_dct={}):
     entry_nxgrp = _group(nf, name, "NXentry")
     _dataset(entry_nxgrp, "title", "NeXus sample", "NX_CHAR")
     _dataset(
-        entry_nxgrp, "start_time", dct_get(data_dct, ADO_START_TIME), "NX_DATE_TIME"
+        entry_nxgrp, "start_time", dct.get(data_dct, ADO_START_TIME), "NX_DATE_TIME"
     )
-    _dataset(entry_nxgrp, "end_time", dct_get(data_dct, ADO_END_TIME), "NX_DATE_TIME")
+    _dataset(
+        entry_nxgrp,
+        "end_time",
+        dct.get(data_dct, ADO_END_TIME),
+        "NX_DATE_TIME",
+    )
     _dataset(entry_nxgrp, "definition", "NXstxm", "NX_CHAR")
     _dataset(entry_nxgrp, "version", "1.0", "NX_CHAR")
-    # _dataset(entry_nxgrp, 'data_status', dct_get(data_dct, ADO_CFG_DATA_STATUS), 'NX_CHAR')
+    # _dataset(entry_nxgrp, 'data_status', dct.get(data_dct, ADO_CFG_DATA_STATUS), 'NX_CHAR')
 
     make_instrument(entry_nxgrp, data_dct, scan_type=scan_type)
     make_sample(entry_nxgrp, data_dct)
     make_data_section(entry_nxgrp, "counter0", data_dct=data_dct, scan_type=scan_type)
 
-    positioners_dct = dct_get(data_dct, "POSITIONERS")
+    positioners_dct = dct.get(data_dct, "POSITIONERS")
     col_grp = _group(entry_nxgrp, nxkd.NXD_COLLECTION, "NXcollection")
     make_positioners(col_grp, positioners_dct)
 
-    cfg_dict = dct_get(data_dct, ADO_CFG_WDG_COM)
+    cfg_dict = dct.get(data_dct, ADO_CFG_WDG_COM)
     js_str = dict_to_json_string(cfg_dict, to_unicode=True)
     scan_grp = _group(col_grp, "scan_request", "NXscanDefinition")
     _dataset(scan_grp, "scan_request", js_str, "NXchar")
@@ -4382,9 +2980,9 @@ def modify_stxm_entry(nf, name, scan_type, data_dct={}):
 
     entry_nxgrp = nf[name]
     # del entry_nxgrp['end_time']
-    # entry_nxgrp['end_time'] = dct_get(data_dct,ADO_END_TIME)
-    replace_string_data(entry_nxgrp, "end_time", dct_get(data_dct, ADO_END_TIME))
-    # replace_string_data(entry_nxgrp, 'data_status', dct_get(data_dct, ADO_CFG_DATA_STATUS))
+    # entry_nxgrp['end_time'] = dct.get(data_dct,ADO_END_TIME)
+    replace_string_data(entry_nxgrp, "end_time", dct.get(data_dct, ADO_END_TIME))
+    # replace_string_data(entry_nxgrp, 'data_status', dct.get(data_dct, ADO_CFG_DATA_STATUS))
 
     make_instrument(entry_nxgrp, data_dct, modify=True)
     make_sample(entry_nxgrp, data_dct, modify=True)
@@ -4392,10 +2990,10 @@ def modify_stxm_entry(nf, name, scan_type, data_dct={}):
         entry_nxgrp, "counter0", data_dct=data_dct, scan_type=scan_type, modify=True
     )
 
-    positioners_dct = dct_get(data_dct, "POSITIONERS")
+    positioners_dct = dct.get(data_dct, "POSITIONERS")
     col_grp = entry_nxgrp[nxkd.NXD_COLLECTION]
     make_positioners(col_grp, positioners_dct, modify=True)
-    # sts = dct_get(data_dct, ADO_CFG_DATA_STATUS)
+    # sts = dct.get(data_dct, ADO_CFG_DATA_STATUS)
     # col_grp['scan_request']['data_status'][()] = sts
     # dct_put(self.data_dct, ADO_CFG_DATA_STATUS, DATA_STATUS_FINISHED)
 
@@ -4518,9 +3116,9 @@ def create_entry_in_NXstxm_file(
 
     # _logger.info('create_NXstxm_file: saving [%s]' % fname)
     save_success = True
-    # data_dir = dct_get(data_dct, ADO_CFG_DATA_DIR)
-    # fprefix = dct_get(data_dct, ADO_CFG_DATA_FILE_NAME)
-    spatial_roi_id = dct_get(data_dct, ADO_CFG_CUR_SPATIAL_ROI_IDX)
+    # data_dir = dct.get(data_dct, ADO_CFG_DATA_DIR)
+    # fprefix = dct.get(data_dct, ADO_CFG_DATA_FILE_NAME)
+    spatial_roi_id = dct.get(data_dct, ADO_CFG_CUR_SPATIAL_ROI_IDX)
     # fname = data_dir + '/' + fprefix + '.hdf5'
 
     modify_file = False
@@ -4539,7 +3137,20 @@ def create_entry_in_NXstxm_file(
         entry_grp = modify_stxm_entry(nf, "entry%d" % entry_num, scan_type, data_dct)
     else:
         # nf = h5py.File(fname, "a")
-        entry_grp = make_stxm_entry(nf, "entry%d" % entry_num, scan_type, data_dct)
+        _string_attr(nf, nxkd.NXD_HDF_VER, nxkd.HDF5_VER)
+        _string_attr(nf, nxkd.NXD_H5PY_VER, h5py.__version__)
+        _string_attr(nf, nxkd.NXD_NXPY_VER, nexpy.__version__)
+        _string_attr(nf, nxkd.NXD_NX_VER, nxkd.NEXUS_VER)
+        _string_attr(nf, nxkd.NXD_FILE_NAME, fname)
+        _string_attr(nf, nxkd.NXD_FILE_TIME, dct.get(data_dct, "TIME"))
+        if scan_type is scan_types.SAMPLE_IMAGE_STACK:
+            entry_grp = make_stxm_stack_entries(
+                nf, "entry%d" % spatial_roi_id, scan_type, data_dct
+            )
+        else:
+            entry_grp = make_stxm_entry(
+                nf, "entry%d" % spatial_roi_id, scan_type, data_dct
+            )
     nf.flush()
     nf.close()
     # _logger.debug('[%s] is now closed' % fname)
@@ -4571,18 +3182,15 @@ def create_standard_NXstxm_file(
 
     # _logger.info('create_NXstxm_file: saving [%s]' % fname)
     save_success = True
-    #    data_dir = dct_get(data_dct, ADO_CFG_DATA_DIR)
-    #    fprefix = dct_get(data_dct, ADO_CFG_DATA_FILE_NAME)
-    spatial_roi_id = dct_get(data_dct, ADO_CFG_CUR_SPATIAL_ROI_IDX)
-    #    fname = data_dir + '/' + fprefix + '.hdf5'
+    data_dir = dct.get(data_dct, ADO_CFG_DATA_DIR)
+    fprefix = dct.get(data_dct, ADO_CFG_DATA_FILE_NAME)
+    spatial_roi_id = dct.get(data_dct, ADO_CFG_CUR_SPATIAL_ROI_IDX)
+    fname = os.path.join(data_dir, fprefix, ".hdf5")
     modify_file = False
 
     # _logger.info('create_NXstxm_file: fname=[%s]' % fname)
 
-    # 'a' Read/write if exists, create otherwise (default)
-    nf = h5py.File(fname, "a")
-
-    if ("entry%d" % spatial_roi_id) in list(nf.keys()):
+    if (intermediate_file) and (os.path.exists(fname)):
         modify_file = True
 
     # if os.path.exists(fname):
@@ -4598,16 +3206,13 @@ def create_standard_NXstxm_file(
         _string_attr(nf, nxkd.NXD_NXPY_VER, nexpy.__version__)
         _string_attr(nf, nxkd.NXD_NX_VER, nxkd.NEXUS_VER)
         _string_attr(nf, nxkd.NXD_FILE_NAME, fname)
-        _string_attr(nf, nxkd.NXD_FILE_TIME, dct_get(data_dct, "TIME"))
-        if scan_type is scan_types.SAMPLE_IMAGE_STACK:
-            entry_grp = make_stxm_stack_entries(
-                nf, "entry%d" % spatial_roi_id, scan_type, data_dct
-            )
-        else:
-            entry_grp = make_stxm_entry(
-                nf, "entry%d" % spatial_roi_id, scan_type, data_dct
-            )
-    nf.flush()
+        _string_attr(nf, nxkd.NXD_FILE_TIME, dct.get(data_dct, "TIME"))
+        for e_key in list(data_dct.keys()):
+            if e_key.find("entry_") > -1:
+                entry_grp = make_polarization_stxm_entry(
+                    nf, e_key, scan_type, data_dct[e_key]
+                )
+
     nf.close()
     return (save_success, fname)
 
@@ -4720,9 +3325,9 @@ def create_polarization_entries_NXstxm_file(
 
     # _logger.info('create_NXstxm_file: saving [%s]' % fname)
     save_success = True
-    data_dir = dct_get(data_dct, ADO_CFG_DATA_DIR)
-    fprefix = dct_get(data_dct, ADO_CFG_DATA_FILE_NAME)
-    spatial_roi_id = dct_get(data_dct, ADO_CFG_CUR_SPATIAL_ROI_IDX)
+    data_dir = dct.get(data_dct, ADO_CFG_DATA_DIR)
+    fprefix = dct.get(data_dct, ADO_CFG_DATA_FILE_NAME)
+    spatial_roi_id = dct.get(data_dct, ADO_CFG_CUR_SPATIAL_ROI_IDX)
     fname = os.path.join(data_dir, fprefix, ".hdf5")
     modify_file = False
 
@@ -4733,18 +3338,18 @@ def create_polarization_entries_NXstxm_file(
 
     # if os.path.exists(fname):
     if modify_file:
-        nf = h5py.File(fname, "r+")
+        # nf = h5py.File(fname, "r+")
         entry_grp = modify_stxm_entry(
             nf, "entry%d" % spatial_roi_id, scan_type, data_dct
         )
     else:
-        nf = h5py.File(fname, "a")
-        # _string_attr(nf, nxkd.NXD_HDF_VER, nxkd.HDF5_VER)
+        # nf = h5py.File(fname, "a")
+        _string_attr(nf, nxkd.NXD_HDF_VER, nxkd.HDF5_VER)
         _string_attr(nf, nxkd.NXD_H5PY_VER, h5py.__version__)
         _string_attr(nf, nxkd.NXD_NXPY_VER, nexpy.__version__)
         _string_attr(nf, nxkd.NXD_NX_VER, nxkd.NEXUS_VER)
         _string_attr(nf, nxkd.NXD_FILE_NAME, fname)
-        _string_attr(nf, nxkd.NXD_FILE_TIME, dct_get(data_dct, "TIME"))
+        _string_attr(nf, nxkd.NXD_FILE_TIME, dct.get(data_dct, "TIME"))
         for e_key in list(data_dct.keys()):
             if e_key.find("entry_") > -1:
                 entry_grp = make_polarization_stxm_entry(

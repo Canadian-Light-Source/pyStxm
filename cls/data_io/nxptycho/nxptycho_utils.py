@@ -10,7 +10,7 @@ import os
 import re
 import numpy as np
 
-import pkg_resources
+from importlib.resources import files as importlib_resources_files
 
 from cls.data_io.nxstxm.utils import get_module_logger
 import cls.data_io.nxstxm.nx_key_defs as nxkd
@@ -40,11 +40,14 @@ def get_classes(class_dir, desired_class=None):
     :param desired_class:
     :return:
     """
-    base_class_path = pkg_resources.resource_filename(
-        "nexpy", "definitions/%s" % class_dir
+    base_class_path = importlib_resources_files("nexpy").joinpath(
+        "definitions", class_dir
     )
     nxdl_files = list(
-        map(os.path.basename, glob.glob(os.path.join(base_class_path, "*.nxdl.xml")))
+        map(
+            os.path.basename,
+            glob.glob(os.path.join(str(base_class_path), "*.nxdl.xml")),
+        )
     )
     pattern = re.compile(r"[\t\n ]+")
     nxclasses = {}
@@ -56,7 +59,7 @@ def get_classes(class_dir, desired_class=None):
 
     for nxdl_file in nxdl_files:
         class_name = nxdl_file.split(".")[0]
-        xml_root = ET.parse(os.path.join(base_class_path, nxdl_file)).getroot()
+        xml_root = ET.parse(base_class_path / nxdl_file).getroot()
         class_doc = ""
         class_groups = {}
         class_fields = {}
@@ -333,12 +336,12 @@ def print_node(root):
 
 
 def walk_xml():
-    base_class_path = pkg_resources.resource_filename(
-        "nexpy", "definitions/applications"
+    base_class_path = importlib_resources_files("nexpy").joinpath(
+        "definitions", "applications"
     )
     fname = "NXstxm.nxdl.xml"
 
-    tree = ET.parse(os.path.join(base_class_path, fname))
+    tree = ET.parse(base_class_path / fname)
     # tree = ET.fromstring("""...""")
     for elt in tree.iter():
         if elt.text is not None:

@@ -31,7 +31,7 @@ import json
 import optparse
 import sys
 import os
-import pkg_resources
+from importlib.resources import files as importlib_resources_files
 import os
 
 global xmlstring, options
@@ -384,11 +384,14 @@ def walkit(js, del_str):
 def nxdl_xml_to_json(class_dir, desired_class=None):
     import glob
 
-    base_class_path = pkg_resources.resource_filename(
-        "nexpy", "definitions/%s" % class_dir
+    base_class_path = importlib_resources_files("nexpy").joinpath(
+        "definitions", class_dir
     )
     nxdl_files = list(
-        map(os.path.basename, glob.glob(os.path.join(base_class_path, "*.nxdl.xml")))
+        map(
+            os.path.basename,
+            glob.glob(os.path.join(str(base_class_path), "*.nxdl.xml")),
+        )
     )
 
     if desired_class != None:
@@ -398,8 +401,8 @@ def nxdl_xml_to_json(class_dir, desired_class=None):
 
     for nxdl_file in nxdl_files:
         class_name = nxdl_file.split(".")[0]
-        fname = os.path.join(base_class_path, nxdl_file)
-        json_fname = os.path.join(base_class_path, class_name, ".nxdl.json")
+        fname = str(base_class_path / nxdl_file)
+        json_fname = str(base_class_path / class_name / ".nxdl.json")
 
         # filename = os.path.join(fname + '.xml')
         xmlstring = open(fname).read()

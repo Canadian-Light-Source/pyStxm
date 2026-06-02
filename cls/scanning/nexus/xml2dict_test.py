@@ -5,7 +5,7 @@ Created on Mar 4, 2015
 """
 import xmltodict
 import os
-import pkg_resources
+from importlib.resources import files as importlib_resources_files
 
 
 def get_val(s):
@@ -48,10 +48,10 @@ if __name__ == "__main__":
     # base_class_path = pkg_resources.resource_filename('nexpy', 'definitions/applications')
     # fname = base_class_path + '/NXstxm.nxdl.xml'
 
-    base_class_path = pkg_resources.resource_filename(
-        "nexpy", "definitions/base_classes"
+    base_class_path = importlib_resources_files("nexpy").joinpath(
+        "definitions", "base_classes"
     )
-    fname = base_class_path + "/NXsource.nxdl.xml"
+    fname = str(base_class_path / "NXsource.nxdl.xml")
 
     num_tabs = 0
     filename = os.path.join(fname)

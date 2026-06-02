@@ -113,7 +113,7 @@ class clsAverageCrossSectionTool(AverageCrossSectionTool):
         shape._parent_tool = self
         self.setup_shape_appearance(shape)
         super(CrossSectionTool, self).setup_shape(shape)
-        self.register_shape(shape, final=False)
+        self.register_shape(shape)
 
     def interactive_triggered(self, action):
         if action is self.action:

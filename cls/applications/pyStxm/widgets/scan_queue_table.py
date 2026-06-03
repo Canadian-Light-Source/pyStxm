@@ -716,7 +716,7 @@ class ScanQueueTableWidget(QtWidgets.QWidget):
         :type addimages=False: addimages=False type
 
         :returns: None
-        S:\STXM-data\Cryo-STXM\2019\guest\0207
+
 
         """
         from cls.appWidgets.dialogs import getOpenFileName
@@ -724,7 +724,7 @@ class ScanQueueTableWidget(QtWidgets.QWidget):
         fname = getOpenFileName(
             "Open hdf5 file",
             filter_str="hdf5 Files (*.hdf5)",
-            search_path=r"T:\operations\STXM-data\ASTXM_upgrade_tmp\2024\guest\0823",
+            search_path=r"T:/operations/STXM-data/ASTXM_upgrade_tmp/2024/guest/0823",
         )
         if fname:
 

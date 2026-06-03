@@ -129,14 +129,10 @@ class StripToolWidget(QtWidgets.QWidget):
         #
         self.scale_factor = scale_factor
         self.resetBtn = QtWidgets.QToolButton()
-        pmap = get_pixmap(os.path.join(icoDir, "restart.ico"), ICONSIZE, ICONSIZE)
-        # self.refreshBtn.icon(QtGui.QPixmap(pmap))
+        pmap = get_pixmap(os.path.join(icoDir, "refresh_white.png"), ICONSIZE+15, ICONSIZE+15)
+        self.resetBtn.setIcon(QtGui.QIcon(QtGui.QPixmap(pmap)))
         self.resetBtn.setText("")
-        self.resetBtn.setIcon(
-            QtGui.QIcon(QtGui.QPixmap(pmap))
-        )  # .scaled(48,48, QtCore.Qt.KeepAspectRatio)))
         self.resetBtn.setFixedSize(BTNSIZE, BTNSIZE)
-        # self.resetBtn.setIconSize(QtCore.QSize(ICONSIZE, ICONSIZE))
         self.resetBtn.setToolTip("Restart the plot")
         self.resetBtn.setCheckable(False)
         self.resetBtn.clicked.connect(self.on_reset_btn)

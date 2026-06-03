@@ -162,7 +162,7 @@ def modify_spectra_nxdata_group(parent, data_nxgrp, doc, prim_data_arr, scan_typ
     # #rows, cols = det_data.shape
     # #init_dat_arr = np.zeros((num_ev_points, rows, cols), dtype=np.float32)
     # init_dat_arr = np.empty((num_ev_points, rows, cols), dtype=np.float32)
-    # init_dat_arr[:] = np.NAN
+    # init_dat_arr[:] = np.nan
     #
     # init_dat_arr[0] = det_data
     # _dataset(data_nxgrp, 'data', data, 'NX_NUMBER')

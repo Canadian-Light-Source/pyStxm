@@ -1,23 +1,50 @@
-
 /*----------------------------------------------------------------------------*/
+/* QCheckBox.qss - dark_linux_hires_disp                                      */
 /*----------------------------------------------------------------------------*/
-/*QCheckBox::indicator:unchecked{
-     image: url(UI:checkbox_unchecked.png);
- }
 
-QCheckBox::indicator:unchecked:disabled{
-     image: url(UI:checkbox_unchecked_disabled.png);
- }
-
-QCheckBox::indicator:checked{
-     image: url(UI:checkbox_checked.png);
- }
-
-QCheckBox::indicator:checked:disabled{
-     image: url(UI:checkbox_checked_disabled.png);
- }*/
-
-QCheckBox{
+QCheckBox {
     font: master_font_size;
     color: white;
+    spacing: 6px;
+}
+
+QCheckBox::indicator {
+    width: 15px;
+    height: 15px;
+    border-radius: 3px;
+    border: 1px solid #8a8a8a;
+    background-color: #2a2a2a;
+}
+
+QCheckBox::indicator:unchecked {
+    background-color: white;
+    border: 1px solid #8a8a8a;
+}
+
+QCheckBox::indicator:unchecked:hover {
+    border: 1px solid app_drkblue;
+    background-color: app_ltblue;
+}
+
+QCheckBox::indicator:checked {
+    background-color: app_ltblue;
+    border: 1px solid #aaaaaa;
+    image: url(stylesheet_dir:checkbox_checked_dark.svg);
+}
+
+QCheckBox::indicator:indeterminate {
+    background-color: #c0c0c0;
+    border: 1px solid #aaaaaa;
+    image: url(stylesheet_dir:checkbox_x_dark.svg);
+}
+
+QCheckBox::indicator:disabled {
+    background-color: gray_135_rgb;
+    border: 1px solid #505050;
+}
+
+QCheckBox::indicator:checked:disabled {
+    background-color: gray_135_rgb;
+    border: 1px solid #505050;
+    image: url(stylesheet_dir:checkbox_checked_dark.svg);
 }

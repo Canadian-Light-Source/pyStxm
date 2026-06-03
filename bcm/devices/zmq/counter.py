@@ -69,8 +69,8 @@ class ZMQCounter(ZMQBaseDevice):
         """
         self.seq_map = map
         #now init x_data
-        for k, tpl in self.seq_map.items():
-            self.x_data.append(tpl[1])
+        for k, dct in self.seq_map.items():
+            self.x_data.append(dct['x_pos'])
 
     def set_spec_scan(self):
         """
@@ -116,62 +116,80 @@ class ZMQCounter(ZMQBaseDevice):
         if self.is_staged:
             self.rawData = copy.copy(dct["value"])
             self.process_data(dct)
+
     def process_data(self, dct: dict) -> None:
         """
         kwargs is an dict used for callbacks and emits `new_plot_data`
         """
-        # print(f"ZMQCounter: process_data: dct={dct}")
-        data = dct['value']
-        self.row = dct['row']
-        self.col = dct['col']
-        img_idx = dct['img_idx']
-        tile_num = dct['tile_num']
+        #print(f"ZMQCounter: process_data: dct={dct}")
+
+        data = dct["value"]
+        self.row = dct["row"]
+        self.col = dct["col"]
         app_devname = dct["app_devname"]
-        #print(f"process_data: shape={shape}")
-        #print(f"process_data: data={data}")
-        self.is_pxp_scan = True
-        if len(data) > 1:
-            self.is_pxp_scan = False
 
-        ###################### NOTE only 1 SP_id supported at the moment
-        # ToDo: currently the pixelator-nh crashes if multi spatial scanRequests are submitted through their GUI also
-        # so this will need to get sorted
-        if self.return_all_spec:
-            # use the X axis from sequence map so that it plots in units
-            sp_id, self.col = self.seq_map[dct['row']]
-            # det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
-            det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix='spid-')
-            # assign all of x_data to col so that the plotter can use it for the x axis
-            self.col = self.x_data
-        elif self.is_point_spec_scan and not self.return_all_spec:
-            # use the X axis from sequence map so that it plots in units
-            sp_id, self.col = self.seq_map[dct['col']]
-            # det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
-            det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix='spid-')
-        # elif self.is_line_spec_scan and not self.return_all_spec:
-        #     # use the X axis from sequence map so that it plots in units
-        #     sp_id, not_used = self.seq_map[dct['row']]
-        #     #det_name = gen_complete_spec_chan_name(dct['det_name'], sp_id=sp_id, prefix='spid-')
-        #     det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix='spid-')
+        # Preserve existing behavior: point if scalar-like, not point if array-like
+        self.is_pxp_scan = len(data) <= 1
 
+        try:
+            # Default detector naming/path
+            det_name = app_devname
 
-        else:
-            det_name = app_devname # dct['det_name']
-        # the chan_dct makes it conform to the base detector used at CLS SIS3820 which returns a dict of channel data
-        chan_dct = {}
-        chan_dct[det_name] = data
+            # NOTE only 1 SP_id supported at the moment
+            # currently the pixelator-nh crashes if multi spatial scanRequests are submitted through their GUI also
+            # so this will need to get sorted
+            if self.return_all_spec:
+                seq_num = dct["col"]
+                seq_dct = self.seq_map[seq_num]
+                sp_id = seq_dct["sp_id"]
+                self.col = seq_dct["x_pos"]
+                #print(f"1 seq_map[{seq_num}]={seq_dct}  dct={dct}")
 
-        if self.enable_progress_emit:
-            #plot_dct = make_counter_to_plotter_com_dct(self.row, self.col, data, is_point=self.is_pxp_scan, prog_dct={}, det_name=det_name,is_tiled=dct['is_tiled'])
-            set_prog_dict(self._prog_dct, sp_id=0, percent=dct['prog'], cur_img_idx=dct['img_idx'], ev_idx=dct['ev_idx'],
-                          pol_idx=dct['pol_idx'])
-            plot_dct = make_counter_to_plotter_com_dct(self.row, self.col, chan_dct, is_point=self.is_pxp_scan, det_name=det_name,is_tiled=dct['is_tiled'], prog_dct=self._prog_dct)
-        else:
-            plot_dct = make_counter_to_plotter_com_dct(self.row, self.col, chan_dct, is_point=self.is_pxp_scan,
-                                                       det_name=det_name, is_tiled=dct['is_tiled'],
-                                                       prog_dct={})
-        # print(f"process_data emitting: {plot_dct}")
-        self.new_plot_data.emit(plot_dct)
+                det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix="spid-")
+                # Assign all x_data so plotter can use full x axis
+                self.col = self.x_data
+
+            elif self.is_point_spec_scan and not self.return_all_spec:
+                seq_num = dct["col"]
+                seq_dct = self.seq_map[seq_num]
+                sp_id = seq_dct["sp_id"]
+                self.col = seq_dct["x_pos"]
+                #print(f"2 seq_map[{seq_num}]={seq_dct}  dct={dct}")
+
+                det_name = gen_complete_spec_chan_name(app_devname, sp_id=sp_id, prefix="spid-")
+
+            else:
+                self.col = dct["col"]
+
+            # Conform to SIS3820-style channel dict contract
+            chan_dct = {det_name: data}
+
+            if self.enable_progress_emit:
+                set_prog_dict(
+                    self._prog_dct,
+                    sp_id=0,
+                    percent=dct["prog"],
+                    cur_img_idx=dct["img_idx"],
+                    ev_idx=dct["ev_idx"],
+                    pol_idx=dct["pol_idx"],
+                )
+                prog_dct = self._prog_dct
+            else:
+                prog_dct = {}
+
+            plot_dct = make_counter_to_plotter_com_dct(
+                self.row,
+                self.col,
+                chan_dct,
+                is_point=self.is_pxp_scan,
+                det_name=det_name,
+                is_tiled=dct["is_tiled"],
+                prog_dct=prog_dct,
+            )
+            self.new_plot_data.emit(plot_dct)
+
+        except Exception as e:
+            raise f"process_data: EXception: emitting: {e}"
 
     def get_name(self):
         return self.name

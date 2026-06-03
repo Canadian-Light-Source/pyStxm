@@ -36,33 +36,33 @@ def connect_scan_req_detail_flds_to_validator(self):
 
 
     # the following added to support zmq dcs servers Fall 2024
-    if hasattr(self.scan_req_wdg, "precisionFld"):
-        fld = getattr(self.scan_req_wdg, "precisionFld")
+    if hasattr(self, "precisionFld"):
+        fld = getattr(self, "precisionFld")
         fld.dpo = dblLineEditParamObj("precisionFld", 0.0, 10000.0, PREC, parent=fld)
         fld.dpo.valid_returnPressed.connect(lambda: update_scan_req_data(self))
 
-    if hasattr(self.scan_req_wdg, "defocusDiamFld"):
-        fld = getattr(self.scan_req_wdg, "defocusDiamFld")
+    if hasattr(self, "defocusDiamFld"):
+        fld = getattr(self, "defocusDiamFld")
         fld.dpo = dblLineEditParamObj("defocusDiamFld", 0.0, 10000.0, PREC, parent=fld)
         fld.dpo.valid_returnPressed.connect(lambda: update_scan_req_data(self))
 
-    if hasattr(self.scan_req_wdg, "accelDistFld"):
-        fld = getattr(self.scan_req_wdg, "accelDistFld")
+    if hasattr(self, "accelDistFld"):
+        fld = getattr(self, "accelDistFld")
         fld.dpo = dblLineEditParamObj("accelDistFld", 0.0, 10000.0, PREC, parent=fld)
         fld.dpo.valid_returnPressed.connect(lambda: update_scan_req_data(self))
 
-    if hasattr(self.scan_req_wdg, "tileDelayFld"):
-        fld = getattr(self.scan_req_wdg, "tileDelayFld")
+    if hasattr(self, "tileDelayFld"):
+        fld = getattr(self, "tileDelayFld")
         fld.dpo = dblLineEditParamObj("tileDelayFld", 0.0, 10000.0, PREC, parent=fld)
         fld.dpo.valid_returnPressed.connect(lambda: update_scan_req_data(self))
 
-    if hasattr(self.scan_req_wdg, "lineDelayFld"):
-        fld = getattr(self.scan_req_wdg, "lineDelayFld")
+    if hasattr(self, "lineDelayFld"):
+        fld = getattr(self, "lineDelayFld")
         fld.dpo = dblLineEditParamObj("lineDelayFld", 0.0, 10000.0, PREC, parent=fld)
         fld.dpo.valid_returnPressed.connect(lambda: update_scan_req_data(self))
 
-    if hasattr(self.scan_req_wdg, "pointDelayFld"):
-        fld = getattr(self.scan_req_wdg, "pointDelayFld")
+    if hasattr(self, "pointDelayFld"):
+        fld = getattr(self, "pointDelayFld")
         fld.dpo = dblLineEditParamObj("pointDelayFld", 0.0, 10000.0, PREC, parent=fld)
         fld.dpo.valid_returnPressed.connect(lambda: update_scan_req_data(self))
 
@@ -70,9 +70,9 @@ def init_scan_req_member_vars(self):
     """
     any pixelator scan that wants to use these params needs the member vars
     """
-    self.scan_req_wdg = uic.loadUi(os.path.join(os.path.dirname(__file__), "scan_req_details.ui"))
-    self.scan_req_wdg.setMinimumWidth(600)
-    self.scan_req_wdg.setMinimumHeight(400)
+    # self = uic.loadUi(os.path.join(os.path.dirname(__file__), "scan_req_details.ui"))
+    # self.setMinimumWidth(600)
+    # self.setMinimumHeight(400)
 
     self.precision_val = 0.0
     self.defocus_diam_val = 0.0
@@ -85,16 +85,21 @@ def init_scan_req_member_vars(self):
     self.coarse_only = False
     self.scan_point_or_line_mode = scan_sub_types.POINT_BY_POINT # or LINE_UNIDIR
 
-    if hasattr(self, 'scanReqDetailsBtn'):
-        self.scanReqDetailsBtn.clicked.connect(lambda: show_scan_request_details(self))
+    if hasattr(self, 'scan_tab_widget'):
+        #self.scanReqDetailsBtn.clicked.connect(lambda: show_scan_request_details(self))
 
         self.get_scan_request = lambda: get_scan_request_dct(self)
         ss = get_style()
-        self.scan_req_wdg.setStyleSheet(ss)
+        #self.setStyleSheet(ss)
 
-        self.scan_req_wdg.autoDefocusChkBox.clicked.connect(lambda: on_auto_defocus_clicked(self, self.scan_req_wdg.autoDefocusChkBox.isChecked()))
-        self.scan_req_wdg.adaptPosPrecChkBox.clicked.connect(lambda: on_adapt_prec_clicked(self, self.scan_req_wdg.adaptPosPrecChkBox.isChecked()))
-        self.scan_req_wdg.closeBtn.clicked.connect(lambda: on_close_button(self))
+        # self.autoDefocusChkBox.clicked.connect(lambda: on_auto_defocus_clicked(self, self.autoDefocusChkBox.isChecked()))
+        # self.adaptPosPrecChkBox.clicked.connect(lambda: on_adapt_prec_clicked(self, self.adaptPosPrecChkBox.isChecked()))
+        # self.closeBtn.clicked.connect(lambda: on_close_button(self))
+        self.autoDefocusChkBox.clicked.connect(
+            lambda: on_auto_defocus_clicked(self, self.autoDefocusChkBox.isChecked()))
+        self.adaptPosPrecChkBox.clicked.connect(
+            lambda: on_adapt_prec_clicked(self, self.adaptPosPrecChkBox.isChecked()))
+        # self.closeBtn.clicked.connect(lambda: on_close_button(self))
     else:
         self.get_scan_request = lambda: get_empty_scan_request_dct(self)
 
@@ -161,86 +166,80 @@ def scan_rec_enable_widget(self, name, val):
     """
     given the name of the scan rec field enable or disable its widget
     """
-    # self.scan_req_wdg.setEnabled(True)
+    # self.setEnabled(True)
     if name == 'tiling':
-        self.scan_req_wdg.tilingChkBox.setEnabled(val)
+        self.tilingChkBox.setEnabled(val)
     elif name == 'adapt_precision':
-        self.scan_req_wdg.adaptPosPrecChkBox.setEnabled(val)
+        self.adaptPosPrecChkBox.setEnabled(val)
     elif name == 'auto_defocus':
-        self.scan_req_wdg.autoDefocusChkBox.setEnabled(val)
+        self.autoDefocusChkBox.setEnabled(val)
     elif name == 'y_axis_fast':
-        self.scan_req_wdg.yAxisFastChkBox.setEnabled(val)
+        self.yAxisFastChkBox.setEnabled(val)
     elif name == 'meander':
-        self.scan_req_wdg.meanderChkBox.setEnabled(val)
+        self.meanderChkBox.setEnabled(val)
     elif name == 'prec_field':
-        self.scan_req_wdg.precisionFld.setEnabled(val)
+        self.precisionFld.setEnabled(val)
     elif name == 'defocus_diam_field':
-        self.scan_req_wdg.defocusDiamFld.setEnabled(val)
+        self.defocusDiamFld.setEnabled(val)
     elif name == 'accel_dist':
-        self.scan_req_wdg.accelDistFld.setEnabled(val)
+        self.accelDistFld.setEnabled(val)
     elif name == 'tile_delay':
-        self.scan_req_wdg.tileDelayFld.setEnabled(val)
+        self.tileDelayFld.setEnabled(val)
     elif name == 'line_delay':
-        self.scan_req_wdg.lineRepSpinBox.setEnabled(val)
+        self.lineRepSpinBox.setEnabled(val)
     elif name == 'point_delay':
-        self.scan_req_wdg.pointDelayFld.setEnabled(val)
+        self.pointDelayFld.setEnabled(val)
     elif name == 'line_repeat':
-        self.scan_req_wdg.lineRepSpinBox.setEnabled(val)
+        self.lineRepSpinBox.setEnabled(val)
     elif name == 'coarse_only':
-        self.scan_req_wdg.coarseOnlyChkBox.setEnabled(val)
+        self.coarseOnlyChkBox.setEnabled(val)
     elif name == 'scan_point_or_line_mode':
-        self.scan_req_wdg.scanTypeSelComboBox.setEnabled(val)
+        self.scanTypeSelComboBox.setEnabled(val)
     elif name == 'polarization':
         # not sure this one can be overridden
         pass
 
 def set_check_box(self, name, val):
 
-    if hasattr(self.scan_req_wdg, f'{name}ChkBox'):
-        a = getattr(self.scan_req_wdg, f'{name}ChkBox')
+    if hasattr(self, f'{name}ChkBox'):
+        a = getattr(self, f'{name}ChkBox')
         a.setChecked(val)
 
 def set_field(self, name, val):
 
-    if hasattr(self.scan_req_wdg, f'{name}Fld'):
-        a = getattr(self.scan_req_wdg, f'{name}Fld')
+    if hasattr(self, f'{name}Fld'):
+        a = getattr(self, f'{name}Fld')
         a.setText(f"{val:.2f}")
 
 def set_spin_box(self, name, val):
 
-    if hasattr(self.scan_req_wdg, f'{name}SpinBox'):
-        a = getattr(self.scan_req_wdg, f'{name}SpinBox')
+    if hasattr(self, f'{name}SpinBox'):
+        a = getattr(self, f'{name}SpinBox')
         a.setValue(val)
 
 def set_combo_box(self, name, val):
-    if hasattr(self.scan_req_wdg, f'{name}ComboBox'):
-        a = getattr(self.scan_req_wdg, f'{name}ComboBox')
+    if hasattr(self, f'{name}ComboBox'):
+        a = getattr(self, f'{name}ComboBox')
+        a.blockSignals(True)
         if type(val) is int:
             a.setCurrentIndex(val)
         elif type(val) is str:
             a.setCurrentText(val)
-
-def on_close_button(self):
-    """
-    when the ok bnutton is pressed
-    """
-    update_scan_req_data(self)
-    self.scan_req_wdg.hide()
-
+        a.blockSignals(False)
 
 def update_scan_req_data(self):
     """
     pull the information from the flds and buttons etc from teh scan requsition details forma nd place in member vars
     """
-    self.precision_val = float(self.scan_req_wdg.precisionFld.text())
-    self.defocus_diam_val = float(self.scan_req_wdg.defocusDiamFld.text())
-    self.accel_dist_val = float(self.scan_req_wdg.accelDistFld.text())
-    self.tile_delay_val = float(self.scan_req_wdg.tileDelayFld.text())
-    self.line_delay_val = float(self.scan_req_wdg.lineDelayFld.text())
-    self.point_delay_val = float(self.scan_req_wdg.pointDelayFld.text())
+    self.precision_val = float(self.precisionFld.text())
+    self.defocus_diam_val = float(self.defocusDiamFld.text())
+    self.accel_dist_val = float(self.accelDistFld.text())
+    self.tile_delay_val = float(self.tileDelayFld.text())
+    self.line_delay_val = float(self.lineDelayFld.text())
+    self.point_delay_val = float(self.pointDelayFld.text())
 
-    self.defocus_enabled = self.scan_req_wdg.autoDefocusChkBox.isChecked()
-    self.adapt_pos_precision_enabled = self.scan_req_wdg.adaptPosPrecChkBox.isChecked()
+    self.defocus_enabled = self.autoDefocusChkBox.isChecked()
+    self.adapt_pos_precision_enabled = self.adaptPosPrecChkBox.isChecked()
 
 def get_scan_request_dct(self):
     """
@@ -251,21 +250,21 @@ def get_scan_request_dct(self):
 
     """
     dct = {}
-    dct['adapt_precision'] = True if self.scan_req_wdg.adaptPosPrecChkBox.isChecked() else False
-    dct['auto_defocus'] = True if self.scan_req_wdg.autoDefocusChkBox.isChecked() else False
-    dct['y_axis_fast'] = True if self.scan_req_wdg.yAxisFastChkBox.isChecked() else False
-    dct['meander'] = True if self.scan_req_wdg.meanderChkBox.isChecked() else False
-    dct['tiling'] = True if self.scan_req_wdg.tilingChkBox.isChecked() else False
-    dct['prec_field'] = float(self.scan_req_wdg.precisionFld.text())
-    dct['defocus_diam_field'] = float(self.scan_req_wdg.defocusDiamFld.text())
-    dct['accel_dist'] = float(self.scan_req_wdg.accelDistFld.text())
-    dct['tile_delay'] = float(self.scan_req_wdg.tileDelayFld.text())
-    dct['line_delay'] = float(self.scan_req_wdg.lineDelayFld.text())
-    dct['point_delay'] = float(self.scan_req_wdg.pointDelayFld.text())
-    dct['line_repeat'] = int(self.scan_req_wdg.lineRepSpinBox.value())
-    dct['coarse_only'] = True if self.scan_req_wdg.coarseOnlyChkBox.isChecked() else False
-    dct['scan_point_or_line_mode'] = 'Point by Point' if self.scan_req_wdg.scanTypeSelComboBox.currentIndex() == scan_sub_types.POINT_BY_POINT else 'Constant Velocity'
-    dct['polarization'] = "" # self.scan_req_wdg.polComboBox.currentText()
+    dct['adapt_precision'] = True if self.adaptPosPrecChkBox.isChecked() else False
+    dct['auto_defocus'] = True if self.autoDefocusChkBox.isChecked() else False
+    dct['y_axis_fast'] = True if self.yAxisFastChkBox.isChecked() else False
+    dct['meander'] = True if self.meanderChkBox.isChecked() else False
+    dct['tiling'] = True if self.tilingChkBox.isChecked() else False
+    dct['prec_field'] = float(self.precisionFld.text())
+    dct['defocus_diam_field'] = float(self.defocusDiamFld.text())
+    dct['accel_dist'] = float(self.accelDistFld.text())
+    dct['tile_delay'] = float(self.tileDelayFld.text())
+    dct['line_delay'] = float(self.lineDelayFld.text())
+    dct['point_delay'] = float(self.pointDelayFld.text())
+    dct['line_repeat'] = int(self.lineRepSpinBox.value())
+    dct['coarse_only'] = True if self.coarseOnlyChkBox.isChecked() else False
+    dct['scan_point_or_line_mode'] = 'Point by Point' if self.scanTypeSelComboBox.currentIndex() == scan_sub_types.POINT_BY_POINT else 'Constant Velocity'
+    dct['polarization'] = "" # self.polComboBox.currentText()
 
     for k, v in self.default_scan_rec_setting_dct.items():
         if v:
@@ -297,7 +296,7 @@ def get_empty_scan_request_dct(self):
     dct['line_repeat'] = 1
     dct['coarse_only'] = False
     dct['scan_point_or_line_mode'] = scan_sub_types.POINT_BY_POINT
-    dct['polarization'] = "" # self.scan_req_wdg.polComboBox.currentText()
+    dct['polarization'] = "" # self.polComboBox.currentText()
 
     return dct
 
@@ -307,9 +306,9 @@ def on_auto_defocus_clicked(self, chkd):
     if Auto is selected then disable the edit field else enable
     """
     if chkd:
-        self.scan_req_wdg.defocusDiamFld.setEnabled(False)
+        self.defocusDiamFld.setEnabled(False)
     else:
-        self.scan_req_wdg.defocusDiamFld.setEnabled(True)
+        self.defocusDiamFld.setEnabled(True)
 
 def on_adapt_prec_clicked(self, chkd):
     """
@@ -317,12 +316,12 @@ def on_adapt_prec_clicked(self, chkd):
     if Adapt is selected then enable the edit field else disable
     """
     if chkd:
-        self.scan_req_wdg.precisionFld.setEnabled(True)
+        self.precisionFld.setEnabled(True)
     else:
-        self.scan_req_wdg.precisionFld.setEnabled(False)
+        self.precisionFld.setEnabled(False)
 
 def show_scan_request_details(self):
     """
     show the scan requistion detail form and extract data on close
     """
-    self.scan_req_wdg.show()
+    self.show()

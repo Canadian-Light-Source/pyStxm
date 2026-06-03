@@ -4150,7 +4150,7 @@ class ImageWidgetPlot(PlotDialog):
         self.htSc = 1
         self.widthSc = 1
         array = np.empty((int(rows), int(cols)))
-        array[:] = np.NAN
+        array[:] = np.nan
         #array = np.zeros((int(rows), int(cols)))
         #array[:] = 0
         array[0][0] = 0
@@ -4214,7 +4214,7 @@ class ImageWidgetPlot(PlotDialog):
             self.htSc = 1
             self.widthSc = 1
             array = np.empty((int(rows), int(cols)))
-            array[:] = np.NAN
+            array[:] = np.nan
             array[0][0] = 0
             # print(f'initData: creating self.data[img_idx] id = {id(self.data[img_idx])}')
             self.wPtr = 0
@@ -5834,7 +5834,7 @@ class ImageWidgetPlot(PlotDialog):
         if not item:
             return
         iparam = ImageParam()
-        iparam.colormap = item.get_color_map_name()
+        iparam.colormap = "gist_gray"  # Default colormap, as get_color_map_name() is not available in newer plotpy
         iparam.xmin = xmin
         iparam.ymin = ymin
         iparam.xmax = xmax
@@ -5913,7 +5913,7 @@ class ImageWidgetPlot(PlotDialog):
         item = self.get_image_item(item_name)
         if not item:
             return
-        item.data.fill(np.NaN)
+        item.data.fill(np.nan)
 
 
 

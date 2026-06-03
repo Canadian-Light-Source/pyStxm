@@ -188,7 +188,7 @@ def modify_stack_nxdata_group(parent, data_nxgrp, doc, scan_type):
     #rows, cols = det_data.shape
     # init_dat_arr = np.zeros((num_ev_points, rows, cols), dtype=np.float32)
     init_dat_arr = np.empty((num_ev_points, rows, cols), dtype=np.float32)
-    init_dat_arr[:] = np.NAN
+    init_dat_arr[:] = np.nan
 
     #init_dat_arr[0] = det_data
     init_dat_arr[0] = prim_data_arr

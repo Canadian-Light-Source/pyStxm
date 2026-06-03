@@ -162,13 +162,13 @@ def modify_ptycho_nxdata_group(parent, data_nxgrp, doc, scan_type):
 
     # js_str = parent._cur_scan_md[doc['run_start']]['wdg_com']
     # wdg_com = json.loads(js_str)
-    evs = parent._wdg_com["SINGLE_LST"]["EV_ROIS"]
-    num_ev_points = len(evs)
-    # rows, cols = det_data.shape
-    # init_dat_arr = np.zeros((num_ev_points, rows, cols), dtype=np.float32)
-    # init_dat_arr = np.empty((num_ev_points, ynpoints, xnpoints), dtype=np.float32)
-    # init_dat_arr[:] = np.NAN
-    #all_data = np.array(parent._data[det_stream][det_nm][uid]["data"])
+    # evs = parent._wdg_com["SINGLE_LST"]["EV_ROIS"]
+    # num_ev_points = len(evs)
+    # # rows, cols = det_data.shape
+    # # init_dat_arr = np.zeros((num_ev_points, rows, cols), dtype=np.float32)
+    # # init_dat_arr = np.empty((num_ev_points, ynpoints, xnpoints), dtype=np.float32)
+    # # init_dat_arr[:] = np.nan
+    # #all_data = np.array(parent._data[det_stream][det_nm][uid]["data"])
 
     if det_nm.find(parent._dflt_ptycho_cam) > -1:
         if parent._detdata_is_hdf5:

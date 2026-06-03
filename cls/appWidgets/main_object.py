@@ -134,6 +134,7 @@ class main_object_base(QtCore.QObject):
         self.device_backend = BACKEND #default
         self.zmq_dev_mgr = None
         self.dcs_settings = None
+        self.data_dir_is_local = True if beamline_cfg_dct["BL_CFG_MAIN"]['data_dir_is_local'] == 'true' else False
         self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)
         self.striptool_scaling_factor = float(beamline_cfg_dct["BL_CFG_MAIN"].get('striptool_scaling_factor', 1))
@@ -410,7 +411,22 @@ class main_object_base(QtCore.QObject):
                 #update the dcs server
                 #self.engine_widget.engine.set_command_request_port(DCS_REQ_PORT)
 
+    def do_local_data_reload(self, data_dir: str=None):
+        """
+        this function is used when the data directory is local to load the data directly without sending a request to the DCS server
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+            current_date = datetime.now().strftime('%Y-%m-%d')
+            data_dir = os.path.join(data_dir, current_date)
 
+        from nx_server.nx_server import get_files_with_extension_and_subdirs, process_and_return_files
+
+        dirs_dct = get_files_with_extension_and_subdirs(data_dir, extension='.hdf5')
+        dirs_dct['files'] = [os.path.join(dirs_dct['directory'], f) for f in dirs_dct['files']]
+        data_list = process_and_return_files(files=dirs_dct['files'])
+        for h5_file_dct in data_list:
+            self.engine_widget.new_data.emit(h5_file_dct)
 
     def reload_data_directory(self, data_dir: str=None):
         """
@@ -424,13 +440,29 @@ class main_object_base(QtCore.QObject):
             current_date = datetime.now().strftime('%Y-%m-%d')
             data_dir = os.path.join(data_dir, current_date)
 
-        if self.get_device_backend() == 'zmq':
-            # request that the DCS sends back the current contents of the data directory
-            #current_date = datetime.now().strftime('%Y-%m-%d')
-            #self.zmq_reload_data_directory(os.path.join(self.data_dir, current_date))
-            self.zmq_reload_data_directory(data_dir)
+        if self.data_dir_is_local:
+            # pySTXM has a local mount to the data directory
+            # from nx_server.nx_server import get_files_with_extension_and_subdirs, process_and_return_files
+            #
+            # dirs_dct = get_files_with_extension_and_subdirs(data_dir, extension='.hdf5')
+            # dirs_dct['files'] = [os.path.join(dirs_dct['directory'], f) for f in dirs_dct['files']]
+            # data_list = process_and_return_files(files=dirs_dct['files'])
+            # for h5_file_dct in data_list:
+            #     self.engine_widget.new_data.emit(h5_file_dct)
+            print(f"reload_data_directory: data_dir_is_local is True, loading data directly from local directory: {data_dir}")
+            self.do_local_data_reload(data_dir)
+
         else:
-            self.nx_server_reload_data_directory(data_dir)
+            if self.get_device_backend() == 'zmq':
+                # request that the DCS sends back the current contents of the data directory
+                #current_date = datetime.now().strftime('%Y-%m-%d')
+                #self.zmq_reload_data_directory(os.path.join(self.data_dir, current_date))
+                print(
+                    f"reload_data_directory: data_dir_is_local is False, loading data from call to self.zmq_reload_data_directory(data_dir) {data_dir}")
+                self.zmq_reload_data_directory(data_dir)
+            else:
+                print(f"reload_data_directory: data_dir_is_local is False, loading data from call to self.nx_server_reload_data_directory(data_dir) {data_dir}")
+                self.nx_server_reload_data_directory(data_dir)
 
     def get_master_file_seq_names(self, data_dir: str=None,
         thumb_ext="jpg",
@@ -573,6 +605,7 @@ class main_object_base(QtCore.QObject):
         if data_dir is None:
             data_dir = self.data_dir
         # file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+
         cmd_args = {}
         cmd_args['directory'] = data_dir
         cmd_args['fileExtension'] = extension
@@ -613,19 +646,27 @@ class main_object_base(QtCore.QObject):
             _logger.error(f"zmq_reload_data_directory: not implemented for this backend ->[{self.get_device_backend()}] ")
             return False
 
-    def request_data_dir_list(self, base_dir: str=None):
+    def request_data_dir_list(self, base_dir: str=None, extension='.hdf5'):
         """
         request the zmq server to return a list of data directories
         """
-        if self.get_device_backend() == 'zmq':
-            if base_dir is None:
-                _base_dir = self.data_dir
-            else:
-                _base_dir = base_dir
-            return self.zmq_req_data_dir_list(data_dir=_base_dir)
+
+        if self.data_dir_is_local:
+            from nx_server.nx_server import get_data_subdirectories
+
+            subdirs = get_data_subdirectories(base_dir, extension=extension)
+            return subdirs
+
         else:
-            return self.nx_server_request_data_directory_list(data_dir=base_dir, extension='.hdf5')
-            #_logger.error(f"request_data_dir_list: not implemented for this backend ->[{self.get_device_backend()}] ")
+            if self.get_device_backend() == 'zmq':
+                if base_dir is None:
+                    _base_dir = self.data_dir
+                else:
+                    _base_dir = base_dir
+                return self.zmq_req_data_dir_list(data_dir=_base_dir)
+            else:
+                return self.nx_server_request_data_directory_list(data_dir=base_dir, extension=extension)
+                #_logger.error(f"request_data_dir_list: not implemented for this backend ->[{self.get_device_backend()}] ")
 
 
     def zmq_req_data_dir_list(self, data_dir: str=None):

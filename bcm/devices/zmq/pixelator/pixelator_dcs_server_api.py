@@ -188,6 +188,10 @@ class ScanClass(object):
         pol_dct["types"] = []
         pol_dct["stokes"] = []
 
+        pol = (pol or "").strip().lower()
+        if not pol:
+            return None
+
         if pol in map.keys():
             pol_dct["active"] = 1
             pol_dct["types"] = [pol]
@@ -198,6 +202,18 @@ class ScanClass(object):
         else:
             print(f"Polarization {pol} not supported by Pixelator")
             return None
+
+    def _normalize_line_mode(self, line_mode):
+        """Convert UI mode values to Pixelator line-mode strings."""
+        line_mode_map = {
+            0: "Point by Point",
+            1: "Constant Velocity",
+            "0": "Point by Point",
+            "1": "Constant Velocity",
+            "Point by Point": "Point by Point",
+            "Constant Velocity": "Constant Velocity",
+        }
+        return line_mode_map.get(line_mode, "Point by Point")
 
     def convert_positioner_name(self, posner_nm ):
         """
@@ -351,7 +367,9 @@ class ScanClass(object):
         # else:
         #     line_mode = "Constant Velocity"
         scan_req_cls = GenScanRequestClass(self.dcs_server_api.app_to_dcs_devname_map)
-        line_mode = self.wdg_scan_req['scan_point_or_line_mode']
+        line_mode = self._normalize_line_mode(
+            self.wdg_scan_req.get('scan_point_or_line_mode', 0)
+        )
 
         scan_request = scan_req_cls.gen_base_req_structure(self.scan_type_str)
 
@@ -420,7 +438,9 @@ class ScanClass(object):
         scan_request["lineRepetition"] = self.wdg_scan_req['line_repeat']
         scan_request["positionPrecision"] = {"precision": self.wdg_scan_req['prec_field']}
         scan_request["defocus"] = {"diameter": self.wdg_scan_req['defocus_diam_field']}
-        pol = self.map_app_polarization_to_dcs_polarization(self.wdg_scan_req['polarization'])
+        pol = self.map_app_polarization_to_dcs_polarization(
+            self.wdg_scan_req.get('polarization', '')
+        )
         if pol:
             scan_request["polarization"] = pol
 

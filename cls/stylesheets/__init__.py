@@ -210,6 +210,9 @@ def get_style(force=False, skip_lst=[]):
         srch_rplc = {}
         srch_rplc.update(master_colors)
         srch_rplc.update(font_sizes)
+        # replace the stylesheet_dir token with the actual path so that
+        # url(stylesheet_dir:filename.svg) works in .qss files portably
+        ssheet_str = ssheet_str.replace("stylesheet_dir:", baseDir + "/")
         for s_r in srch_rplc:
             if s_r.find("font") > -1:
                 #font

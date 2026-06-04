@@ -30,6 +30,7 @@ from cls.types.stxmTypes import (
 )
 from cls.appWidgets.focus_class import FocusCalculations
 from cls.scan_engine.bluesky.qt_run_engine import EngineWidget, ZMQEngineWidget
+from cls.appWidgets.thread_worker import Worker
 
 from bcm.devices import BACKEND
 
@@ -223,6 +224,8 @@ class main_object_base(QtCore.QObject):
 
         self.data_sub_message_received.connect(self.on_data_sub_message_received)
         self.start_sub_listener_thread()
+        self._local_reload_active = False
+        self._worker_pool = QtCore.QThreadPool.globalInstance()
 
     def init_progressive_stack_data(self, stack_dir, file_prefix, detector_names: list, meta_data: dict=None):
         """
@@ -420,13 +423,39 @@ class main_object_base(QtCore.QObject):
             current_date = datetime.now().strftime('%Y-%m-%d')
             data_dir = os.path.join(data_dir, current_date)
 
+        if self._local_reload_active:
+            _logger.info("do_local_data_reload: local reload already in progress, skipping duplicate request")
+            return
+
+        self._local_reload_active = True
+        self.load_files_status.emit(False)
+
+        worker = Worker(self._load_local_data_in_worker, data_dir)
+        worker.signals.result.connect(self._on_local_reload_result)
+        worker.signals.error.connect(self._on_local_reload_error)
+        worker.signals.finished.connect(self._on_local_reload_finished)
+        self._worker_pool.start(worker)
+
+    def _load_local_data_in_worker(self, data_dir: str):
+        """Heavy file discovery and parsing executed in a background thread."""
         from nx_server.nx_server import get_files_with_extension_and_subdirs, process_and_return_files
 
         dirs_dct = get_files_with_extension_and_subdirs(data_dir, extension='.hdf5')
         dirs_dct['files'] = [os.path.join(dirs_dct['directory'], f) for f in dirs_dct['files']]
-        data_list = process_and_return_files(files=dirs_dct['files'])
+        return process_and_return_files(files=dirs_dct['files'])
+
+    def _on_local_reload_result(self, data_list):
+        """Emit parsed file dictionaries back on the main thread."""
         for h5_file_dct in data_list:
             self.engine_widget.new_data.emit(h5_file_dct)
+
+    def _on_local_reload_error(self, err):
+        exctype, value, tb = err
+        _logger.error(f"do_local_data_reload worker failed: {exctype} {value}\n{tb}")
+
+    def _on_local_reload_finished(self):
+        self._local_reload_active = False
+        self.load_files_status.emit(True)
 
     def reload_data_directory(self, data_dir: str=None):
         """
@@ -442,14 +471,7 @@ class main_object_base(QtCore.QObject):
 
         if self.data_dir_is_local:
             # pySTXM has a local mount to the data directory
-            # from nx_server.nx_server import get_files_with_extension_and_subdirs, process_and_return_files
-            #
-            # dirs_dct = get_files_with_extension_and_subdirs(data_dir, extension='.hdf5')
-            # dirs_dct['files'] = [os.path.join(dirs_dct['directory'], f) for f in dirs_dct['files']]
-            # data_list = process_and_return_files(files=dirs_dct['files'])
-            # for h5_file_dct in data_list:
-            #     self.engine_widget.new_data.emit(h5_file_dct)
-            print(f"reload_data_directory: data_dir_is_local is True, loading data directly from local directory: {data_dir}")
+            _logger.debug(f"reload_data_directory: data_dir_is_local is True, loading data directly from local directory: {data_dir}")
             self.do_local_data_reload(data_dir)
 
         else:
@@ -457,11 +479,11 @@ class main_object_base(QtCore.QObject):
                 # request that the DCS sends back the current contents of the data directory
                 #current_date = datetime.now().strftime('%Y-%m-%d')
                 #self.zmq_reload_data_directory(os.path.join(self.data_dir, current_date))
-                print(
+                _logger.debug(
                     f"reload_data_directory: data_dir_is_local is False, loading data from call to self.zmq_reload_data_directory(data_dir) {data_dir}")
                 self.zmq_reload_data_directory(data_dir)
             else:
-                print(f"reload_data_directory: data_dir_is_local is False, loading data from call to self.nx_server_reload_data_directory(data_dir) {data_dir}")
+                _logger.debug(f"reload_data_directory: data_dir_is_local is False, loading data from call to self.nx_server_reload_data_directory(data_dir) {data_dir}")
                 self.nx_server_reload_data_directory(data_dir)
 
     def get_master_file_seq_names(self, data_dir: str=None,

@@ -142,7 +142,11 @@ def data_to_rgb(data0, alpha=False):
     RGB = np.tensordot(data, C, axes=([2], [0]))  # shape (M, N, 3)
     RGB_sum = np.sum(C, axis=0)
     RGB = RGB / RGB_sum
-    RGB = RGB / np.amax(RGB)
+    max_rgb = float(np.nanmax(RGB))
+    if not np.isfinite(max_rgb) or max_rgb <= 0.0:
+        RGB = np.zeros_like(RGB, dtype=np.float64)
+    else:
+        RGB = RGB / max_rgb
     if alpha:
         return (255 * np.dstack((RGB, np.ones(RGB.shape[:2])))).astype(np.int64)
     else:

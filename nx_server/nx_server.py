@@ -147,18 +147,31 @@ def determine_exporter(nx_app_def):
 
 
 
-def process_and_publish_files(pub_socket, files):
+def process_and_publish_files(pub_socket=None, files=[]):
     data_lst = []
     sorted_paths = sorted(files)
     for fname in sorted_paths:
         jstr = load_nxstxm_file_to_h5_file_dct(fname, ret_as_jstr=True)
         data_lst.append(jstr)
         ret_msg = json.dumps({"status": NX_SERVER_REPONSES.SUCCESS, "load_file_data": jstr})
-        pub_socket.send_string(ret_msg)  # Publish each jstr
+        if pub_socket is not None:
+            pub_socket.send_string(ret_msg)  # Publish each jstr
         logging.info(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published load_file_data for [{fname}]")
         time.sleep(0.1)
 
     logging.info(f"NX_SERVER[{HOSTNAME}, {PUB_PORT}]:nxstxm: Published [{len(data_lst)}] files")
+    return data_lst
+
+
+def process_and_return_files(files=[]):
+    data_lst = []
+    sorted_paths = sorted(files)
+    for fname in sorted_paths:
+        dct = load_nxstxm_file_to_h5_file_dct(fname, ret_as_dict=True)
+        data_lst.append(dct)
+        # logging.info(f"NX_SERVER[{HOSTNAME}]:nxstxm: load_file_data for [{fname}]")
+
+    # logging.info(f"NX_SERVER[{HOSTNAME}]:nxstxm: Returning [{len(data_lst)}] files")
     return data_lst
 
 def save_data_to_hdf5(data_dct, data_dir, fprefix, metadata):

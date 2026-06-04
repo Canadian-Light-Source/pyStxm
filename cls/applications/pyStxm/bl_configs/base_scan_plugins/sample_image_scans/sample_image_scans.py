@@ -506,15 +506,16 @@ class BaseSampleImageScansParam(MultiRegionScanParamBase):
                     # subtype of the scan in the NeXus file
                     self.scanTypeSelComboBox.setCurrentIndex(1)
 
-                    if dct_get(sp_db, SPDB_HDW_ACCEL_AUTO_DDL):
-                        self.autoDDLRadBtn.setChecked(True)
-                    else:
-                        self.autoDDLRadBtn.setChecked(False)
-
-                    if dct_get(sp_db, SPDB_HDW_ACCEL_REINIT_DDL):
-                        self.reinitDDLRadBtn.setChecked(True)
-                    else:
-                        self.reinitDDLRadBtn.setChecked(False)
+                    if hasattr(self, "autoDDLRadBtn"):
+                        if dct_get(sp_db, SPDB_HDW_ACCEL_AUTO_DDL):
+                            self.autoDDLRadBtn.setChecked(True)
+                        else:
+                            self.autoDDLRadBtn.setChecked(False)
+                    if hasattr(self, "reinitDDLRadBtn"):
+                        if dct_get(sp_db, SPDB_HDW_ACCEL_REINIT_DDL):
+                            self.reinitDDLRadBtn.setChecked(True)
+                        else:
+                            self.reinitDDLRadBtn.setChecked(False)
 
             self.multi_region_widget.load_scan(
                 self.wdg_com, ev_only=ev_only, sp_only=sp_only

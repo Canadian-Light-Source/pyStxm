@@ -75,7 +75,9 @@ class RemoteDirectorySelectorWidget(QtWidgets.QWidget):
 
         # update the directory
         self.update_data_dir(data_dir)
+        self.loading_data.emit(False)
         self.main_obj.reload_data_directory(data_dir=data_dir)
+        self.loading_data.emit(True)
 
     def req_dir_list(self):
         """

@@ -68,13 +68,14 @@ class SampleImageScanClass(BaseSampleFineImageScanClass):
                 self._det_subscriptions.append(d)
 
     def configure(self, wdg_com, sp_id=0, ev_idx=0, line=True, block_disconnect_emit=False):
-        super().configure(wdg_com, sp_id=sp_id, ev_idx=ev_idx, line=line, block_disconnect_emit=block_disconnect_emit)
+        ret = True
+        ret = super().configure(wdg_com, sp_id=sp_id, ev_idx=ev_idx, line=line, block_disconnect_emit=block_disconnect_emit)
         if self.x_roi[IS_POINT]:
             self.is_pxp = True
         else:
             self.is_pxp = False
 
-        return True
+        return ret
 
 
 

@@ -803,7 +803,7 @@ class BaseScan(QtCore.QObject):
             #set an invalid scan velocity
             scan_velo = 0
 
-        return(scan_velo)
+        return scan_velo
 
     def check_scan_velo(self, mtr, desired_velo, rng, npoints, dwell):
         """
@@ -821,6 +821,7 @@ class BaseScan(QtCore.QObject):
                 msg = (
                     f"Calculated scan velocity {desired_velo:.2f} is too fast (max is {vmax:.2f}).\n"
                     f"Increase number of points, dwell time, or reduce the range and try again.\n\n"
+                    f"  TO EXECUTE CURRENT SCAN ADJUST ONE OF THE FOLLOWING:\n"
                     f"Minimum dwell time (ms) for [{npoints}] points: set dwell={min_dwell:.2f}\n"
                     f"Minimum number of points for [{dwell}] ms dwell: set npoints={min_npoints}\n"
                     f"To use current dwell and points, range must be below {max_range:.2f} um"
@@ -4489,7 +4490,7 @@ class BaseScan(QtCore.QObject):
         ret = self.verify_scan_velocity()
         self.determine_scan_res()
         #return if the scan velo was verified or not so that we can bail out of the scan before getting any deeper
-        return(ret)
+        return ret
 
     def get_num_points_in_scan(self):
         """
@@ -4514,7 +4515,7 @@ class BaseScan(QtCore.QObject):
         calc_scan_velo(self, mtr, rng, npoints, dwell)
         return True for scan velo checks out and False for it is invalid
         """
-        return(True)
+        return True
 
 
 if __name__ == "__main__":

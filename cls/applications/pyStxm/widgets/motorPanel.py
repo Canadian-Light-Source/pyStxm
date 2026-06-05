@@ -6,6 +6,7 @@ Created on 2014-07-15
 import sys
 import os
 import time
+from functools import partial
 
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
@@ -18,8 +19,6 @@ from cls.stylesheets import master_colors, get_style, font_sizes
 from cls.utils.log import get_module_logger
 from cls.utils.importing import dynamic_import
 from cls.utils.sig_utils import disconnect_signal, reconnect_signal
-from cls.scanning.paramLineEdit import dblLineEditParamObj
-#from cls.applications.pyStxm.widgets.spfbk_small import Ui_Form as spfbk_small
 from cls.applications.pyStxm.widgets.sp_small import Ui_Form as sp_small
 from cls.applications.pyStxm.widgets.button_small_wbtn import (
     Ui_Form as btn_small_pass_a_btn,
@@ -29,7 +28,6 @@ from cls.applications.pyStxm.widgets.combo_small import (
 )
 
 
-# from cls.caWidgets.caPushBtn import caPushBtn, caPushBtnWithFbk
 from cls.devWidgets.ophydPushBtn import ophydPushBtn, ophydPushBtnWithFbk
 from cls.devWidgets.ophydLabelWidget import assign_aiLabelWidget
 from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
@@ -51,6 +49,9 @@ NOWAIT_SOFTLIM, NOWAIT_HARDLIM = 4, 3
 MIN_MTR_FLD_NM_WIDTH = 300
 MAX_UNITS_WIDTH = 40
 FEEDBACK_DELAY = 100
+
+#float precision for display
+PREC = 3
 
 _sp_not_moving = master_colors["app_ltgray"]["rgb_str"]
 _fbk_not_moving = master_colors["app_superltblue"]["rgb_str"]
@@ -107,6 +108,8 @@ class PositionersPanel(QtWidgets.QWidget):
         self.mtr = None
         self.mtrlib = None
 
+        self.qssheet = get_style()
+
         self.vbox = QtWidgets.QVBoxLayout()
         self.vbox.setContentsMargins(0, 0, 0, 0)
         self.vbox.setSpacing(0)
@@ -159,8 +162,10 @@ class PositionersPanel(QtWidgets.QWidget):
             dev_ui.detailsBtn.setIcon(
                 QtGui.QIcon(os.path.join(iconsDir, "details.png"))
             )
+            # if a Pixelator situation enable the details button for the motor
+            if self.main_obj.get_device_backend() == 'zmq':
+                dev_ui.detailsBtn.setEnabled(True)
             row += 1
-
             self.mtr_dict[mtr.get_name()] = (dev_nm, dev_ui, widg, mtr)
 
         # _logger.debug('DONE uic.loadUi [%s]' % dev)
@@ -217,7 +222,7 @@ class PositionersPanel(QtWidgets.QWidget):
 
     def on_update_style(self):
         """handler for interactive button"""
-        self.qssheet = get_style()
+
         self.setStyleSheet(self.qssheet)
 
     def connect_motor_widgets(self, name, mtr_ui, widg, mtr, row):
@@ -236,6 +241,7 @@ class PositionersPanel(QtWidgets.QWidget):
             "border: 2 px solid %s; background-color: %s;"
             % (_fbk_not_moving, _fbk_not_moving)
         )
+
         mtr_ui.setPosFld.setStatusTip(pv_name)
         mtr_ui.stopBtn.setStatusTip(pv_name)
         mtr_ui.detailsBtn.setStatusTip(pv_name)
@@ -888,15 +894,88 @@ class PositionersPanel(QtWidgets.QWidget):
         """
         when the user clicks to see the details panel
         """
+
         fld = self.sender()
         pvname = str(fld.statusTip())
         (dev, dev_ui, widg, mtr) = self.mtr_dict[pvname]
-
+        if not hasattr(dev_ui, "jog_step_size"):
+            dev_ui.jog_step_size = 1.0
         detForm = self.PositionerDetailClass(dev, dev_ui, mtr)
-        # ss = get_style()
-        # detForm.setStyleSheet(ss)
+        detForm.setStatusTip(pvname)
+        detForm.jogStepFld.setText(str(dev_ui.jog_step_size))
+        detForm.jogLeftBtn.setStatusTip(pvname)
+        detForm.jogLeftBtn.clicked.connect(partial(self.on_jog_left_clicked, detForm))
+        detForm.jogRightBtn.setStatusTip(pvname)
+        detForm.jogRightBtn.clicked.connect(partial(self.on_jog_right_clicked, detForm))
+        # setup validator for jog_step, because the details forms are created dynamically we use the main motor form
+        # to save the previous set jog step value so it can be reloaded if the form is reopened
+        self._connect_float_fld_validator(detForm, "jogStepFld", 0, 100000, callback=partial(self.on_jog_step_fld_return_pressed, detForm))
+
+        detForm.setStyleSheet(self.qssheet)
         detForm.show()
         detForm.exec_()
+
+    def _connect_float_fld_validator(self, form, fld_name, min, max, callback=None):
+        fld = getattr(form, fld_name)
+        fld.dpo = dblLineEditParamObj(fld_name, min, max, PREC, parent=fld)
+        if callback:
+            fld.dpo.valid_returnPressed.connect(callback)
+
+    def on_jog_step_fld_return_pressed(self, detForm):
+        """when the user clicks return in the jog step field, save the value to the main panel so it will populate next time they open the details panel"""
+        pvname = str(detForm.statusTip())
+        if pvname in self.mtr_dict:
+            (dev, dev_ui, widg, mtr) = self.mtr_dict[pvname]
+            val = float(detForm.jogStepFld.text())
+            # update the jog_step_size that is saved on the main motor form
+            dev_ui.jog_step_size = val
+        else:
+            _logger.error(f'on_jog_step_fld_clicked: [{pvname}] does not exist in mtr_dict')
+
+    def on_jog_left_clicked(self, detForm, checked=False):
+        """when the user clicks the jog left button on the details panel"""
+        cur_pos = float(detForm.posFbkLbl.text())
+        val = float(detForm.jogStepFld.text())
+        new_jog_pos = cur_pos - val
+        # s = MTR_FEEDBACK_FORMAT % new_jog_pos
+        # detForm.setpointFld.setText(s)
+        self.on_do_jog(detForm.jogRightBtn.statusTip(), new_jog_pos)
+
+    def on_jog_right_clicked(self, detForm, checked=False):
+        """when the user clicks the jog right button on the details panel"""
+        cur_pos = float(detForm.posFbkLbl.text())
+        val = float(detForm.jogStepFld.text())
+        new_jog_pos = cur_pos + val
+        # s = MTR_FEEDBACK_FORMAT % new_jog_pos
+        # detForm.setpointFld.setText(s)
+        self.on_do_jog(detForm.jogLeftBtn.statusTip(), new_jog_pos)
+
+    def on_do_jog(self, pvname, pos):
+        """
+        a return pressed handler
+        """
+        if pvname in self.mtr_dict:
+            (dev, dev_ui, widg, mtr) = self.mtr_dict[pvname]
+
+            # support for CLS collision tracking
+            if hasattr(mtr, "check_tr_A"):
+                mtr.check_tr_A.put(pos)
+                sts = "success"
+            else:
+                sts = mtr.move(pos, wait=False)
+
+            if sts == OUTSIDE_LIMITS:
+                # outside the limits
+                clr_str = "yellow;"
+            else:
+                clr_str = "white;"
+
+            _dct = {}
+            _dct["setStyleSheet"] = [
+                (dev_ui.setPosFld, "background-color: " + clr_str, False)
+            ]
+            self.updateQueue.put_nowait(_dct)
+
 
     def stop_all_motors(self, hard=False):
         """

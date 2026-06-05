@@ -31,9 +31,11 @@ class PositionerDetail(QtWidgets.QDialog):
         self.setWindowTitle(f"{self.posner_display_name} Positioner Detail")
         # connect btn handlers
         # setpointFld connected in load_motor_config()
-        self.posOffsetFld.returnPressed.connect(self.on_pos_offset)
-        self.upperSoftLimFld.returnPressed.connect(self.on_set_upper_lim)
-        self.lowerSoftLimFld.returnPressed.connect(self.on_set_lower_lim)
+        self._connect_float_fld_validator(self, "setpointFld", -100000, 100000, callback=None)
+        self._connect_float_fld_validator(self, "posOffsetFld", -100000, 100000, callback=self.on_pos_offset)
+        self._connect_float_fld_validator(self, "upperSoftLimFld", -100000, 100000, callback=self.on_set_upper_lim)
+        self._connect_float_fld_validator(self, "lowerSoftLimFld", -100000, 100000, callback=self.on_set_lower_lim)
+
         self.autoOnOffComboBox.currentTextChanged.connect(self.on_auto_on_off_combobox)
 
         self.changed.connect(self.update_fbk)
@@ -128,6 +130,12 @@ class PositionerDetail(QtWidgets.QDialog):
                 self.setpointFld.dpo.valid_returnPressed.connect(self.on_move_to_position)
             else:
                 self.setpointFld.setEnabled(False)
+
+    def _connect_float_fld_validator(self, form, fld_name, min, max, callback=None, prec=3):
+        fld = getattr(form, fld_name)
+        fld.dpo = dblLineEditParamObj(fld_name, min, max, prec, parent=fld)
+        if callback:
+            fld.dpo.valid_returnPressed.connect(callback)
 
     def on_change(self, kwargs):
         """

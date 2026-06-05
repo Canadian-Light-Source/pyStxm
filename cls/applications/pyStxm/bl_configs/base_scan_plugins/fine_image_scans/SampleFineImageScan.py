@@ -483,7 +483,7 @@ class BaseSampleFineImageScanClass(BaseScan):
         """
         ret = super().configure(wdg_com, sp_id=sp_id, line=line, z_enabled=False)
         if not ret:
-            return(ret)
+            return ret
         _logger.info("\n SampleFineImageScanClass: configuring sp_id [%d]" % sp_id)
         self.new_spatial_start_sent = False
         # initial setup and retrieval of common scan information

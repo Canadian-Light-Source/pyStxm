@@ -1126,6 +1126,98 @@ class DcsServerApi(BaseDcsServerApi):
 
         return True
 
+    def get_inout_positions(self, section_name, settings):
+        """
+        parse the inout dict and return a dict that has 'OSAX' in and out positions and 'OSAY' in and out positions
+        Returns
+        -------
+        'microscopeControlConfigFileName': {'content': {'InOut': {'OSA': [{'positionIn': 0.0,
+                                                                                    'positionOut': -3000.0,
+                                                                                    'positioner': 'OSAX'},
+                                                                                   {'positionIn': 0.0,
+                                                                                    'positionOut': 3000.0,
+                                                                                    'positioner': 'OSAY'}],
+                                                                           'Sample': [{'positionIn': 5000.0,
+                                                                                       'positionOut': 10000.0,
+                                                                                       'positioner': 'CoarseZ'}],
+                                                                           'ZonePlate': [{'positionIn': -5000,
+                                                                                          'positionOut': -18000.0,
+                                                                                          'positioner': 'Zoneplate'}]}},
+                                                             'fileName': './config/microscopeControl.json',
+                                                             'resolvedFileName': './config/microscopeControl.json'},
+
+        """
+        dct = {}
+        if 'referencedJsonFiles' in settings:
+            if 'microscopeControlConfigFileName' in settings:
+                if 'content' in settings['referencedJsonFiles']['microscopeControlConfigFileName']:
+                    if 'InOut' in settings['referencedJsonFiles']['microscopeControlConfigFileName']['content']:
+                        dct = {}
+                        inout_dct = settings['referencedJsonFiles']['microscopeControlConfigFileName']['content']['InOut']
+                        if section_name in inout_dct:
+                            _lst = inout_dct[section_name]
+                            for _d in _lst:
+                                dct[_d['positioner']] = {'in_position': _d['positionIn'],'out_position': _d['positionOut']}
+        return dct
+
+    def get_osa_inout_positions(self, settings):
+        """ return the OSA in and out positions that are given in the settings file
+
+        'OSA': {'type': 'CONVENTIONAL',
+                'osa_tracking_enabled': 'false',
+                'osa_x_in': '0',
+                'osa_x_out': '5000',
+                'osa_y_in': '0',
+                'osa_y_out': '5000',
+                'OSAX': {'in_position': 0.0, 'out_position': -3000.0},
+                'OSAY': {'in_position': 0.0, 'out_position': 3000.0}},
+                """
+
+        _dct = self.get_inout_positions('OSA', settings)
+        dct = {}
+        dct['OSA'] = {}
+        for k, _d in _dct.items():
+            if k.find('OSAX') > -1:
+                dct['OSA']['osa_x_in'] = _d['in_position']
+                dct['OSA']['osa_x_out'] = _d['out_position']
+            elif k.find('OSAY') > -1:
+                dct['OSA']['osa_y_in'] = _d['in_position']
+                dct['OSA']['osa_y_out'] = _d['out_position']
+        return dct
+
+    def get_sample_inout_positions(self, settings):
+        """ return the OSA in and out positions that are given in the settings file
+        'SAMPLE': {'coarse_z_in': '1700',
+                    'coarse_z_out': '40000',
+                    'CoarseZ': {'in_position': 5000.0, 'out_position': 10000.0}},
+        """
+        _dct = self.get_inout_positions('Sample', settings)
+        dct = {}
+        dct['SAMPLE'] = {}
+        for k, _d in _dct.items():
+            if k.find('CoarseZ') > -1:
+                dct['SAMPLE']['coarse_z_in'] = _d['in_position']
+                dct['SAMPLE']['coarse_z_out'] = _d['out_position']
+        return dct
+
+
+    def get_zoneplate_inout_positions(self, settings):
+        """ return the OSA in and out positions that are given in the settings file
+
+         'ZONEPLATE': {'zoneplate_z_in': '-5000',
+                       'zoneplate_z_out': '-15000',
+                       'Zoneplate': {'in_position': -5000, 'out_position': -18000.0}},
+        """
+        _dct = self.get_inout_positions('ZonePlate', settings)
+        dct = {}
+        dct['ZONEPLATE'] = {}
+        for k, _d in _dct.items():
+            if k.find('Zoneplate') > -1:
+                dct['ZONEPLATE']['zoneplate_z_in'] = _d['in_position']
+                dct['ZONEPLATE']['zoneplate_z_out'] = _d['out_position']
+        return dct
+
+
     def get_settings(self):
         """
         return a dict of settings that will be saved in the user settings file

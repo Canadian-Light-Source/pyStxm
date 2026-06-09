@@ -52,7 +52,7 @@ from cls.utils.log import get_module_logger
 # from cls.applications.pyStxm.scan_plugins.det_scan_tester import test_sp_db
 
 
-OSA_OUT_POSITION = MAIN_OBJ.get_preset_as_float("osa_out_position")
+OSA_OUT_POSITION = MAIN_OBJ.get_preset_as_float("osa_x_out")
 
 _logger = get_module_logger(__name__)
 

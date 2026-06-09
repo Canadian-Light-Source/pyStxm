@@ -321,6 +321,7 @@ class main_object_base(QtCore.QObject):
 
         self.check_dcs_settings(self.dcs_settings)
 
+
         if not result:
             _logger.error(f"Failed to connect to DCS server")
             raise Exception("ERROR >> Failed to connect to DCS server")
@@ -341,7 +342,24 @@ class main_object_base(QtCore.QObject):
                                                               'OZone': z_dct['outermost_zone_width'],
                                                               'selected': z_dct['selected']}
 
-            #now updates teh PRESETS sections
+            # pull the osa, sample and zoneplate inout positions from the settings files of Pixelator
+            # and update the in memory beamline configuration .ini file
+            osa_inout_dct = self.engine_widget.engine.get_osa_inout_positions()
+            for k,v in osa_inout_dct.items():
+                for kk, _d in v.items():
+                    self.beamline_cfg_dct['OSA'][kk] = _d
+
+            sample_inout_dct = self.engine_widget.engine.get_sample_inout_positions()
+            for k,v in sample_inout_dct.items():
+                for kk, _d in v.items():
+                    self.beamline_cfg_dct['SAMPLE'][kk] = _d
+
+            zoneplate_inout_dct = self.engine_widget.engine.get_zoneplate_inout_positions()
+            for k,v in zoneplate_inout_dct.items():
+                for kk, _d in v.items():
+                    self.beamline_cfg_dct['ZONEPLATE'][kk] = _d
+
+            #now updates the PRESETS sections
             dct_put(self.main_obj, "PRESETS.OSA_DEFS", self.beamline_cfg_dct['OSA_DEFS'])
             dct_put(self.main_obj, "PRESETS.ZP_DEFS", self.beamline_cfg_dct['ZP_DEFS'])
 
@@ -350,40 +368,6 @@ class main_object_base(QtCore.QObject):
     def check_dcs_settings(self, settings: dict=None):
 
         if self.get_device_backend() == 'zmq':
-            # {'Detector_Archive_Default': 'no',
-            #  'Focus_Archive_Default': 'no',
-            #  'Motor_Archive_Default': 'no',
-            #  'NeXusBaseDirectory': '/home/bergr/srv-unix-home/Data',
-            #  'NeXusDiscardSubDirectory': 'discard',
-            #  'NeXusLocalBaseDirectory': '/home/bergr/srv-unix-home/Data',
-            #  'NeXusScanDate': '2025-08-26',
-            #  'NeXusScanNumber': '001',
-            #  'OSA Focus_Archive_Default': 'yes',
-            #  'OSA_Archive_Default': 'yes',
-            #  'SampleImagePreifx': '.',
-            #  'Sample_Archive_Default': 'locked',
-            #  'axisConfigFileName': './config/axis.json',
-            #  'beamline': 'SLS PolLux X07DA',
-            #  'changeUserScript': 'echo',
-            #  'compression': 'LZW',
-            #  'controllerConfigFileName': './config/controllerNoHardware.json',
-            #  'dataPublisherPort': '56563',
-            #  'defaultSaveLocal': 'yes',
-            #  'defaultUsername': 'stxm',
-            #  'detectorConfigFileName': './config/detectorNoHardware.json',
-            #  'endOfScanScript': './scripts/endOfScan',
-            #  'instrumentConfigFileName': './config/instrument.json',
-            #  'log4cppPropertiesFileName': './config/log4cpp.properties',
-            #  'microscopeControlConfigFileName': './config/microscopeControl.json',
-            #  'missingDataCheckInterval': '0.1',
-            #  'missingDataCheckMaxChecks': '5',
-            #  'pixelClockConfigFileName': './config/pixelClockNoHardware.json',
-            #  'positionerConfigFileName': './config/positionerNoHardware.json',
-            #  'publisherPort': '56561',
-            #  'requestPort': '56562',
-            #  'sampleConfigFileName': './config/sample.json',
-            #  'topupConfigFileName': './config/topupNoHardware.json',
-            #  'zonePlateConfigFileName': './config/zonePlate.json'}
             # check that the settings specified by the dcs are the ones that we are using
             DCS_HOST = get_environ_var('DCS_HOST')
             DCS_HOST_PROC_NAME = get_environ_var('DCS_HOST_PROC_NAME')

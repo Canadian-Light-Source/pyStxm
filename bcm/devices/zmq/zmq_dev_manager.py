@@ -102,7 +102,7 @@ class ZMQRunEngine(QObject):
         self.osa_definition = {}
         self.zone_plate_definition = {}
         self.remote_file_system_info = {}
-
+        self.settings = {}
 
         self.devices = {}
         self.devices['POSITIONERS'] = {}
@@ -244,8 +244,26 @@ class ZMQRunEngine(QObject):
         """
         return the current settings from the DCS server
         """
-        settings = self.dcs_server_api.get_settings()
-        return settings
+        self.settings = self.dcs_server_api.get_settings()
+        return self.settings
+
+    def get_osa_inout_positions(self):
+        """ return the OSA in and out positions that are given in the settings file"""
+        if self.settings == {}:
+            self.get_settings()
+        return self.dcs_server_api.get_osa_inout_positions(self.settings)
+
+    def get_sample_inout_positions(self):
+        """ return the OSA in and out positions that are given in the settings file"""
+        if self.settings == {}:
+            self.get_settings()
+        return self.dcs_server_api.get_sample_inout_positions(self.settings)
+
+    def get_zoneplate_inout_positions(self):
+        """ return the OSA in and out positions that are given in the settings file"""
+        if self.settings == {}:
+            self.get_settings()
+        return self.dcs_server_api.get_zoneplate_inout_positions(self.settings)
 
     def load_data_directory(self, data_dir: str=None, *, extension: str='.hdf5') -> None:
         """

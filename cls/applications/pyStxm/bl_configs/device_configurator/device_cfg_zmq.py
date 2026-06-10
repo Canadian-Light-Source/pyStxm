@@ -238,25 +238,33 @@ class Device_Configure(QtWidgets.QWidget):
         cmbobx.clear()
         cmbobx.addItems(lst)
 
-    def populate_devnames_lstview(self, lst=None, devs=None):
+    def populate_devnames_tableview(self, lst=None, devs=None):
         """
-        Populate the device-name table with one row per pyStxm device.
+        Populate ``deviceNameTblView`` with one row per device record from TinyDB.
 
-        Each row contains:
-          - Column 0: read-only pyStxm device name (from TinyDB)
-          - Column 1: QComboBox populated with all DCS device names obtained
-                      from ``self.dcs_devices`` so the user can pick which DCS
-                      positioner/device maps to each pyStxm device.
+        Column layout:
+            0: ``pyStxm Name`` (read-only)
+            1: ``DCS Device`` (combobox)
+            2: ``Category`` (combobox)
+            3: ``DevType`` (combobox)
+            4: ``Description`` (editable text)
+            5: ``Connected`` (True/False combobox)
+            6: ``Sim`` (True/False combobox)
+            7: ``Enable`` (True/False combobox)
+            8: ``Units`` (editable text)
+            9: ``ReadOnly`` (True/False combobox)
+            10: ``ConChkNm`` (read-only text)
+            11: ``PosType`` (combobox)
 
-        Selections are persisted in ``self.name_mapping`` as
-        ``{pystxm_name: dcs_name}`` and survive a refresh (the previously
-        chosen value is restored when the table is rebuilt).
+        Current user selections/edits are tracked in mapping dicts on ``self``
+        (for example ``name_mapping``, ``category_mapping``, ``devtype_mapping``,
+        ``pos_type_mapping`` and boolean mappings). DCS name conflict coloring is
+        refreshed after table population.
 
         Args:
-            lst  (list | None): list of TinyDB record dicts to display.
-                                Defaults to all records in ``self.dev_db``.
-            devs (module | None): devs module (kept for API compatibility with
-                                  callers such as ``do_threaded_many_check``).
+            lst (list | None): Records to display; defaults to ``self.dev_db.all()``.
+            devs (module | None): Device configuration module, used to build combo
+                options (categories/devtypes/pos_types).
         """
         if lst is None:
             lst = self.dev_db.all() if self.dev_db else []
@@ -645,7 +653,7 @@ class Device_Configure(QtWidgets.QWidget):
             dev_dct_lst = self.dev_db.all()
         else:
             dev_dct_lst = self.dev_db.search(query.category == self.cur_cat)
-        self.populate_devnames_lstview(lst=dev_dct_lst)
+        self.populate_devnames_tableview(lst=dev_dct_lst)
 
     def on_retest(self):
         self.do_threaded_many_check(self.devs)
@@ -657,7 +665,7 @@ class Device_Configure(QtWidgets.QWidget):
         # self.numSignalsLbl.setText('Checking PV connections and building database, one moment')
         # #print('Checking PV connections and building database, one moment')
         self.build_database(devs)
-        self.populate_devnames_lstview(devs=devs)
+        self.populate_devnames_tableview(devs=devs)
 
     def do_threaded_single_check(self, dcs_name):
 

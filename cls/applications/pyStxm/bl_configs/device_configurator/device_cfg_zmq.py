@@ -2,6 +2,7 @@ import sys
 import os
 import pathlib
 import copy
+import pprint
 from importlib import reload
 from PyQt5 import QtWidgets, uic, QtGui, QtCore, Qt
 from tinydb import TinyDB, Query
@@ -69,7 +70,101 @@ class Device_Configure(QtWidgets.QWidget):
 
     def on_gen_devs_py(self):
         """ generate a devs.py file """
-        print("generating devs.py")
+        dev_dct = self._build_dev_dct_from_table()
+        out_fpath = pathlib.Path(self.bl_config_path) / "devs_tmp.py"
+        with open(out_fpath.as_posix(), "w") as fout:
+            fout.write("SIM = True\n")
+            fout.write("dev_dct = ")
+            fout.write(pprint.pformat(dev_dct, width=120, sort_dicts=False))
+            fout.write("\n")
+        num_categories = len(dev_dct)
+        num_devices = sum(len(v) for v in dev_dct.values())
+        QtWidgets.QMessageBox.information(
+            self,
+            "devs_tmp.py Generated",
+            f"Generated: {out_fpath.as_posix()}\n"
+            f"Categories: {num_categories}\n"
+            f"Devices: {num_devices}",
+        )
+        print(f"generated [{out_fpath.as_posix()}]")
+
+    def _combo_text(self, row, col, default=""):
+        """Return combo text for a cell if it has an embedded combobox."""
+        idx = self.deviceNameTblView.model().index(row, col)
+        wdg = self.deviceNameTblView.indexWidget(idx)
+        if isinstance(wdg, QtWidgets.QComboBox):
+            return wdg.currentText()
+        return default
+
+    def _to_bool(self, value):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.strip().lower() in ("true", "1", "yes", "on")
+        return bool(value)
+
+    def _build_dev_dct_from_table(self):
+        """Build a dev_dct-style dict from the current table contents."""
+        model = self.deviceNameTblView.model()
+        # Keep all default categories from the original devs.py, even if empty.
+        dev_dct = {k: [] for k in self.devs.dev_dct.keys()}
+        if model is None:
+            return dev_dct
+
+        for row in range(model.rowCount()):
+            name_item = model.item(row, 0)
+            if name_item is None:
+                continue
+
+            name = name_item.text().strip()
+            if not name:
+                continue
+
+            category = self._combo_text(row, 2, "").strip() or "UNKNOWN"
+            devtype = self._combo_text(row, 3, "").strip()
+            dcs_nm = self._combo_text(row, 1, "").strip()
+            pos_type = self._combo_text(row, 11, "").strip()
+
+            desc_item = model.item(row, 4)
+            units_item = model.item(row, 8)
+            con_chk_item = model.item(row, 10)
+
+            desc = desc_item.text().strip() if desc_item else ""
+            units = units_item.text().strip() if units_item else ""
+            con_chk_nm = con_chk_item.text().strip() if con_chk_item else ""
+
+            connected = self._to_bool(self._combo_text(row, 5, "False"))
+            sim = self._to_bool(self._combo_text(row, 6, "False"))
+            enable = self._to_bool(self._combo_text(row, 7, "True"))
+            rd_only = self._to_bool(self._combo_text(row, 9, "False"))
+
+            entry = {
+                "name": name,
+                "desc": desc,
+                "class": devtype,
+                "dcs_nm": dcs_nm,
+            }
+            if pos_type:
+                entry["pos_type"] = pos_type
+            if units:
+                entry["units"] = units
+            if con_chk_nm:
+                entry["con_chk_nm"] = con_chk_nm
+            if rd_only:
+                entry["rd_only"] = True
+            # keep non-default booleans explicit
+            if sim:
+                entry["sim"] = True
+            if not enable:
+                entry["enable"] = False
+            if connected:
+                entry["connected"] = True
+
+            if category not in dev_dct:
+                dev_dct[category] = []
+            dev_dct[category].append(entry)
+
+        return dev_dct
 
 
     def on_dev_selected(self, row):

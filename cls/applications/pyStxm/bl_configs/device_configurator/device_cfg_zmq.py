@@ -56,6 +56,12 @@ class Device_Configure(QtWidgets.QWidget):
         self.dcs_devices = self.engine_widget.engine.get_devices_from_settings()
         self.do_threaded_many_check(devs)
 
+        self.genDevspyBtn.clicked.connect(self.on_gen_devs_py)
+
+    def on_gen_devs_py(self):
+        """ generate a devs.py file """
+        print("generating devs.py")
+
 
     def on_dev_selected(self, row):
         """
@@ -210,12 +216,19 @@ class Device_Configure(QtWidgets.QWidget):
                 combo = NoScrollComboBox()
                 combo.addItems(dcs_names)
 
-                # pre-select: use existing mapping only
+                # pre-select priority:
+                #   1. existing session mapping (user already picked something)
+                #   2. record["dcs_nm"] if it exists and is present in dcs_names
+                #   3. fall back to "" (index 0)
                 saved = self.name_mapping.get(pystxm_name, "")
-                if saved in dcs_names:
+                if saved in dcs_names and saved != "":
                     combo.setCurrentText(saved)
                 else:
-                    combo.setCurrentIndex(0)  # always "" by default
+                    dcs_nm = record.get("dcs_nm", "")
+                    if dcs_nm and dcs_nm in dcs_names:
+                        combo.setCurrentText(dcs_nm)
+                    else:
+                        combo.setCurrentIndex(0)  # "" = unmapped
 
                 # capture loop variable
                 def _on_changed(text, name=pystxm_name):

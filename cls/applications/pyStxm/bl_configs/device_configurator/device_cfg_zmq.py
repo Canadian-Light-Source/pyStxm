@@ -46,8 +46,17 @@ class Device_Configure(QtWidgets.QWidget):
         self.pre_devdct = {}
         self.post_devdct = {}
 
-        # {pystxm_name: dcs_name} – updated live as the user picks combos
+        # ... existing code...
         self.name_mapping: dict = {}
+        self.category_mapping: dict = {}
+        self.devtype_mapping: dict = {}
+        self.description_mapping: dict = {}
+        self.units_mapping: dict = {}
+        self.pos_type_mapping: dict = {}
+        self.connected_mapping: dict = {}
+        self.sim_mapping: dict = {}
+        self.enable_mapping: dict = {}
+        self.rd_only_mapping: dict = {}
 
         self.retestBtn.clicked.connect(self.on_retest)
         # self.devCatCmboBx.currentIndexChanged.connect(self.on_cat_selected)
@@ -175,17 +184,46 @@ class Device_Configure(QtWidgets.QWidget):
         elif isinstance(raw, list):
             dcs_names += [p["name"] for p in raw if isinstance(p, dict) and "name" in p]
 
-        # --- configure the QTableView with a QStandardItemModel ---------------
-        tbl = self.deviceNameTblView
+        # --- build category names list -----------------------------------------
+        category_names = [""] + list(devs.dev_dct.keys())
 
-        model = QtGui.QStandardItemModel(len(lst), 2, self)
-        model.setHorizontalHeaderLabels(["pyStxm Name", "DCS Device"])
+        # --- build devtype names list -------------------------------------------
+        devtype_names = [""]
+        for record in lst:
+            dt = record.get("devtype", "")
+            if dt and dt not in devtype_names:
+                devtype_names.append(dt)
+
+        # --- build pos_type names list ------------------------------------------
+        pos_type_names = [""]
+        for record in lst:
+            pt = record.get("pos_type", "")
+            if pt and pt not in pos_type_names:
+                pos_type_names.append(pt)
+        bool_options = ["True", "False"]
+
+        # --- configure the QTableView with a QStandardItemModel ---------------
+        # Column order: Name, DCS Device, Category, DevType, Description, Connected, Sim, Enable, Units, ReadOnly, ConChkNm, PosType
+        tbl = self.deviceNameTblView
+        col_headers = [
+            "pyStxm Name", "DCS Device", "Category", "DevType", "Description",
+            "Connected", "Sim", "Enable", "Units", "ReadOnly", "ConChkNm", "PosType"
+        ]
+        num_cols = len(col_headers)
+
+        model = QtGui.QStandardItemModel(len(lst), num_cols, self)
+        model.setHorizontalHeaderLabels(col_headers)
         tbl.setModel(model)
-        tbl.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
-        tbl.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        
+        # Set column resize modes
+        tbl.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)  # Name
+        tbl.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)  # DCS Device
+        for col in range(2, num_cols):
+            tbl.horizontalHeader().setSectionResizeMode(col, QtWidgets.QHeaderView.ResizeToContents)
+        
         tbl.verticalHeader().setVisible(False)
         tbl.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        tbl.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        tbl.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked)
 
         # Connect row click signal
         try:
@@ -197,24 +235,78 @@ class Device_Configure(QtWidgets.QWidget):
         # keep a reference to all combos so we can update their item colors
         self._row_combos = []   # [(pystxm_name, combo), ...]
 
+        def _to_bool_str(value):
+            if isinstance(value, str):
+                return "True" if value.strip().lower() in ("true", "1", "yes", "on") else "False"
+            return "True" if bool(value) else "False"
+
         for row, record in enumerate(lst):
             try:
                 pystxm_name = record["name"]
+                bg_color = QtGui.QColor("#d4edda") if record.get("connected") else QtGui.QColor("#f8d7da")
+                editable_bg = QtGui.QColor("#ffffff")
 
-                # col 0 – read-only pyStxm name
+                # col 0 – pyStxm name
                 name_item = QtGui.QStandardItem(pystxm_name)
                 name_item.setEditable(False)
-                bg_color = QtGui.QColor("#d4edda") if record.get("connected") else QtGui.QColor("#f8d7da")
                 name_item.setBackground(bg_color)
                 model.setItem(row, 0, name_item)
 
-                # col 1 placeholder
+                # col 1 – placeholder for DCS device combobox
                 dcs_item = QtGui.QStandardItem("")
                 dcs_item.setEditable(False)
+                dcs_item.setBackground(editable_bg)
                 model.setItem(row, 1, dcs_item)
 
-                combo = NoScrollComboBox()
-                combo.addItems(dcs_names)
+                # col 2 – placeholder for Category combobox
+                cat_item = QtGui.QStandardItem("")
+                cat_item.setEditable(False)
+                cat_item.setBackground(editable_bg)
+                model.setItem(row, 2, cat_item)
+
+                # col 3 – placeholder for DevType combobox
+                devtype_item = QtGui.QStandardItem("")
+                devtype_item.setEditable(False)
+                devtype_item.setBackground(editable_bg)
+                model.setItem(row, 3, devtype_item)
+
+                # col 5/6/7/9 – placeholders for boolean comboboxes
+                for bool_col in (5, 6, 7, 9):
+                    bool_item = QtGui.QStandardItem("")
+                    bool_item.setEditable(False)
+                    bool_item.setBackground(editable_bg)
+                    model.setItem(row, bool_col, bool_item)
+
+                # col 11 – placeholder for PosType combobox
+                pos_type_item = QtGui.QStandardItem("")
+                pos_type_item.setEditable(False)
+                pos_type_item.setBackground(editable_bg)
+                model.setItem(row, 11, pos_type_item)
+
+                # col 4 onwards – data fields
+                col_data = [
+                    ("desc", 4, True),      # (field, col_idx, is_editable)
+                    ("units", 8, True),     # Units is now editable
+                    ("con_chk_nm", 10, False),
+                ]
+                for field_name, col_idx, is_editable in col_data:
+                    field_item = QtGui.QStandardItem(str(record.get(field_name, "")))
+                    field_item.setEditable(is_editable)
+                    field_item.setBackground(editable_bg if is_editable else bg_color)
+                    model.setItem(row, col_idx, field_item)
+
+                    # Track description changes
+                    if field_name == "desc":
+                        self.description_mapping[pystxm_name] = field_item.text()
+
+                    # Track units changes
+                    if field_name == "units":
+                        self.units_mapping[pystxm_name] = field_item.text()
+
+                # DCS name combobox (col 1)
+                dcs_combo = NoScrollComboBox()
+                dcs_combo.addItems(dcs_names)
+                dcs_combo.setStyleSheet("QComboBox { background-color: white; }")
 
                 # pre-select priority:
                 #   1. existing session mapping (user already picked something)
@@ -222,24 +314,107 @@ class Device_Configure(QtWidgets.QWidget):
                 #   3. fall back to "" (index 0)
                 saved = self.name_mapping.get(pystxm_name, "")
                 if saved in dcs_names and saved != "":
-                    combo.setCurrentText(saved)
+                    dcs_combo.setCurrentText(saved)
                 else:
                     dcs_nm = record.get("dcs_nm", "")
                     if dcs_nm and dcs_nm in dcs_names:
-                        combo.setCurrentText(dcs_nm)
+                        dcs_combo.setCurrentText(dcs_nm)
                     else:
-                        combo.setCurrentIndex(0)  # "" = unmapped
+                        dcs_combo.setCurrentIndex(0)  # "" = unmapped
 
                 # capture loop variable
-                def _on_changed(text, name=pystxm_name):
+                def _on_dcs_changed(text, name=pystxm_name):
                     self.name_mapping[name] = text
                     self._refresh_combo_colors()
 
-                combo.currentTextChanged.connect(_on_changed)
-                self.name_mapping[pystxm_name] = combo.currentText()
-                self._row_combos.append((pystxm_name, combo))
+                dcs_combo.currentTextChanged.connect(_on_dcs_changed)
+                self.name_mapping[pystxm_name] = dcs_combo.currentText()
+                self._row_combos.append((pystxm_name, dcs_combo))
 
-                tbl.setIndexWidget(model.index(row, 1), combo)
+                tbl.setIndexWidget(model.index(row, 1), dcs_combo)
+
+                # Category combobox (col 2)
+                cat_combo = NoScrollComboBox()
+                cat_combo.addItems(category_names)
+                cat_combo.setCurrentText(record.get("category", ""))
+                cat_combo.setStyleSheet("QComboBox { background-color: white; }")
+
+                def _on_cat_changed(text, name=pystxm_name):
+                    self.category_mapping[name] = text
+
+                cat_combo.currentTextChanged.connect(_on_cat_changed)
+                self.category_mapping[pystxm_name] = cat_combo.currentText()
+
+                tbl.setIndexWidget(model.index(row, 2), cat_combo)
+
+                # DevType combobox (col 3)
+                devtype_combo = NoScrollComboBox()
+                devtype_combo.addItems(devtype_names)
+                devtype_combo.setCurrentText(record.get("devtype", ""))
+                devtype_combo.setStyleSheet("QComboBox { background-color: white; }")
+
+                def _on_devtype_changed(text, name=pystxm_name):
+                    self.devtype_mapping[name] = text
+
+                devtype_combo.currentTextChanged.connect(_on_devtype_changed)
+                self.devtype_mapping[pystxm_name] = devtype_combo.currentText()
+
+                tbl.setIndexWidget(model.index(row, 3), devtype_combo)
+
+                # Boolean comboboxes (cols 5,6,7,9)
+                connected_combo = NoScrollComboBox()
+                connected_combo.addItems(bool_options)
+                connected_combo.setCurrentText(_to_bool_str(record.get("connected", False)))
+                connected_combo.setStyleSheet("QComboBox { background-color: white; }")
+                connected_combo.currentTextChanged.connect(
+                    lambda text, name=pystxm_name: self.connected_mapping.__setitem__(name, text)
+                )
+                self.connected_mapping[pystxm_name] = connected_combo.currentText()
+                tbl.setIndexWidget(model.index(row, 5), connected_combo)
+
+                sim_combo = NoScrollComboBox()
+                sim_combo.addItems(bool_options)
+                sim_combo.setCurrentText(_to_bool_str(record.get("sim", False)))
+                sim_combo.setStyleSheet("QComboBox { background-color: white; }")
+                sim_combo.currentTextChanged.connect(
+                    lambda text, name=pystxm_name: self.sim_mapping.__setitem__(name, text)
+                )
+                self.sim_mapping[pystxm_name] = sim_combo.currentText()
+                tbl.setIndexWidget(model.index(row, 6), sim_combo)
+
+                enable_combo = NoScrollComboBox()
+                enable_combo.addItems(bool_options)
+                enable_combo.setCurrentText(_to_bool_str(record.get("enable", False)))
+                enable_combo.setStyleSheet("QComboBox { background-color: white; }")
+                enable_combo.currentTextChanged.connect(
+                    lambda text, name=pystxm_name: self.enable_mapping.__setitem__(name, text)
+                )
+                self.enable_mapping[pystxm_name] = enable_combo.currentText()
+                tbl.setIndexWidget(model.index(row, 7), enable_combo)
+
+                rd_only_combo = NoScrollComboBox()
+                rd_only_combo.addItems(bool_options)
+                rd_only_combo.setCurrentText(_to_bool_str(record.get("rd_only", False)))
+                rd_only_combo.setStyleSheet("QComboBox { background-color: white; }")
+                rd_only_combo.currentTextChanged.connect(
+                    lambda text, name=pystxm_name: self.rd_only_mapping.__setitem__(name, text)
+                )
+                self.rd_only_mapping[pystxm_name] = rd_only_combo.currentText()
+                tbl.setIndexWidget(model.index(row, 9), rd_only_combo)
+
+                # PosType combobox (col 11)
+                pos_type_combo = NoScrollComboBox()
+                pos_type_combo.addItems(pos_type_names)
+                pos_type_combo.setCurrentText(record.get("pos_type", ""))
+                pos_type_combo.setStyleSheet("QComboBox { background-color: white; }")
+
+                def _on_pos_type_changed(text, name=pystxm_name):
+                    self.pos_type_mapping[name] = text
+
+                pos_type_combo.currentTextChanged.connect(_on_pos_type_changed)
+                self.pos_type_mapping[pystxm_name] = pos_type_combo.currentText()
+
+                tbl.setIndexWidget(model.index(row, 11), pos_type_combo)
 
             except Exception as e:
                 print(f"populate_devnames_lstview: ERROR at row {row}: {e}")
@@ -258,6 +433,77 @@ class Device_Configure(QtWidgets.QWidget):
             dict: ``{pystxm_name: dcs_name}``  (empty string means unmapped)
         """
         return dict(self.name_mapping)
+
+    def get_category_mapping(self) -> dict:
+        """
+        Return the current pyStxm-name → category mapping as chosen by the user.
+
+        Returns:
+            dict: ``{pystxm_name: category}``  (empty string means no category)
+        """
+        return dict(self.category_mapping)
+
+    def get_devtype_mapping(self) -> dict:
+        """
+        Return the current pyStxm-name → devtype mapping as chosen by the user.
+
+        Returns:
+            dict: ``{pystxm_name: devtype}``  (empty string means no devtype)
+        """
+        return dict(self.devtype_mapping)
+
+    def get_description_mapping(self) -> dict:
+        """
+        Return the current pyStxm-name → description mapping as edited by the user.
+
+        Returns:
+            dict: ``{pystxm_name: description}``
+        """
+        # Read current values from the model to get live edits
+        for row in range(self.deviceNameTblView.model().rowCount()):
+            name_item = self.deviceNameTblView.model().item(row, 0)
+            desc_item = self.deviceNameTblView.model().item(row, 4)
+            if name_item and desc_item:
+                pystxm_name = name_item.text()
+                self.description_mapping[pystxm_name] = desc_item.text()
+        return dict(self.description_mapping)
+
+    def get_units_mapping(self) -> dict:
+        """
+        Return the current pyStxm-name → units mapping as edited by the user.
+
+        Returns:
+            dict: ``{pystxm_name: units}``
+        """
+        # Read current values from the model to get live edits
+        for row in range(self.deviceNameTblView.model().rowCount()):
+            name_item = self.deviceNameTblView.model().item(row, 0)
+            units_item = self.deviceNameTblView.model().item(row, 8)
+            if name_item and units_item:
+                pystxm_name = name_item.text()
+                self.units_mapping[pystxm_name] = units_item.text()
+        return dict(self.units_mapping)
+
+    def get_pos_type_mapping(self) -> dict:
+        """
+        Return the current pyStxm-name -> pos_type mapping as selected by the user.
+
+        Returns:
+            dict: ``{pystxm_name: pos_type}``
+        """
+        return dict(self.pos_type_mapping)
+
+    def get_connected_mapping(self) -> dict:
+        return dict(self.connected_mapping)
+
+    def get_sim_mapping(self) -> dict:
+        return dict(self.sim_mapping)
+
+    def get_enable_mapping(self) -> dict:
+        return dict(self.enable_mapping)
+
+    def get_rd_only_mapping(self) -> dict:
+        return dict(self.rd_only_mapping)
 
     def _refresh_combo_colors(self):
         """

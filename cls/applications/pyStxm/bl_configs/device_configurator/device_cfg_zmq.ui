@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>930</width>
-    <height>794</height>
+    <width>1983</width>
+    <height>937</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -59,7 +59,14 @@
       </widget>
      </item>
      <item>
-      <widget class="QTableView" name="deviceNameTblView"/>
+      <widget class="QTableView" name="deviceNameTblView">
+       <property name="minimumSize">
+        <size>
+         <width>1500</width>
+         <height>0</height>
+        </size>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QWidget" name="widget" native="true"/>

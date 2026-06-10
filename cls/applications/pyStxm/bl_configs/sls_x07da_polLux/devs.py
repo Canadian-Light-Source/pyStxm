@@ -1327,63 +1327,41 @@ dev_dct["TEMPERATURES"] = [
 
 
 
-def get_dev_names():
-    dev_nms = []
-    for k in list(dev_dct.keys()):
-        # get all the device names
-        dlist = dev_dct[k]
-        for sig_dct in dlist:
-            if isinstance(sig_dct, dict):
-                if "name" in sig_dct.keys():
-                    dev_nms.append(sig_dct["name"])
-            else:
-                if sig_dct.find("POS_TYPE") > -1:
-                    dlist = dev_dct[k][sig_dct]
-                    for _dct in dlist:
-                        if "name" in _dct.keys():
-                            dev_nms.append(_dct["name"])
-    return dev_nms
+# def get_zmq_connections_status(_dct=None):
+#     from cls.applications.pyStxm.bl_configs.device_configurator.con_checker import con_check_many
+#
+#     dev_pvlist = []
+#     con_lst = []
+#     if _dct is None:
+#         keys = list(dev_dct.keys())
+#     else:
+#         keys = list(_dct.keys())
+#
+#     for k in keys:
+#         # get all the signal names
+#         dlist = dev_dct[k]
+#         for sig_dct in dlist:
+#             if isinstance(sig_dct, dict):
+#                 if "dcs_nm" in sig_dct.keys():
+#                     if "con_chk_nm" in sig_dct.keys():
+#                         con_lst.append(sig_dct["dcs_nm"] + sig_dct["con_chk_nm"])
+#                     else:
+#                         con_lst.append(sig_dct["dcs_nm"])
+#                     dev_pvlist.append(sig_dct["dcs_nm"])
+#             else:
+#                 if sig_dct.find("POS_TYPE") > -1:
+#                     dlist = dev_dct[k][sig_dct]
+#                     for _dct in dlist:
+#                         if "dcs_nm" in _dct.keys():
+#                             if "con_chk_nm" in _dct.keys():
+#                                 con_lst.append(_dct["dcs_nm"] + _dct["con_chk_nm"])
+#                             else:
+#                                 con_lst.append(_dct["dcs_nm"])
+#                             dev_pvlist.append(_dct["dcs_nm"])
+#     # the list for connections might not be same as the sig_name required to create an instance of the device
+#     # so for purposes of finding out IS THERE A CONNECTION just make sure to specify an actual PV not just a prefix
+#     cons = con_check_many(con_lst)
+#     both = dict(zip(dev_pvlist, cons))
+#     return both
 
 
-def get_connections_status(_dct=None):
-    from cls.applications.pyStxm.bl_configs.device_configurator.con_checker import con_check_many
-
-    dev_pvlist = []
-    con_lst = []
-    if _dct is None:
-        keys = list(dev_dct.keys())
-    else:
-        keys = list(_dct.keys())
-
-    for k in keys:
-        # get all the signal names
-        dlist = dev_dct[k]
-        for sig_dct in dlist:
-            if isinstance(sig_dct, dict):
-                if "dcs_nm" in sig_dct.keys():
-                    if "con_chk_nm" in sig_dct.keys():
-                        con_lst.append(sig_dct["dcs_nm"] + sig_dct["con_chk_nm"])
-                    else:
-                        con_lst.append(sig_dct["dcs_nm"])
-                    dev_pvlist.append(sig_dct["dcs_nm"])
-            else:
-                if sig_dct.find("POS_TYPE") > -1:
-                    dlist = dev_dct[k][sig_dct]
-                    for _dct in dlist:
-                        if "dcs_nm" in _dct.keys():
-                            if "con_chk_nm" in _dct.keys():
-                                con_lst.append(_dct["dcs_nm"] + _dct["con_chk_nm"])
-                            else:
-                                con_lst.append(_dct["dcs_nm"])
-                            dev_pvlist.append(_dct["dcs_nm"])
-    # the list for connections might not be same as the sig_name required to create an instance of the device
-    # so for purposes of finding out IS THERE A CONNECTION just make sure to specify an actual PV not just a prefix
-    cons = con_check_many(con_lst)
-    both = dict(zip(dev_pvlist, cons))
-    return both
-
-
-if __name__ == "__main__":
-    cons = get_connections_status()
-    for conn in list(cons):
-        print(conn)

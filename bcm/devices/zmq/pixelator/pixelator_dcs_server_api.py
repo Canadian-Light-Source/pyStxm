@@ -1233,6 +1233,16 @@ class DcsServerApi(BaseDcsServerApi):
             dct = {}
         return dct
 
+    def get_devices_from_settings(self, settings: dict={}):
+        """ if the keys exist return the device_settings"""
+        dev_settings = {}
+        if 'referencedJsonFiles' in settings:
+            if 'positionerConfigFileName' in settings['referencedJsonFiles']:
+                dev_settings = settings['referencedJsonFiles']['positionerConfigFileName']['content']
+        self.device_settings = dev_settings
+        return dev_settings
+
+
     def put(self, put_dct):
         """
         A device setpoint has changed on pyStxm and the put function has been called on the ZMQDevice or ZMQSignal so

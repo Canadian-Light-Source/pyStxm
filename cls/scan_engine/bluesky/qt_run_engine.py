@@ -441,11 +441,11 @@ class ZMQEngineWidget(QWidget):
 
     # complete
 
-    def __init__(self, devices_dct={}, parent=None):
+    def __init__(self, devices_dct={}, parent=None, do_dev_init: bool=False):
         # Instantiate widget information and layout
         super().__init__(parent=parent)
         # Create a new RunEngine if we were not provided one
-        self._engine = ZMQRunEngine(devices_dct)
+        self._engine = ZMQRunEngine(devices_dct, do_dev_init=do_dev_init)
         self.control = None
         self.engine = self._engine
         self._old_state = ""

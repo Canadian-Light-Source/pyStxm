@@ -78,6 +78,9 @@ def gen_device_names_file(fpath, dev_dct):
 def get_zmq_connections_status(dev_dct=None):
     dev_pvlist = []
     con_lst = []
+zmq    # map each device dcs name to the connection string that should be checked
+    # (which may include con_chk_nm suffix)
+    con_name_by_dev = {}
     if dev_dct is None:
         raise f"Error: no dict provided to get_zmq_connections_status function"
     else:
@@ -89,23 +92,153 @@ def get_zmq_connections_status(dev_dct=None):
         for sig_dct in dlist:
             if isinstance(sig_dct, dict):
                 if "dcs_nm" in sig_dct.keys():
+                    dcs_nm = str(sig_dct.get("dcs_nm", "") or "").strip()
                     if "con_chk_nm" in sig_dct.keys():
-                        con_lst.append(sig_dct["dcs_nm"] + sig_dct["con_chk_nm"])
+                        con_nm = dcs_nm + str(sig_dct.get("con_chk_nm", ""))
                     else:
-                        con_lst.append(sig_dct["dcs_nm"])
-                    dev_pvlist.append(sig_dct["dcs_nm"])
+                        con_nm = dcs_nm
+                    dev_pvlist.append(dcs_nm)
+                    con_name_by_dev[dcs_nm] = con_nm
             else:
                 if sig_dct.find("POS_TYPE") > -1:
                     dlist = dev_dct[k][sig_dct]
                     for _dct in dlist:
                         if "dcs_nm" in _dct.keys():
+                            dcs_nm = str(_dct.get("dcs_nm", "") or "").strip()
                             if "con_chk_nm" in _dct.keys():
-                                con_lst.append(_dct["dcs_nm"] + _dct["con_chk_nm"])
+                                con_nm = dcs_nm + str(_dct.get("con_chk_nm", ""))
                             else:
-                                con_lst.append(_dct["dcs_nm"])
-                            dev_pvlist.append(_dct["dcs_nm"])
+                                con_nm = dcs_nm
+                            dev_pvlist.append(dcs_nm)
+                            con_name_by_dev[dcs_nm] = con_nm
+
+    # only send valid, non-empty channel names to epics.ca.create_channel
+    valid_con_lst = [nm for nm in con_name_by_dev.values() if isinstance(nm, str) and nm.strip()]
     # the list for connections might not be same as the sig_name required to create an instance of the device
     # so for purposes of finding out IS THERE A CONNECTION just make sure to specify an actual PV not just a prefix
-    cons = con_check_many(con_lst)
-    both = dict(zip(dev_pvlist, cons))
+    cons = con_check_many(valid_con_lst) if len(valid_con_lst) > 0 else []
+    con_status_by_con_name = dict(zip(valid_con_lst, cons))
+
+    # Default any invalid/empty dcs names to disconnected instead of raising.
+    both = {}
+    for dcs_nm in dev_pvlist:
+        con_nm = con_name_by_dev.get(dcs_nm, "")
+        both[dcs_nm] = con_status_by_con_name.get(con_nm, False)
     return both
+
+
+def make_MotorQt(**kwargs):
+    dct = {
+        'name': '',
+        'desc': 'No description in config',
+        'dcs_nm': '',
+        'pos_type': '',
+        'units': '',
+        'class': 'MotorQt',
+        'abstract_mtr': False,
+        'enums': [],
+        'enum_values': []
+    }
+    dct.update(kwargs)
+    return dct
+
+def make_sample_abstract_motor(**kwargs):
+    dct = {
+        'name': '',
+        'desc': 'No description in config',
+        'dcs_nm': '',
+        'fine_mtr_name': '',
+        'coarse_mtr_name': '',
+        'pos_type': '',
+        'class': 'sample_abstract_motor',
+    }
+    dct.update(kwargs)
+    return dct
+
+def make_DCSShutter(**kwargs):
+    dct = {
+        'name': '',
+        'desc': 'No description in config',
+        'dcs_nm': '',
+        'class': 'DCSShutter',
+        "ctrl_enum_strs": ["Auto", "Open", "Closed", "Auto Line"],
+        "fbk_enum_strs": ["CLOSED", "OPEN"],
+    }
+    dct.update(kwargs)
+    return dct
+
+def make_make_basedevice(**kwargs):
+    dct = {
+        'name': '',
+        'desc': 'No description in config',
+        'dcs_nm': '',
+        'units': '',
+        'class': 'make_basedevice',
+    }
+    dct.update(kwargs)
+    return dct
+
+def make_Counter(**kwargs):
+    dct = {
+        'name': '',
+        'desc': 'No description in config',
+        'dcs_nm': '',
+        'class': 'Counter',
+    }
+    dct.update(kwargs)
+    return dct
+
+def make_make_base_simdevice(**kwargs):
+    dct = {
+        'name': '',
+        'desc': 'No description in config',
+        'dcs_nm': '',
+        'class': 'make_base_simdevice',
+    }
+    dct.update(kwargs)
+    return dct
+
+def make_MultiSelectable(**kwargs):
+    dct = {
+        'name': '',
+        'desc': 'No description in config',
+        'dcs_nm': '',
+        'class': 'MultiSelectable',
+    }
+    dct.update(kwargs)
+    return dct
+
+def make_Bo(**kwargs):
+    dct = {
+        'name': '',
+        'desc': 'No description in config',
+        'dcs_nm': '',
+        'class': 'Bo',
+    }
+    dct.update(kwargs)
+    return dct
+
+def make_Command(**kwargs):
+    dct = {
+        'name': '',
+        'desc': 'No description in config',
+        'dcs_nm': '',
+        'class': 'Command',
+        'arg_keywords': [],
+    }
+    dct.update(kwargs)
+    return dct
+
+def make_EnergyDevice(**kwargs):
+    dct = {
+        'name': '',
+        'desc': 'No description in config',
+        'dcs_nm': '',
+        'energy_nm': '',
+        'zz_nm': '',
+        'cz_nm': '',
+        'pos_type': '',
+        'class': 'EnergyDevice',
+    }
+    dct.update(kwargs)
+    return dct

@@ -279,7 +279,9 @@ class ZMQMotor(ZMQBaseDevice):
         self.msta_dct = motor_msta(controller_status)
 
     def move(self, value, wait=False):
-        if hasattr(self, 'enums'):
+        if len(self.name) == 0:
+            return
+        if hasattr(self, 'enums') and len(self.enums) > 0:
             if hasattr(self, 'enum_values'):
                 #the dev definition has specified alternate enumerated values
                 # the passed in value is an index

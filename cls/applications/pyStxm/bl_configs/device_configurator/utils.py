@@ -78,7 +78,7 @@ def gen_device_names_file(fpath, dev_dct):
 def get_zmq_connections_status(dev_dct=None):
     dev_pvlist = []
     con_lst = []
-zmq    # map each device dcs name to the connection string that should be checked
+    # map each device dcs name to the connection string that should be checked
     # (which may include con_chk_nm suffix)
     con_name_by_dev = {}
     if dev_dct is None:

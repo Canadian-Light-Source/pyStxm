@@ -331,7 +331,7 @@ dev_dct["PVS"] = [
         "dcs_nm": "PIXELATOR_A0",
     },
     {
-        "name": "DNM_A0MAX",
+        "name": "DNM_A0MAXIMUM",
         "class": "make_basedevice",
         "cat": "PVS",
         "dcs_nm": "PIXELATOR_A0MAX",

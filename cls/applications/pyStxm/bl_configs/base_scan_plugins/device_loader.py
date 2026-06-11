@@ -229,7 +229,7 @@ class device_config(dev_config_base):
             defocus_beam_dev = self.devices["PVS"]["DNM_BEAM_DEFOCUS"]
             focal_len_dev = self.devices["PVS"]["DNM_FOCAL_LENGTH"]
             zp_a1_dev = self.devices["PVS"]["DNM_ZP_A1"]
-            a0_max_dev = self.devices["PVS"]["DNM_A0MAX"]
+            a0_max_dev = self.devices["PVS"]["DNM_A0MAXIMUM"]
             calcd_zpz_dev = self.devices["PVS"]["DNM_CALCD_ZPZ"]
             zp_focus_mode_dev = self.devices["PVS"]["DNM_ZONEPLATE_FOCUS_MODE"]
 

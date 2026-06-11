@@ -197,8 +197,8 @@ class PreferencesParams(QtWidgets.QWidget):
         )
         self.a0MaxFbkLbl = assign_aiLabelWidget(
             self.a0MaxFbkLbl,
-            MAIN_OBJ.device("DNM_A0MAX"),
-            hdrText=DNM_A0MAX,
+            MAIN_OBJ.device("DNM_A0MAXIMUM"),
+            hdrText=DNM_A0MAXIMUM,
             egu="um",
             title_color="white",
             var_clr="white",

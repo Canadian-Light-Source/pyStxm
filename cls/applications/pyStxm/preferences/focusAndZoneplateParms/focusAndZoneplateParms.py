@@ -65,10 +65,10 @@ class FocusParams(BasePreference):
         else:
             self.a1FbkLbl.setText("No DNM_ZP_A1 Device in database")
 
-        if MAIN_OBJ.device("DNM_A0MAX"):
+        if MAIN_OBJ.device("DNM_A0MAXIMUM"):
             self.a0MaxFbkLbl = assign_aiLabelWidget(
                 self.a0MaxFbkLbl,
-                MAIN_OBJ.device("DNM_A0MAX"),
+                MAIN_OBJ.device("DNM_A0MAXIMUM"),
                 hdrText="A0Max",
                 egu="um",
                 title_color="white",
@@ -76,7 +76,7 @@ class FocusParams(BasePreference):
                 format="%5.2f",
             )
         else:
-            self.a0MaxFbkLbl.setText("No DNM_A0MAX Device in database")
+            self.a0MaxFbkLbl.setText("No DNM_A0MAXIMUM Device in database")
 
 
         self.flFbkLbl = assign_aiLabelWidget(

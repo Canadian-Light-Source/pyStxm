@@ -368,7 +368,7 @@ dev_dct["PVS"] = [
         "dcs_nm": "ASTXM1610:bl_api:A0",
     },
     {
-        "name": "DNM_A0MAX",
+        "name": "DNM_A0MAXIMUM",
         "class": "make_base_simdevice",
         "cat": "PVS",
         "dcs_nm": "ASTXM1610:bl_api:A0Max",

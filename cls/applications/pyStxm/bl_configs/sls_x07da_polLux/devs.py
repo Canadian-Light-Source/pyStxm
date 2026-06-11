@@ -1,535 +1,815 @@
+# from cls.applications.pyStxm.bl_configs.device_configurator.utils import (make_MotorQt, make_MultiSelectable, make_DCSShutter, make_make_basedevice, make_Counter, make_make_base_simdevice, make_Bo, make_Command, make_EnergyDevice)
+# SIM = True
+# dev_dct = {}
+# dev_dct["POSITIONERS"] = [
+#     # {
+#     #     "name": "DNM_CSX",
+#     #     "desc": "CSX",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "CSX",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_CSY",
+#     #     "desc": "CSY",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "CSY",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_HW_COARSE_Y",
+#     #     "desc": "HwCoarseY",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "HwCoarseY",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_HW_COARSE_X",
+#     #     "desc": "HwCoarseX",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "HwCoarseX",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_GIRDER_Y",
+#     #     "desc": "Girder_y",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "Girder_y",
+#     #     "pos_type": "POS_TYPE_BL",
+#     # },
+#     # {
+#     #     "name": "DNM_SAMPLE_FINE_Z",
+#     #     "desc": "Fine_Z",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "FineZ",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_EXIT_SLIT_V",
+#     #     "desc": "ExitSlit_V",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "ExitSlit_V",
+#     #     "pos_type": "POS_TYPE_BL",
+#     # },
+#     # {
+#     #     "name": "DNM_EXIT_SLIT_H",
+#     #     "desc": "ExitSlit_H",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "ExitSlit_H",
+#     #     "pos_type": "POS_TYPE_BL",
+#     # },
+#     # {
+#     #     "name": "DNM_ENTRANCE_SLIT",
+#     #     "desc": "EntranceSlit",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "EntranceSlit",
+#     #     "pos_type": "POS_TYPE_BL",
+#     # },
+#     # {
+#     #     "name": "DNM_SAMPLE_FINE_X",
+#     #     "desc": "Fine_X",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "FineX",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_SAMPLE_FINE_Y",
+#     #     "desc": "Fine_Y",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "FineY",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_OSA_X",
+#     #     "desc": "OSA_X",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "OSAX",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_OSA_Y",
+#     #     "desc": "OSA_Y",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "OSAY",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_ZONEPLATE_Z",
+#     #     "desc": "Zoneplate",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "Zoneplate",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_COARSE_X",
+#     #     "desc": "Coarse_X",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "CoarseX",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_COARSE_Y",
+#     #     "desc": "Coarse_Y",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "CoarseY",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_COARSE_Z",
+#     #     "desc": "Coarse_Z",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "CoarseZ",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_DETECTOR_X",
+#     #     "desc": "Detector_X",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "DetectorX",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_DETECTOR_Y",
+#     #     "desc": "Detector_Y",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "DetectorY",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_DETECTOR_Z",
+#     #     "desc": "Detector_Z",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "DetectorZ",
+#     #     "pos_type": "POS_TYPE_ES",
+#     # },
+#     # {
+#     #     "name": "DNM_SAMPLE_X",
+#     #     "desc": "Sample_X",
+#     #     "class": "sample_abstract_motor",
+#     #     "dcs_nm": "SampleX",
+#     #     "pos_type": "POS_TYPE_ES",
+#     #     "fine_mtr_name": "DNM_SAMPLE_FINE_X",
+#     #     "coarse_mtr_name": "DNM_COARSE_X"
+#     # },
+#     # {
+#     #     "name": "DNM_SAMPLE_Y",
+#     #     "desc": "Sample_Y",
+#     #     "class": "sample_abstract_motor",
+#     #     "dcs_nm": "SampleY",
+#     #     "pos_type": "POS_TYPE_ES",
+#     #     "fine_mtr_name": "DNM_SAMPLE_FINE_Y",
+#     #     "coarse_mtr_name": "DNM_COARSE_Y"
+#     #
+#     # },
+#     # {
+#     #     "name": "DNM_ENERGY",
+#     #     "desc": "Energy",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "Energy" if SIM else "Energy",
+#     #     "abstract_mtr": True,
+#     #     "pos_type": "POS_TYPE_BL",
+#     #     "units": "eV",
+#     # },
+#     # {
+#     #     "name": "DNM_EPU_OFFSET",
+#     #     "desc": "ID1_Offset",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "ID1Off" if SIM else "ID1Off",
+#     #     "abstract_mtr": True,
+#     #     "pos_type": "POS_TYPE_BL",
+#     # },
+#     # {
+#     #     "name": "DNM_ID2_OFFSET",
+#     #     "desc": "ID2_Offset",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "ID2Off" if SIM else "ID2Off",
+#     #     "abstract_mtr": True,
+#     #     "pos_type": "POS_TYPE_BL",
+#     # },
+#     # {
+#     #     "name": "DNM_EPU_POLARIZATION",
+#     #     "desc": "Polarization",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "Polarization" if SIM else "Polarization",
+#     #     "abstract_mtr": True,
+#     #     "pos_type": "POS_TYPE_BL",
+#     #     "enums": ["Off", "Pos", "Neg"],
+#     #     "enum_values": [0, -0.2, 0.2]
+#     # },
+#     # {
+#     #     "name": "DNM_EPU_ANGLE",
+#     #     "desc": "Epu_Angle",
+#     #     "class": "MotorQt",
+#     #     "dcs_nm": "PIXELATOR_DNM_EPU_ANGLE",
+#     #     "abstract_mtr": True,
+#     #     "pos_type": "POS_TYPE_BL",
+#     # },
+#
+#
+#
+# ]
+# # if the sig_name is not itself a PV but is only a prefix, profide the con_chk_nm field
+# dev_dct["DIO"] = [
+#     {
+#         "name": "DNM_SHUTTER",
+#         "class": "DCSShutter",
+#         "dcs_nm": "BeamShutter",
+#         "ctrl_enum_strs": ["Auto", "Open", "Closed", "Auto Line"],
+#         "fbk_enum_strs": ["CLOSED", "OPEN"],
+#
+#     },
+#     {
+#         "name": "DNM_SHUTTERTASKRUN",
+#         "class": "make_basedevice",
+#         # "dcs_nm": "ASTXM1610:Dio:shutter:Run",
+#         "dcs_nm": "PIXELATOR_SHUTTERTASKRUN",
+#     },
+# ]
+#
+# dev_dct["DETECTORS"] = [
+#     {
+#         "name": "DNM_COUNTER1",
+#         "class": "Counter",
+#         "dcs_nm": "Counter1",
+#     },
+#     {
+#         "name": "DNM_COUNTER2",
+#         "class": "Counter",
+#         "dcs_nm": "Counter2",
+#     },
+#     {
+#         "name": "DNM_ANALOG0",
+#         "class": "Counter",
+#         "dcs_nm": "Bl AI 0",
+#     },
+#
+# ]
+# dev_dct["PVS"] = [
+#     {
+#         "name": "DNM_ZONEPLATE_FOCUS_MODE",
+#         "class": "make_base_simdevice",
+#         "dcs_nm": "PIXELATOR_ZONEPLATE_FOCUS_MODE",
+#     },
+#     {
+#         "name": "DNM_APD_VOLTAGE",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "APD Voltage",
+#     },
+#     {
+#         "name": "DNM_MAGNETIC_FIELD",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "Magnetic Field",
+#     },
+#     {
+#         "name": "DNM_ZMQ",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "ZMQ",
+#     },
+#     {
+#         "name": "DNM_MOENCH_NUM_FRAMES",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "MoenchNumFrames",
+#     },
+#     {
+#         "name": "DNM_FINE_ACCEL_DIST_PRCNT",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_FINE_ACCEL_DIST_PRCNT",
+#     },
+#     {
+#         "name": "DNM_FINE_DECCEL_DIST_PRCNT",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_FINE_DECCEL_DIST_PRCNT",
+#     },
+#     {
+#         "name": "DNM_CRS_ACCEL_DIST_PRCNT",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_CRS_ACCEL_DIST_PRCNT",
+#     },
+#     {
+#         "name": "DNM_CRS_DECCEL_DIST_PRCNT",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_CRS_DECCEL_DIST_PRCNT",
+#     },
+#     {
+#         "name": "DNM_CALCD_ZPZ",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_CALCD_ZPZ",
+#     },
+#     {
+#         "name": "DNM_ZPZ_ADJUST",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_ZPZ_ADJUST",
+#     },
+#     {
+#         "name": "DNM_DELTA_A0",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_DELTA_A0",
+#     },
+#     {
+#         "name": "DNM_IDEAL_A0",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_IDEAL_A0",
+#     },
+#     {
+#         "name": "DNM_CALCD_ZPZ",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_CALCD_ZPZ",
+#     },
+#     {
+#         "name": "DNM_BEAM_DEFOCUS",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_BEAM_DEFOCUS",
+#         "units": "um",
+#     },
+#     {
+#         "name": "DNM_ZPZ_ADJUST",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_ZPZ_ADJUST",
+#     },
+#     {
+#         "name": "DNM_FOCAL_LENGTH",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_FOCAL_LENGTH",
+#         "units": "um",
+#     },
+#     {
+#         "name": "DNM_A0",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_A0",
+#     },
+#     {
+#         "name": "DNM_A0MAXIMUM",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_A0MAX",
+#     },
+#      {
+#          'name': 'DNM_A0_FOR_CALC',
+#          'class': 'make_basedevice',
+#          'cat': 'PVS',
+#          'dcs_nm': 'ASTXM1610:bl_api:A0:for_calc'},
+#     {
+#         "name": "DNM_ZPZ_POS",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_ZPZ_POS",
+#     },
+#     {
+#         "name": "DNM_ZP_A1",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_ZP_A1",
+#     },
+#     {
+#         "name": "DNM_ZP_DEF",
+#         "class": "make_base_simdevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_ZP_DEF",
+#     },
+#     {
+#         "name": "DNM_OSA_DEF",
+#         "class": "make_base_simdevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_OSA_DEF",
+#     },
+#     {
+#         "name": "DNM_SRSTATUS_SHUTTERS",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_SRSTATUS_SHUTTERS",
+#     },
+#     {
+#         "name": "DNM_RING_CURRENT",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "Ring_Current",
+#     },
+#     {
+#         "name": "DNM_DFLT_PMT_DWELL",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_DFLT_PMT_DWELL",
+#     },
+#     {
+#         "name": "DNM_ALL_MOTORS_OFF",
+#         "class": "make_basedevice",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_ALL_MOTORS_OFF",
+#     },
+#     {
+#         "name": "DNM_GATING",
+#         "class": "MultiSelectable",
+#         "dcs_nm": "PIXELATOR_GATING",
+#         "desc": "Pixelator Gating, connected to the rings top up mode",
+#         # the ctrl_enum_strs appear in teh pulldown for the combobox
+#         "ctrl_enum_strs": ["On", "Off", "No Repeat"],
+#         "fbk_enum_strs": ["On", "Off", "No Repeat"],
+#         #"fbk_enum_values": [0, 1, 2]
+#     },
+#     {
+#         "name": "DNM_FOCUS_MODE",
+#         "class": "MultiSelectable",
+#         "dcs_nm": "PIXELATOR_FOCUS_MODE",
+#         "desc": "Focus mode",
+#         # the ctrl_enum_strs appear in the pulldown for the combobox
+#         "ctrl_enum_strs": ["Static", "Auto"],
+#         "fbk_enum_strs": ["Static", "Auto"],
+#         #"fbk_enum_values": [0, 1]
+#     },
+#     {
+#         "name": "DNM_SHUTTER_MODE",
+#         "class": "MultiSelectable",
+#         "dcs_nm": "PIXELATOR_FOCUS_MODE",
+#         "desc": "Focus mode",
+#         # the ctrl_enum_strs appear in the pulldown for the combobox
+#         "ctrl_enum_strs": ["Static", "Auto"],
+#         "fbk_enum_strs": ["Static", "Auto"],
+#         #"fbk_enum_values": [0, 1]
+#     },
+#
+#
+#
+#     # _pv: BaseDevice('BL1610-I12:MONO1610-I10-01:grating:select:fbk'}, _pv.get_position: _pv.get_enum_str_as_int[{'name': 'Mono_grating_fbk',  'class': _pv
+# ]
+#
+# dev_dct['COMMANDS'] = [
+#     {
+#         "name": "DNM_RESET_INTERFERS",
+#         "class": "Bo",
+#         "cat": "PVS",
+#         "dcs_nm": "PIXELATOR_RESET_INTERFERS",
+#         "arg_keywords": []
+#     },
+#     # used to convieniently move zp z in and out
+#     {
+#         "name": "DNM_ZONEPLATE_INOUT",
+#         "class": "Command",
+#         "dcs_nm": "PIXELATOR_ZONEPLATE_INOUT",
+#         "arg_keywords": []
+#     },
+#     {
+#         "name": "DNM_OSA_INOUT",
+#         "class": "Command",
+#         "dcs_nm": "PIXELATOR_OSA_INOUT",
+#         "arg_keywords": []
+#     },
+#     {
+#         "name": "DNM_SAMPLE_OUT",
+#         "class": "Command",
+#         "dcs_nm": "PIXELATOR_SAMPLE_OUT",
+#         "arg_keywords": []
+#     },
+#     {
+#         "name": "DNM_LOAD_DIRECTORY",
+#         "class": "Command",
+#         "dcs_nm": "loadFile directory",
+#         "arg_keywords": ["directory","showHidden","fileExtension"]
+#     },
+#     {
+#         "name": "DNM_LOAD_FILE",
+#         "class": "Command",
+#         "dcs_nm": "loadFile file",
+#         "arg_keywords": ["filePath","readMode"]
+#     },
+# ]
+#
+# dev_dct["ENERGY_DEV"] = [
+#     {
+#         "name": "DNM_ENERGY_DEVICE",
+#         "desc": "Energy device that includes focussing",
+#         "class": "EnergyDevice",
+#         #"dcs_nm": "SIM_VBL1610-I12:ENERGY" if SIM else "BL1610-I10:ENERGY",
+#         "dcs_nm": "SIM_VBLFAKE:ENERGY" if SIM else "BLFAKE:ENERGY",
+#         "energy_nm": "DNM_ENERGY",
+#         "zz_nm": "DNM_ZONEPLATE_Z",
+#         "cz_nm": "DNM_COARSE_Z",
+#         "pos_type": "POS_TYPE_BL",
+#     },
+# ]
+#
+# dev_dct["PVS_DONT_RECORD"] = [
+#     {
+#         "name": "DNM_TICKER",
+#         "class": "make_basedevice",
+#         "cat": "PVS_DONT_RECORD",
+#         "dcs_nm": "PIXELATOR_TICKER",
+#         "units": "counts",
+#     }
+# ]
+#
+# dev_dct["HEARTBEATS"] = [
+#
+# ]
+#
+# dev_dct["PRESSURES"] = [
+#
+# ]
+#
+# dev_dct["TEMPERATURES"] = [
+#     ]
+#
+#
+#
+#
+
+
+from cls.applications.pyStxm.bl_configs.device_configurator.utils import (make_MotorQt, make_DCSShutter, make_make_basedevice, make_Counter, make_make_base_simdevice, make_MultiSelectable, make_Bo, make_Command, make_EnergyDevice)
+
 SIM = True
 dev_dct = {}
-dev_dct["POSITIONERS"] = [
-    {
-        "name": "DNM_CSX",
-        "desc": "CSX",
-        "class": "MotorQt",
-        "dcs_nm": "CSX",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_CSY",
-        "desc": "CSY",
-        "class": "MotorQt",
-        "dcs_nm": "CSY",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_MIRROR1_RY",
-        "desc": "Mirror1_Ry",
-        "class": "MotorQt",
-        "dcs_nm": "Mirror1_Ry",
-        "pos_type": "POS_TYPE_BL",
-    },
-    {
-        "name": "DNM_MIRROR1_RX",
-        "desc": "Mirror1_Rx",
-        "class": "MotorQt",
-        "dcs_nm": "Mirror1_Rx",
-        "pos_type": "POS_TYPE_BL",
-    },
-    {
-        "name": "DNM_HW_COARSE_Y",
-        "desc": "HwCoarseY",
-        "class": "MotorQt",
-        "dcs_nm": "HwCoarseY",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_HW_COARSE_X",
-        "desc": "HwCoarseX",
-        "class": "MotorQt",
-        "dcs_nm": "HwCoarseX",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_GIRDER_Y",
-        "desc": "Girder_y",
-        "class": "MotorQt",
-        "dcs_nm": "Girder_y",
-        "pos_type": "POS_TYPE_BL",
-    },
-    {
-        "name": "DNM_SAMPLE_FINE_Z",
-        "desc": "Fine_Z",
-        "class": "MotorQt",
-        "dcs_nm": "FineZ",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_EXIT_SLIT_V",
-        "desc": "ExitSlit_V",
-        "class": "MotorQt",
-        "dcs_nm": "ExitSlit_V",
-        "pos_type": "POS_TYPE_BL",
-    },
-    {
-        "name": "DNM_EXIT_SLIT_H",
-        "desc": "ExitSlit_H",
-        "class": "MotorQt",
-        "dcs_nm": "ExitSlit_H",
-        "pos_type": "POS_TYPE_BL",
-    },
-    {
-        "name": "DNM_ENTRANCE_SLIT",
-        "desc": "EntranceSlit",
-        "class": "MotorQt",
-        "dcs_nm": "EntranceSlit",
-        "pos_type": "POS_TYPE_BL",
-    },
-    {
-        "name": "DNM_SAMPLE_FINE_X",
-        "desc": "Fine_X",
-        "class": "MotorQt",
-        "dcs_nm": "FineX",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_SAMPLE_FINE_Y",
-        "desc": "Fine_Y",
-        "class": "MotorQt",
-        "dcs_nm": "FineY",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_OSA_X",
-        "desc": "OSA_X",
-        "class": "MotorQt",
-        "dcs_nm": "OSAX",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_OSA_Y",
-        "desc": "OSA_Y",
-        "class": "MotorQt",
-        "dcs_nm": "OSAY",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_ZONEPLATE_Z",
-        "desc": "Zoneplate",
-        "class": "MotorQt",
-        "dcs_nm": "Zoneplate",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_COARSE_X",
-        "desc": "Coarse_X",
-        "class": "MotorQt",
-        "dcs_nm": "CoarseX",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_COARSE_Y",
-        "desc": "Coarse_Y",
-        "class": "MotorQt",
-        "dcs_nm": "CoarseY",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_COARSE_Z",
-        "desc": "Coarse_Z",
-        "class": "MotorQt",
-        "dcs_nm": "CoarseZ",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_DETECTOR_X",
-        "desc": "Detector_X",
-        "class": "MotorQt",
-        "dcs_nm": "DetectorX",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_DETECTOR_Y",
-        "desc": "Detector_Y",
-        "class": "MotorQt",
-        "dcs_nm": "DetectorY",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_DETECTOR_Z",
-        "desc": "Detector_Z",
-        "class": "MotorQt",
-        "dcs_nm": "DetectorZ",
-        "pos_type": "POS_TYPE_ES",
-    },
-    {
-        "name": "DNM_SAMPLE_X",
-        "desc": "Sample_X",
-        "class": "sample_abstract_motor",
-        "dcs_nm": "SampleX",
-        "pos_type": "POS_TYPE_ES",
-        "fine_mtr_name": "DNM_SAMPLE_FINE_X",
-        "coarse_mtr_name": "DNM_COARSE_X"
-    },
-    {
-        "name": "DNM_SAMPLE_Y",
-        "desc": "Sample_Y",
-        "class": "sample_abstract_motor",
-        "dcs_nm": "SampleY",
-        "pos_type": "POS_TYPE_ES",
-        "fine_mtr_name": "DNM_SAMPLE_FINE_Y",
-        "coarse_mtr_name": "DNM_COARSE_Y"
 
-    },
-    {
-        "name": "DNM_ENERGY",
-        "desc": "Energy",
-        "class": "MotorQt",
-        "dcs_nm": "Energy" if SIM else "Energy",
-        "abstract_mtr": True,
-        "pos_type": "POS_TYPE_BL",
-        "units": "eV",
-    },
-    {
-        "name": "DNM_EPU_OFFSET",
-        "desc": "ID1_Offset",
-        "class": "MotorQt",
-        "dcs_nm": "ID1Off" if SIM else "ID1Off",
-        "abstract_mtr": True,
-        "pos_type": "POS_TYPE_BL",
-    },
-    {
-        "name": "DNM_ID2_OFFSET",
-        "desc": "ID2_Offset",
-        "class": "MotorQt",
-        "dcs_nm": "ID2Off" if SIM else "ID2Off",
-        "abstract_mtr": True,
-        "pos_type": "POS_TYPE_BL",
-    },
-    {
-        "name": "DNM_EPU_POLARIZATION",
-        "desc": "Polarization",
-        "class": "MotorQt",
-        "dcs_nm": "Polarization" if SIM else "Polarization",
-        "abstract_mtr": True,
-        "pos_type": "POS_TYPE_BL",
-        "enums": ["Off", "Pos", "Neg"],
-        "enum_values": [0, -0.2, 0.2]
-    },
-    {
-        "name": "DNM_EPU_ANGLE",
-        "desc": "Epu_Angle",
-        "class": "MotorQt",
-        "dcs_nm": "PIXELATOR_DNM_EPU_ANGLE",
-        "abstract_mtr": True,
-        "pos_type": "POS_TYPE_BL",
-    },
-]
-# if the sig_name is not itself a PV but is only a prefix, profide the con_chk_nm field
-dev_dct["DIO"] = [
-    {
-        "name": "DNM_SHUTTER",
-        "class": "DCSShutter",
-        "dcs_nm": "BeamShutter",
-        "ctrl_enum_strs": ["Auto", "Open", "Closed", "Auto Line"],
-        "fbk_enum_strs": ["CLOSED", "OPEN"],
-
-    },
-    {
-        "name": "DNM_SHUTTERTASKRUN",
-        "class": "make_basedevice",
-        # "dcs_nm": "ASTXM1610:Dio:shutter:Run",
-        "dcs_nm": "PIXELATOR_SHUTTERTASKRUN",
-    },
+dev_dct['POSITIONERS'] = [
+    make_MotorQt(name='DNM_COARSE_X',
+                       desc='No description in config',
+                       dcs_nm='CoarseX',
+                       pos_type='POS_TYPE_ES',
+                       units='um'),
+    make_MotorQt(name='DNM_COARSE_Y',
+                       desc='No description in config',
+                       dcs_nm='CoarseY',
+                       pos_type='POS_TYPE_ES',
+                       units='um'),
+    make_MotorQt(name='DNM_DETECTOR_X',
+                       desc='No description in config',
+                       dcs_nm='DetectorX',
+                       pos_type='POS_TYPE_ES',
+                       units='um'),
+    make_MotorQt(name='DNM_DETECTOR_Y',
+                       desc='No description in config',
+                       dcs_nm='DetectorY',
+                       pos_type='POS_TYPE_ES',
+                       units='um'),
+    make_MotorQt(name='DNM_DETECTOR_Z',
+                       desc='No description in config',
+                       dcs_nm='DetectorZ',
+                       pos_type='POS_TYPE_ES',
+                       units='um'),
+    make_MotorQt(name='DNM_ENERGY',
+                       desc='No description in config',
+                       dcs_nm='Energy',
+                       pos_type='POS_TYPE_BL',
+                       units='um'),
+    make_MotorQt(name='DNM_FINE_X',
+                       desc='No description in config',
+                       dcs_nm='FineX',
+                       pos_type='POS_TYPE_ES',
+                       units='um'),
+    make_MotorQt(name='DNM_FINE_Y',
+                       desc='No description in config',
+                       dcs_nm='FineY',
+                       pos_type='POS_TYPE_ES',
+                       units='um'),
+    make_MotorQt(name='DNM_ID1OFF',
+                       desc='No description in config',
+                       dcs_nm='ID1Off',
+                       pos_type='POS_TYPE_BL',
+                       units='um'),
+    make_MotorQt(name='DNM_ID2OFF',
+                       desc='No description in config',
+                       dcs_nm='ID2Off',
+                       pos_type='POS_TYPE_BL',
+                       units='um'),
+    make_MotorQt(name='DNM_OSA_X',
+                       desc='No description in config',
+                       dcs_nm='OSAX',
+                       pos_type='POS_TYPE_ES',
+                       units='um'),
+    make_MotorQt(name='DNM_OSA_Y',
+                       desc='No description in config',
+                       dcs_nm='OSAY',
+                       pos_type='POS_TYPE_ES',
+                       units='um'),
+    make_MotorQt(name='DNM_POLARIZATION',
+                       desc='No description in config',
+                       dcs_nm='Polarization',
+                       pos_type='POS_TYPE_BL',
+                       units='um'),
+    make_MotorQt(name='DNM_RING_YASYM',
+                       desc='No description in config',
+                       dcs_nm='Ring_yAsym',
+                       pos_type='POS_TYPE_BL',
+                       units='um'),
+    make_MotorQt(name='DNM_ZONEPLATE',
+                       desc='No description in config',
+                       dcs_nm='Zoneplate',
+                       pos_type='POS_TYPE_ES',
+                       units='um'),
 ]
 
-dev_dct["DETECTORS"] = [
-    {
-        "name": "DNM_COUNTER1",
-        "class": "Counter",
-        "dcs_nm": "Counter1",
-    },
-    {
-        "name": "DNM_COUNTER2",
-        "class": "Counter",
-        "dcs_nm": "Counter2",
-    },
-    {
-        "name": "DNM_ANALOG0",
-        "class": "Counter",
-        "dcs_nm": "Bl AI 0",
-    },
-
+dev_dct['DIO'] = [
+    make_DCSShutter(name='DNM_SHUTTER',
+                       desc='No description in config',
+                       dcs_nm='BeamShutter',
+                       ctrl_enum_strs=['Auto', 'Open', 'Closed', 'Auto Line'],
+                       fbk_enum_strs=['CLOSED', 'OPEN']),
+    make_make_basedevice(name='DNM_SHUTTERTASKRUN',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_SHUTTERTASKRUN'),
 ]
-dev_dct["PVS"] = [
-    {
-        "name": "DNM_ZONEPLATE_FOCUS_MODE",
-        "class": "make_base_simdevice",
-        "dcs_nm": "PIXELATOR_ZONEPLATE_FOCUS_MODE",
-    },
-    {
-        "name": "DNM_APD_VOLTAGE",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "APD Voltage",
-    },
-    {
-        "name": "DNM_MAGNETIC_FIELD",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "Magnetic Field",
-    },
-    {
-        "name": "DNM_ZMQ",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "ZMQ",
-    },
-    {
-        "name": "DNM_MOENCH_NUM_FRAMES",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "MoenchNumFrames",
-    },
-    {
-        "name": "DNM_FINE_ACCEL_DIST_PRCNT",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_FINE_ACCEL_DIST_PRCNT",
-    },
-    {
-        "name": "DNM_FINE_DECCEL_DIST_PRCNT",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_FINE_DECCEL_DIST_PRCNT",
-    },
-    {
-        "name": "DNM_CRS_ACCEL_DIST_PRCNT",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_CRS_ACCEL_DIST_PRCNT",
-    },
-    {
-        "name": "DNM_CRS_DECCEL_DIST_PRCNT",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_CRS_DECCEL_DIST_PRCNT",
-    },
-    {
-        "name": "DNM_CALCD_ZPZ",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_CALCD_ZPZ",
-    },
-    {
-        "name": "DNM_ZPZ_ADJUST",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_ZPZ_ADJUST",
-    },
-    {
-        "name": "DNM_DELTA_A0",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_DELTA_A0",
-    },
-    {
-        "name": "DNM_IDEAL_A0",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_IDEAL_A0",
-    },
-    {
-        "name": "DNM_CALCD_ZPZ",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_CALCD_ZPZ",
-    },
-    {
-        "name": "DNM_BEAM_DEFOCUS",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_BEAM_DEFOCUS",
-        "units": "um",
-    },
-    {
-        "name": "DNM_ZPZ_ADJUST",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_ZPZ_ADJUST",
-    },
-    {
-        "name": "DNM_FOCAL_LENGTH",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_FOCAL_LENGTH",
-        "units": "um",
-    },
-    {
-        "name": "DNM_A0",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_A0",
-    },
-    {
-        "name": "DNM_A0MAX",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_A0MAX",
-    },
-     {
-         'name': 'DNM_A0_FOR_CALC',
-         'class': 'make_basedevice',
-         'cat': 'PVS',
-         'dcs_nm': 'ASTXM1610:bl_api:A0:for_calc'},
-    {
-        "name": "DNM_ZPZ_POS",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_ZPZ_POS",
-    },
-    {
-        "name": "DNM_ZP_A1",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_ZP_A1",
-    },
-    {
-        "name": "DNM_ZP_DEF",
-        "class": "make_base_simdevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_ZP_DEF",
-    },
-    {
-        "name": "DNM_OSA_DEF",
-        "class": "make_base_simdevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_OSA_DEF",
-    },
-    {
-        "name": "DNM_SRSTATUS_SHUTTERS",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_SRSTATUS_SHUTTERS",
-    },
-    {
-        "name": "DNM_RING_CURRENT",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "Ring_Current",
-    },
-    {
-        "name": "DNM_DFLT_PMT_DWELL",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_DFLT_PMT_DWELL",
-    },
-    {
-        "name": "DNM_ALL_MOTORS_OFF",
-        "class": "make_basedevice",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_ALL_MOTORS_OFF",
-    },
-    {
-        "name": "DNM_GATING",
-        "class": "MultiSelectable",
-        "dcs_nm": "PIXELATOR_GATING",
-        "desc": "Pixelator Gating, connected to the rings top up mode",
-        # the ctrl_enum_strs appear in teh pulldown for the combobox
-        "ctrl_enum_strs": ["On", "Off", "No Repeat"],
-        "fbk_enum_strs": ["On", "Off", "No Repeat"],
-        #"fbk_enum_values": [0, 1, 2]
-    },
-    {
-        "name": "DNM_FOCUS_MODE",
-        "class": "MultiSelectable",
-        "dcs_nm": "PIXELATOR_FOCUS_MODE",
-        "desc": "Focus mode",
-        # the ctrl_enum_strs appear in the pulldown for the combobox
-        "ctrl_enum_strs": ["Static", "Auto"],
-        "fbk_enum_strs": ["Static", "Auto"],
-        #"fbk_enum_values": [0, 1]
-    },
-    {
-        "name": "DNM_SHUTTER_MODE",
-        "class": "MultiSelectable",
-        "dcs_nm": "PIXELATOR_FOCUS_MODE",
-        "desc": "Focus mode",
-        # the ctrl_enum_strs appear in the pulldown for the combobox
-        "ctrl_enum_strs": ["Static", "Auto"],
-        "fbk_enum_strs": ["Static", "Auto"],
-        #"fbk_enum_values": [0, 1]
-    },
 
+dev_dct['DETECTORS'] = [
+    make_Counter(name='DNM_COUNTER1', desc='No description in config', dcs_nm='Counter1'),
+    make_Counter(name='DNM_COUNTER2', desc='No description in config', dcs_nm='Counter2'),
+    make_Counter(name='DNM_ANALOG0', desc='No description in config', dcs_nm='Bl AI 0'),
+]
 
-
-    # _pv: BaseDevice('BL1610-I12:MONO1610-I10-01:grating:select:fbk'}, _pv.get_position: _pv.get_enum_str_as_int[{'name': 'Mono_grating_fbk',  'class': _pv
+dev_dct['PVS'] = [
+    make_make_base_simdevice(name='DNM_ZONEPLATE_FOCUS_MODE',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_ZONEPLATE_FOCUS_MODE'),
+    make_make_basedevice(name='DNM_APD_VOLTAGE',
+                       desc='No description in config',
+                       dcs_nm='APD Voltage',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_MAGNETIC_FIELD',
+                       desc='No description in config',
+                       dcs_nm='Magnetic Field',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_ZMQ', desc='No description in config', dcs_nm='ZMQ', cat='PVS'),
+    make_make_basedevice(name='DNM_MOENCH_NUM_FRAMES',
+                       desc='No description in config',
+                       dcs_nm='MoenchNumFrames',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_FINE_ACCEL_DIST_PRCNT',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_FINE_ACCEL_DIST_PRCNT',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_FINE_DECCEL_DIST_PRCNT',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_FINE_DECCEL_DIST_PRCNT',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_CRS_ACCEL_DIST_PRCNT',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_CRS_ACCEL_DIST_PRCNT',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_CRS_DECCEL_DIST_PRCNT',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_CRS_DECCEL_DIST_PRCNT',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_CALCD_ZPZ',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_CALCD_ZPZ',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_ZPZ_ADJUST',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_ZPZ_ADJUST',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_DELTA_A0',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_DELTA_A0',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_IDEAL_A0',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_IDEAL_A0',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_CALCD_ZPZ',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_CALCD_ZPZ',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_BEAM_DEFOCUS',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_BEAM_DEFOCUS',
+                       units='um',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_ZPZ_ADJUST',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_ZPZ_ADJUST',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_FOCAL_LENGTH',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_FOCAL_LENGTH',
+                       units='um',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_A0',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_A0',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_A0MAXIMUM',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_A0MAX',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_A0_FOR_CALC',
+                       desc='No description in config',
+                       dcs_nm='ASTXM1610:bl_api:A0:for_calc',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_ZPZ_POS',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_ZPZ_POS',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_ZP_A1',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_ZP_A1',
+                       cat='PVS'),
+    make_make_base_simdevice(name='DNM_ZP_DEF',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_ZP_DEF',
+                       cat='PVS'),
+    make_make_base_simdevice(name='DNM_OSA_DEF',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_OSA_DEF',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_SRSTATUS_SHUTTERS',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_SRSTATUS_SHUTTERS',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_RING_CURRENT',
+                       desc='No description in config',
+                       dcs_nm='Ring_Current',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_DFLT_PMT_DWELL',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_DFLT_PMT_DWELL',
+                       cat='PVS'),
+    make_make_basedevice(name='DNM_ALL_MOTORS_OFF',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_ALL_MOTORS_OFF',
+                       cat='PVS'),
+    make_MultiSelectable(name='DNM_GATING',
+                       desc='Pixelator Gating, connected to the rings top up mode',
+                       dcs_nm='PIXELATOR_GATING',
+                       ctrl_enum_strs=['On', 'Off', 'No Repeat'],
+                       fbk_enum_strs=['On', 'Off', 'No Repeat']),
+    make_MultiSelectable(name='DNM_FOCUS_MODE',
+                       desc='Focus mode',
+                       dcs_nm='PIXELATOR_FOCUS_MODE',
+                       ctrl_enum_strs=['Static', 'Auto'],
+                       fbk_enum_strs=['Static', 'Auto']),
+    make_MultiSelectable(name='DNM_SHUTTER_MODE',
+                       desc='Focus mode',
+                       dcs_nm='PIXELATOR_FOCUS_MODE',
+                       ctrl_enum_strs=['Static', 'Auto'],
+                       fbk_enum_strs=['Static', 'Auto']),
 ]
 
 dev_dct['COMMANDS'] = [
-    {
-        "name": "DNM_RESET_INTERFERS",
-        "class": "Bo",
-        "cat": "PVS",
-        "dcs_nm": "PIXELATOR_RESET_INTERFERS",
-    },
-    # used to convieniently move zp z in and out
-    {
-        "name": "DNM_ZONEPLATE_INOUT",
-        "class": "Command",
-        "dcs_nm": "PIXELATOR_ZONEPLATE_INOUT",
-    },
-    {
-        "name": "DNM_OSA_INOUT",
-        "class": "Command",
-        "dcs_nm": "PIXELATOR_OSA_INOUT",
-    },
-    {
-        "name": "DNM_SAMPLE_OUT",
-        "class": "Command",
-        "dcs_nm": "PIXELATOR_SAMPLE_OUT",
-    },
-    {
-        "name": "DNM_LOAD_DIRECTORY",
-        "class": "Command",
-        "dcs_nm": "loadFile directory",
-        "arg_keywords": ["directory","showHidden","fileExtension"]
-    },
-    {
-        "name": "DNM_LOAD_FILE",
-        "class": "Command",
-        "dcs_nm": "loadFile file",
-        "arg_keywords": ["filePath","readMode"]
-    },
+    make_Bo(name='DNM_RESET_INTERFERS',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_RESET_INTERFERS',
+                       cat='PVS',
+                       arg_keywords=[]),
+    make_Command(name='DNM_ZONEPLATE_INOUT',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_ZONEPLATE_INOUT',
+                       arg_keywords=[]),
+    make_Command(name='DNM_OSA_INOUT',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_OSA_INOUT',
+                       arg_keywords=[]),
+    make_Command(name='DNM_SAMPLE_OUT',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_SAMPLE_OUT',
+                       arg_keywords=[]),
+    make_Command(name='DNM_LOAD_DIRECTORY',
+                       desc='No description in config',
+                       dcs_nm='loadFile directory',
+                       arg_keywords=['directory', 'showHidden', 'fileExtension']),
+    make_Command(name='DNM_LOAD_FILE',
+                       desc='No description in config',
+                       dcs_nm='loadFile file',
+                       arg_keywords=['filePath', 'readMode']),
 ]
 
-dev_dct["ENERGY_DEV"] = [
-    {
-        "name": "DNM_ENERGY_DEVICE",
-        "desc": "Energy device that includes focussing",
-        "class": "EnergyDevice",
-        #"dcs_nm": "SIM_VBL1610-I12:ENERGY" if SIM else "BL1610-I10:ENERGY",
-        "dcs_nm": "SIM_VBLFAKE:ENERGY" if SIM else "BLFAKE:ENERGY",
-        "energy_nm": "DNM_ENERGY",
-        "zz_nm": "DNM_ZONEPLATE_Z",
-        "cz_nm": "DNM_COARSE_Z",
-        "pos_type": "POS_TYPE_BL",
-    },
+dev_dct['ENERGY_DEV'] = [
+    make_EnergyDevice(name='DNM_ENERGY_DEVICE',
+                       desc='Energy device that includes focussing',
+                       dcs_nm='SIM_VBLFAKE:ENERGY',
+                       energy_nm='DNM_ENERGY',
+                       zz_nm='DNM_ZONEPLATE_Z',
+                       cz_nm='DNM_COARSE_Z',
+                       pos_type='POS_TYPE_BL'),
 ]
 
-dev_dct["PVS_DONT_RECORD"] = [
-    {
-        "name": "DNM_TICKER",
-        "class": "make_basedevice",
-        "cat": "PVS_DONT_RECORD",
-        "dcs_nm": "PIXELATOR_TICKER",
-        "units": "counts",
-    }
+dev_dct['PVS_DONT_RECORD'] = [
+    make_make_basedevice(name='DNM_TICKER',
+                       desc='No description in config',
+                       dcs_nm='PIXELATOR_TICKER',
+                       units='counts',
+                       cat='PVS_DONT_RECORD'),
 ]
 
-dev_dct["HEARTBEATS"] = [
-
+dev_dct['HEARTBEATS'] = [
 ]
 
-dev_dct["PRESSURES"] = [
-
+dev_dct['PRESSURES'] = [
 ]
 
-dev_dct["TEMPERATURES"] = [
-    ]
-
-
+dev_dct['TEMPERATURES'] = [
+]
 

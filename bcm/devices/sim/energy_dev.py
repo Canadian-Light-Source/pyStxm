@@ -598,7 +598,7 @@ if __name__ == "__main__":
     edct["defocus_beam_dev"] = mdev("DNM_BEAM_DEFOCUS", "DNM_BEAM_DEFOCUS")
     edct["focal_len_dev"] = mdev("DNM_FOCAL_LENGTH", "DNM_FOCAL_LENGTH")
     edct["zp_a1_dev"] = mdev("DNM_ZP_A1", "DNM_ZP_A1")
-    edct["a0_max_dev"] = mdev("DNM_A0MAX", "DNM_A0MAX")
+    edct["a0_max_dev"] = mdev("DNM_A0MAXIMUM", "DNM_A0MAXIMUM")
     edct["calcd_zpz_dev"] = mdev("DNM_CALCD_ZPZ", "DNM_CALCD_ZPZ")
     edct["zp_focus_mode_dev"] = mdev("DNM_ZONEPLATE_FOCUS_MODE", "DNM_ZONEPLATE_FOCUS_MODE")
 

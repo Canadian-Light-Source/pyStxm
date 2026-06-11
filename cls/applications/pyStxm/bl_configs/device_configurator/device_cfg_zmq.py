@@ -187,12 +187,9 @@ class Device_Configure(QtWidgets.QWidget):
         Converts names like 'DNM_COARSEX' to 'DNM_COARSE_X', but preserves names
         like 'DNM_ENERGY' that happen to end with Y but aren't axis indicators.
         
-        Only adds an underscore before the final X/Y/Z if:
-          - The previous character is NOT an underscore (to avoid double underscores)
-          - AND it appears to be an axis suffix (not a natural word ending)
-
-        Strategy: Don't add underscore if the name ends with common word suffixes like
-        'RGY' (ENERGY), 'RY' (WARNING, HISTORY), etc.
+        Only adds an underscore before the final X/Y/Z if the preceding stem is a known
+        motor/device component name (DETECTOR, COARSE, FINE, SAMPLE, etc.) or if the
+        character immediately before the axis is a digit (e.g., MOTOR1X).
 
         Args:
             name (str): The device name to normalize.
@@ -200,6 +197,13 @@ class Device_Configure(QtWidgets.QWidget):
         Returns:
             str: The normalized device name.
         """
+        # Known motor/device component stems that naturally pair with X/Y/Z axis letters
+        MOTOR_STEMS = {
+            'DETECTOR', 'COARSE', 'FINE', 'SAMPLE', 'OSA', 'GONI', 'GONIOMETER',
+            'ZONEPLATE', 'ZONE', 'GIRDER', 'MIRROR', 'SLIT', 'COUPLER', 'CART',
+            'TABLE', 'STAGE', 'AXIS', 'MOTOR', 'MTR',
+        }
+
         if not name or len(name) < 3:
             return name
         
@@ -211,15 +215,18 @@ class Device_Configure(QtWidgets.QWidget):
         if name[-2] == '_':
             return name
 
-        # Don't add underscore if this looks like a word ending rather than an axis
-        # Common word endings: ENERGY (ends in RGY), WARNING/HISTORY (end in RY)
-        if name.endswith('RGY') or name.endswith('RY') or name.endswith('ITY'):
-            return name
-
-        # Only add underscore if the character before the axis letter is alphanumeric
-        if name[-2].isalnum():
+        # If char before axis is a digit, always add underscore (e.g., MOTOR1X -> MOTOR1_X)
+        if name[-2].isdigit():
             return name[:-1] + "_" + name[-1]
         
+        # Check if the stem (everything except final letter) matches or contains a known motor stem
+        stem = name[:-1]
+        for motor_stem in MOTOR_STEMS:
+            # Match: stem equals motor, or ends with underscore+motor
+            if stem == motor_stem or stem.endswith('_' + motor_stem):
+                return name[:-1] + "_" + name[-1]
+
+        # Conservative: if no known stem match, keep the name as-is
         return name
 
     def _build_dev_dct_from_table(self):
@@ -763,7 +770,7 @@ class Device_Configure(QtWidgets.QWidget):
 
             For example:
               - 'CoarseX' -> 'DNM_COARSEX' -> 'DNM_COARSE_X'
-              - 'SampleY-motor' -> 'DNM_SAMPLEY_MOTOR' -> 'DNM_SAMPLEY_MOTOR'
+              - 'Energy' -> 'DNM_ENERGY' -> 'DNM_ENERGY' (stays unchanged)
 
             Args:
                 dcs_name (str): The raw DCS device name to convert.
@@ -775,9 +782,8 @@ class Device_Configure(QtWidgets.QWidget):
             for ch in dcs_name.upper():
                 sanitized.append(ch if (ch.isalnum() or ch == "_") else "_")
             result = "DNM_" + "".join(sanitized).strip("_")
-            # Check if result ends with X, Y, or Z and add underscore before it
-            if result and result[-1] in ('X', 'Y', 'Z'):
-                result = result[:-1] + "_" + result[-1]
+            # Use the smarter class method to normalize axis suffixes
+            result = self._normalize_pystxm_name(result)
             return result
 
         new_row_bg = QtGui.QColor("#d9ecff")

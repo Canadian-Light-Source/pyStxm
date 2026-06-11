@@ -69,14 +69,39 @@ class Device_Configure(QtWidgets.QWidget):
         self.genDevspyBtn.clicked.connect(self.on_gen_devs_py)
 
     def on_gen_devs_py(self):
-        """ generate a devs.py file """
+        """Generate a devs_tmp.py file using factory functions from utils."""
         dev_dct = self._build_dev_dct_from_table()
         out_fpath = pathlib.Path(self.bl_config_path) / "devs_tmp.py"
+        class_names = []
+        for entries in dev_dct.values():
+            for entry in entries:
+                cls_name = entry.get("class", "")
+                if cls_name and cls_name not in class_names:
+                    class_names.append(cls_name)
+        factory_names = [self._class_to_factory_name(cls_name) for cls_name in class_names]
+
         with open(out_fpath.as_posix(), "w") as fout:
+            if factory_names:
+                fout.write("from cls.applications.pyStxm.bl_configs.device_configurator.utils import (")
+                fout.write(", ".join(factory_names))
+                fout.write(")\n\n")
             fout.write("SIM = True\n")
-            fout.write("dev_dct = ")
-            fout.write(pprint.pformat(dev_dct, width=120, sort_dicts=False))
-            fout.write("\n")
+            fout.write("dev_dct = {}\n\n")
+
+            # Emit categories by calling the factory functions.
+            for category, entries in dev_dct.items():
+                fout.write(f"dev_dct[{category!r}] = [\n")
+                for entry in entries:
+                    class_name = entry.get("class", "make_basedevice")
+                    fn_name = self._class_to_factory_name(class_name)
+                    call_kwargs = []
+                    for key, val in entry.items():
+                        if key == "class":
+                            continue
+                        call_kwargs.append(f"{key}={self._to_py_literal(val)}")
+                    # Format function call with line wrapping for long arguments
+                    self._write_wrapped_function_call(fout, fn_name, call_kwargs)
+                fout.write("]\n\n")
         num_categories = len(dev_dct)
         num_devices = sum(len(v) for v in dev_dct.values())
         QtWidgets.QMessageBox.information(
@@ -87,6 +112,58 @@ class Device_Configure(QtWidgets.QWidget):
             f"Devices: {num_devices}",
         )
         print(f"generated [{out_fpath.as_posix()}]")
+
+    def _class_to_factory_name(self, class_name: str) -> str:
+        """Convert a class string into a safe factory function name."""
+        if not class_name:
+            return "make_entry"
+        safe = []
+        for ch in str(class_name):
+            if ch.isalnum() or ch == "_":
+                safe.append(ch)
+            else:
+                safe.append("_")
+        name = "".join(safe).strip("_")
+        if not name:
+            name = "entry"
+        return f"make_{name}"
+
+    def _collect_class_templates(self, dev_dct):
+        """Return ordered class->keys mapping based on current generated entries."""
+        templates = {}
+        for entries in dev_dct.values():
+            for entry in entries:
+                class_name = entry.get("class", "make_basedevice")
+                if class_name not in templates:
+                    templates[class_name] = []
+                seen = set(templates[class_name])
+                for key in entry.keys():
+                    if key not in seen:
+                        templates[class_name].append(key)
+                        seen.add(key)
+        return templates
+
+    def _to_py_literal(self, val):
+        """Convert Python value to stable source literal."""
+        return pprint.pformat(val, width=120, sort_dicts=False)
+
+    def _write_wrapped_function_call(self, fout, fn_name, call_kwargs):
+        """Write a function call with line wrapping for long argument lists."""
+        # Estimate the length of the full line
+        kwargs_str = ", ".join(call_kwargs)
+        full_line = f"    {fn_name}({kwargs_str}),"
+        
+        # If short enough (< 100 chars), write on a single line
+        if len(full_line) <= 100:
+            fout.write(f"{full_line}\n")
+            return
+        
+        # Otherwise, write with line wrapping: one argument per line
+        fout.write(f"    {fn_name}(")
+        fout.write(f"{call_kwargs[0]}")
+        for kwarg in call_kwargs[1:]:
+            fout.write(f",\n                       {kwarg}")
+        fout.write("),\n")
 
     def _combo_text(self, row, col, default=""):
         """Return combo text for a cell if it has an embedded combobox."""
@@ -103,11 +180,60 @@ class Device_Configure(QtWidgets.QWidget):
             return value.strip().lower() in ("true", "1", "yes", "on")
         return bool(value)
 
+    def _normalize_pystxm_name(self, name):
+        """
+        Normalize a pyStxm device name by ensuring trailing X/Y/Z axis suffixes have underscores.
+        
+        Converts names like 'DNM_COARSEX' to 'DNM_COARSE_X', but preserves names
+        like 'DNM_ENERGY' that happen to end with Y but aren't axis indicators.
+        
+        Only adds an underscore before the final X/Y/Z if:
+          - The previous character is NOT an underscore (to avoid double underscores)
+          - AND it appears to be an axis suffix (not a natural word ending)
+
+        Strategy: Don't add underscore if the name ends with common word suffixes like
+        'RGY' (ENERGY), 'RY' (WARNING, HISTORY), etc.
+
+        Args:
+            name (str): The device name to normalize.
+            
+        Returns:
+            str: The normalized device name.
+        """
+        if not name or len(name) < 3:
+            return name
+        
+        # Only process names ending with X, Y, or Z
+        if name[-1] not in ('X', 'Y', 'Z'):
+            return name
+        
+        # Check if underscore is already before the axis letter
+        if name[-2] == '_':
+            return name
+
+        # Don't add underscore if this looks like a word ending rather than an axis
+        # Common word endings: ENERGY (ends in RGY), WARNING/HISTORY (end in RY)
+        if name.endswith('RGY') or name.endswith('RY') or name.endswith('ITY'):
+            return name
+
+        # Only add underscore if the character before the axis letter is alphanumeric
+        if name[-2].isalnum():
+            return name[:-1] + "_" + name[-1]
+        
+        return name
+
     def _build_dev_dct_from_table(self):
         """Build a dev_dct-style dict from the current table contents."""
         model = self.deviceNameTblView.model()
         # Keep all default categories from the original devs.py, even if empty.
         dev_dct = {k: [] for k in self.devs.dev_dct.keys()}
+        # Build quick lookup by device name from original devs.py entries.
+        orig_by_name = {}
+        for sect_lst in self.devs.dev_dct.values():
+            if isinstance(sect_lst, list):
+                for entry in sect_lst:
+                    if isinstance(entry, dict) and "name" in entry:
+                        orig_by_name[entry["name"]] = entry
         if model is None:
             return dev_dct
 
@@ -119,6 +245,9 @@ class Device_Configure(QtWidgets.QWidget):
             name = name_item.text().strip()
             if not name:
                 continue
+
+            # Normalize the pyStxm name to ensure trailing X/Y/Z have underscores
+            name = self._normalize_pystxm_name(name)
 
             category = self._combo_text(row, 2, "").strip() or "UNKNOWN"
             devtype = self._combo_text(row, 3, "").strip()
@@ -144,6 +273,30 @@ class Device_Configure(QtWidgets.QWidget):
                 "class": devtype,
                 "dcs_nm": dcs_nm,
             }
+            orig_entry = orig_by_name.get(name, {})
+            if not entry["dcs_nm"] and orig_entry.get("dcs_nm"):
+                entry["dcs_nm"] = orig_entry.get("dcs_nm")
+            if devtype == "EnergyDevice":
+                entry["energy_nm"] = orig_entry.get("energy_nm", "DNM_ENERGY")
+                entry["zz_nm"] = orig_entry.get("zz_nm", "DNM_ZONEPLATE_Z")
+                entry["cz_nm"] = orig_entry.get("cz_nm", "DNM_COARSE_Z")
+            if devtype == "sample_abstract_motor":
+                fine_nm = orig_entry.get("fine_mtr_name", "")
+                coarse_nm = orig_entry.get("coarse_mtr_name", "")
+
+                # Fallback inference if original keys were not found.
+                if (not fine_nm or not coarse_nm) and name.startswith("DNM_SAMPLE_"):
+                    axis = name.rsplit("_", 1)[-1]
+                    if axis in ("X", "Y", "Z"):
+                        if not fine_nm:
+                            fine_nm = f"DNM_SAMPLE_FINE_{axis}"
+                        if not coarse_nm:
+                            coarse_nm = f"DNM_COARSE_{axis}"
+
+                if fine_nm:
+                    entry["fine_mtr_name"] = fine_nm
+                if coarse_nm:
+                    entry["coarse_mtr_name"] = coarse_nm
             if pos_type:
                 entry["pos_type"] = pos_type
             if units:
@@ -159,6 +312,26 @@ class Device_Configure(QtWidgets.QWidget):
                 entry["enable"] = False
             if connected:
                 entry["connected"] = True
+
+            # Preserve class-specific fields not represented in table columns.
+            skip_copy_keys = {
+                "name",
+                "desc",
+                "class",
+                "dcs_nm",
+                "category",
+                "devtype",
+                "connected",
+                "sim",
+                "enable",
+                "rd_only",
+                "units",
+                "pos_type",
+                "con_chk_nm",
+            }
+            for k, v in orig_entry.items():
+                if k not in entry and k not in skip_copy_keys:
+                    entry[k] = v
 
             if category not in dev_dct:
                 dev_dct[category] = []
@@ -276,19 +449,45 @@ class Device_Configure(QtWidgets.QWidget):
             f"{num_cons} connected out of a possible {num_poss_cons} signals"
         )
 
-        # --- build the flat list of DCS device names --------------------------
-        # get_devices_from_settings returns the content of positionerConfigFileName
-        # which is typically {"positioners": [{"name": "SampleX", ...}, ...]}.
-        # Handle dict-with-list, bare list, and empty / None gracefully.
+        # --- build the flat list of ACTIVE DCS device names -------------------
+        # Keep only names whose source entry has active == 1 (or True / "1").
         dcs_names = [""]  # blank entry = unmapped
         raw = self.dcs_devices or {}
+
+        def _is_active(entry):
+            if not isinstance(entry, dict):
+                return False
+            active = entry.get("active", 0)
+            if isinstance(active, str):
+                return active.strip() == "1"
+            return active is True or active == 1
+
+        def _add_name_if_active(entry):
+            if _is_active(entry):
+                nm = entry.get("name", "")
+                if nm and nm not in dcs_names:
+                    dcs_names.append(nm)
+
         if isinstance(raw, dict):
-            dcs_names += list(raw)
+            # shape A: {"SomeName": {"active": 1, ...}, ...}
+            # shape B: {"positioners": [{"name": "SomeName", "active": 1}, ...], ...}
+            for key, val in raw.items():
+                if isinstance(val, dict):
+                    entry = dict(val)
+                    if "name" not in entry:
+                        entry["name"] = key
+                    _add_name_if_active(entry)
+                elif isinstance(val, list):
+                    for item in val:
+                        _add_name_if_active(item)
         elif isinstance(raw, list):
-            dcs_names += [p["name"] for p in raw if isinstance(p, dict) and "name" in p]
+            for item in raw:
+                _add_name_if_active(item)
 
         # --- build category names list -----------------------------------------
         category_names = [""] + list(devs.dev_dct.keys())
+        if "PVS" not in category_names:
+            category_names.append("PVS")
 
         # --- build devtype names list -------------------------------------------
         devtype_names = [""]
@@ -296,6 +495,10 @@ class Device_Configure(QtWidgets.QWidget):
             dt = record.get("devtype", "")
             if dt and dt not in devtype_names:
                 devtype_names.append(dt)
+        if "MotorQt" not in devtype_names:
+            devtype_names.append("MotorQt")
+        if "make_basedevice" not in devtype_names:
+            devtype_names.append("make_basedevice")
 
         # --- build pos_type names list ------------------------------------------
         pos_type_names = [""]
@@ -303,6 +506,10 @@ class Device_Configure(QtWidgets.QWidget):
             pt = record.get("pos_type", "")
             if pt and pt not in pos_type_names:
                 pos_type_names.append(pt)
+        if "POS_TYPE_BL" not in pos_type_names:
+            pos_type_names.append("POS_TYPE_BL")
+        if "POS_TYPE_ES" not in pos_type_names:
+            pos_type_names.append("POS_TYPE_ES")
         bool_options = ["True", "False"]
 
         # --- configure the QTableView with a QStandardItemModel ---------------
@@ -337,11 +544,24 @@ class Device_Configure(QtWidgets.QWidget):
 
         # keep a reference to all combos so we can update their item colors
         self._row_combos = []   # [(pystxm_name, combo), ...]
+        selected_dcs_names = set()
 
         def _to_bool_str(value):
             if isinstance(value, str):
                 return "True" if value.strip().lower() in ("true", "1", "yes", "on") else "False"
             return "True" if bool(value) else "False"
+
+        def _apply_positioners_defaults(row_idx):
+            """When category is POSITIONERS, enforce row defaults."""
+            devtype_combo = self.deviceNameTblView.indexWidget(model.index(row_idx, 3))
+            pos_type_combo = self.deviceNameTblView.indexWidget(model.index(row_idx, 11))
+            if devtype_combo is not None:
+                devtype_combo.setCurrentText("MotorQt")
+            if pos_type_combo is not None:
+                pos_type_combo.setCurrentText("POS_TYPE_BL")
+            units_item = model.item(row_idx, 8)
+            if units_item is not None:
+                units_item.setText("um")
 
         for row, record in enumerate(lst):
             try:
@@ -433,6 +653,8 @@ class Device_Configure(QtWidgets.QWidget):
                 dcs_combo.currentTextChanged.connect(_on_dcs_changed)
                 self.name_mapping[pystxm_name] = dcs_combo.currentText()
                 self._row_combos.append((pystxm_name, dcs_combo))
+                if dcs_combo.currentText():
+                    selected_dcs_names.add(dcs_combo.currentText())
 
                 tbl.setIndexWidget(model.index(row, 1), dcs_combo)
 
@@ -442,8 +664,10 @@ class Device_Configure(QtWidgets.QWidget):
                 cat_combo.setCurrentText(record.get("category", ""))
                 cat_combo.setStyleSheet("QComboBox { background-color: white; }")
 
-                def _on_cat_changed(text, name=pystxm_name):
+                def _on_cat_changed(text, name=pystxm_name, row_idx=row):
                     self.category_mapping[name] = text
+                    if text == "POSITIONERS":
+                        _apply_positioners_defaults(row_idx)
 
                 cat_combo.currentTextChanged.connect(_on_cat_changed)
                 self.category_mapping[pystxm_name] = cat_combo.currentText()
@@ -523,6 +747,157 @@ class Device_Configure(QtWidgets.QWidget):
                 print(f"populate_devnames_lstview: ERROR at row {row}: {e}")
                 import traceback
                 traceback.print_exc()
+
+        # Append synthetic rows for any DCS names not yet selected in existing rows.
+        unselected_dcs_names = [nm for nm in dcs_names if nm and nm not in selected_dcs_names]
+
+        def _to_pystxm_name(dcs_name):
+            """
+            Convert a DCS device name to a pyStxm device name.
+
+            This function transforms raw DCS device names into valid pyStxm device names by:
+              1. Converting to uppercase
+              2. Replacing non-alphanumeric characters (except underscore) with underscores
+              3. Prefixing with 'DNM_'
+              4. Normalizing trailing axis suffixes (X, Y, Z) to include an underscore
+
+            For example:
+              - 'CoarseX' -> 'DNM_COARSEX' -> 'DNM_COARSE_X'
+              - 'SampleY-motor' -> 'DNM_SAMPLEY_MOTOR' -> 'DNM_SAMPLEY_MOTOR'
+
+            Args:
+                dcs_name (str): The raw DCS device name to convert.
+
+            Returns:
+                str: The formatted pyStxm device name with 'DNM_' prefix and normalized suffix.
+            """
+            sanitized = []
+            for ch in dcs_name.upper():
+                sanitized.append(ch if (ch.isalnum() or ch == "_") else "_")
+            result = "DNM_" + "".join(sanitized).strip("_")
+            # Check if result ends with X, Y, or Z and add underscore before it
+            if result and result[-1] in ('X', 'Y', 'Z'):
+                result = result[:-1] + "_" + result[-1]
+            return result
+
+        new_row_bg = QtGui.QColor("#d9ecff")
+        for dcs_name in unselected_dcs_names:
+            row = model.rowCount()
+            model.insertRow(row)
+            pystxm_name = _to_pystxm_name(dcs_name)
+
+            # Base row cells
+            name_item = QtGui.QStandardItem(pystxm_name)
+            name_item.setEditable(False)
+            name_item.setBackground(new_row_bg)
+            model.setItem(row, 0, name_item)
+
+            for col in (1, 2, 3, 5, 6, 7, 9, 11):
+                cell = QtGui.QStandardItem("")
+                cell.setEditable(False)
+                cell.setBackground(new_row_bg)
+                model.setItem(row, col, cell)
+
+            for col, editable in ((4, True), (8, True), (10, False)):
+                default_text = "No description in config" if col == 4 else ""
+                cell = QtGui.QStandardItem(default_text)
+                cell.setEditable(editable)
+                cell.setBackground(new_row_bg if not editable else QtGui.QColor("#ffffff"))
+                model.setItem(row, col, cell)
+                if col == 4:
+                    self.description_mapping[pystxm_name] = default_text
+
+            # DCS combo preselected with this unselected DCS name
+            dcs_combo = NoScrollComboBox()
+            dcs_combo.addItems(dcs_names)
+            dcs_combo.setCurrentText(dcs_name)
+            dcs_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+
+            def _on_dcs_changed_new(text, name=pystxm_name):
+                self.name_mapping[name] = text
+                self._refresh_combo_colors()
+
+            dcs_combo.currentTextChanged.connect(_on_dcs_changed_new)
+            self.name_mapping[pystxm_name] = dcs_combo.currentText()
+            self._row_combos.append((pystxm_name, dcs_combo))
+            tbl.setIndexWidget(model.index(row, 1), dcs_combo)
+
+            # Category combo
+            cat_combo = NoScrollComboBox()
+            cat_combo.addItems(category_names)
+            cat_combo.setCurrentText("PVS")
+            cat_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+            def _on_cat_changed_new(text, name=pystxm_name, row_idx=row):
+                self.category_mapping[name] = text
+                if text == "POSITIONERS":
+                    _apply_positioners_defaults(row_idx)
+
+            cat_combo.currentTextChanged.connect(_on_cat_changed_new)
+            self.category_mapping[pystxm_name] = cat_combo.currentText()
+            tbl.setIndexWidget(model.index(row, 2), cat_combo)
+
+            # DevType combo
+            devtype_combo = NoScrollComboBox()
+            devtype_combo.addItems(devtype_names)
+            devtype_combo.setCurrentText("make_basedevice")
+            devtype_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+            devtype_combo.currentTextChanged.connect(
+                lambda text, name=pystxm_name: self.devtype_mapping.__setitem__(name, text)
+            )
+            self.devtype_mapping[pystxm_name] = devtype_combo.currentText()
+            tbl.setIndexWidget(model.index(row, 3), devtype_combo)
+
+            # Boolean combos default to False except Enable=True
+            connected_combo = NoScrollComboBox()
+            connected_combo.addItems(bool_options)
+            connected_combo.setCurrentText("False")
+            connected_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+            connected_combo.currentTextChanged.connect(
+                lambda text, name=pystxm_name: self.connected_mapping.__setitem__(name, text)
+            )
+            self.connected_mapping[pystxm_name] = connected_combo.currentText()
+            tbl.setIndexWidget(model.index(row, 5), connected_combo)
+
+            sim_combo = NoScrollComboBox()
+            sim_combo.addItems(bool_options)
+            sim_combo.setCurrentText("False")
+            sim_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+            sim_combo.currentTextChanged.connect(
+                lambda text, name=pystxm_name: self.sim_mapping.__setitem__(name, text)
+            )
+            self.sim_mapping[pystxm_name] = sim_combo.currentText()
+            tbl.setIndexWidget(model.index(row, 6), sim_combo)
+
+            enable_combo = NoScrollComboBox()
+            enable_combo.addItems(bool_options)
+            enable_combo.setCurrentText("True")
+            enable_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+            enable_combo.currentTextChanged.connect(
+                lambda text, name=pystxm_name: self.enable_mapping.__setitem__(name, text)
+            )
+            self.enable_mapping[pystxm_name] = enable_combo.currentText()
+            tbl.setIndexWidget(model.index(row, 7), enable_combo)
+
+            rd_only_combo = NoScrollComboBox()
+            rd_only_combo.addItems(bool_options)
+            rd_only_combo.setCurrentText("False")
+            rd_only_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+            rd_only_combo.currentTextChanged.connect(
+                lambda text, name=pystxm_name: self.rd_only_mapping.__setitem__(name, text)
+            )
+            self.rd_only_mapping[pystxm_name] = rd_only_combo.currentText()
+            tbl.setIndexWidget(model.index(row, 9), rd_only_combo)
+
+            # PosType combo
+            pos_type_combo = NoScrollComboBox()
+            pos_type_combo.addItems(pos_type_names)
+            pos_type_combo.setCurrentIndex(0)
+            pos_type_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+            pos_type_combo.currentTextChanged.connect(
+                lambda text, name=pystxm_name: self.pos_type_mapping.__setitem__(name, text)
+            )
+            self.pos_type_mapping[pystxm_name] = pos_type_combo.currentText()
+            tbl.setIndexWidget(model.index(row, 11), pos_type_combo)
 
         # Apply initial color state
         self._refresh_combo_colors()
@@ -714,12 +1089,12 @@ class Device_Configure(QtWidgets.QWidget):
                     _dct = sig_dct
                     # check if this is an actual epics pv, might be an ophyd sim device
                     if "dcs_nm" in _dct.keys():
-                        self.do_insert(k, sig_dct, con_sts[_dct["dcs_nm"]])
+                        self.do_insert(k, sig_dct, con_sts.get(_dct["dcs_nm"], False))
                 else:
                     if sig_dct.find("POS_TYPE") > -1:
                         dlist = dev_dct[k][sig_dct]
                         for _dct in dlist:
-                            self.do_insert(k, _dct, con_sts[_dct["dcs_nm"]])
+                            self.do_insert(k, _dct, con_sts.get(_dct["dcs_nm"], False))
         print(f'DONE build_database: [{self.devdb_path.as_posix()}]')
         print(f'build_database: total records inserted = {len(self.dev_db.all())}')
         # self.dev_db.close()

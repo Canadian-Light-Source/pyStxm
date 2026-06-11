@@ -777,7 +777,7 @@ class main_object_base(QtCore.QObject):
         -------
 
         """
-        dev = self.device(app_devname)
+        dev = self.device(app_devname, do_warn=False)
         if dev:
             return True
         else:

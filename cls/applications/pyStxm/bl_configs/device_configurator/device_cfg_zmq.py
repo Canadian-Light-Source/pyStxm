@@ -418,6 +418,282 @@ class Device_Configure(QtWidgets.QWidget):
         cmbobx.clear()
         cmbobx.addItems(lst)
 
+    def _setup_table_context_menu(self):
+        """Enable right-click context menu for add/delete row actions."""
+        tbl = self.deviceNameTblView
+        tbl.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        try:
+            tbl.customContextMenuRequested.disconnect(self._on_table_context_menu)
+        except TypeError:
+            pass
+        tbl.customContextMenuRequested.connect(self._on_table_context_menu)
+
+    def _on_table_context_menu(self, pos):
+        """Show row actions when the user right-clicks the device table."""
+        tbl = self.deviceNameTblView
+        model = tbl.model()
+        if model is None:
+            return
+
+        idx = tbl.indexAt(pos)
+        row = idx.row() if idx.isValid() else -1
+
+        menu = QtWidgets.QMenu(tbl)
+        add_above = menu.addAction("Add Row Above")
+        add_below = menu.addAction("Add Row Below")
+        delete_row = menu.addAction("Delete Row")
+
+        if row < 0:
+            add_above.setEnabled(False)
+            delete_row.setEnabled(False)
+
+        action = menu.exec_(tbl.viewport().mapToGlobal(pos))
+        if action is None:
+            return
+
+        if action == add_above and row >= 0:
+            self._insert_manual_row(row)
+        elif action == add_below:
+            self._insert_manual_row(row + 1 if row >= 0 else model.rowCount())
+        elif action == delete_row and row >= 0:
+            self._delete_manual_row(row)
+
+    def _next_manual_name(self):
+        """Create a unique default name for a manually inserted row."""
+        model = self.deviceNameTblView.model()
+        existing = set()
+        if model is not None:
+            for i in range(model.rowCount()):
+                item = model.item(i, 0)
+                if item is not None:
+                    nm = item.text().strip()
+                    if nm:
+                        existing.add(nm)
+
+        base = "DNM_NEW_DEVICE"
+        if base not in existing:
+            return base
+        n = 1
+        while f"{base}_{n}" in existing:
+            n += 1
+        return f"{base}_{n}"
+
+    def _insert_manual_row(self, row):
+        """Insert a new table row with default widgets and values."""
+        tbl = self.deviceNameTblView
+        model = tbl.model()
+        if model is None:
+            return
+
+        dcs_names = getattr(self, "_dcs_names_options", [""])
+        category_names = getattr(self, "_category_names_options", ["", "PVS"])
+        devtype_names = getattr(self, "_devtype_names_options", ["", "make_basedevice"])
+        pos_type_names = getattr(self, "_pos_type_names_options", [""])
+        bool_options = getattr(self, "_bool_options", ["True", "False"])
+
+        row = max(0, min(row, model.rowCount()))
+        model.insertRow(row)
+
+        pystxm_name = self._next_manual_name()
+        new_row_bg = QtGui.QColor("#d9ecff")
+
+        name_item = QtGui.QStandardItem(pystxm_name)
+        name_item.setEditable(True)
+        name_item.setData(pystxm_name, QtCore.Qt.UserRole)
+        name_item.setBackground(new_row_bg)
+        model.setItem(row, 0, name_item)
+
+        for col in (1, 2, 3, 5, 6, 7, 9, 11):
+            cell = QtGui.QStandardItem("")
+            cell.setEditable(False)
+            cell.setBackground(new_row_bg)
+            model.setItem(row, col, cell)
+
+        for col, editable in ((4, True), (8, True), (10, False)):
+            default_text = "No description in config" if col == 4 else ""
+            cell = QtGui.QStandardItem(default_text)
+            cell.setEditable(editable)
+            cell.setBackground(QtGui.QColor("#ffffff") if editable else new_row_bg)
+            model.setItem(row, col, cell)
+
+        dcs_combo = NoScrollComboBox()
+        dcs_combo.addItems(dcs_names)
+        dcs_combo.setCurrentIndex(0)
+        dcs_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+
+        def _on_dcs_changed(text, name=pystxm_name):
+            self.name_mapping[name] = text
+            self._refresh_combo_colors()
+
+        dcs_combo.currentTextChanged.connect(_on_dcs_changed)
+        self.name_mapping[pystxm_name] = dcs_combo.currentText()
+        self._row_combos.append((pystxm_name, dcs_combo))
+        tbl.setIndexWidget(model.index(row, 1), dcs_combo)
+
+        cat_combo = NoScrollComboBox()
+        cat_combo.addItems(category_names)
+        cat_combo.setCurrentText("PVS")
+        cat_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+        cat_combo.currentTextChanged.connect(
+            lambda text, name=pystxm_name: self.category_mapping.__setitem__(name, text)
+        )
+        self.category_mapping[pystxm_name] = cat_combo.currentText()
+        tbl.setIndexWidget(model.index(row, 2), cat_combo)
+
+        devtype_combo = NoScrollComboBox()
+        devtype_combo.addItems(devtype_names)
+        devtype_combo.setCurrentText("make_basedevice")
+        devtype_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+        devtype_combo.currentTextChanged.connect(
+            lambda text, name=pystxm_name: self.devtype_mapping.__setitem__(name, text)
+        )
+        self.devtype_mapping[pystxm_name] = devtype_combo.currentText()
+        tbl.setIndexWidget(model.index(row, 3), devtype_combo)
+
+        connected_combo = NoScrollComboBox()
+        connected_combo.addItems(bool_options)
+        connected_combo.setCurrentText("False")
+        connected_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+        connected_combo.currentTextChanged.connect(
+            lambda text, name=pystxm_name: self.connected_mapping.__setitem__(name, text)
+        )
+        self.connected_mapping[pystxm_name] = connected_combo.currentText()
+        tbl.setIndexWidget(model.index(row, 5), connected_combo)
+
+        sim_combo = NoScrollComboBox()
+        sim_combo.addItems(bool_options)
+        sim_combo.setCurrentText("False")
+        sim_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+        sim_combo.currentTextChanged.connect(
+            lambda text, name=pystxm_name: self.sim_mapping.__setitem__(name, text)
+        )
+        self.sim_mapping[pystxm_name] = sim_combo.currentText()
+        tbl.setIndexWidget(model.index(row, 6), sim_combo)
+
+        enable_combo = NoScrollComboBox()
+        enable_combo.addItems(bool_options)
+        enable_combo.setCurrentText("True")
+        enable_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+        enable_combo.currentTextChanged.connect(
+            lambda text, name=pystxm_name: self.enable_mapping.__setitem__(name, text)
+        )
+        self.enable_mapping[pystxm_name] = enable_combo.currentText()
+        tbl.setIndexWidget(model.index(row, 7), enable_combo)
+
+        rd_only_combo = NoScrollComboBox()
+        rd_only_combo.addItems(bool_options)
+        rd_only_combo.setCurrentText("False")
+        rd_only_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+        rd_only_combo.currentTextChanged.connect(
+            lambda text, name=pystxm_name: self.rd_only_mapping.__setitem__(name, text)
+        )
+        self.rd_only_mapping[pystxm_name] = rd_only_combo.currentText()
+        tbl.setIndexWidget(model.index(row, 9), rd_only_combo)
+
+        pos_type_combo = NoScrollComboBox()
+        pos_type_combo.addItems(pos_type_names)
+        pos_type_combo.setCurrentIndex(0)
+        pos_type_combo.setStyleSheet("QComboBox { background-color: #d9ecff; }")
+        pos_type_combo.currentTextChanged.connect(
+            lambda text, name=pystxm_name: self.pos_type_mapping.__setitem__(name, text)
+        )
+        self.pos_type_mapping[pystxm_name] = pos_type_combo.currentText()
+        tbl.setIndexWidget(model.index(row, 11), pos_type_combo)
+
+        self.description_mapping[pystxm_name] = "No description in config"
+        self.units_mapping[pystxm_name] = ""
+        self._refresh_combo_colors()
+        tbl.resizeRowsToContents()
+
+    def _delete_manual_row(self, row):
+        """Delete the selected row and clear tracked mapping entries."""
+        model = self.deviceNameTblView.model()
+        if model is None or row < 0 or row >= model.rowCount():
+            return
+
+        name_item = model.item(row, 0)
+        pystxm_name = name_item.text().strip() if name_item is not None else ""
+        if pystxm_name:
+            for dct in (
+                self.name_mapping,
+                self.category_mapping,
+                self.devtype_mapping,
+                self.description_mapping,
+                self.units_mapping,
+                self.pos_type_mapping,
+                self.connected_mapping,
+                self.sim_mapping,
+                self.enable_mapping,
+                self.rd_only_mapping,
+            ):
+                dct.pop(pystxm_name, None)
+            self._row_combos = [t for t in self._row_combos if t[0] != pystxm_name]
+
+        model.removeRow(row)
+        self._refresh_combo_colors()
+
+    def _on_table_item_changed(self, item):
+        """Keep mapping dictionaries in sync when the editable name cell is changed."""
+        if getattr(self, "_loading_table", False):
+            return
+        if item is None or item.column() != 0:
+            return
+
+        model = self.deviceNameTblView.model()
+        if model is None:
+            return
+
+        old_name = item.data(QtCore.Qt.UserRole) or ""
+        new_name = item.text().strip()
+        if not old_name:
+            old_name = new_name
+
+        # Reject empty names and restore previous value.
+        if not new_name:
+            self._loading_table = True
+            item.setText(old_name)
+            self._loading_table = False
+            return
+
+        # Enforce unique device names in column 0.
+        row = item.row()
+        for i in range(model.rowCount()):
+            if i == row:
+                continue
+            other = model.item(i, 0)
+            if other is not None and other.text().strip() == new_name:
+                self._loading_table = True
+                item.setText(old_name)
+                self._loading_table = False
+                return
+
+        if new_name == old_name:
+            item.setData(new_name, QtCore.Qt.UserRole)
+            return
+
+        # Move mapping entries from old key to new key.
+        mapping_dicts = (
+            self.name_mapping,
+            self.category_mapping,
+            self.devtype_mapping,
+            self.description_mapping,
+            self.units_mapping,
+            self.pos_type_mapping,
+            self.connected_mapping,
+            self.sim_mapping,
+            self.enable_mapping,
+            self.rd_only_mapping,
+        )
+        for dct in mapping_dicts:
+            if old_name in dct:
+                dct[new_name] = dct.pop(old_name)
+
+        self._row_combos = [
+            (new_name if nm == old_name else nm, combo) for nm, combo in self._row_combos
+        ]
+        item.setData(new_name, QtCore.Qt.UserRole)
+        self._refresh_combo_colors()
+
     def populate_devnames_tableview(self, lst=None, devs=None):
         """
         Populate ``deviceNameTblView`` with one row per device record from TinyDB.
@@ -446,6 +722,8 @@ class Device_Configure(QtWidgets.QWidget):
             devs (module | None): Device configuration module, used to build combo
                 options (categories/devtypes/pos_types).
         """
+        self._loading_table = True
+
         if lst is None:
             lst = self.dev_db.all() if self.dev_db else []
 
@@ -519,6 +797,13 @@ class Device_Configure(QtWidgets.QWidget):
             pos_type_names.append("POS_TYPE_ES")
         bool_options = ["True", "False"]
 
+        # cache option lists so manual context-menu row insert can reuse them
+        self._dcs_names_options = list(dcs_names)
+        self._category_names_options = list(category_names)
+        self._devtype_names_options = list(devtype_names)
+        self._pos_type_names_options = list(pos_type_names)
+        self._bool_options = list(bool_options)
+
         # --- configure the QTableView with a QStandardItemModel ---------------
         # Column order: Name, DCS Device, Category, DevType, Description, Connected, Sim, Enable, Units, ReadOnly, ConChkNm, PosType
         tbl = self.deviceNameTblView
@@ -531,7 +816,8 @@ class Device_Configure(QtWidgets.QWidget):
         model = QtGui.QStandardItemModel(len(lst), num_cols, self)
         model.setHorizontalHeaderLabels(col_headers)
         tbl.setModel(model)
-        
+        model.itemChanged.connect(self._on_table_item_changed)
+
         # Set column resize modes
         tbl.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)  # Name
         tbl.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)  # DCS Device
@@ -541,6 +827,7 @@ class Device_Configure(QtWidgets.QWidget):
         tbl.verticalHeader().setVisible(False)
         tbl.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         tbl.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked)
+        self._setup_table_context_menu()
 
         # Connect row click signal
         try:
@@ -578,7 +865,8 @@ class Device_Configure(QtWidgets.QWidget):
 
                 # col 0 – pyStxm name
                 name_item = QtGui.QStandardItem(pystxm_name)
-                name_item.setEditable(False)
+                name_item.setEditable(True)
+                name_item.setData(pystxm_name, QtCore.Qt.UserRole)
                 name_item.setBackground(bg_color)
                 model.setItem(row, 0, name_item)
 
@@ -794,7 +1082,8 @@ class Device_Configure(QtWidgets.QWidget):
 
             # Base row cells
             name_item = QtGui.QStandardItem(pystxm_name)
-            name_item.setEditable(False)
+            name_item.setEditable(True)
+            name_item.setData(pystxm_name, QtCore.Qt.UserRole)
             name_item.setBackground(new_row_bg)
             model.setItem(row, 0, name_item)
 
@@ -908,6 +1197,7 @@ class Device_Configure(QtWidgets.QWidget):
         # Apply initial color state
         self._refresh_combo_colors()
         tbl.resizeRowsToContents()
+        self._loading_table = False
 
     def get_name_mapping(self) -> dict:
         """

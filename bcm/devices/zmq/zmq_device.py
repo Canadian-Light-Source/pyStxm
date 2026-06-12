@@ -241,16 +241,22 @@ class ZMQBaseDevice(ZMQBaseSignal):
     def _init_feedback(self):
         # print(f"_init_feedback: {self.name}")
         self.update_position(self.get_position(), is_moving=False)
+
     def get_position(self):
         return self._user_readback
+
     def get_ophyd_device(self):
         return self
+
     def get_name(self):
         return self.name
+
     def get_dcs_name(self):
         return self.dcs_name
+
     def set_desc(self, desc):
         self._desc = desc
+
     def get_desc(self):
         if hasattr(self, "_desc"):
             return self._desc
@@ -301,6 +307,8 @@ class ZMQBaseDevice(ZMQBaseSignal):
         """
         this function is called from update_widgets() in the ZMQDevManager while it process' the queue from PIXELATOR
         """
+        # if self.name == 'DNM_ENERGY':
+        #     print()
         # print(f"ZMQBaseDevice: update_position: [{self.name}={value}]")
         self.set_readback(value)
         lower_ctrl_limit = 0
@@ -313,15 +321,14 @@ class ZMQBaseDevice(ZMQBaseSignal):
         if hasattr(self, 'egu'):
             units = self.egu
 
-        if hasattr(self, 'enums'):
-            if value > len(self.enums):
-                #make zero based
-                value = len(self.enums) -1
-
-        if hasattr(self, 'enum_values'):
+        if hasattr(self, 'enum_values') and len(self.enum_values) > 0:
             # turn the value sent by the DCS server into an index to the enumerations and set value to the integer index
             # the attribute enum_value_to_idx_dct was created uin device_loader.py when the device was created, the
             # devs.py definitions for this device specified values and enumerations
+            if hasattr(self, 'enums') and value > len(self.enums):
+                #make zero based
+                value = len(self.enums) -1
+
             if value in self.enum_value_to_idx_dct.keys():
                 value = self.enum_value_to_idx_dct[value]
 

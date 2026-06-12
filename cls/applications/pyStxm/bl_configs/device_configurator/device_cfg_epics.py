@@ -10,55 +10,9 @@ from cls.applications.pyStxm.bl_configs.device_configurator.con_checker import (
     con_check_many,
 )
 from cls.applications.pyStxm.bl_configs.device_configurator.thread_worker import Worker
-from utils import update_dev_dct_file, reload_dev_dct
-# import cls.applications.pyStxm.bl_configs.amb_bl10ID1.devs as devs
-#
-# _q = Query()
-# X_AXIS = 1
-# Y_AXIS = 2
-#
-# dev_dct = {}
+from utils import update_dev_dct_file, reload_dev_dct, query, get_connections_status
 
 
-# def reload_dev_dct(devs):
-#     global dev_dct
-#     reload(devs)
-#     dev_dct = devs.dev_dct
-#
-#
-# def update_dev_dct_file(bl_config_path, old_dct, new_dct):
-#     """
-#     update the devs.py file of dicts which is used as the main starting place for device database creation
-#     """
-#     skip_lst = ["connected", "sim", "enable", "units", "rd_only", "con_chk_nm"]
-#     with open(pathlib.PurePath(bl_config_path.as_posix(), "devs.py"), "r") as f:
-#         in_lines = f.readlines()
-#     f.close()
-#     num_inlines = len(in_lines)
-#     out_lines = []
-#     for l in in_lines:
-#         # l = l.replace('\n','')
-#         for k, search_val in old_dct.items():
-#             if k not in skip_lst:
-#                 if k in new_dct.keys():
-#                     replace_val = new_dct[k]
-#                     l = l.replace(search_val, replace_val)
-#         out_lines.append(l)
-#
-#     if num_inlines == len(out_lines):
-#         fpath = pathlib.PurePath(bl_config_path.as_posix(), "output.py")
-#         with open(fpath, "w") as fout:
-#             for ll in out_lines:
-#                 fout.write(ll)
-#         fout.close()
-#         # p = pathlib.Path(fpath)
-#         # p.replace('devs.py')
-#         fstr = fpath.as_posix()
-#         new_fstr = fstr.replace("output.py", "devs.py")
-#         os.replace(fstr, new_fstr)
-#         print("The file was exported properly")
-#     else:
-#         print("there was an error so not exporting a corrupted file")
 
 
 class Device_Configure(QtWidgets.QWidget):
@@ -92,7 +46,6 @@ class Device_Configure(QtWidgets.QWidget):
         self.post_devdct = {}
 
         self.retestBtn.clicked.connect(self.on_retest)
-        self.devCatCmboBx.currentIndexChanged.connect(self.on_cat_selected)
         self.setMinimumHeight(600)
         self.do_threaded_many_check(devs)
 
@@ -104,7 +57,7 @@ class Device_Configure(QtWidgets.QWidget):
         """
         lstView = self.sender()
         self.cur_dev = lstView.model().data(index)
-        _dct = self.dev_db.search(_q.name == self.cur_dev)[0]
+        _dct = self.dev_db.search(query.name == self.cur_dev)[0]
         # init pre_devdct
         self.pre_devdct = copy.copy(_dct)
         self.selNmFld.setText(_dct["name"])
@@ -142,7 +95,7 @@ class Device_Configure(QtWidgets.QWidget):
     def on_test_connection(self):
         nm = self.selNmFld.text()
         dcs_nm = self.selDcsNmFld.text()
-        dct = self.dev_db.search(_q.name == nm)[0]
+        dct = self.dev_db.search(query.name == nm)[0]
         if "con_chk_nm" in dct.keys():
             dcs_nm = dcs_nm + dct["con_chk_nm"]
         self.do_threaded_single_check(dcs_nm)
@@ -156,23 +109,20 @@ class Device_Configure(QtWidgets.QWidget):
         cmbobx.clear()
         cmbobx.addItems(lst)
 
-    def populate_devnames_lstview(self, lst=None):
+    def populate_devnames_lstview(self, lst=None, devs=None):
         # clean listview
-        # if self.devsmodel.rowCount() > 0:
-        #     self.devsmodel.removeRows(0, self.devsmodel.rowCount())
         self.devsmodel.clear()
         self.disconDevsmodel.clear()
         if lst is None:
             lst = self.dev_db.all()
         num_poss_cons = len(lst)
-        num_cons = len(self.dev_db.search(_q.connected == True))
-        # posners = self.dev_db.search(_q.category == 'POSITIONERS')
+        num_cons = len(self.dev_db.search(query.connected == True))
         self.numSignalsLbl.setText(
             f"{num_cons} connected out of a possible {num_poss_cons} signals"
         )
 
         # keys = []
-        keys = list([" "] + list(dev_dct.keys()))
+        keys = list([" "] + list(devs.dev_dct.keys()))
         types = [" "]
         hash_lst = []
         self.load_combo_box(self.selCtgCmboBx, keys)
@@ -201,7 +151,7 @@ class Device_Configure(QtWidgets.QWidget):
             item1.setToolTip(dcs_nm)
             self.load_combo_box(self.selDevTypeCmboBx, types)
 
-    def init_devCategories(self):
+    def init_devCategories(self, dev_dct):
         """
         initialize the devtype combobox
         :return:
@@ -216,20 +166,15 @@ class Device_Configure(QtWidgets.QWidget):
         if self.cur_cat == "All":
             dev_dct_lst = self.dev_db.all()
         else:
-            dev_dct_lst = self.dev_db.search(_q.category == self.cur_cat)
+            dev_dct_lst = self.dev_db.search(query.category == self.cur_cat)
         self.populate_devnames_lstview(lst=dev_dct_lst)
 
     def on_retest(self):
         self.do_threaded_many_check()
 
     def do_threaded_many_check(self, devs):
-        # worker = Worker(self.build_database) #, delay_return=0.5)  # Any other args, kwargs are passed to the run function
-        # worker.signals.result.connect(self.load_results)
-        # self.threadpool.start(worker)
-        # self.numSignalsLbl.setText('Checking PV connections and building database, one moment')
-        # #print('Checking PV connections and building database, one moment')
         self.build_database(devs)
-        self.populate_devnames_lstview()
+        self.populate_devnames_lstview(devs=devs)
 
     def do_threaded_single_check(self, dcs_name):
 
@@ -241,7 +186,7 @@ class Device_Configure(QtWidgets.QWidget):
         self.selConLbl.setText("Checking DCS connection, one moment")
 
     def check_single_dcs_name(self, dct):
-        con_sts = devs.get_connections_status(dct)
+        con_sts = get_connections_status(dct)
         return con_sts
 
     def update_single_conn_sts(self, conn):
@@ -259,15 +204,14 @@ class Device_Configure(QtWidgets.QWidget):
         self.cons = cons
 
     def build_database(self, devs):  # , db_fpath='db.json'):
-        global dev_dct
-        reload_dev_dct(devs)
+        dev_dct = devs.dev_dct
         verbose = False
         if self.dev_db:
             self.dev_db.close()
         self.dev_db = TinyDB(self.devdb_path.as_posix())
         self.dev_db.drop_tables()
-        self.init_devCategories()
-        con_sts = devs.get_connections_status()
+        self.init_devCategories(devs.dev_dct)
+        con_sts = get_connections_status(devs.dev_dct)
         keys = list(dev_dct.keys())
         keys.sort()
         for k in keys:

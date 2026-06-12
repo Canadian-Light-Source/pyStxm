@@ -31,9 +31,6 @@ class Device_Configure(QtWidgets.QWidget):
         self.devs = devs
         self.engine_widget = ZMQEngineWidget(devs.dev_dct, do_dev_init=False)
 
-        self.testConnBtn.clicked.connect(self.on_test_connection)
-        self.updateDevBtn.clicked.connect(self.on_update_dev)
-
         self.bl_config_path = bl_config_path
         self.devdb_path = pathlib.PurePath(
             os.path.join(bl_config_path, "device_db.json")
@@ -59,7 +56,6 @@ class Device_Configure(QtWidgets.QWidget):
         self.enable_mapping: dict = {}
         self.rd_only_mapping: dict = {}
 
-        self.retestBtn.clicked.connect(self.on_retest)
         # self.devCatCmboBx.currentIndexChanged.connect(self.on_cat_selected)
         self.setMinimumHeight(600)
 
@@ -393,21 +389,6 @@ class Device_Configure(QtWidgets.QWidget):
         dct["sim"] = self.selSimChkBx.isChecked()
         dct["enable"] = self.selEnableChkBx.isChecked()
         return dct
-
-    def on_update_dev(self):
-        """
-        the user has changed a field for a device so update the devs.py file
-        """
-        replace_dct = self.get_devdct_from_flds()
-        update_dev_dct_file(self.bl_config_path, self.pre_devdct, replace_dct)
-
-    def on_test_connection(self):
-        nm = self.selNmFld.text()
-        dcs_nm = self.selDcsNmFld.text()
-        dct = self.dev_db.search(query.name == nm)[0]
-        if "con_chk_nm" in dct.keys():
-            dcs_nm = dcs_nm + dct["con_chk_nm"]
-        self.do_threaded_single_check(dcs_nm)
 
     def set_combo_box_to_txt(self, cmbobx, txt):
         index = cmbobx.findText(txt, QtCore.Qt.MatchFixedString)
@@ -808,7 +789,7 @@ class Device_Configure(QtWidgets.QWidget):
         # Column order: Name, DCS Device, Category, DevType, Description, Connected, Sim, Enable, Units, ReadOnly, ConChkNm, PosType
         tbl = self.deviceNameTblView
         col_headers = [
-            "pyStxm Name", "DCS Device", "Category", "DevType", "Description",
+            "pyStxm Name", "DCS Device Name", "Category", "DevType", "Description",
             "Connected", "Sim", "Enable", "Units", "ReadOnly", "ConChkNm", "PosType"
         ]
         num_cols = len(col_headers)
@@ -1325,9 +1306,6 @@ class Device_Configure(QtWidgets.QWidget):
         else:
             dev_dct_lst = self.dev_db.search(query.category == self.cur_cat)
         self.populate_devnames_tableview(lst=dev_dct_lst)
-
-    def on_retest(self):
-        self.do_threaded_many_check(self.devs)
 
     def do_threaded_many_check(self, devs):
         # worker = Worker(self.build_database) #, delay_return=0.5)  # Any other args, kwargs are passed to the run function

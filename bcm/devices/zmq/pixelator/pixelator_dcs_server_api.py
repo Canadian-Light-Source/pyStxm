@@ -1053,7 +1053,6 @@ class DcsServerApi(BaseDcsServerApi):
                             if dev.get_position() == 0.0:
                                 dev.move(700.0)
 
-
                         dev.set_positioner_dct(positioner_dct)
 
                         if hasattr(dev, 'set_low_limit'):
@@ -1062,14 +1061,10 @@ class DcsServerApi(BaseDcsServerApi):
                         if hasattr(dev, 'set_high_limit'):
                             #dev.set_high_limit(positioner_dct['upperSoftLimit'])
                             dev._high_limit = positioner_dct['upperSoftLimit']
-
-
-
                         if hasattr(dev, 'set_units'):
                             #dev.set_units(positioner_dct['unit'])
                             dev._units = positioner_dct['unit']
                         if hasattr(dev, 'max_velo'):
-                            #dev.max_velo.set(positioner_dct['maxVelocity'])
                             dev._max_velo = positioner_dct['maxVelocity']
 
                         # now record the details passed from pixelator

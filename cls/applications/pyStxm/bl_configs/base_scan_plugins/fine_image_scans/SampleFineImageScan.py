@@ -136,9 +136,9 @@ class BaseSampleFineImageScanClass(BaseScan):
 
         self.scan_velo = self.calc_scan_velo(mtr_x, self.x_roi[RANGE], self.x_roi[NPOINTS], self.dwell)
         if self.scan_velo > 0:
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def make_scan_plan(self, dets, md=None, bi_dir=False):
         """

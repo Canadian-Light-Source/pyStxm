@@ -814,7 +814,15 @@ class BaseScan(QtCore.QObject):
         ret = True
         if hasattr(mtr, "get_max_velo"):
             vmax = mtr.get_max_velo()
-            if desired_velo > vmax:
+            if vmax == 0.0:
+                msg = (
+                    f"The motor with name [{mtr.name}] has been initialized with a max velocity of 0.0.\n"
+                    f"Which is invalid, check device configuration.\n\n"
+                )
+                notify(f"Error: Max Velocity cannot be 0.0", msg, "Ok")
+                ret = False
+
+            elif desired_velo > vmax:
                 min_dwell = (rng / (npoints * vmax)) * 1000.0
                 min_npoints = int((rng / (dwell * 0.001 * vmax)) + 1)
                 max_range = vmax * npoints * (dwell * 0.001)

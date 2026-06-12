@@ -235,7 +235,9 @@ class device_config(dev_config_base):
 
             energy_posner = self.devices["POSITIONERS"][dct["energy_nm"]]
             zpz_posner = self.devices["POSITIONERS"][dct["zz_nm"]]
-            cz_posner = self.devices["POSITIONERS"][dct["cz_nm"]]
+            cz_posner = None
+            if dct["cz_nm"] in self.devices["POSITIONERS"].keys():
+                cz_posner = self.devices["POSITIONERS"][dct["cz_nm"]]
 
             energy_dev_dict = {
                 "a0_dev": a0_dev,

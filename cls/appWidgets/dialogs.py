@@ -395,6 +395,69 @@ def message_no_btns(title, msg):
     ret = dialog.message_no_btns(title, msg)
     return ret
 
+
+def modal_html_message(title, msg, accept_str="Ok", width=800, height=200):
+    """Display a modal dialog with an HTML-capable message label and a single button.
+
+    The dialog is sized to *width* × *height* pixels, centred on the primary
+    screen, and blocks until the user clicks the button.
+
+    Args:
+        title (str): Window title bar text.
+        msg (str): Message body.  Plain text and HTML are both accepted, so
+            markup such as ``<b>bold</b>`` or ``<font color='red'>…</font>``
+            controls the appearance.
+        accept_str (str): Label for the single acknowledgement button.
+            Defaults to ``"Ok"``.
+        width (int): Dialog width in pixels.  Defaults to ``400``.
+        height (int): Dialog height in pixels.  Defaults to ``200``.
+
+    Returns:
+        str: The value of *accept_str* (always – there is only one outcome).
+
+    Example::
+
+        modal_html_message(
+            "Scan complete",
+            "<b>Done!</b><br>Data saved to <i>/tmp/scan.hdf5</i>",
+            accept_str="Great",
+            width=500,
+            height=150,
+        )
+    """
+    dlg = QtWidgets.QDialog()
+    dlg.setWindowTitle(title)
+    dlg.setFixedSize(width, height)
+
+    # Centre on the primary screen
+    screen_geo = QtWidgets.QApplication.primaryScreen().availableGeometry()
+    dlg.move(
+        (screen_geo.width() - width) // 2,
+        (screen_geo.height() - height) // 2,
+    )
+
+    layout = QtWidgets.QVBoxLayout(dlg)
+    layout.setContentsMargins(16, 16, 16, 12)
+    layout.setSpacing(12)
+
+    label = QtWidgets.QLabel(msg)
+    label.setWordWrap(True)
+    label.setOpenExternalLinks(False)
+    label.setTextFormat(QtCore.Qt.RichText)   # honour HTML even for plain text
+    layout.addWidget(label, stretch=1)
+
+    btn = QtWidgets.QPushButton(accept_str)
+    btn.setDefault(True)
+    btn.clicked.connect(dlg.accept)
+
+    btn_row = QtWidgets.QHBoxLayout()
+    btn_row.addStretch()
+    btn_row.addWidget(btn)
+    layout.addLayout(btn_row)
+
+    dlg.exec_()
+    return accept_str
+
 def non_modal_messagebox(title, msg, font_size=15):
     w = QtWidgets.QWidget()
     lbl = QtWidgets.QLabel(msg)

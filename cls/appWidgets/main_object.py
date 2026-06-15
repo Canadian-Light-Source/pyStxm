@@ -28,7 +28,7 @@ from cls.types.stxmTypes import (
     SAMPLE_FOCUS_MODE,
     OSA_FOCUS_MODE
 )
-from cls.appWidgets.focus_class import FocusCalculations
+from cls.appWidgets.dialogs import modal_html_message
 from cls.scan_engine.bluesky.qt_run_engine import EngineWidget, ZMQEngineWidget
 from cls.appWidgets.thread_worker import Worker
 
@@ -366,6 +366,8 @@ class main_object_base(QtCore.QObject):
         return result
 
     def check_dcs_settings(self, settings: dict=None):
+        from datetime import datetime
+        year = datetime.now().year
 
         if self.get_device_backend() == 'zmq':
             # check that the settings specified by the dcs are the ones that we are using
@@ -374,33 +376,62 @@ class main_object_base(QtCore.QObject):
             DCS_SUB_PORT = int(get_environ_var('DCS_SUB_PORT'))
             DCS_REQ_PORT = int(get_environ_var('DCS_REQ_PORT'))
 
-            if self.data_dir != settings['NeXusBaseDirectory'] and self.data_dir != settings['NeXusLocalBaseDirectory']:
-                _logger.error(f"Data directory in DCS server [{settings['NeXusBaseDirectory']}] does not match the one in the GUI [{self.data_dir}]")
-                print(f"\nERROR: Data directory in DCS server [{settings['NeXusBaseDirectory']}] does not match the one in the GUI [{self.data_dir}]\n")
+            _tst_data_dir = os.path.join(self.data_dir, f"{year}")
+
+            if _tst_data_dir != settings['NeXusBaseDirectory'] and _tst_data_dir != settings['NeXusLocalBaseDirectory']:
+                msg = (
+                    f"Data directory in DCS server settings:<br><b>[NeXusBaseDirectory]</b>=[{settings['NeXusBaseDirectory']}]"
+                    f"<br><br>does not match the one specified in the environment variable <br><b>DATA_DIR</b>=[{self.data_dir}]"
+                    f"<br><br><b>DATA_DIR</b> must not contain the 4 digit year at the end like the DCS server setting does"
+                )
+                modal_html_message(f"Error: Mismatch in pyStxm and DCS server settings ", msg, accept_str="Ok")
+                _logger.error(msg)
+                print(f"\nERROR: {msg}\n")
+                exit(0)
+
                 #update the dcs server
                 # self.engine_widget.engine.set_data_directory(self.data_dir)
 
             if int(settings['dataPublisherPort']) != int(DATA_SUB_PORT):
-                _logger.error(f"Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{DATA_SUB_PORT}]")
-                print(f"ERROR: Data publisher port in DCS server [{settings['dataPublisherPort']}] does not match the one in the GUI [{DATA_SUB_PORT}]")
+                msg = (
+                    f"Data publisher port in DCS server settings: <br><b>[dataPublisherPort]</b>=[{settings['dataPublisherPort']}] "
+                    f"<br><br>does not match the one specified in the environment variable <br><b>DATA_SUB_PORT</b>=[{DATA_SUB_PORT}]"
+                )
+                modal_html_message(f"Error: Data publisher port not match DCS Server setting", msg, "Ok")
+                _logger.error(msg)
+                print(f"\nERROR: {msg}\n")
+                exit(0)
                 #update the dcs server
                 #self.engine_widget.engine.set_data_publisher_port(DATA_SUB_PORT)
 
             if int(settings['publisherPort']) != DCS_SUB_PORT:
-                _logger.error(f"Command publisher port in DCS server [{settings['publisherPort']}] does not match the one in the GUI [{DCS_SUB_PORT}]")
-                print(f"ERROR: Command publisher port in DCS server [{settings['publisherPort']}] does not match the one in the GUI [{DCS_SUB_PORT}]")
+                msg = (
+                    f"Command publisher port in DCS server settings: <br><b>[publisherPort]</b>=[{settings['publisherPort']}] "
+                    f"<br><br>does not match the one specified in the environment variable <br><b>DCS_SUB_PORT</b>=[{DATA_SUB_PORT}]"
+                )
+                modal_html_message(f"Error: Command publisher port not match DCS Server setting", msg, "Ok")
+                _logger.error(msg)
+                print(f"\nERROR: {msg}\n")
+                exit(0)
                 #update the dcs server
                 #self.engine_widget.engine.set_command_publisher_port(DCS_SUB_PORT)
 
             if int(settings['requestPort']) != DCS_REQ_PORT:
-                _logger.error(f"Command request port in DCS server [{settings['requestPort']}] does not match the one in the GUI [{DCS_REQ_PORT}]")
-                print(f"ERROR: Command request port in DCS server [{settings['requestPort']}] does not match the one in the GUI [{DCS_REQ_PORT}]")
+                msg = (
+                    f"Command request port in DCS server settings: <br><b>[requestPort]</b>=[{settings['requestPort']}]  "
+                    f"<br><br>does not match the one specified in the environment variable <br><b>DCS_REQ_PORT</b>=[{DCS_REQ_PORT}]"
+                )
+                modal_html_message(f"Error: Command request port not match DCS Server setting", msg, "Ok")
+                _logger.error(msg)
+                print(f"\nERROR: {msg}\n")
+                exit(0)
                 #update the dcs server
                 #self.engine_widget.engine.set_command_request_port(DCS_REQ_PORT)
 
     def do_local_data_reload(self, data_dir: str=None):
         """
-        this function is used when the data directory is local to load the data directly without sending a request to the DCS server
+        this function is used when the data directory is local to load the data directly without sending a request to
+        the DCS server
         """
         if data_dir is None:
             data_dir = self.data_dir
@@ -455,7 +486,8 @@ class main_object_base(QtCore.QObject):
 
         if self.data_dir_is_local:
             # pySTXM has a local mount to the data directory
-            _logger.debug(f"reload_data_directory: data_dir_is_local is True, loading data directly from local directory: {data_dir}")
+            _logger.debug(f"reload_data_directory: data_dir_is_local is True, loading data directly from local "
+                          f"directory: {data_dir}")
             self.do_local_data_reload(data_dir)
 
         else:
@@ -464,10 +496,12 @@ class main_object_base(QtCore.QObject):
                 #current_date = datetime.now().strftime('%Y-%m-%d')
                 #self.zmq_reload_data_directory(os.path.join(self.data_dir, current_date))
                 _logger.debug(
-                    f"reload_data_directory: data_dir_is_local is False, loading data from call to self.zmq_reload_data_directory(data_dir) {data_dir}")
+                    f"reload_data_directory: data_dir_is_local is False, loading data from call to "
+                    f"self.zmq_reload_data_directory(data_dir) {data_dir}")
                 self.zmq_reload_data_directory(data_dir)
             else:
-                _logger.debug(f"reload_data_directory: data_dir_is_local is False, loading data from call to self.nx_server_reload_data_directory(data_dir) {data_dir}")
+                _logger.debug(f"reload_data_directory: data_dir_is_local is False, loading data from call to "
+                              f"self.nx_server_reload_data_directory(data_dir) {data_dir}")
                 self.nx_server_reload_data_directory(data_dir)
 
     def get_master_file_seq_names(self, data_dir: str=None,
@@ -496,7 +530,8 @@ class main_object_base(QtCore.QObject):
             cmd_args['prefix_char'] = prefix_char
             cmd_args['dev_backend'] = dev_backend
 
-            master_seq_jstr = self.send_to_nx_server(NX_SERVER_CMNDS.GET_FILE_SEQUENCE_NAMES, [], '', data_dir, nx_app_def='nxstxm',
+            master_seq_jstr = self.send_to_nx_server(NX_SERVER_CMNDS.GET_FILE_SEQUENCE_NAMES, [], '',
+                                                     data_dir, nx_app_def='nxstxm',
                                              host=self.nx_server_host, port=self.nx_server_port,
                                              verbose=False, cmd_args=cmd_args)
             dct = json.loads(master_seq_jstr['seq_name_jstr'])
@@ -548,7 +583,8 @@ class main_object_base(QtCore.QObject):
         cmd_args = {}
         cmd_args['directory'] = data_dir
         cmd_args['extension'] = extension
-        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_DIRECTORY, [], '', data_dir, nx_app_def='nxstxm',
+        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_DIRECTORY, [], '', data_dir,
+                                         nx_app_def='nxstxm',
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=False, cmd_args=cmd_args)
 
@@ -571,14 +607,15 @@ class main_object_base(QtCore.QObject):
         cmd_args['directory'] = data_dir
         cmd_args['extension'] = extension
         cmd_args['file'] = os.path.join(data_dir, fname)
-        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILE, [], '', data_dir, nx_app_def='nxstxm',
+        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILE, [], '', data_dir,
+                                         nx_app_def='nxstxm',
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=False, cmd_args=cmd_args)
         # #print(f"ZMQDevManager: nx_server_load_file: {h5_file_dct}")
         if 'directories' in res_dct.keys():
             h5_file_dct = nulls_to_nans(json.loads(res_dct['directories']))
-            # emit the signal that new data has arrived, the contact_sheet will be called to create a data thumbnail with
-            # this dict
+            # emit the signal that new data has arrived, the contact_sheet will be called to create a data thumbnail
+            # with this dict
             self.engine_widget.new_data.emit(h5_file_dct)
 
     def nx_server_load_files(self, data_dir: str=None, *, file_lst: [str], extension='.hdf5') -> None:
@@ -596,7 +633,8 @@ class main_object_base(QtCore.QObject):
         # most recent first
         #sorted_paths = sorted(fpaths_lst, key=lambda x: int(x.split('/')[-1][1:10]), reverse=True)
         cmd_args['files'] = json.dumps(fpaths_lst)
-        res = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILES, [], '', data_dir, nx_app_def='nxstxm',
+        res = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILES, [], '', data_dir,
+                                     nx_app_def='nxstxm',
                                      host=self.nx_server_host, port=self.nx_server_port,
                                      verbose=True, cmd_args=cmd_args)
         # data_lst = json.loads(res['data_lst'])
@@ -615,7 +653,8 @@ class main_object_base(QtCore.QObject):
         cmd_args = {}
         cmd_args['directory'] = data_dir
         cmd_args['fileExtension'] = extension
-        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LIST_DIRECTORY, [], '', data_dir, nx_app_def='nxstxm',
+        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LIST_DIRECTORY, [], '', data_dir,
+                                         nx_app_def='nxstxm',
                                          host=self.nx_server_host, port=self.nx_server_port,
                                          verbose=False, cmd_args=cmd_args)
         return res_dct['sub_directories']
@@ -633,7 +672,8 @@ class main_object_base(QtCore.QObject):
             resp_dct = self.nx_server_load_data_directory(data_dir)
             return True
         else:
-            _logger.error(f"nx_server_reload_data_directory: not implemented for this backend ->[{self.get_device_backend()}] ")
+            _logger.error(f"nx_server_reload_data_directory: not implemented for this "
+                          f"backend ->[{self.get_device_backend()}] ")
             return False
 
     def zmq_reload_data_directory(self, data_dir: str=None):
@@ -649,7 +689,8 @@ class main_object_base(QtCore.QObject):
                 self.engine_widget.engine.load_data_directory(data_dir=data_dir)
             return True
         else:
-            _logger.error(f"zmq_reload_data_directory: not implemented for this backend ->[{self.get_device_backend()}] ")
+            _logger.error(f"zmq_reload_data_directory: not implemented for this"
+                          f"backend ->[{self.get_device_backend()}] ")
             return False
 
     def request_data_dir_list(self, base_dir: str=None, extension='.hdf5'):
@@ -672,7 +713,7 @@ class main_object_base(QtCore.QObject):
                 return self.zmq_req_data_dir_list(data_dir=_base_dir)
             else:
                 return self.nx_server_request_data_directory_list(data_dir=base_dir, extension=extension)
-                #_logger.error(f"request_data_dir_list: not implemented for this backend ->[{self.get_device_backend()}] ")
+
 
 
     def zmq_req_data_dir_list(self, data_dir: str=None):
@@ -712,7 +753,8 @@ class main_object_base(QtCore.QObject):
                 result = False
 
         if result is None:
-                raise Exception(f"get_bool_beamline_cfg_preset: preset [{preset_name}] string value [{result}] cannot be converted to bool")
+                raise Exception(f"get_bool_beamline_cfg_preset: preset [{preset_name}] string value [{result}] "
+                                f"cannot be converted to bool")
         return result
 
     def set_dcs_zoneplate_definitions(self, zp_defs: dict):
@@ -784,7 +826,8 @@ class main_object_base(QtCore.QObject):
             return False
 
 
-    def send_to_nx_server(self, cmnd, run_uids=[], fprefix='', data_dir='', nx_app_def=None, fpaths=[],
+    def send_to_nx_server(self, cmnd, run_uids=[], fprefix='', data_dir='', nx_app_def=None,
+                          fpaths=[],
                           host='localhost', port=5555, verbose=False, cmd_args={}):
         """
         a function to send data to the nx server over a zmq pubsub socket
@@ -820,7 +863,8 @@ class main_object_base(QtCore.QObject):
                                      port=self.nx_server_port, verbose=False)
         return res
 
-    def save_nx_files(self, run_uids: list, fprefix: str, data_dir: str, nx_app_def: str = None, host='localhost',
+    def save_nx_files(self, run_uids: list, fprefix: str, data_dir: str, nx_app_def: str = None,
+                      host='localhost',
                       port=5555, verbose=False):
         """
         makes calls to save a scan file(s)

@@ -525,9 +525,6 @@
 # dev_dct["TEMPERATURES"] = [
 #     ]
 #
-#
-#
-#
 
 from cls.applications.pyStxm.bl_configs.device_configurator.utils import (make_MotorQt, make_sample_abstract_motor, make_DCSShutter, make_make_basedevice, make_Counter, make_make_base_simdevice, make_MultiSelectable, make_Bo, make_Command, make_EnergyDevice)
 
@@ -580,7 +577,23 @@ dev_dct['POSITIONERS'] = [
                        dcs_nm='Energy',
                        pos_type='POS_TYPE_BL',
                        units='um',
-                       abstract_mtr=True,
+                       abstract_mtr=False,
+                       enums=[],
+                       enum_values=[]),
+    make_MotorQt(name='DNM_SAMPLE_FINE_X',
+                       desc='No description in config',
+                       dcs_nm='FineX',
+                       pos_type='POS_TYPE_ES',
+                       units='um',
+                       abstract_mtr=False,
+                       enums=[],
+                       enum_values=[]),
+    make_MotorQt(name='DNM_SAMPLE_FINE_Y',
+                       desc='No description in config',
+                       dcs_nm='FineY',
+                       pos_type='POS_TYPE_ES',
+                       units='um',
+                       abstract_mtr=False,
                        enums=[],
                        enum_values=[]),
     make_MotorQt(name='DNM_ID1OFF',
@@ -621,8 +634,8 @@ dev_dct['POSITIONERS'] = [
                        pos_type='POS_TYPE_BL',
                        units='um',
                        abstract_mtr=False,
-                       enums=['Off', 'Pos', 'Neg'],
-                       enum_values=[0, -0.2, 0.2]),
+                       enums=[],
+                       enum_values=[]),
     make_MotorQt(name='DNM_ZONEPLATE_Z',
                        desc='No description in config',
                        dcs_nm='Zoneplate',
@@ -631,34 +644,18 @@ dev_dct['POSITIONERS'] = [
                        abstract_mtr=False,
                        enums=[],
                        enum_values=[]),
-    make_MotorQt(name='DNM_SAMPLE_FINE_X',
-                       desc='No description in config',
-                       dcs_nm='FineX',
-                       pos_type='POS_TYPE_ES',
-                       units='um',
-                       abstract_mtr=False,
-                       enums=[],
-                       enum_values=[]),
-    make_MotorQt(name='DNM_SAMPLE_FINE_Y',
-                       desc='No description in config',
-                       dcs_nm='FineY',
-                       pos_type='POS_TYPE_ES',
-                       units='um',
-                       abstract_mtr=False,
-                       enums=[],
-                       enum_values=[]),
     make_sample_abstract_motor(name='DNM_SAMPLE_X',
                        desc='No description in config',
-                       dcs_nm='',
-                       fine_mtr_name='DNM_COARSE_X',
-                       coarse_mtr_name='DNM_SAMPLE_FINE_X',
+                       dcs_nm='SampleX',
+                       fine_mtr_name='DNM_SAMPLE_FINE_X',
+                       coarse_mtr_name='DNM_COARSE_X',
                        pos_type='POS_TYPE_ES',
                        units='um'),
     make_sample_abstract_motor(name='DNM_SAMPLE_Y',
                        desc='No description in config',
-                       dcs_nm='',
-                       fine_mtr_name='DNM_COARSE_Y',
-                       coarse_mtr_name='DNM_SAMPLE_FINE_Y',
+                       dcs_nm='SampleY',
+                       fine_mtr_name='DNM_SAMPLE_FINE_Y',
+                       coarse_mtr_name='DNM_COARSE_Y',
                        pos_type='POS_TYPE_ES',
                        units='um'),
 ]
@@ -676,17 +673,11 @@ dev_dct['DIO'] = [
 
 dev_dct['DETECTORS'] = [
     make_Counter(name='DNM_COUNTER1', desc='No description in config', dcs_nm='Counter1'),
-    make_Counter(name='DNM_COUNTER2', desc='No description in config', dcs_nm='Counter2'),
-    make_Counter(name='DNM_ANALOG0', desc='No description in config', dcs_nm='Bl AI 0'),
+    make_Counter(name='DNM_ANALOG0', desc='No description in config', dcs_nm='Analog0'),
+    make_Counter(name='DNM_COUNTER0', desc='No description in config', dcs_nm='Counter0'),
 ]
 
 dev_dct['PVS'] = [
-    make_make_basedevice(name='DNM_RING_YASYM',
-                       desc='No description in config',
-                       dcs_nm='Ring_yAsym',
-                       abstract_mtr=False,
-                       enums=[],
-                       enum_values=[]),
     make_make_base_simdevice(name='DNM_ZONEPLATE_FOCUS_MODE',
                        desc='No description in config',
                        dcs_nm='PIXELATOR_ZONEPLATE_FOCUS_MODE'),
@@ -812,6 +803,10 @@ dev_dct['PVS'] = [
                        dcs_nm='PIXELATOR_FOCUS_MODE',
                        ctrl_enum_strs=['Static', 'Auto'],
                        fbk_enum_strs=['Static', 'Auto']),
+    make_make_basedevice(name='DNM_RING_YASYM',
+                       desc='No description in config',
+                       dcs_nm='Ring_yAsym'),
+    make_make_basedevice(name='DNM_TIME', desc='No description in config', dcs_nm='Time'),
 ]
 
 dev_dct['COMMANDS'] = [
@@ -849,7 +844,7 @@ dev_dct['ENERGY_DEV'] = [
                        energy_nm='DNM_ENERGY',
                        zz_nm='DNM_ZONEPLATE_Z',
                        cz_nm='DNM_COARSE_Z',
-                       pos_type='POS_TYPE_BL'),
+                       pos_type='POS_TYPE_ES'),
 ]
 
 dev_dct['PVS_DONT_RECORD'] = [

@@ -4,9 +4,10 @@ Created on Aug 25, 2014
 @author: bergr
 """
 import math
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict, Field
 
 # from cls.applications.pyStxm.bl_configs.device_names import *
 from cls.types.stxmTypes import energy_scan_order_types
@@ -189,7 +190,7 @@ def get_base_roi(
     roi_def[USE_CENTER] = True #default
     roi_def[USE_START] = False
 
-    return roi_def
+    return BaseROIModel.model_validate(roi_def).as_dict()
 
 
 def determine_setpoints(roi_def, stepSize=None):
@@ -300,7 +301,7 @@ def get_base_start_stop_roi(
     roi_def[USE_CENTER] = True  # default
     roi_def[USE_START] = False
 
-    return roi_def
+    return BaseStartStopROIModel.model_validate(roi_def).as_dict()
 
 
 # some ROI convienience functions that are useful when updating the scan params in a tableview widget
@@ -608,7 +609,7 @@ def get_epu_pol_dct(pol, offset, angle=0.0):
     roi_def[OFF] = offset
     roi_def[OFF_POSITIONER] = "DNM_EPU_OFFSET"
     roi_def[ANGLE] = angle
-    return roi_def
+    return EPUPolarityModel.model_validate(roi_def).as_dict()
 
 
 # def new_get_base_energy_roi(name, positionerName, start, stop, rng, npoints, dwell, pol_roi, off_roi, stepSize=None, enable=False):
@@ -672,7 +673,7 @@ def get_base_energy_roi(
     roi_def[USE_CENTER] = False
     roi_def[USE_START] = True   # default
 
-    return roi_def
+    return EnergyROIModel.model_validate(roi_def).as_dict()
 
 
 def ensure_left_to_right(roi_def):
@@ -686,6 +687,127 @@ def ensure_left_to_right(roi_def):
 widget_com_cmnd_types = Enum(
     "ROI_CHANGED", "LOAD_SCAN", "ADD_ROI", "DEL_ROI", "SELECT_ROI", "DESELECT_ROI"
 )
+
+
+class _AliasedDictModel(BaseModel):
+    """Base model that serializes with legacy dict key aliases."""
+
+    model_config = ConfigDict(
+        extra="forbid", populate_by_name=True, arbitrary_types_allowed=True
+    )
+
+    def as_dict(self) -> dict:
+        return self.model_dump(by_alias=True)
+
+
+class ActiveDataDictModel(_AliasedDictModel):
+    start_time: Optional[str] = Field(default=None, alias=ADO_START_TIME)
+    end_time: Optional[str] = Field(default=None, alias=ADO_END_TIME)
+    devices: Optional[Any] = Field(default=None, alias=ADO_DEVICES)
+    version: Optional[Any] = Field(default=None, alias=ADO_VERSION)
+    data: dict = Field(default_factory=dict, alias="DATA")
+    cfg: dict = Field(default_factory=dict, alias="CFG")
+
+
+class BaseWdgComDictModel(_AliasedDictModel):
+    cmnd: Optional[str] = Field(default=None, alias=WDGCOM_CMND)
+    spatial_rois: dict = Field(default_factory=dict, alias=WDGCOM_SPATIAL_ROIS)
+    single_lst: dict = Field(default_factory=dict, alias="SINGLE_LST")
+
+
+class BaseROIModel(_AliasedDictModel):
+    """Base ROI structure used for standard region definitions."""
+
+    id_tag: str = Field(default=BASE_ROI, alias=ID)
+    id_val: int = Field(default=-1, alias=ID_VAL)
+    name: str = Field(alias=NAME)
+    center: Optional[float] = Field(default=None, alias=CENTER)
+    range: Optional[float] = Field(default=None, alias=RANGE)
+    npoints: int = Field(alias=NPOINTS)
+    roi_step: Optional[float] = Field(default=None, alias=ROI_STEP)
+    start: Optional[float] = Field(default=None, alias=START)
+    stop: Optional[float] = Field(default=None, alias=STOP)
+    setpoints: list = Field(default_factory=list, alias=SETPOINTS)
+    enabled: bool = Field(default=True, alias=ENABLED)
+    is_point: bool = Field(default=False, alias=IS_POINT)
+    offset: float = Field(default=0.0, alias=OFFSET)
+    positioner: Optional[str] = Field(default=None, alias=POSITIONER)
+    src: Optional[str] = Field(default=None, alias=SRC)
+    top_level: bool = Field(default=False, alias=TOP_LEVEL)
+    data_level: bool = Field(default=False, alias=DATA_LEVEL)
+    scan_res: Optional[str] = Field(default=None, alias=SCAN_RES)
+    use_center: bool = Field(default=True, alias=USE_CENTER)
+    use_start: bool = Field(default=False, alias=USE_START)
+
+
+class BaseStartStopROIModel(BaseROIModel):
+    """Base ROI with start/stop instead of center/range."""
+
+    id_tag: str = Field(default=BASE_START_STOP_ROI, alias=ID)
+    spdb_hdw_accel_use: bool = Field(default=False, alias=SPDB_HDW_ACCEL_USE)
+    spdb_hdw_accel_auto_ddl: bool = Field(default=True, alias=SPDB_HDW_ACCEL_AUTO_DDL)
+    spdb_hdw_accel_reinit_ddl: bool = Field(
+        default=False, alias=SPDB_HDW_ACCEL_REINIT_DDL
+    )
+
+
+class EPUPolarityModel(_AliasedDictModel):
+    """EPU polarization configuration."""
+
+    id_tag: str = Field(default=EPU_POL, alias=ID)
+    id_val: int = Field(default=-1, alias=ID_VAL)
+    name: str = Field(default="", alias=NAME)
+    pol: int = Field(alias=POL)
+    pol_positioner: str = Field(default="DNM_EPU_POLARIZATION", alias=POL_POSITIONER)
+    off: float = Field(alias=OFF)
+    off_positioner: str = Field(default="DNM_EPU_OFFSET", alias=OFF_POSITIONER)
+    angle: float = Field(default=0.0, alias=ANGLE)
+
+
+class EnergyROIModel(BaseStartStopROIModel):
+    """Energy ROI with polarization and energy-specific fields."""
+
+    id_tag: str = Field(default=EV_ROI, alias=ID)
+    scan_idx: Optional[int] = Field(default=None, alias=SCAN_IDX)
+    ev_boundary_roi_start: Optional[float] = Field(
+        default=None, alias=EV_BOUNDARY_ROI_START
+    )
+    pol_id: int = Field(default=1, alias=POL_ID)
+    pol_rois: list = Field(default_factory=list, alias=POL_ROIS)
+    xmcd_en: bool = Field(default=False, alias=XMCD_EN)
+    ev_pol_order: Any = Field(default="EV_THEN_POL", alias=EV_POL_ORDER)
+    dwell: float = Field(default=1.0, alias=DWELL)
+    epu_pol_pnts: list = Field(default_factory=list, alias=EPU_POL_PNTS)
+    epu_off_pnts: list = Field(default_factory=list, alias=EPU_OFF_PNTS)
+    epu_ang_pnts: list = Field(default_factory=list, alias=EPU_ANG_PNTS)
+
+
+class SpatialDbDictModel(_AliasedDictModel):
+    id_tag: str = Field(default=SPATIAL_DB_DICT, alias=ID)
+    wdg_com_cmnd: Optional[str] = Field(default=None, alias=WDGCOM_CMND)
+    id_val: Optional[int] = Field(default=None, alias="ID_VAL")
+
+    x: dict = Field(alias=SPDB_X)
+    y: dict = Field(alias=SPDB_Y)
+    z: dict = Field(alias=SPDB_Z)
+
+    goni: dict = Field(default_factory=dict, alias=SPDB_GONI)
+    osa: dict = Field(default_factory=dict, alias="OSA")
+    zp: dict = Field(default_factory=dict, alias=SPDB_ZP)
+
+    ev_rois: list = Field(default_factory=list, alias=SPDB_EV_ROIS)
+    sub_spatial_rois: Optional[Any] = Field(default=None, alias=SPDB_SUB_SPATIAL_ROIS)
+
+    ev_npoints: int = Field(default=1, alias=SPDB_EV_NPOINTS)
+    rect: tuple = Field(alias=SPDB_RECT)
+
+    plot: dict = Field(default_factory=dict, alias="PLOT")
+    scan_plugin: dict = Field(default_factory=dict, alias="SCAN_PLUGIN")
+    spatial_rois_center: tuple = Field(
+        default=(None, None), alias=SPDB_SPATIAL_ROIS_CENTER
+    )
+    active_data_obj: dict = Field(default_factory=dict, alias=SPDB_ACTIVE_DATA_OBJECT)
+
 """
 	ROI_CHANGED:	a plot or table is sending the msg that a roi has moved/resized
 	LOAD_SCAN:			the scan params contained within should be loaded by the receiver
@@ -1126,7 +1248,7 @@ def make_spatial_db_dict(
         dct, SPDB_ACTIVE_DATA_OBJECT, make_active_data_dict()
     )  # this will contain the Active data odject used by scan for populating data
 
-    return dct
+    return SpatialDbDictModel.model_validate(dct).as_dict()
 
 
 def make_active_data_dict():
@@ -1151,13 +1273,11 @@ def make_active_data_dict():
     dct_put(dct, ADO_CFG_CUR_SAMPLE_POS, None)
     dct_put(dct, ADO_CFG_CUR_SEQ_NUM, None)
     dct_put(dct, ADO_CFG_DATA_DIR, None)
-    dct_put(
-        dct, ADO_CFG_DATA_FILE_NAME, None
-    )  # the data file name WITHOUT the extension, that is determined by the
+    dct_put(dct, ADO_CFG_DATA_FILE_NAME, None)
     dct_put(dct, ADO_CFG_UNIQUEID, None)
     dct_put(dct, ADO_CFG_DATA_STATUS, DATA_STATUS_NOT_FINISHED)
 
-    return dct
+    return ActiveDataDictModel.model_validate(dct).as_dict()
 
 
 def assign_datafile_names_to_sp_db(sp_db, d):
@@ -1171,9 +1291,9 @@ def assign_datafile_names_to_sp_db(sp_db, d):
 def get_datafile_names_from_sp_db(sp_db):
     """d keys ['thumb_name', 'prefix', 'data_ext', 'stack_dir', 'data_name', 'thumb_ext']"""
     ado_obj = dct_get(sp_db, SPDB_ACTIVE_DATA_OBJECT)
-    dct_put(ado_obj, ADO_CFG_DATA_FILE_NAME, d["data_name"])
-    dct_put(ado_obj, ADO_CFG_DATA_THUMB_NAME, d["thumb_name"])
-    dct_put(ado_obj, ADO_CFG_PREFIX, d["prefix"])
+    dct_put(ado_obj, ADO_CFG_DATA_FILE_NAME, sp_db["data_name"])
+    dct_put(ado_obj, ADO_CFG_DATA_THUMB_NAME, sp_db["thumb_name"])
+    dct_put(ado_obj, ADO_CFG_PREFIX, sp_db["prefix"])
 
 
 class ActiveDataObj(object):
@@ -1358,11 +1478,11 @@ def make_base_wdg_com():
     wdg_com = {}
     dct_put(wdg_com, WDGCOM_CMND, None)
     dct_put(wdg_com, WDGCOM_SPATIAL_ROIS, {})
-    dct_put(wdg_com, SPDB_SINGLE_LST_SP_ROIS, [])
+    # dct_put(wdg_com, SPDB_SINGLE_LST_SP_ROIS, [])
     dct_put(wdg_com, SPDB_SINGLE_LST_POL_ROIS, [])
     dct_put(wdg_com, SPDB_SINGLE_LST_DWELLS, [])
     dct_put(wdg_com, SPDB_SINGLE_LST_EV_ROIS, [])
-    return wdg_com
+    return BaseWdgComDictModel.model_validate(wdg_com).as_dict()
 
 
 def get_next_unique_id(regions: Optional[List[dict]], id_key: Optional[str] = None) -> int:

@@ -1234,6 +1234,8 @@ class DcsServerApi(BaseDcsServerApi):
         if 'referencedJsonFiles' in settings:
             if 'positionerConfigFileName' in settings['referencedJsonFiles']:
                 dev_settings = settings['referencedJsonFiles']['positionerConfigFileName']['content']
+            if 'detectorConfigFileName' in settings['referencedJsonFiles']:
+                dev_settings.update(settings['referencedJsonFiles']['detectorConfigFileName']['content'])
         self.device_settings = dev_settings
         return dev_settings
 

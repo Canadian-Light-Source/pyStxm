@@ -472,9 +472,9 @@ class PI_E712_DataRecorder(QtWidgets.QWidget):
         a function to set only the file name not the entire path
 
         so if fname = '002.dat'
-        and the current filepath was: r'<path_to>\2018\guest\0717\001.dat'
+        and the current filepath was: r'<path_to>/2018/guest/0717/001.dat'
 
-        this function will set the filepath to r'<path_to>\2018\guest\0717\002.dat'
+        this function will set the filepath to r'<path_to>/2018/guest/0717/002.dat'
 
         :param fname:
         :return:

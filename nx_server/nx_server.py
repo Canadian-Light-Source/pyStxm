@@ -163,11 +163,13 @@ def process_and_publish_files(pub_socket=None, files=[]):
     return data_lst
 
 
-def process_and_return_files(files=[]):
+def process_and_return_files(files=[], changed_sig=None):
     data_lst = []
     sorted_paths = sorted(files)
     for fname in sorted_paths:
         dct = load_nxstxm_file_to_h5_file_dct(fname, ret_as_dict=True)
+        if changed_sig is not None:
+            changed_sig.emit([dct])  # Emit each dct
         data_lst.append(dct)
         # logging.info(f"NX_SERVER[{HOSTNAME}]:nxstxm: load_file_data for [{fname}]")
 

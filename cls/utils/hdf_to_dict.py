@@ -420,17 +420,12 @@ def add_default_attr(file_path):
         hdf5_file.attrs['default'] = 'entry1'
         hdf5_file['entry1'].attrs['default'] = 'counter0'
 
-def hdf5_to_dict(file_path, load_only_default_data=True):
+def hdf5_to_dict(file_path, load_all_data=True):
     """
     Converts an HDF5 file into a nested Python dictionary.
 
     Args:
         file_path (str): Path to the HDF5 file.
-        load_only_default_data: bool, if True only loads the default entry and default data group to save time and
-            memory, otherwise loads everything. The data in the groups is compressed on disk but when read in python
-            becomes uncompressed in memory, so for large files it can take a long time to read and use a lot of
-            memory (sometimes all), if you only want the default data then set this to True to speed it up and save
-            memory.
 
     Returns:
         dict: Nested dictionary representing the HDF5 file structure.
@@ -444,11 +439,9 @@ def hdf5_to_dict(file_path, load_only_default_data=True):
         group_dict = {"__attrs__": extract_attrs(group)}
         for key, item in group.items():
             if isinstance(item, h5py.Group):
-                if load_only_default_data:
-                    if key in ['instrument','NXmonitor']:
-                        #skip instrument 'NXmonitor'
-                        #print(f"Skipping group '{key}' to save time and memory")
-                        continue
+                # if key in ['instrument','NXmonitor']:
+                #     #skip instrument 'NXmonitor'
+                #     continue
                 group_dict[key] = traverse_h5_group(item)
             elif isinstance(item, h5py.Dataset):
                 group_dict[key] = {
@@ -459,45 +452,14 @@ def hdf5_to_dict(file_path, load_only_default_data=True):
         return group_dict
 
     with h5py.File(file_path, 'r') as h5_file:
-        if 'default' not in h5_file.attrs:
-            print("Default attribute not found in HDF5 file. Adding default attribute with value 'entry1'.")
-            return {}
-
-        entry_name = h5_file.attrs['default'].decode()
-        if entry_name not in h5_file:
-            print(f"Default entry '{entry_name}' not found in HDF5 file. Cannot proceed.")
-            return {}
-        entry = h5_file[entry_name]
-        if 'default' not in entry.attrs:
-            print(f"Default attribute not found in entry '{entry_name}'. Adding default attribute with value 'counter0'.")
-            return {}
-        default_data_name = entry.attrs['default'].decode()
-        if default_data_name not in entry:
-            print(f"Default data '{default_data_name}' not found in entry '{entry_name}'. Cannot proceed.")
-            return {}
-        data_group = entry[default_data_name]
-        #hdf5_dict = traverse_h5_group(data_group)
-        def_data_dict = traverse_h5_group(data_group)
-        start_time = entry['start_time'][()][0].decode('utf-8')
-        end_time = entry['end_time'][()][0].decode('utf-8')
-        title = entry['title'][()][0].decode('utf-8')
-        definition = entry['definition'][()][0].decode('utf-8')
+        hdf5_dict = traverse_h5_group(h5_file)
 
     # make sure the file name is the final file name not the temporary file name
-    hdf5_dict = {}
-    hdf5_dict['__attrs__'] = {}
     hdf5_dict['__attrs__']['file_name'] = file_path
-    hdf5_dict['__attrs__']['default'] = entry_name
-    hdf5_dict[entry_name] = {}
-    hdf5_dict[entry_name]['__attrs__'] = {}
-    hdf5_dict[entry_name]['__attrs__']['default'] = default_data_name
-    hdf5_dict[entry_name][default_data_name] = def_data_dict
-    hdf5_dict[entry_name]['start_time'] = {'__data__': start_time}
-    hdf5_dict[entry_name]['end_time'] = {'__data__': end_time}
-    hdf5_dict[entry_name]['title'] = {'__data__': title}
-    hdf5_dict[entry_name]['definition'] = {'__data__': definition}
 
     return hdf5_dict
+
+
 
 def go():
     print(f"Profiling hdf5_to_dict()")
@@ -510,38 +472,43 @@ def go():
         #pprint.pprint(dct)
         #print("done")
 
-def report_dataset_size_shape(name, obj):
-    import numpy as np
-    import h5py
-    if isinstance(obj, h5py.Dataset):
-        nbytes = np.prod(obj.shape) * obj.dtype.itemsize
-        shape = obj.shape
-        if nbytes > 1e6:
-            print(f"!!!!!!!! !!!!!!!! !!!!!!!! !!!!!!!!  Dataset {name}  UNCOMPRESSED sizeis : {nbytes / 1e6:.2f} MB, shape = ({shape}) !!!!!!!! !!!!!!!! !!!!!!!! !!!!!!!!")
-        else:
-            print(f"Dataset {name} size: {nbytes} bytes")
-
-def print_all_dataset_sizes(h5file):
-    """
-    Print the size in bytes of every dataset in the HDF5 file.
-    """
-    h5file.visititems(report_dataset_size_shape)
-
 
 if __name__ == "__main__":
     from cls.utils.dirlist import dirlist
     from cls.utils.profiling import profile_it
-    data_dir = "/beamlinedata/SM/operations/STXM-data/ASTXM_upgrade_tmp/tmp/pixelator_data/2026/2026-03-19/"
-    fname = os.path.join(data_dir, "Sample_Image_2026-03-19_004.hdf5")
-    #fname = "/beamlinedata/SM/operations/STXM-data/ASTXM_upgrade_tmp/tmp/pixelator_data/2026/2026-03-19/Sample_Stack_2026-03-19_005.hdf5"
+    # import pprint
+    # # Replace 'example.h5' with your HDF5 file path
+    # #file_path = r"C:\test_data\0517\A240517035.hdf5"
+    # file_path = r'C:\test_data\pixelator\defaulted\Sample_Image_2021-03-16_095.hdf5'
+    # files = dirlist(r"C:/test_data/pixelator/defaulted/", ".hdf5")
+    # for f in files:
+    #     add_default_attr(r"C:/test_data/pixelator/defaulted/" + f)
+    # file_path = r'G:\tmpdata\0517\A240517001\A240517001.hdf5'
+    # # dct = read_hdf5_nxstxm_file_with_attributes(file_path)
+    # # #pprint.pprint(tree_structure)
+    # # entry_nm = get_default_entry_name(dct)
+    # # # print(get_default_entry(dct))
+    # # sig_nm = get_default_entry_signal_name(dct)
+    # # # print(get_default_entry_signal(dct))
+    # # # print(get_energy_setpoints(dct))
+    # # # int_dct = get_default_entry_nxinstrument_group(dct)
+    # # # print(get_polarization_offset_angle_from_instrument(dct))
+    # # sp_db = get_sp_db_from_entry_dict(dct)
+    # # pprint.pprint(sp_db)
+    # file_path = r'T:\operations\STXM-data\ASTXM_upgrade_tmp\2024\guest\1231\Sample_Stack_2024-12-31_008.hdf5'
+    # # dct = hdf5_to_dict(file_path)
+    # data_dir = r'T:/operations/STXM-data/ASTXM_upgrade_tmp/2024/guest/1231/'
+    # files = dirlist(r'T:/operations/STXM-data/ASTXM_upgrade_tmp/2024/guest/1231/', '.hdf5')
+    # for file_path in files:
+    #     #dct = get_default_data_from_hdf5_file(os.path.join(data_dir, file_path))
+    #     #dct = hdf5_to_dict(file_path)
+    #
+    #     pprint.pprint(dct)
+    #     print("done")
 
-    if os.path.exists(fname):
-        # with h5py.File(fname, 'r') as f:
-        #     print_all_dataset_sizes(f)
-        dct = hdf5_to_dict(fname, load_only_default_data=False)
-        pprint.pprint(dct)
-        print("done")
+    profile_it("go", bias_val=1.156238437615624e-06)
 
-    else:
-        print("File does not exist")
-        print(fname)
+
+
+
+

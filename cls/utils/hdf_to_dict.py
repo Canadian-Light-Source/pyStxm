@@ -420,34 +420,118 @@ def add_default_attr(file_path):
         hdf5_file.attrs['default'] = 'entry1'
         hdf5_file['entry1'].attrs['default'] = 'counter0'
 
-def hdf5_to_dict(file_path, load_all_data=True):
+def hdf5_to_dict(file_path, load_all_data=True, large_dataset_threshold_mb=50):
     """
     Converts an HDF5 file into a nested Python dictionary.
 
     Args:
         file_path (str): Path to the HDF5 file.
+        load_all_data (bool): If True, load all dataset values into memory.
+            If False, only store shape/dtype metadata for datasets (no actual data).
+        large_dataset_threshold_mb (float): When load_all_data=True, datasets whose
+            uncompressed size exceeds this threshold (in MB) will NOT be loaded into
+            memory — only their shape and dtype are stored. Set to 0 to load everything
+            regardless of size (may crash on large stacks). Default is 50 MB.
 
     Returns:
         dict: Nested dictionary representing the HDF5 file structure.
     """
     def extract_attrs(h5_obj):
         """Extract attributes from an HDF5 object into a dictionary."""
-        return {decode_if_bytes(k): decode_if_bytes(v) for k, v in h5_obj.attrs.items()}
+        attrs = {}
+        for k, v in h5_obj.attrs.items():
+            # Attribute names are scalar strings/bytes; keep them hashable.
+            key = k.decode("utf-8", errors="replace") if isinstance(k, bytes) else str(k)
+            attrs[key] = decode_if_bytes(v)
+        return attrs
+
+    def dataset_size_mb(item):
+        """Return the uncompressed size of a dataset in megabytes."""
+        try:
+            return (item.size * item.dtype.itemsize) / (1024 * 1024)
+        except Exception:
+            return 0
+
+    def is_default_signal_dataset(parent_group, dataset_key):
+        """True when dataset_key is the NXdata signal dataset for parent_group."""
+        try:
+            signal_attr = parent_group.attrs.get("signal", None)
+            signal_name = decode_if_bytes(signal_attr)
+            if isinstance(signal_name, list):
+                signal_name = signal_name[0] if signal_name else None
+            if isinstance(signal_name, bytes):
+                signal_name = signal_name.decode("utf-8", errors="replace")
+            return signal_name == dataset_key
+        except Exception:
+            return False
+
+    def sample_large_dataset(item):
+        """Load reduced data while preserving stack indexing compatibility."""
+        ndim = item.ndim
+        if ndim == 0:
+            return item[()]
+        if ndim == 1:
+            step = max(1, item.shape[0] // 2048)
+            return item[::step]
+        if ndim == 2:
+            sy = max(1, item.shape[0] // 512)
+            sx = max(1, item.shape[1] // 512)
+            return item[::sy, ::sx]
+
+        # For stack-like data [E, Y, X], keep all energy planes so callers can still
+        # index by full energy count; reduce only spatial dimensions.
+        target_spatial = 128
+        sy = max(1, (item.shape[-2] + target_spatial - 1) // target_spatial)
+        sx = max(1, (item.shape[-1] + target_spatial - 1) // target_spatial)
+
+        sel = [slice(None)] * ndim
+        sel[-2] = slice(None, None, sy)
+        sel[-1] = slice(None, None, sx)
+        return item[tuple(sel)]
 
     def traverse_h5_group(group):
         """Recursively traverse an HDF5 group and convert it to a dictionary."""
         group_dict = {"__attrs__": extract_attrs(group)}
         for key, item in group.items():
             if isinstance(item, h5py.Group):
-                # if key in ['instrument','NXmonitor']:
-                #     #skip instrument 'NXmonitor'
-                #     continue
                 group_dict[key] = traverse_h5_group(item)
             elif isinstance(item, h5py.Dataset):
-                group_dict[key] = {
-                    "__data__": decode_if_bytes(item[()]),
-                    "__attrs__": extract_attrs(item),
-                }
+                attrs = extract_attrs(item)
+                if not load_all_data:
+                    # Store metadata only — do not read data into memory
+                    group_dict[key] = {
+                        "__data__": None,
+                        "__shape__": item.shape,
+                        "__dtype__": str(item.dtype),
+                        "__attrs__": attrs,
+                    }
+                elif large_dataset_threshold_mb > 0 and dataset_size_mb(item) > large_dataset_threshold_mb:
+                    # Keep stack compatibility: for default NXdata signal, return sampled data
+                    # instead of None so downstream code still sees an array with expected ndim.
+                    if is_default_signal_dataset(group, key):
+                        sampled = sample_large_dataset(item)
+                        group_dict[key] = {
+                            "__data__": decode_if_bytes(sampled),
+                            "__shape__": item.shape,
+                            "__dtype__": str(item.dtype),
+                            "__attrs__": attrs,
+                            "__sampled__": True,
+                            "__size_mb__": round(dataset_size_mb(item), 2),
+                        }
+                    else:
+                        group_dict[key] = {
+                            "__data__": None,
+                            "__shape__": item.shape,
+                            "__dtype__": str(item.dtype),
+                            "__attrs__": attrs,
+                            "__skipped__": True,
+                            "__size_mb__": round(dataset_size_mb(item), 2),
+                        }
+                else:
+                    group_dict[key] = {
+                        "__data__": decode_if_bytes(item[()]),
+                        "__attrs__": attrs,
+                    }
 
         return group_dict
 
@@ -474,40 +558,43 @@ def go():
 
 
 if __name__ == "__main__":
-    from cls.utils.dirlist import dirlist
-    from cls.utils.profiling import profile_it
-    # import pprint
-    # # Replace 'example.h5' with your HDF5 file path
-    # #file_path = r"C:\test_data\0517\A240517035.hdf5"
-    # file_path = r'C:\test_data\pixelator\defaulted\Sample_Image_2021-03-16_095.hdf5'
-    # files = dirlist(r"C:/test_data/pixelator/defaulted/", ".hdf5")
-    # for f in files:
-    #     add_default_attr(r"C:/test_data/pixelator/defaulted/" + f)
-    # file_path = r'G:\tmpdata\0517\A240517001\A240517001.hdf5'
-    # # dct = read_hdf5_nxstxm_file_with_attributes(file_path)
-    # # #pprint.pprint(tree_structure)
-    # # entry_nm = get_default_entry_name(dct)
-    # # # print(get_default_entry(dct))
-    # # sig_nm = get_default_entry_signal_name(dct)
-    # # # print(get_default_entry_signal(dct))
-    # # # print(get_energy_setpoints(dct))
-    # # # int_dct = get_default_entry_nxinstrument_group(dct)
-    # # # print(get_polarization_offset_angle_from_instrument(dct))
-    # # sp_db = get_sp_db_from_entry_dict(dct)
-    # # pprint.pprint(sp_db)
-    # file_path = r'T:\operations\STXM-data\ASTXM_upgrade_tmp\2024\guest\1231\Sample_Stack_2024-12-31_008.hdf5'
-    # # dct = hdf5_to_dict(file_path)
-    # data_dir = r'T:/operations/STXM-data/ASTXM_upgrade_tmp/2024/guest/1231/'
-    # files = dirlist(r'T:/operations/STXM-data/ASTXM_upgrade_tmp/2024/guest/1231/', '.hdf5')
-    # for file_path in files:
-    #     #dct = get_default_data_from_hdf5_file(os.path.join(data_dir, file_path))
-    #     #dct = hdf5_to_dict(file_path)
+    import pprint
+    # from cls.utils.dirlist import dirlist
+    # from cls.utils.profiling import profile_it
+    # # import pprint
+    # # # Replace 'example.h5' with your HDF5 file path
+    # # #file_path = r"C:\test_data\0517\A240517035.hdf5"
+    # # file_path = r'C:\test_data\pixelator\defaulted\Sample_Image_2021-03-16_095.hdf5'
+    # # files = dirlist(r"C:/test_data/pixelator/defaulted/", ".hdf5")
+    # # for f in files:
+    # #     add_default_attr(r"C:/test_data/pixelator/defaulted/" + f)
+    # # file_path = r'G:\tmpdata\0517\A240517001\A240517001.hdf5'
+    # # # dct = read_hdf5_nxstxm_file_with_attributes(file_path)
+    # # # #pprint.pprint(tree_structure)
+    # # # entry_nm = get_default_entry_name(dct)
+    # # # # print(get_default_entry(dct))
+    # # # sig_nm = get_default_entry_signal_name(dct)
+    # # # # print(get_default_entry_signal(dct))
+    # # # # print(get_energy_setpoints(dct))
+    # # # # int_dct = get_default_entry_nxinstrument_group(dct)
+    # # # # print(get_polarization_offset_angle_from_instrument(dct))
+    # # # sp_db = get_sp_db_from_entry_dict(dct)
+    # # # pprint.pprint(sp_db)
+    # # file_path = r'T:\operations\STXM-data\ASTXM_upgrade_tmp\2024\guest\1231\Sample_Stack_2024-12-31_008.hdf5'
+    # # # dct = hdf5_to_dict(file_path)
+    # # data_dir = r'T:/operations/STXM-data/ASTXM_upgrade_tmp/2024/guest/1231/'
+    # # files = dirlist(r'T:/operations/STXM-data/ASTXM_upgrade_tmp/2024/guest/1231/', '.hdf5')
+    # # for file_path in files:
+    # #     #dct = get_default_data_from_hdf5_file(os.path.join(data_dir, file_path))
+    # #     #dct = hdf5_to_dict(file_path)
+    # #
+    # #     pprint.pprint(dct)
+    # #     print("done")
     #
-    #     pprint.pprint(dct)
-    #     print("done")
+    # profile_it("go", bias_val=1.156238437615624e-06)
 
-    profile_it("go", bias_val=1.156238437615624e-06)
-
+    dct = hdf5_to_dict("/beamlinedata/SM/operations/STXM-data/ASTXM_upgrade_tmp/tmp/pixelator_data/2026/tst/Sample_Stack_2026-03-17_006.hdf5")
+    pprint.pprint(dct)
 
 
 

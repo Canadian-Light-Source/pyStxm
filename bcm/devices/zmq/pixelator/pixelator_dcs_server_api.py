@@ -1887,6 +1887,8 @@ class DcsServerApi(BaseDcsServerApi):
         """
         Process all items in the load_file_q, calling load_file for each one
         """
+        # prevent loop from accidentally sending multiple load file req's for same file
+        file_lst = []
         if not self.busy:
             self.busy = True
             while not self.load_file_q.empty():
@@ -1896,7 +1898,8 @@ class DcsServerApi(BaseDcsServerApi):
                     # Extract directory and filename from the full path
                     file_path = dct.get('file_name', '')
 
-                    if file_path:
+                    if file_path and file_path not in file_lst:
+                        file_lst.append(file_path)
                         data_dir, fprefix, fsuffix = get_file_path_as_parts(file_path)
                         # Call load_file
                         self.load_file(data_dir, file_path)

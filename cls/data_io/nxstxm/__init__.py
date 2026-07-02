@@ -1507,7 +1507,7 @@ class Serializer(event_model.DocumentRouter):
             xdata = np.array(dct_get(rois, SPDB_XSETPOINTS), dtype=np.float32)
             ydata = np.array(dct_get(rois, SPDB_YSETPOINTS), dtype=np.float32)
             # make sure dwell is in seconds
-            dwell = np.float32(self._cur_scan_md[doc["run_start"]]["dwell"]) * 0.001
+            dwell = self._cur_scan_md[doc["run_start"]]["dwell"] * 0.001
             spid = list(self._wdg_com["SPATIAL_ROIS"].keys())[0]
             ev_setpoints = []
             for ev_roi in self._wdg_com["SPATIAL_ROIS"][spid]["EV_ROIS"]:

@@ -379,15 +379,15 @@ class BaseLineSpecScanClass(BaseScan):
                 DECCEL_DISTANCE = self.x_roi[RANGE] * deccel_dist_prcnt_pv.get()
                 mtr_x.velocity.put(self.scan_velo)
                 piezo_mtr_x.enable_marker_position(True)
-                yield from bps.mv(sisdev.run, 1, group='SIS3820')
-                yield from bps.wait('SIS3820')
+                for d in dets:
+                    if hasattr(d, 'run'):
+                        yield from bps.mv(d.run, 1, group='SIS3820')
 
                 yield from bps.mv(mtr_x, self.x_roi[STOP] + DECCEL_DISTANCE, group='BB')
                 yield from bps.wait('BB')
                 yield from bps.trigger_and_read(dets)
                 piezo_mtr_x.enable_marker_position(False)
 
-                mtr_x.velocity.put(3500)
                 yield from bps.mv(mtr_x, self.x_roi[START] - ACCEL_DISTANCE, group='CC')
                 yield from bps.wait('CC')
 

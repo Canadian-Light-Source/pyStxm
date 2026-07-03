@@ -134,17 +134,26 @@ class BaseCoarseImageScanClass(BaseScan):
             _logger.error("Scan would violate soft limits of Y motor")
             return (False)
 
-        #before starting scan check the interferometers, note BOTH piezo's must be off first
+        # #before starting scan check the interferometers, note BOTH piezo's must be off first
+        # if the volts of the piezo are not within threshold of the center (50 volts) then do a recenter otherwise dont
+        if not mtr_x.do_voltage_check(threashold=10.0) or not mtr_y.do_voltage_check(threshold=10.0):
+            self.mtr_recenter_msg.show()
+
+            mtr_x.do_autozero()
+            mtr_x.reset_interferometers()
+
+            mtr_y.do_autozero()
+            mtr_y.reset_interferometers()
+
+            self.mtr_recenter_msg.hide()
+
         mtr_x.set_piezo_power_off()
         mtr_y.set_piezo_power_off()
-
-        mtr_x.do_interferometer_check()
-        mtr_y.do_interferometer_check()
 
         mtr_x.move_coarse_to_scan_start(start=xstart, stop= self.x_roi[STOP], npts=self.x_roi[NPOINTS], dwell=self.dwell)
         mtr_y.move_coarse_to_position(ystart, False)
 
-        return(True)
+        return True
 
     def verify_scan_velocity(self):
         """
@@ -158,9 +167,9 @@ class BaseCoarseImageScanClass(BaseScan):
         #coarse scan
         self.scan_velo = self.calc_scan_velo(crs_x, self.x_roi[RANGE], self.x_roi[NPOINTS], self.dwell)
         if self.scan_velo > 0:
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def make_pxp_scan_plan(self, dets, bi_dir=False, md={}):
         dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()  # skip_lst)

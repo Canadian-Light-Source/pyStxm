@@ -187,7 +187,7 @@ class BaseFocusScanClass(BaseScan):
             mtr_x.set_piezo_power_off()
             mtr_y.set_piezo_power_off()
 
-        return(True)
+        return True
 
     # def configure_devs(self, dets):
     #     """

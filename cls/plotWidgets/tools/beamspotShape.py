@@ -28,6 +28,7 @@ from plotpy.mathutils.geometry import (
     vector_rotation,
     compute_center,
 )
+from plotpy.styles import ItemParameters
 
 from plotpy.items.shape.polygon import PolygonShape
 
@@ -57,8 +58,13 @@ class BeamSpotShape(PolygonShape):
         self.shapeparam.symbol.color = clr
         self.shapeparam.fill.color = clr
         self.shapeparam.sel_fill.color = clr
+        self.shapeparam.line.color = clr
+        self.shapeparam.sel_line.color = clr
 
-        self.shapeparam.update_shape(self)
+        params = ItemParameters()
+        params.add("ShapeParam", self, self.shapeparam)  # type: ignore[arg-type]
+        self.set_item_parameters(params)
+
 
     def get_xdiameter(self):
         """Return the coordinates of the ellipse's X-axis diameter"""
@@ -271,7 +277,9 @@ class BeamSpotShape(PolygonShape):
     def __setstate__(self, state):
         self.shapeparam, self.points, z = state
         self.setZ(z)
-        self.shapeparam.update_shape(self)
+        params = ItemParameters()
+        params.add("ShapeParam", self, self.shapeparam)  # type: ignore[arg-type]
+        self.set_item_parameters(params)
 
 
 

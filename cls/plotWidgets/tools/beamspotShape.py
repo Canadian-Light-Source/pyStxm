@@ -58,8 +58,6 @@ class BeamSpotShape(PolygonShape):
         self.shapeparam.symbol.color = clr
         self.shapeparam.fill.color = clr
         self.shapeparam.sel_fill.color = clr
-        self.shapeparam.line.color = clr
-        self.shapeparam.sel_line.color = clr
 
         params = ItemParameters()
         params.add("ShapeParam", self, self.shapeparam)  # type: ignore[arg-type]

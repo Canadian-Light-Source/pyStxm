@@ -153,7 +153,7 @@ class BaseSampleFineImageScanClass(BaseScan):
         # mtr_x.move_coarse_to_scan_start(start=xstart, stop= self.x_roi[STOP], npts=self.x_roi[NPOINTS], dwell=self.dwell)
         # mtr_y.move_coarse_to_position(ystart, False)
 
-        return(True)
+        return True
 
     def verify_scan_velocity(self):
         """
@@ -167,9 +167,9 @@ class BaseSampleFineImageScanClass(BaseScan):
 
         self.scan_velo = self.calc_scan_velo(mtr_x, self.x_roi[RANGE], self.x_roi[NPOINTS], self.dwell)
         if self.scan_velo > 0:
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def make_scan_plan(self, dets, md=None, bi_dir=False):
         """

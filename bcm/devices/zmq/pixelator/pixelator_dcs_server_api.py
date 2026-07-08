@@ -1053,7 +1053,6 @@ class DcsServerApi(BaseDcsServerApi):
                             if dev.get_position() == 0.0:
                                 dev.move(700.0)
 
-
                         dev.set_positioner_dct(positioner_dct)
 
                         if hasattr(dev, 'set_low_limit'):
@@ -1062,14 +1061,10 @@ class DcsServerApi(BaseDcsServerApi):
                         if hasattr(dev, 'set_high_limit'):
                             #dev.set_high_limit(positioner_dct['upperSoftLimit'])
                             dev._high_limit = positioner_dct['upperSoftLimit']
-
-
-
                         if hasattr(dev, 'set_units'):
                             #dev.set_units(positioner_dct['unit'])
                             dev._units = positioner_dct['unit']
                         if hasattr(dev, 'max_velo'):
-                            #dev.max_velo.set(positioner_dct['maxVelocity'])
                             dev._max_velo = positioner_dct['maxVelocity']
 
                         # now record the details passed from pixelator
@@ -1117,7 +1112,7 @@ class DcsServerApi(BaseDcsServerApi):
             # DNM_ZP_DEF_A = A1
             appdevs = {'DNM_ENERGY': 650,
                        'DNM_ZP_A1': 11.359,
-                       'DNM_A0MAX': 1300,
+                       'DNM_A0MAXIMUM': 1300,
                        'DNM_FOCAL_LENGTH': 650 * 11.359}
             for app_devname, val in appdevs.items():
                 if app_devname in list(self.parent.devs.keys()):
@@ -1232,6 +1227,18 @@ class DcsServerApi(BaseDcsServerApi):
             _logger.warn(f"get_settings: failed to get settings from Pixelator")
             dct = {}
         return dct
+
+    def get_devices_from_settings(self, settings: dict={}):
+        """ if the keys exist return the device_settings"""
+        dev_settings = {}
+        if 'referencedJsonFiles' in settings:
+            if 'positionerConfigFileName' in settings['referencedJsonFiles']:
+                dev_settings = settings['referencedJsonFiles']['positionerConfigFileName']['content']
+            if 'detectorConfigFileName' in settings['referencedJsonFiles']:
+                dev_settings.update(settings['referencedJsonFiles']['detectorConfigFileName']['content'])
+        self.device_settings = dev_settings
+        return dev_settings
+
 
     def put(self, put_dct):
         """
@@ -1880,6 +1887,8 @@ class DcsServerApi(BaseDcsServerApi):
         """
         Process all items in the load_file_q, calling load_file for each one
         """
+        # prevent loop from accidentally sending multiple load file req's for same file
+        file_lst = []
         if not self.busy:
             self.busy = True
             while not self.load_file_q.empty():
@@ -1889,7 +1898,8 @@ class DcsServerApi(BaseDcsServerApi):
                     # Extract directory and filename from the full path
                     file_path = dct.get('file_name', '')
 
-                    if file_path:
+                    if file_path and file_path not in file_lst:
+                        file_lst.append(file_path)
                         data_dir, fprefix, fsuffix = get_file_path_as_parts(file_path)
                         # Call load_file
                         self.load_file(data_dir, file_path)

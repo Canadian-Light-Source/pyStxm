@@ -186,8 +186,10 @@ class main_object_base(QtCore.QObject):
         dct_put(self.main_obj, "APP.VER", ver_dct["ver"])
         dct_put(self.main_obj, "APP.MAJOR_VER", ver_dct["major_ver"])
         dct_put(self.main_obj, "APP.MINOR_VER", ver_dct["minor_ver"])
+        dct_put(self.main_obj, "APP.PATCH_VER", ver_dct["patch_ver"])
         dct_put(self.main_obj, "APP.AUTHOR", ver_dct["auth"])
         dct_put(self.main_obj, "APP.DATE", ver_dct["date"])
+        dct_put(self.main_obj, "APP.BRANCH", ver_dct["branch"])
         dct_put(self.main_obj, "APP.COMMIT", ver_dct["commit"])
         dct_put(self.main_obj, "APP.COMMITED_BY", ver_dct["commited_by"])
         dct_put(self.main_obj, "SCAN.CFG.SCAN_TYPE", "THIS IS THE SCAN CFG TYPE")
@@ -398,6 +400,40 @@ class main_object_base(QtCore.QObject):
                 #update the dcs server
                 #self.engine_widget.engine.set_command_request_port(DCS_REQ_PORT)
 
+
+    def do_local_file_reload(self, data_dir: str=None, filename: str=None):
+        """
+        this function is used when the data directory is local to load the data directly without sending a request to the DCS server
+        """
+        if data_dir is None:
+            data_dir = self.data_dir
+            current_date = datetime.now().strftime('%Y-%m-%d')
+            data_dir = os.path.join(data_dir, current_date)
+
+        if self._local_reload_active:
+            _logger.info("do_local_data_reload: local reload already in progress, skipping duplicate request")
+            return
+
+        self._local_reload_active = True
+        self.load_files_status.emit(False)
+
+        fpath = os.path.join(data_dir, filename)
+
+        worker = Worker(self._load_local_file_load_in_worker, fpath)
+        worker.signals.result.connect(self._on_local_reload_result)
+        worker.signals.error.connect(self._on_local_reload_error)
+        worker.signals.finished.connect(self._on_local_reload_finished)
+        self._worker_pool.start(worker)
+
+    def _load_local_file_load_in_worker(self, filename: str):
+        """Heavy file discovery and parsing executed in a background thread."""
+        from nx_server.nx_server import process_and_return_files
+
+        dirs_dct = {}
+        dirs_dct['files'] = [filename]
+        return process_and_return_files(files=dirs_dct['files'])
+
+
     def do_local_data_reload(self, data_dir: str=None):
         """
         this function is used when the data directory is local to load the data directly without sending a request to the DCS server
@@ -414,19 +450,23 @@ class main_object_base(QtCore.QObject):
         self._local_reload_active = True
         self.load_files_status.emit(False)
 
-        worker = Worker(self._load_local_data_in_worker, data_dir)
-        worker.signals.result.connect(self._on_local_reload_result)
+        worker = Worker(self._load_local_data_in_worker, data_dir, changed_callback=self._on_local_reload_result)
+        # when each file is processed the worker will emit a signal with the parsed data, we connect that signal to
+        # the _on_local_reload_result method
+        worker.signals.changed.connect(self._on_local_reload_result)
         worker.signals.error.connect(self._on_local_reload_error)
         worker.signals.finished.connect(self._on_local_reload_finished)
         self._worker_pool.start(worker)
 
-    def _load_local_data_in_worker(self, data_dir: str):
+    def _load_local_data_in_worker(self, data_dir: str, changed_callback = None):
         """Heavy file discovery and parsing executed in a background thread."""
         from nx_server.nx_server import get_files_with_extension_and_subdirs, process_and_return_files
 
         dirs_dct = get_files_with_extension_and_subdirs(data_dir, extension='.hdf5')
         dirs_dct['files'] = [os.path.join(dirs_dct['directory'], f) for f in dirs_dct['files']]
-        return process_and_return_files(files=dirs_dct['files'])
+        stack_files = [os.path.join(dirs_dct['directory'], f, f'{f}.hdf5') for f in dirs_dct['directories']]
+        dirs_dct['files'] = dirs_dct['files'] + stack_files
+        return process_and_return_files(files=dirs_dct['files'], changed_sig=changed_callback)
 
     def _on_local_reload_result(self, data_list):
         """Emit parsed file dictionaries back on the main thread."""
@@ -564,22 +604,25 @@ class main_object_base(QtCore.QObject):
         This function loads the data directory from the DCS server and updates the remote file system info.
         It is used to load the data directory from the DCS server.
         """
-        if data_dir is None:
-            data_dir = self.data_dir
-        #file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
-        cmd_args = {}
-        cmd_args['directory'] = data_dir
-        cmd_args['extension'] = extension
-        cmd_args['file'] = os.path.join(data_dir, fname)
-        res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILE, [], '', data_dir, nx_app_def='nxstxm',
-                                     host=self.nx_server_host, port=self.nx_server_port,
-                                     verbose=False, cmd_args=cmd_args)
-        # #print(f"ZMQDevManager: nx_server_load_file: {h5_file_dct}")
-        if 'directories' in res_dct.keys():
-            h5_file_dct = nulls_to_nans(json.loads(res_dct['directories']))
-            # emit the signal that new data has arrived, the contact_sheet will be called to create a data thumbnail with
-            # this dict
-            self.engine_widget.new_data.emit(h5_file_dct)
+        if self.data_dir_is_local:
+            self.do_local_file_reload(data_dir, fname)
+        else:
+            if data_dir is None:
+                data_dir = self.data_dir
+            #file_lst = self.dcs_server_api.load_directory(data_dir, extension=extension)
+            cmd_args = {}
+            cmd_args['directory'] = data_dir
+            cmd_args['extension'] = extension
+            cmd_args['file'] = os.path.join(data_dir, fname)
+            res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.LOADFILE_FILE, [], '', data_dir, nx_app_def='nxstxm',
+                                         host=self.nx_server_host, port=self.nx_server_port,
+                                         verbose=False, cmd_args=cmd_args)
+            # #print(f"ZMQDevManager: nx_server_load_file: {h5_file_dct}")
+            if 'directories' in res_dct.keys():
+                h5_file_dct = nulls_to_nans(json.loads(res_dct['directories']))
+                # emit the signal that new data has arrived, the contact_sheet will be called to create a data thumbnail with
+                # this dict
+                self.engine_widget.new_data.emit(h5_file_dct)
 
     def nx_server_load_files(self, data_dir: str=None, *, file_lst: [str], extension='.hdf5') -> None:
         """

@@ -50,8 +50,15 @@ def gen_version_json():
     os.chdir(abs_path_to_top)
     commit_uid = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip()
     commit_uid = commit_uid.decode("utf-8")
-    # commit_date = subprocess.check_output(["git", "show", "-s", "--format=%ci", str(commit_uid)])
-    #commit_date = [str(subprocess.check_output(["git", "show", "-s", commit_uid])).split("\\n")[2]
+
+    tag = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"]).decode('utf-8').strip()
+    _major = tag.split(".")[0].replace("v", "")
+    _minor = tag.split(".")[1]
+    _patch = tag.split(".")[2]
+
+    branch_lines = subprocess.check_output(["git", "branch", "--contains", "HEAD"]).decode('utf-8').strip().split(" ")
+    branch = branch_lines[1]
+
     lines = str(subprocess.check_output(["git", "show", "-s", commit_uid])).split("\\n")
     for l in lines:
         if l.find("Date:") > -1:
@@ -60,10 +67,12 @@ def gen_version_json():
             commited_by = l.replace("Author: ", "")
 
     dct = {
-        "ver": "3.0",
-        "ver_str": "Version 3.0",
-        "major_ver": "3",
-        "minor_ver": "0",
+        "ver": tag,
+        "ver_str": f"Version {tag.replace('v', '')}",
+        "major_ver": f"{_major}",
+        "minor_ver": f"{_minor}",
+        "patch_ver": f"{_patch}",
+        "branch": branch,
         "commit": str(commit_uid),
         "commited_by": commited_by,
         "date": commit_date,

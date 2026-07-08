@@ -814,7 +814,15 @@ class BaseScan(QtCore.QObject):
         ret = True
         if hasattr(mtr, "get_max_velo"):
             vmax = mtr.get_max_velo()
-            if desired_velo > vmax:
+            if vmax == 0.0:
+                msg = (
+                    f"The motor with name [{mtr.name}] has been initialized with a max velocity of 0.0.\n"
+                    f"Which is invalid, check device configuration.\n\n"
+                )
+                notify(f"Error: Max Velocity cannot be 0.0", msg, "Ok")
+                ret = False
+
+            elif desired_velo > vmax:
                 min_dwell = (rng / (npoints * vmax)) * 1000.0
                 min_npoints = int((rng / (dwell * 0.001 * vmax)) + 1)
                 max_range = vmax * npoints * (dwell * 0.001)
@@ -1210,36 +1218,99 @@ class BaseScan(QtCore.QObject):
         mtr_y = self.main_obj.device(mtr_dct["sy_name"])
         mtr_fx = self.main_obj.device(mtr_dct["fx_name"])
         mtr_fy = self.main_obj.device(mtr_dct["fy_name"])
+
         suspnd_controller_fbk = self.main_obj.device("DNM_E712_SSPND_CTRLR_FBK")
         if suspnd_controller_fbk:
             # make sure E712 controller feedback of scan is enabled as teh autozero function relies on the moving feedback
             suspnd_controller_fbk.put(0)
 
-        #if not mtr_x.is_fine_already_near_center(x_roi[CENTER]) or not mtr_y.is_fine_already_near_center(y_roi[CENTER]):
-        if not mtr_x.is_fine_in_range(self.x_roi) or not mtr_y.is_fine_in_range(self.y_roi):
-            #inform the user that we first need to move coarse motor and recenter piezo
+        if self.is_fine_scan:
+            # mtry to center the piezos before the voltage check
+            mtr_fx.move(self.x_roi[CENTER])
+            mtr_fy.move(self.y_roi[CENTER])
+
+        volts_out_of_range = True if (not mtr_x.do_voltage_check() or not mtr_y.do_voltage_check()) else False
+        fine_in_range = True if (mtr_x.is_fine_in_range(self.x_roi) and mtr_y.is_fine_in_range(self.y_roi)) else False
+
+        # if not mtr_x.is_fine_already_near_center(x_roi[CENTER]) or not mtr_y.is_fine_already_near_center(y_roi[CENTER]):
+        #if volts_out_of_range or (not mtr_x.is_fine_in_range(self.x_roi) or not mtr_y.is_fine_in_range(self.y_roi)):
+        if self.is_fine_scan and (volts_out_of_range or (not fine_in_range)):
+            print("\n\n\n\nFINE SCAN:")
+            if volts_out_of_range:
+                print("fine_scan_go_to_scan_start: %%%%%% VOLTS ARE OUT OF RANGE SO RECENTERING")
+            else:
+                print("fine_scan_go_to_scan_start: %%%%%% PIEZO DISTANCE IS OUT OF RANGE SO RECENTERING")
+            # # inform the user that we first need to move coarse motor and recenter piezo
             self.mtr_recenter_msg.show()
 
-            #before starting scan check the interferometers, note BOTH piezo's must be off first
-            mtr_x.set_piezo_power_off()
-            mtr_y.set_piezo_power_off()
-
+            mtr_x.do_interferometer_check()
             mtr_x.do_autozero()
             mtr_y.do_autozero()
 
-            mtr_x.do_interferometer_check()
-            mtr_y.do_interferometer_check()
+            mtr_x.set_piezo_power_off()
+            mtr_y.set_piezo_power_off()
+            print(f"fine_scan_go_to_scan_start: Piezo's are now powered off")
 
-            mtr_x.move_to_scan_start(start=self.x_roi[START], stop=self.x_roi[STOP], npts=self.x_roi[NPOINTS], dwell=self.dwell, start_in_center=True, line_scan=self.is_lxl)
-            mtr_y.move_to_scan_start(start=self.y_roi[START], stop=self.y_roi[STOP], npts=self.y_roi[NPOINTS], dwell=self.dwell, start_in_center=True, line_scan=False)
-            #mtr_y.move_to_position(y_roi[START], False)
+            mtr_x.move_to_scan_start(start=self.x_roi[START], stop=self.x_roi[STOP], npts=self.x_roi[NPOINTS],
+                                     dwell=self.dwell, start_in_center=True, line_scan=self.is_lxl)
+            print(f"\tX motor in position {self.x_roi[CENTER]}")
+            #time.sleep(0.5)
+            mtr_y.move_to_scan_start(start=self.y_roi[START], stop=self.y_roi[STOP], npts=self.y_roi[NPOINTS],
+                                     dwell=self.dwell, start_in_center=True, line_scan=False)
+            print(f"\tY motor in position {self.y_roi[CENTER]}")
+            #time.sleep(0.5)
+            # mtr_y.move_to_position(y_roi[START], False)
+            mtr_x.reset_interferometers()
+            print(f"\tX interferometers has been reset and Cx position set to Cx:{mtr_x.get_coarse_position()} Fx:{mtr_x.get_fine_position()}")
+            mtr_y.reset_interferometers()
+            print(f"\tY interferometers has been reset and Fy position set to Cy:{mtr_y.get_coarse_position()} Fy:{mtr_y.get_fine_position()}")
+            time.sleep(0.25)
+
             self.mtr_recenter_msg.hide()
+
+        # elif not self.is_fine_scan and (not mtr_x.do_voltage_check() or not mtr_y.do_voltage_check()):
+        elif not self.is_fine_scan and not volts_out_of_range:
+            # COARSE SCAN
+            print("\n\n\n\nCOARSE SCAN:")
+            print("fine_scan_go_to_scan_start:  !!!!!!!!!!!! Coarse Scan and VOLTS ARE OUT OF RANGE SO RECENTERING")
+            self.mtr_recenter_msg.show()
+
+            mtr_x.do_interferometer_check()
+            mtr_x.do_autozero()
+            mtr_y.do_autozero()
+
+            mtr_x.set_piezo_power_off()
+            mtr_y.set_piezo_power_off()
+            print(f"fine_scan_go_to_scan_start: Piezo's are now powered off")
+
+            mtr_x.move_to_scan_start(start=self.x_roi[START], stop=self.x_roi[STOP], npts=self.x_roi[NPOINTS],
+                                     dwell=self.dwell, start_in_center=True, line_scan=self.is_lxl)
+            time.sleep(0.5)
+            print(f"\tX motor in position {self.x_roi[CENTER]}")
+            # time.sleep(0.5)
+            mtr_y.move_to_scan_start(start=self.y_roi[START], stop=self.y_roi[STOP], npts=self.y_roi[NPOINTS],
+                                     dwell=self.dwell, start_in_center=True, line_scan=False)
+            print(f"\tY motor in position {self.y_roi[CENTER]}")
+            time.sleep(0.5)
+            # mtr_y.move_to_position(y_roi[START], False)
+            mtr_x.reset_interferometers()
+            time.sleep(0.5)
+            print(
+                f"\tX interferometers has been reset and Fx position set to Cx:{mtr_x.get_coarse_position()} Fx:{mtr_x.get_fine_position()}")
+            mtr_y.reset_interferometers()
+            time.sleep(0.5)
+            print(
+                f"\tY interferometers has been reset and Fy position set to Cy:{mtr_y.get_coarse_position()} Fy:{mtr_y.get_fine_position()}")
+            self.mtr_recenter_msg.hide()
+
         else:
+            print("\n\n\n\nFINE SCAN and ALL IN RANGE")
             mtr_x.set_piezo_power_on()
             mtr_y.set_piezo_power_on()
             mtr_fx.move(self.x_roi[START])
             mtr_fy.move(self.y_roi[START])
 
+        #time.sleep(0.5)
         mtr_x.set_piezo_power_on()
         mtr_y.set_piezo_power_on()
 
@@ -4459,7 +4530,8 @@ class BaseScan(QtCore.QObject):
         self.is_line_spec = False
         self.file_saved = False
         self.stack = False
-        self.is_horiz_line = (self.sp_db["Y"]["RANGE"] <  0.0001)
+        y_range = self.sp_db["Y"]['STOP'] - self.sp_db["Y"]['START']
+        self.is_horiz_line = (abs(y_range) < 0.0001)
 
 
         if self.scan_sub_type == scan_sub_types.LINE_UNIDIR:

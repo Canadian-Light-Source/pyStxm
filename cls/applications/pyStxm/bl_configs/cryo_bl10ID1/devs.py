@@ -532,7 +532,7 @@ dev_dct["PVS"] = [
         "sim": "False",
     },
     {
-        "name": "DNM_A0MAX",
+        "name": "DNM_A0MAXIMUM",
         "class": "make_basedevice",
         "cat": "PVS",
         "dcs_nm": "BL1610-I10:ENERGY:uhv:A0Max",

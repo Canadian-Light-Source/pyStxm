@@ -143,7 +143,7 @@ class PositionersPanel(QtWidgets.QWidget):
 
             mtr = devs_dct[dev_nm]
             widg = QtWidgets.QWidget()
-            if hasattr(mtr, "enums"):
+            if hasattr(mtr, "enums") and len(mtr.enums) > 0:
                 # assume it needs teh combobox setter
                 dev_ui = uic.loadUi(os.path.join(mtrDetailDir, "combofbk_small.ui"), widg)
                 dev_ui.spComboBox.mtr_info = (dev_nm, dev_ui, widg, mtr)
@@ -802,7 +802,7 @@ class PositionersPanel(QtWidgets.QWidget):
             # (dev, dev_ui, widg, mtr) = self.mtr_dict[pvname[0:idx]]
             (dev, dev_ui, widg, mtr) = self.mtr_dict[pvname]
             _dct = {}
-            if hasattr(mtr, "enums"):
+            if hasattr(mtr, "enums") and len(mtr.enums) > 0:
                 val = int(kwargs["value"])
                 # its the combop box so use the enumeration strings instead of integer value
                 s = mtr.enums[val]

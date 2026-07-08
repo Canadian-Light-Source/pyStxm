@@ -188,13 +188,19 @@ class sample_abstract_motor(MotorQt):
         """
         return instance of the coarse motor
         """
-        return(self._coarse_mtr)
+        return self._coarse_mtr
+
+    def get_coarse_position(self):
+        return self._coarse_mtr.get_position()
 
     def get_fine_mtr(self):
         """
         return instance of the coarse motor
         """
-        return(self._fine_mtr)
+        return self._fine_mtr
+
+    def get_fine_position(self):
+        return self._fine_mtr.get_position()
 
     def set_coarse_fine_ranges(self, coarse: float, fine: float):
         if coarse:
@@ -211,7 +217,7 @@ class sample_abstract_motor(MotorQt):
         """
         min = roi[START]
         max = roi[STOP]
-        return(min, max)
+        return min, max
 
     def is_fine_in_range(self, roi):
         """
@@ -231,6 +237,7 @@ class sample_abstract_motor(MotorQt):
             smin_in_range = True
         if smax < cmax:
             smax_in_range = True
+        print(f"is_fine_in_range: smin_in_range={smin_in_range}, smax_in_range={smax_in_range}")
         return smin_in_range and smax_in_range
 
     # def check_scan_limits(self, start: float, stop: float, coarse_only: bool = False) -> bool:
@@ -280,16 +287,18 @@ class sample_abstract_motor(MotorQt):
         take a motor and check to see if its feedback position is within a deadband of the setpoint
         """
         fbk = float(mtr.user_readback.get())
-        threshold = 5.0
+        threshold = 10.0
         return  math.fabs(fbk - setpoint) <= threshold
 
-    def do_voltage_check(self):
+    def do_voltage_check(self, threshold=30.0):
         """
         take a fine (piezo) motor and check to see if its current voltage is within +-10 volts of mid range (50)
         if it is return True else False
         """
         volt_fbk = float(self._fine_mtr.output_volt_rbv.get())
-        threshold = 10.0
+        # threshold = 10.0
+        # threshold = 30.0
+
         return math.fabs(E712_MID_RANGE_VOLTS - volt_fbk) <= threshold
 
     def do_interferometer_check(self):
@@ -428,6 +437,14 @@ class sample_abstract_motor(MotorQt):
         # # push mid range volts to open loop so that peizo should be in center of physical range
         # self._fine_mtr.output_volt.put(E712_MID_RANGE_VOLTS)
         # self.reset_interferometers()
+
+        # ### todo: TO TEST JULY 2
+        # self._fine_mtr.servo_power.put(1)
+        # # first put Fx back to center of Cx
+        # cx_sp = self._coarse_mtr.user_setpoint.get()
+        # self._fine_mtr.move(cx_sp)
+        # self._fine_mtr.servo_power.put(0)
+        # ######### END TEST
 
         self._coarse_mtr.update_msta()
         # check to see if motor is already on a limit because if it is and you request a move it will throw an exception
@@ -604,6 +621,8 @@ class sample_abstract_motor(MotorQt):
         """
         _logger.info("Resetting the Interferometers")
         self.set_coarse_pos.put(1, use_complete=True)
+        # need time for the PV to finish before allowing execution to continue in case the next step needs to assume
+        # that the interferometers have been reset and the fine motors are at the coarse motor positions
         time.sleep(0.250)
 
     def reset_interferometer_with_atz(self, arg=0):

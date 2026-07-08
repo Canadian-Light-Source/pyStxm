@@ -337,12 +337,14 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         _logger.info("####################### Starting pystxm ####################### ")
         self.setWindowTitle(
-            "pyStxm %s.%s Canadian Light Source Inc. [%s] [%s] [%s]"
+            "pyStxm %s.%s.%s Canadian Light Source Inc. [%s] [br: %s] [%s]"
             % (
                 MAIN_OBJ.get("APP.MAJOR_VER"),
                 MAIN_OBJ.get("APP.MINOR_VER"),
+                MAIN_OBJ.get("APP.PATCH_VER"),
                 os.path.dirname(os.path.abspath(__file__)),
-                MAIN_OBJ.get("APP.COMMIT")[0:8],
+                # MAIN_OBJ.get("APP.COMMIT")[0:8],
+                MAIN_OBJ.get("APP.BRANCH")[0:10],
                 MAIN_OBJ.get("APP.DATE"),
             )
         )
@@ -3498,7 +3500,11 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         if MAIN_OBJ.get_device_backend() == 'zmq':
             return True
         else:
-            return MAIN_OBJ.nx_server_is_running
+            if not MAIN_OBJ.data_dir_is_local:
+                return MAIN_OBJ.nx_server_is_running
+            else:
+                # let it proceed if the data dir is local and nx_server is not running
+                return True
 
     def get_detector_names(self, det_dev_lst=[]):
         det_nms = []

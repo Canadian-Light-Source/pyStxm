@@ -1,5 +1,5 @@
 
-SIM =  True
+SIM =  False
 dev_dct = {}
 
 
@@ -9,16 +9,16 @@ dev_dct["POSITIONERS"] = [
         "name": "DNM_SAMPLE_FINE_X",
         "desc": "Fine_X",
         "class": "e712_sample_motor",
-        "dcs_nm": "PZAC1610-3-I12-40",
-        #"dcs_nm": "TB_ASTXMIOC:m700" if SIM else "PZAC1610-3-I12-40",
+        #"dcs_nm": "PZAC1610-3-I12-40",
+        "dcs_nm": "TB_ASTXMIOC:m700" if SIM else "PZAC1610-3-I12-40",
         "pos_type": "POS_TYPE_ES",
     },
     {
         "name": "DNM_SAMPLE_FINE_Y",
         "desc": "Fine_Y",
         "class": "e712_sample_motor",
-        "dcs_nm": "PZAC1610-3-I12-41",
-        #"dcs_nm": "TB_ASTXMIOC:m701" if SIM else "PZAC1610-3-I12-41",
+        #"dcs_nm": "PZAC1610-3-I12-41",
+        "dcs_nm": "TB_ASTXMIOC:m701" if SIM else "PZAC1610-3-I12-41",
         "pos_type": "POS_TYPE_ES",
     },
     {
@@ -49,16 +49,16 @@ dev_dct["POSITIONERS"] = [
         "name": "DNM_COARSE_X",
         "desc": "Coarse_X",
         "class": "MotorQt",
-        "dcs_nm": "SMTR1610-3-I12-45",
-        #"dcs_nm": "TB_ASTXMIOC:m705" if SIM else "SMTR1610-3-I12-45",
+        #"dcs_nm": "SMTR1610-3-I12-45",
+        "dcs_nm": "TB_ASTXMIOC:m705" if SIM else "SMTR1610-3-I12-45",
         "pos_type": "POS_TYPE_ES",
     },
     {
         "name": "DNM_COARSE_Y",
         "desc": "Coarse_Y",
         "class": "MotorQt",
-        "dcs_nm": "SMTR1610-3-I12-46",
-        #"dcs_nm": "TB_ASTXMIOC:m706" if SIM else "SMTR1610-3-I12-46",
+        #"dcs_nm": "SMTR1610-3-I12-46",
+        "dcs_nm": "TB_ASTXMIOC:m706" if SIM else "SMTR1610-3-I12-46",
         "pos_type": "POS_TYPE_ES",
     },
     {
@@ -224,7 +224,7 @@ dev_dct["DETECTORS"] = [
         "name": "DNM_PMT",
         "class": "make_basedevice",
         # "dcs_nm": "MCS1610-310-01:mcs09:fbk",
-        "dcs_nm": "ASTXM1610:Ci-D1C2:cntr:SingleValue_RBV",
+        "dcs_nm": "SIM_PMT:pmt" if SIM else "ASTXM1610:Ci-D1C2:cntr:SingleValue_RBV",
     },
     {
         "name": "DNM_TUCSEN_AD",
@@ -368,7 +368,7 @@ dev_dct["PVS"] = [
         "dcs_nm": "ASTXM1610:bl_api:A0",
     },
     {
-        "name": "DNM_A0MAX",
+        "name": "DNM_A0MAXIMUM",
         "class": "make_base_simdevice",
         "cat": "PVS",
         "dcs_nm": "ASTXM1610:bl_api:A0Max",
@@ -998,60 +998,60 @@ dev_dct["E712"] = [
 ]
 
 
-def get_dev_names():
-    dev_nms = []
-    for k in list(dev_dct.keys()):
-        # get all the device names
-        dlist = dev_dct[k]
-        for sig_dct in dlist:
-            if isinstance(sig_dct, dict):
-                if "name" in sig_dct.keys():
-                    dev_nms.append(sig_dct["name"])
-            else:
-                if sig_dct.find("POS_TYPE") > -1:
-                    dlist = dev_dct[k][sig_dct]
-                    for _dct in dlist:
-                        if "name" in _dct.keys():
-                            dev_nms.append(_dct["name"])
-    return dev_nms
+# def get_dev_names():
+#     dev_nms = []
+#     for k in list(dev_dct.keys()):
+#         # get all the device names
+#         dlist = dev_dct[k]
+#         for sig_dct in dlist:
+#             if isinstance(sig_dct, dict):
+#                 if "name" in sig_dct.keys():
+#                     dev_nms.append(sig_dct["name"])
+#             else:
+#                 if sig_dct.find("POS_TYPE") > -1:
+#                     dlist = dev_dct[k][sig_dct]
+#                     for _dct in dlist:
+#                         if "name" in _dct.keys():
+#                             dev_nms.append(_dct["name"])
+#     return dev_nms
 
 
-def get_connections_status(_dct=None):
-    from cls.applications.pyStxm.bl_configs.device_configurator.con_checker import con_check_many
-
-    dev_pvlist = []
-    con_lst = []
-    if _dct is None:
-        keys = list(dev_dct.keys())
-    else:
-        keys = list(_dct.keys())
-
-    for k in keys:
-        # get all the signal names
-        dlist = dev_dct[k]
-        for sig_dct in dlist:
-            if isinstance(sig_dct, dict):
-                if "dcs_nm" in sig_dct.keys():
-                    if "con_chk_nm" in sig_dct.keys():
-                        con_lst.append(sig_dct["dcs_nm"] + sig_dct["con_chk_nm"])
-                    else:
-                        con_lst.append(sig_dct["dcs_nm"])
-                    dev_pvlist.append(sig_dct["dcs_nm"])
-            else:
-                if sig_dct.find("POS_TYPE") > -1:
-                    dlist = dev_dct[k][sig_dct]
-                    for _dct in dlist:
-                        if "dcs_nm" in _dct.keys():
-                            if "con_chk_nm" in _dct.keys():
-                                con_lst.append(_dct["dcs_nm"] + _dct["con_chk_nm"])
-                            else:
-                                con_lst.append(_dct["dcs_nm"])
-                            dev_pvlist.append(_dct["dcs_nm"])
-    # the list for connections might not be same as the sig_name required to create an instance of the device
-    # so for purposes of finding out IS THERE A CONNECTION just make sure to specify an actual PV not just a prefix
-    cons = con_check_many(con_lst)
-    both = dict(zip(dev_pvlist, cons))
-    return both
+# def get_connections_status(_dct=None):
+#     from cls.applications.pyStxm.bl_configs.device_configurator.con_checker import con_check_many
+#
+#     dev_pvlist = []
+#     con_lst = []
+#     if _dct is None:
+#         keys = list(dev_dct.keys())
+#     else:
+#         keys = list(_dct.keys())
+#
+#     for k in keys:
+#         # get all the signal names
+#         dlist = dev_dct[k]
+#         for sig_dct in dlist:
+#             if isinstance(sig_dct, dict):
+#                 if "dcs_nm" in sig_dct.keys():
+#                     if "con_chk_nm" in sig_dct.keys():
+#                         con_lst.append(sig_dct["dcs_nm"] + sig_dct["con_chk_nm"])
+#                     else:
+#                         con_lst.append(sig_dct["dcs_nm"])
+#                     dev_pvlist.append(sig_dct["dcs_nm"])
+#             else:
+#                 if sig_dct.find("POS_TYPE") > -1:
+#                     dlist = dev_dct[k][sig_dct]
+#                     for _dct in dlist:
+#                         if "dcs_nm" in _dct.keys():
+#                             if "con_chk_nm" in _dct.keys():
+#                                 con_lst.append(_dct["dcs_nm"] + _dct["con_chk_nm"])
+#                             else:
+#                                 con_lst.append(_dct["dcs_nm"])
+#                             dev_pvlist.append(_dct["dcs_nm"])
+#     # the list for connections might not be same as the sig_name required to create an instance of the device
+#     # so for purposes of finding out IS THERE A CONNECTION just make sure to specify an actual PV not just a prefix
+#     cons = con_check_many(con_lst)
+#     both = dict(zip(dev_pvlist, cons))
+#     return both
 
 
 if __name__ == "__main__":

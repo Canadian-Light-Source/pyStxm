@@ -63,7 +63,7 @@ class ZMQRunEngine(QObject):
     load_files_status = pyqtSignal(object)  # a signal to be emitted when loading files from the DCS server is
                                            # complete
 
-    def __init__(self, devices_dct, parent=None):
+    def __init__(self, devices_dct: dict= {}, parent=None, do_dev_init=True):
         super().__init__(parent)
 
         self.running = True
@@ -131,35 +131,45 @@ class ZMQRunEngine(QObject):
         self.devs = {}
         self.dcs_to_appname_map = {}
         self.app_to_dcsname_map = {}
+
         device_types = list(devices_dct.keys())
         for dev_type in device_types:
-            for app_devname, dev in devices_dct[dev_type].items():
-                dcs_name = dev.dcs_name
-                self.devs[app_devname] = {'dev': dev, 'dcs_name': dcs_name}
-                self.app_to_dcsname_map[app_devname] = dcs_name
-                self.dcs_to_appname_map[dcs_name] = app_devname
+            if type(devices_dct[dev_type]) == dict:
+                for app_devname, dev in devices_dct[dev_type].items():
+                    dcs_name = dev.dcs_name
+                    self.devs[app_devname] = {'dev': dev, 'dcs_name': dcs_name}
+                    self.app_to_dcsname_map[app_devname] = dcs_name
+                    self.dcs_to_appname_map[dcs_name] = app_devname
 
-                #connect device signals
-                if hasattr(dev, 'attrs'):
-                    for _attr in dev.attrs:
-                        attr_exists = False
-                        if hasattr(dev, _attr):
-                            attr_exists = True
-                            a = getattr(dev, _attr)
-                            # print(f"zmqDevMgr: connecting signal do_put for attribute {a.name}")
-                            a.do_put.connect(self.on_dev_put)
-                            a.do_get.connect(self.on_dev_get)
-                        if not attr_exists:
-                            continue
-                if hasattr(dev, 'do_put'):
-                    # print(f"zmqDevMgr: connecting signal do_put for device {dev.name}")
-                    dev.do_put.connect(self.on_dev_put)
-                    dev.do_get.connect(self.on_dev_get)
-                    dev.on_connect.connect(self.on_dev_connect)
+                    #connect device signals
+                    if hasattr(dev, 'attrs'):
+                        for _attr in dev.attrs:
+                            attr_exists = False
+                            if hasattr(dev, _attr):
+                                attr_exists = True
+                                a = getattr(dev, _attr)
+                                # print(f"zmqDevMgr: connecting signal do_put for attribute {a.name}")
+                                a.do_put.connect(self.on_dev_put)
+                                a.do_get.connect(self.on_dev_get)
+                            if not attr_exists:
+                                continue
+                    if hasattr(dev, 'do_put'):
+                        # print(f"zmqDevMgr: connecting signal do_put for device {dev.name}")
+                        dev.do_put.connect(self.on_dev_put)
+                        dev.do_get.connect(self.on_dev_get)
+                        dev.on_connect.connect(self.on_dev_connect)
+
+            elif not do_dev_init and type(devices_dct[dev_type]) == list:
+                for dev_dct in devices_dct[dev_type]:
+                    app_devname = dev_dct['name']
+                    dcs_name = dev_dct['dcs_nm']
+
+                    self.app_to_dcsname_map[app_devname] = dcs_name
+                    self.dcs_to_appname_map[dcs_name] = app_devname
 
         # must set the device name maps after all devices have been added
         self.dcs_server_api.set_device_name_maps(self.app_to_dcsname_map, self.dcs_to_appname_map)
-        # self.publish_thread.start()
+
         self.zmq_dev_server_thread.start()
         self.start_feedback()
 
@@ -246,6 +256,14 @@ class ZMQRunEngine(QObject):
         """
         self.settings = self.dcs_server_api.get_settings()
         return self.settings
+
+    def get_devices_from_settings(self, settings: dict = {}):
+        """
+        return the devices from the settings file
+        """
+        if settings == {}:
+            settings = self.get_settings()
+        return self.dcs_server_api.get_devices_from_settings(settings)
 
     def get_osa_inout_positions(self):
         """ return the OSA in and out positions that are given in the settings file"""

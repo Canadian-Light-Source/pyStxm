@@ -68,18 +68,20 @@ if __name__ == '__main__':
     uid = '1d2e8bc0-8ac7-47d9-a1a6-b06a208f7334' # point spec data
     uid = '9d19b347-516f-4f51-a2c1-9d6ab6fdc6ea' # aborted stack
     uid = 'b44042e0-2572-4bbb-b770-9772b2d3f3a0'
+    uid = 'cd7fb140-f285-4e4d-99b6-e87088b7e24d'
 
     # run_uids = ['99350504-05cc-4c8c-8a74-d15cd0f382b0',
     #              'a0daa972-f85b-47f4-9dce-177a10c96951',
     #              '7b52b6d3-3f49-4673-b87b-9369cdb661c8',
     #              '96ba2286-8c6e-41c9-a48a-009e2c3fc53b']
-    run_uids = [uid]
-    for uid in run_uids:
-        header = db[uid]
-        save_header(header)
+    #run_uids = [uid]
+    #for uid in run_uids:
+    #    header = db[uid]
+    #    save_header(header)
     #save_headers(db, 50)
-    # #primary_docs = header.documents(fill=True)
-    # #dump_docs(primary_docs)
+    header = db[uid]
+    primary_docs = header.documents(fill=True)
+    dump_docs(primary_docs)
     # primary_docs = header.documents(fill=True)
     #
     # data_dir = "c:/test_data"

@@ -52,7 +52,7 @@ pyStxm can be configured to connect to two different types of data acquisition s
 
 On the machine where you are going to run pyStxm:
 1.	Install miniforge: https://conda-forge.org/download/
-2.	```conda create -n pyStxm python=3.11.5```
+2.	```conda create -n pyStxm python=3.13```
 3.  ```conda activate pyStxm```
 4.	```git clone https://github.com/Canadian-Light-Source/pyStxm```
 5.  ```cd pyStxm```

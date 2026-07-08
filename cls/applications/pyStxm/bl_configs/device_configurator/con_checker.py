@@ -1,8 +1,6 @@
-from epics._version import get_versions
+import epics
 
-__version__ = get_versions()["version"]
-del get_versions
-
+__version__ = epics.__version__
 __doc__ = """
    Epics Channel Access Python module
 

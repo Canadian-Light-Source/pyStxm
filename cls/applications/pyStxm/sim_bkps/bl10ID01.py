@@ -719,7 +719,7 @@ def connect_devices(dev_dct, prfx="uhv", devcfg=None):
         "BL1610-I10:ENERGY:%s:zp:FL" % prfx, units="um"
     )
     dev_dct["PVS"][DNM_A0] = BaseDevice("BL1610-I10:ENERGY:%s:A0" % prfx)
-    dev_dct["PVS"][DNM_A0MAX] = BaseDevice("BL1610-I10:ENERGY:%s:A0Max" % prfx)
+    dev_dct["PVS"][DNM_A0MAXIMUM] = BaseDevice("BL1610-I10:ENERGY:%s:A0Max" % prfx)
     dev_dct["PVS"][DNM_A0_FOR_CALC] = BaseDevice(
         "BL1610-I10:ENERGY:%s:A0:for_calc" % prfx
     )

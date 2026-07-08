@@ -493,7 +493,7 @@ def connect_devices(dev_dct, prfx='uhv', devcfg=None):
     dev_dct['PVS'][DNM_DELTA_A0] = aio('BL1610-I10:ENERGY:%s:delta_A0' % prfx)
     dev_dct['PVS'][DNM_FOCAL_LENGTH] = aio('BL1610-I10:ENERGY:%s:zp:FL' % prfx, egu='um')
     dev_dct['PVS'][DNM_A0] = aio('BL1610-I10:ENERGY:%s:A0' % prfx)
-    dev_dct['PVS'][DNM_A0MAX] = aio('BL1610-I10:ENERGY:%s:A0Max' % prfx)
+    dev_dct['PVS'][DNM_A0MAXIMUM] = aio('BL1610-I10:ENERGY:%s:A0Max' % prfx)
     dev_dct['PVS'][DNM_A0FORCALC] = aio('BL1610-I10:ENERGY:%s:A0:for_calc' % prfx)
 
     devcfg.msg_splash("connecting to: [%s]" % 'zoneplate definitions')

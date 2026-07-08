@@ -314,7 +314,8 @@ class MultiRegionWidget(BaseSelectionWidget):
             self.ev_widg.set_table_to_editable(False)
             self.pol_widg.set_table_to_editable(False)
             self.ev_widg.setEnabled(False)
-            self.pol_widg.setEnabled(False)
+            # allow polarization to be enabled
+            # self.pol_widg.setEnabled(False)
         else:
             self.ev_widg.emit_new_total()
             self.singleEvFld.setEnabled(False)

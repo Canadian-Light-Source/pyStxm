@@ -137,7 +137,7 @@ class EnergyScanTableModel(BaseScanTableModel):
                         on_step_size_changed(scan)
 
                     # finally make sure all scans obey ascending eV rule
-                    self.recalc_params(row + 1)
+                    # self.recalc_params(row + 1)
 
         if (role == QtCore.Qt.EditRole) or (role == QtCore.Qt.DisplayRole):
             # must emit this as part of the framework support for an editable AbstractTableModel

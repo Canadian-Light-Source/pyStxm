@@ -1401,7 +1401,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         dev = MAIN_OBJ.device('DNM_ENERGY_DEVICE')
         if dev:
             if val != 0.0:
-                fld.parent.setStyleSheet(f"color: {master_colors['app_yellow']['rgb_str']};background-color: {master_colors['app_red']['rgb_str']};")
+                fld.parent.setStyleSheet(f"color: {master_colors['app_yellow']['rgb_str']};background-color: {master_colors['red']['rgb_str']};")
             else:
                 fld.parent.setStyleSheet(f"color: rgb(0.0.0); background-color: {master_colors['white']['rgb_str']};")
             dev.defocus_beam(val)

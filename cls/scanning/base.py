@@ -19,7 +19,7 @@ import webbrowser
 import datetime
 import numpy as np
 from cls.applications.pyStxm.widgets.scan_table_view.multiRegionWidget import MultiRegionWidget
-from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
+from cls.scanning.paramLineEdit import IntLineEditParamObj, DblLineEditParamObj
 
 from cls.appWidgets.dialogs import getOpenFileName, getSaveFileName, setExistingDirectory
 from cls.app_data import IS_WINDOWS
@@ -2316,7 +2316,7 @@ class ScanParamWidget(QtWidgets.QFrame):
 
         if hasattr(self, "dwellFld"):
             fld = getattr(self, "dwellFld")
-            fld.dpo = dblLineEditParamObj("dwellFld", 0.0, 10000.0, PREC, parent=fld)
+            fld.dpo = DblLineEditParamObj("dwellFld", 0.0, 10000.0, PREC, parent=fld)
             fld.dpo.valid_returnPressed.connect(self.update_data)
 
         for fld_key in list(lim_dct.keys()):
@@ -2351,7 +2351,7 @@ class ScanParamWidget(QtWidgets.QFrame):
             if hasattr(self, "start%sFld" % fld_key):
                 fld_name = "start%sFld" % fld_key
                 fld = getattr(self, fld_name)
-                fld.dpo = dblLineEditParamObj(fld_name, llm, hlm, PREC, parent=fld)
+                fld.dpo = DblLineEditParamObj(fld_name, llm, hlm, PREC, parent=fld)
                 # fld.dpo.valid_returnPressed.connect(self.update_data)
                 fld.dpo.valid_returnPressed.connect(
                     self.on_single_spatial_start_changed
@@ -2360,14 +2360,14 @@ class ScanParamWidget(QtWidgets.QFrame):
             if hasattr(self, "end%sFld" % fld_key):
                 fld_name = "end%sFld" % fld_key
                 fld = getattr(self, fld_name)
-                fld.dpo = dblLineEditParamObj(fld_name, llm, hlm, PREC, parent=fld)
+                fld.dpo = DblLineEditParamObj(fld_name, llm, hlm, PREC, parent=fld)
                 # fld.dpo.valid_returnPressed.connect(self.update_data)
                 fld.dpo.valid_returnPressed.connect(self.on_single_spatial_stop_changed)
 
             if hasattr(self, "center%sFld" % fld_key):
                 fld_name = "center%sFld" % fld_key
                 fld = getattr(self, fld_name)
-                fld.dpo = dblLineEditParamObj(fld_name, llm, hlm, PREC, parent=fld)
+                fld.dpo = DblLineEditParamObj(fld_name, llm, hlm, PREC, parent=fld)
                 fld.dpo.valid_returnPressed.connect(
                     self.on_single_spatial_center_changed
                 )
@@ -2376,18 +2376,18 @@ class ScanParamWidget(QtWidgets.QFrame):
                 fld_name = "range%sFld" % fld_key
                 fld = getattr(self, fld_name)
                 if respect_lwr_lim:
-                    fld.dpo = dblLineEditParamObj(
+                    fld.dpo = DblLineEditParamObj(
                         fld_name, rngKEY_llm, rngKEY_llm + rng, PREC, parent=fld
                     )
                 elif respect_hghr_lim:
-                    fld.dpo = dblLineEditParamObj(
+                    fld.dpo = DblLineEditParamObj(
                         fld_name, hlm - rng, hlm, PREC, parent=fld
                     )
                 else:
                     # fld.dpo = dblLineEditParamObj(
                     #     fld_name, -0.5 * rng, 0.5 * rng, PREC, parent=fld, is_range=True
                     # )
-                    fld.dpo = dblLineEditParamObj(
+                    fld.dpo = DblLineEditParamObj(
                         fld_name, 0.0, rng, PREC, parent=fld, is_range=True
                     )
 
@@ -2398,7 +2398,7 @@ class ScanParamWidget(QtWidgets.QFrame):
             if hasattr(self, "npoints%sFld" % fld_key):
                 fld_name = "npoints%sFld" % fld_key
                 fld = getattr(self, fld_name)
-                fld.dpo = intLineEditParamObj(fld_name, 0, 10000, 0, parent=fld)
+                fld.dpo = IntLineEditParamObj(fld_name, 0, 10000, 0, parent=fld)
                 fld.dpo.valid_returnPressed.connect(
                     self.on_single_spatial_npoints_changed
                 )
@@ -2406,7 +2406,7 @@ class ScanParamWidget(QtWidgets.QFrame):
             if hasattr(self, "step%sFld" % fld_key):
                 fld_name = "step%sFld" % fld_key
                 fld = getattr(self, fld_name)
-                fld.dpo = dblLineEditParamObj(fld_name, 0.0, 10000.0, PREC, parent=fld)
+                fld.dpo = DblLineEditParamObj(fld_name, 0.0, 10000.0, PREC, parent=fld)
                 fld.dpo.valid_returnPressed.connect(
                     self.on_single_spatial_stepsize_changed
                 )
@@ -2421,14 +2421,14 @@ class ScanParamWidget(QtWidgets.QFrame):
             if hasattr(self, "center%sFld" % fld_key):
                 fld_name = "center%sFld" % fld_key
                 fld = getattr(self, fld_name)
-                fld.dpo = dblLineEditParamObj(fld_name, llm, hlm, PREC, parent=fld)
+                fld.dpo = DblLineEditParamObj(fld_name, llm, hlm, PREC, parent=fld)
                 fld.dpo.valid_returnPressed.connect(self.update_zp_data)
 
             if hasattr(self, "range%sFld" % fld_key):
                 fld_name = "range%sFld" % fld_key
                 fld = getattr(self, fld_name)
                 #         self.rangeZPFld.returnPressed.connect(self.on_single_zp_spatial_range_changed)
-                fld.dpo = dblLineEditParamObj(
+                fld.dpo = DblLineEditParamObj(
                     fld_name, -0.5 * rng, 0.5 * rng, PREC, parent=fld, is_range=True
                 )
                 fld.dpo.valid_returnPressed.connect(
@@ -2438,7 +2438,7 @@ class ScanParamWidget(QtWidgets.QFrame):
             if hasattr(self, "npoints%sFld" % fld_key):
                 fld_name = "npoints%sFld" % fld_key
                 fld = getattr(self, fld_name)
-                fld.dpo = intLineEditParamObj(fld_name, 0, 10000, 0, parent=fld)
+                fld.dpo = IntLineEditParamObj(fld_name, 0, 10000, 0, parent=fld)
                 fld.dpo.valid_returnPressed.connect(
                     self.on_single_zp_spatial_npoints_changed
                 )
@@ -2446,7 +2446,7 @@ class ScanParamWidget(QtWidgets.QFrame):
             if hasattr(self, "step%sFld" % fld_key):
                 fld_name = "step%sFld" % fld_key
                 fld = getattr(self, fld_name)
-                fld.dpo = dblLineEditParamObj(fld_name, 0.0, 10000.0, PREC, parent=fld)
+                fld.dpo = DblLineEditParamObj(fld_name, 0.0, 10000.0, PREC, parent=fld)
                 fld.dpo.valid_returnPressed.connect(
                     self.on_single_zp_spatial_stepsize_changed
                 )
@@ -2454,32 +2454,32 @@ class ScanParamWidget(QtWidgets.QFrame):
         # the following added to support zmq dcs servers Fall 2024
         if hasattr(self, "precisionFld"):
             fld = getattr(self, "precisionFld")
-            fld.dpo = dblLineEditParamObj("precisionFld", 0.0, 10000.0, PREC, parent=fld)
+            fld.dpo = DblLineEditParamObj("precisionFld", 0.0, 10000.0, PREC, parent=fld)
             fld.dpo.valid_returnPressed.connect(self.update_data)
 
         if hasattr(self, "defocusDiamFld"):
             fld = getattr(self, "defocusDiamFld")
-            fld.dpo = dblLineEditParamObj("defocusDiamFld", 0.0, 10000.0, PREC, parent=fld)
+            fld.dpo = DblLineEditParamObj("defocusDiamFld", 0.0, 10000.0, PREC, parent=fld)
             fld.dpo.valid_returnPressed.connect(self.update_data)
 
         if hasattr(self, "accelDistFld"):
             fld = getattr(self, "accelDistFld")
-            fld.dpo = dblLineEditParamObj("accelDistFld", 0.0, 10000.0, PREC, parent=fld)
+            fld.dpo = DblLineEditParamObj("accelDistFld", 0.0, 10000.0, PREC, parent=fld)
             fld.dpo.valid_returnPressed.connect(self.update_data)
 
         if hasattr(self, "tileDelayFld"):
             fld = getattr(self, "tileDelayFld")
-            fld.dpo = dblLineEditParamObj("tileDelayFld", 0.0, 10000.0, PREC, parent=fld)
+            fld.dpo = DblLineEditParamObj("tileDelayFld", 0.0, 10000.0, PREC, parent=fld)
             fld.dpo.valid_returnPressed.connect(self.update_data)
 
         if hasattr(self, "lineDelayFld"):
             fld = getattr(self, "lineDelayFld")
-            fld.dpo = dblLineEditParamObj("lineDelayFld", 0.0, 10000.0, PREC, parent=fld)
+            fld.dpo = DblLineEditParamObj("lineDelayFld", 0.0, 10000.0, PREC, parent=fld)
             fld.dpo.valid_returnPressed.connect(self.update_data)
 
         if hasattr(self, "pointDelayFld"):
             fld = getattr(self, "pointDelayFld")
-            fld.dpo = dblLineEditParamObj("pointDelayFld", 0.0, 10000.0, PREC, parent=fld)
+            fld.dpo = DblLineEditParamObj("pointDelayFld", 0.0, 10000.0, PREC, parent=fld)
             fld.dpo.valid_returnPressed.connect(self.update_data)
 
     def update_single_spatial_wdg_com(self, is_focus=False, positioner=None):

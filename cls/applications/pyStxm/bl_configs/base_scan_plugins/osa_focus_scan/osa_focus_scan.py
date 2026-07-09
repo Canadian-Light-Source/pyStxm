@@ -13,7 +13,7 @@ from cls.scanning.base import ScanParamWidget, zp_focus_modes
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
 
 # from cls.applications.pyStxm.bl_configs.amb_bl10ID1.device_names import *
-from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
+from cls.scanning.paramLineEdit import IntLineEditParamObj, DblLineEditParamObj
 from cls.data_io.stxm_data_io import STXMDataIo
 
 from cls.utils.roi_utils import (

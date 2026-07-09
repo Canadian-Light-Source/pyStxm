@@ -2,7 +2,7 @@ import os
 
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
-from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
+from cls.scanning.paramLineEdit import IntLineEditParamObj, DblLineEditParamObj
 
 iconsDir = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "icons", "small"
@@ -125,7 +125,7 @@ class PositionerDetail(QtWidgets.QDialog):
 
             #set validator for setpoint field
             if lower_soft_lim is not None:
-                self.setpointFld.dpo = dblLineEditParamObj("setpointFld", lower_soft_lim, upper_soft_lim, 3,
+                self.setpointFld.dpo = DblLineEditParamObj("setpointFld", lower_soft_lim, upper_soft_lim, 3,
                                                            parent=self.setpointFld)
                 self.setpointFld.dpo.valid_returnPressed.connect(self.on_move_to_position)
             else:
@@ -133,7 +133,7 @@ class PositionerDetail(QtWidgets.QDialog):
 
     def _connect_float_fld_validator(self, form, fld_name, min, max, callback=None, prec=3):
         fld = getattr(form, fld_name)
-        fld.dpo = dblLineEditParamObj(fld_name, min, max, prec, parent=fld)
+        fld.dpo = DblLineEditParamObj(fld_name, min, max, prec, parent=fld)
         if callback:
             fld.dpo.valid_returnPressed.connect(callback)
 

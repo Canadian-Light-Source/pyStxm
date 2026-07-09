@@ -3,7 +3,7 @@ from PyQt5 import uic
 
 from cls.utils.log import get_module_logger
 
-from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
+from cls.scanning.paramLineEdit import IntLineEditParamObj, DblLineEditParamObj
 from cls.stylesheets import get_style
 from cls.types.stxmTypes import scan_sub_types
 
@@ -38,32 +38,32 @@ def connect_scan_req_detail_flds_to_validator(self):
     # the following added to support zmq dcs servers Fall 2024
     if hasattr(self, "precisionFld"):
         fld = getattr(self, "precisionFld")
-        fld.dpo = dblLineEditParamObj("precisionFld", 0.0, 10000.0, PREC, parent=fld)
+        fld.dpo = DblLineEditParamObj("precisionFld", 0.0, 10000.0, PREC, parent=fld)
         fld.dpo.valid_returnPressed.connect(lambda: update_scan_req_data(self))
 
     if hasattr(self, "defocusDiamFld"):
         fld = getattr(self, "defocusDiamFld")
-        fld.dpo = dblLineEditParamObj("defocusDiamFld", 0.0, 10000.0, PREC, parent=fld)
+        fld.dpo = DblLineEditParamObj("defocusDiamFld", 0.0, 10000.0, PREC, parent=fld)
         fld.dpo.valid_returnPressed.connect(lambda: update_scan_req_data(self))
 
     if hasattr(self, "accelDistFld"):
         fld = getattr(self, "accelDistFld")
-        fld.dpo = dblLineEditParamObj("accelDistFld", 0.0, 10000.0, PREC, parent=fld)
+        fld.dpo = DblLineEditParamObj("accelDistFld", 0.0, 10000.0, PREC, parent=fld)
         fld.dpo.valid_returnPressed.connect(lambda: update_scan_req_data(self))
 
     if hasattr(self, "tileDelayFld"):
         fld = getattr(self, "tileDelayFld")
-        fld.dpo = dblLineEditParamObj("tileDelayFld", 0.0, 10000.0, PREC, parent=fld)
+        fld.dpo = DblLineEditParamObj("tileDelayFld", 0.0, 10000.0, PREC, parent=fld)
         fld.dpo.valid_returnPressed.connect(lambda: update_scan_req_data(self))
 
     if hasattr(self, "lineDelayFld"):
         fld = getattr(self, "lineDelayFld")
-        fld.dpo = dblLineEditParamObj("lineDelayFld", 0.0, 10000.0, PREC, parent=fld)
+        fld.dpo = DblLineEditParamObj("lineDelayFld", 0.0, 10000.0, PREC, parent=fld)
         fld.dpo.valid_returnPressed.connect(lambda: update_scan_req_data(self))
 
     if hasattr(self, "pointDelayFld"):
         fld = getattr(self, "pointDelayFld")
-        fld.dpo = dblLineEditParamObj("pointDelayFld", 0.0, 10000.0, PREC, parent=fld)
+        fld.dpo = DblLineEditParamObj("pointDelayFld", 0.0, 10000.0, PREC, parent=fld)
         fld.dpo.valid_returnPressed.connect(lambda: update_scan_req_data(self))
 
 def init_scan_req_member_vars(self):

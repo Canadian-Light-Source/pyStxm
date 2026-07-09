@@ -30,7 +30,7 @@ from cls.applications.pyStxm.widgets.combo_small import (
 
 from cls.devWidgets.ophydPushBtn import ophydPushBtn, ophydPushBtnWithFbk
 from cls.devWidgets.ophydLabelWidget import assign_aiLabelWidget
-from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
+from cls.scanning.paramLineEdit import IntLineEditParamObj, DblLineEditParamObj
 
 iconsDir = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "icons", "small"
@@ -183,7 +183,7 @@ class PositionersPanel(QtWidgets.QWidget):
 
         if (hlm is not None) and (llm is not None):
             if not hasattr(fld, "dpo"):
-                fld.dpo = dblLineEditParamObj(fld.objectName(), llm, hlm, 2, parent=fld)
+                fld.dpo = DblLineEditParamObj(fld.objectName(), llm, hlm, 2, parent=fld)
             fld.dpo._min = llm
             fld.dpo._max = hlm
         else:
@@ -374,7 +374,8 @@ class PositionersPanel(QtWidgets.QWidget):
     def append_widget_to_positioner_layout(self, widg):
         self.vbox.addWidget(widg)
 
-    def append_setpoint_device(self, name, desc, units, dev, _min, _max, prec=0, cb=None, min_mtrfld_nm_width=MIN_MTR_FLD_NM_WIDTH):
+    def append_setpoint_device(self, name, desc, units, dev, _min, _max, prec=0,
+                               cb=None, min_mtrfld_nm_width=MIN_MTR_FLD_NM_WIDTH):
         widg = QtWidgets.QWidget()
         dev_ui = sp_small()
         dev_ui.setupUi(widg)
@@ -392,15 +393,47 @@ class PositionersPanel(QtWidgets.QWidget):
 
         dev_ui.setPosFld.setStatusTip(dev.get_name())
 
-        dev_ui.setPosFld.dpo = dblLineEditParamObj(
+        dev_ui.setPosFld.dpo = DblLineEditParamObj(
             dev.get_name(), _min, _max, prec, parent=dev_ui.setPosFld
         )
-        # dev_ui.setPosFld.dpo.valid_returnPressed.connect(on_changed_cb)
         # if the user passed a callback call it when return is pressed instead of the default handler
         if cb:
             dev_ui.setPosFld.dpo.valid_returnPressed.connect(cb)
         else:
             dev_ui.setPosFld.dpo.valid_returnPressed.connect(self.on_setpoint_dev_changed)
+        
+        self.mtr_dict[dev.get_name()] = {"dev": dev, "dev_ui": dev_ui}
+
+        self.append_widget_to_positioner_layout(widg)
+
+    def append_setpoint_device_no_validator(self, name, desc, units, dev, _min, _max, prec=0,
+                               cb=None, min_mtrfld_nm_width=MIN_MTR_FLD_NM_WIDTH):
+        widg = QtWidgets.QWidget()
+        dev_ui = sp_small()
+        dev_ui.setupUi(widg)
+        dev_ui.mtrNameFld.setMinimumWidth(min_mtrfld_nm_width)
+        dev_ui.mtrNameFld.setMaximumWidth(min_mtrfld_nm_width)
+        dev_ui.mtrNameFld.setText(name)
+        dev_ui.unitsLbl.setText(units)
+        desc_tt = self.format_tooltip_text(desc)
+        dev_ui.mtrNameFld.setToolTip(desc_tt)
+        dev_ui.mtrNameFld.setStyleSheet(
+            # "border: 2 px solid %s; background-color: %s;" % (_fbk_not_moving, _fbk_not_moving))
+            "border: 2 px solid %s; background-color: %s;"
+            % (_sp_not_moving, _sp_not_moving)
+        )
+
+        dev_ui.setPosFld.setStatusTip(dev.get_name())
+
+        # dev_ui.setPosFld.dpo = DblLineEditParamObj(
+        #     dev.get_name(), _min, _max, prec, parent=dev_ui.setPosFld
+        # )
+        # dev_ui.setPosFld.dpo.valid_returnPressed.connect(on_changed_cb)
+        # if the user passed a callback call it when return is pressed instead of the default handler
+        if cb:
+            dev_ui.setPosFld.returnPressed.connect(cb)
+        else:
+            dev_ui.setPosFld.returnPressed.connect(self.on_setpoint_dev_changed)
 
         self.mtr_dict[dev.get_name()] = {"dev": dev, "dev_ui": dev_ui}
 
@@ -917,7 +950,7 @@ class PositionersPanel(QtWidgets.QWidget):
 
     def _connect_float_fld_validator(self, form, fld_name, min, max, callback=None):
         fld = getattr(form, fld_name)
-        fld.dpo = dblLineEditParamObj(fld_name, min, max, PREC, parent=fld)
+        fld.dpo = DblLineEditParamObj(fld_name, min, max, PREC, parent=fld)
         if callback:
             fld.dpo.valid_returnPressed.connect(callback)
 

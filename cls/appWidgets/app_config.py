@@ -5,7 +5,7 @@ from PyQt5.QtCore import pyqtSignal
 
 from cls.stylesheets import master_colors, get_style
 from cls.utils.cfgparser import ConfigClass
-from cls.scanning.paramLineEdit import charLineEditParamObj
+from cls.scanning.paramLineEdit import CharLineEditParamObj
 
 
 class AppConfigWidget(QtWidgets.QWidget):
@@ -160,7 +160,7 @@ class AppConfigWidget(QtWidgets.QWidget):
             if dk is not "__name__":
                 lbl = QtWidgets.QLabel(dk)
                 te = QtWidgets.QLineEdit(dct[tab_name][dk])
-                te.dpo = charLineEditParamObj("%s-%s" % (tab_name, dk), parent=te)
+                te.dpo = CharLineEditParamObj("%s-%s" % (tab_name, dk), parent=te)
                 te.dpo.valid_returnPressed.connect(self.update_app_config)
 
                 gridlayout.addWidget(lbl, row, 0)

@@ -45,7 +45,7 @@ from cls.utils.log import get_module_logger
 from cls.utils.roi_dict_defs import *
 
 from cls.appWidgets.dialogs import getOpenFileName
-from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
+from cls.scanning.paramLineEdit import IntLineEditParamObj, DblLineEditParamObj
 
 from bcm.devices.ophyd.e712_wavegen.e712_defines import *
 from bcm.devices.ophyd.e712_wavegen.e712_utils import *
@@ -2295,9 +2295,9 @@ class E712ControlWidget(QtWidgets.QWidget):
 
         fld = getattr(self, "dwellFld")
         # set the min to 50ms and max to 5000
-        self.dwellFld.dpo = dblLineEditParamObj("dwellFld", 1.0, 5000.0, 3, parent=self.dwellFld)
+        self.dwellFld.dpo = DblLineEditParamObj("dwellFld", 1.0, 5000.0, 3, parent=self.dwellFld)
         #self.dwellFld.dpo.valid_returnPressed.connect(self.update_dwell_fld)
-        self.xnpointsFld.dpo = intLineEditParamObj("dwellFld", 1, 1000, 0, parent=self.xnpointsFld)
+        self.xnpointsFld.dpo = IntLineEditParamObj("dwellFld", 1, 1000, 0, parent=self.xnpointsFld)
         #self.xnpointsFld.dpo.valid_returnPressed.connect(self.update_xnpoints_fld)
 
         self.curve_plot = CurveViewerWidget(toolbar=True)

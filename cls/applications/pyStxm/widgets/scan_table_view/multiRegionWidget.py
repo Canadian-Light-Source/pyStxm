@@ -9,7 +9,7 @@ from cls.applications.pyStxm.widgets.scan_table_view.evSelWidget import EnergySe
 from cls.applications.pyStxm.widgets.scan_table_view.polarizationSelWidget import (
     PolarizationSelWidget,
 )
-from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
+from cls.scanning.paramLineEdit import IntLineEditParamObj, DblLineEditParamObj
 from cls.utils.roi_utils import make_spatial_db_dict, widget_com_cmnd_types, set_ev_single_point, get_base_energy_roi
 from cls.utils.fileUtils import get_file_path_as_parts
 from cls.utils.log import get_module_logger, log_to_qt
@@ -155,13 +155,13 @@ class MultiRegionWidget(BaseSelectionWidget):
         self.singleEvFld = QtWidgets.QLineEdit(f"100.0")
         self.singleEvFld.setMaximumWidth(100)
         self.singleEvFld.setEnabled(False)
-        dpo = dblLineEditParamObj("singleEvFld", 100, 4000, 1, parent=self.singleEvFld)
+        dpo = DblLineEditParamObj("singleEvFld", 100, 4000, 1, parent=self.singleEvFld)
 
         single_dwell_lbl = QtWidgets.QLabel("Dwell")
         self.singleDwellFld = QtWidgets.QLineEdit(f"1.0")
         self.singleDwellFld.setMaximumWidth(100)
         self.singleDwellFld.setEnabled(False)
-        dpo = dblLineEditParamObj("singleDwellFld", 1, 10000, 1, parent=self.singleDwellFld)
+        dpo = DblLineEditParamObj("singleDwellFld", 1, 10000, 1, parent=self.singleDwellFld)
 
         self.exec_single_ev_chkbx = QtWidgets.QCheckBox("Single energy")
         self.exec_single_ev_chkbx.setToolTip("Execute a single energy scan instead of loaded stack")

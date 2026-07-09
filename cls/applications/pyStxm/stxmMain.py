@@ -1398,6 +1398,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         val = fld.cur_val
         dev = MAIN_OBJ.device('DNM_ENERGY_DEVICE')
         if dev:
+            if val != 0.0:
+                fld.parent.setStyleSheet(f"background-color: {master_colors['fbk_dark_ylw']['rgb_str']};")
+            else:
+                fld.parent.setStyleSheet(f"background-color: {master_colors['white']['rgb_str']};")
             dev.defocus_beam(val)
 
     def check_if_pv_exists(self):

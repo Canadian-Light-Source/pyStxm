@@ -12,7 +12,7 @@ from PyQt5 import uic
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
 from cls.devWidgets.ophydLabelWidget import assign_aiLabelWidget
 from cls.appWidgets.basePreference import BasePreference
-from cls.scanning.paramLineEdit import dblLineEditParamObj
+from cls.scanning.paramLineEdit import DblLineEditParamObj
 from cls.appWidgets.focus_class import ABS_MIN_A0, ABS_MAX_A0
 from cls.utils.log import get_module_logger
 
@@ -207,7 +207,7 @@ class FocusParams(BasePreference):
         self.zpToolBox.currentChanged.connect(self.update_zp_selection)
         self.osaToolBox.currentChanged.connect(self.update_osa_selection)
 
-        self.minA0Fld.dpo = dblLineEditParamObj("minA0Fld", ABS_MIN_A0,  ABS_MAX_A0, 2, parent=self.minA0Fld)
+        self.minA0Fld.dpo = DblLineEditParamObj("minA0Fld", ABS_MIN_A0, ABS_MAX_A0, 2, parent=self.minA0Fld)
         # fld.dpo.valid_returnPressed.connect(self.update_data)
         self.minA0Fld.dpo.valid_returnPressed.connect(
             self.on_min_a0_changed

@@ -1386,18 +1386,24 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             if chkd:
                 ev_dev.set_focus_mode("SAMPLE")
                 cmbo_btn.setText(cmbo_btn.on_str)
+                cmbo_btn.setStyleSheet("background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(101, 112, 210), stop:1 rgb(62, 72, 255));")
             else:
                 ev_dev.set_focus_mode("OSA")
                 cmbo_btn.setText(cmbo_btn.off_str)
+                cmbo_btn.setStyleSheet(f"color: {master_colors['app_yellow']['rgb_str']};background-color: {master_colors['app_red']['rgb_str']};")
 
     def on_defocus_beam(self):
         """
         callback when the user changes the beam defocus value
         """
         fld = self.sender()
-        val = fld.cur_val
+        val = float(fld.parent.text())
         dev = MAIN_OBJ.device('DNM_ENERGY_DEVICE')
         if dev:
+            if val != 0.0:
+                fld.parent.setStyleSheet(f"color: {master_colors['app_yellow']['rgb_str']};background-color: {master_colors['red']['rgb_str']};")
+            else:
+                fld.parent.setStyleSheet(f"color: rgb(0.0.0); background-color: {master_colors['white']['rgb_str']};")
             dev.defocus_beam(val)
 
     def check_if_pv_exists(self):

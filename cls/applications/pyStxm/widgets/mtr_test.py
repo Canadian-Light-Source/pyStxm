@@ -17,7 +17,7 @@ from cls.appWidgets.main_object import POS_TYPE_BL, POS_TYPE_ES
 from cls.stylesheets import master_colors, get_style
 from cls.utils.log import get_module_logger
 from cls.utils.sig_utils import disconnect_signal, reconnect_signal
-from cls.scanning.paramLineEdit import dblLineEditParamObj
+from cls.scanning.paramLineEdit import DblLineEditParamObj
 from cls.applications.pyStxm.widgets.spfbk_small import Ui_Form as spfbk_small
 from cls.applications.pyStxm.widgets.sp_small import Ui_Form as sp_small
 from cls.applications.pyStxm.widgets.button_small_wbtn import (
@@ -27,7 +27,7 @@ from cls.applications.pyStxm.widgets.button_small_wbtn import (
 # from cls.caWidgets.caPushBtn import caPushBtn, caPushBtnWithFbk
 from cls.devWidgets.ophydPushBtn import ophydPushBtn, ophydPushBtnWithFbk
 from cls.devWidgets.ophydLabelWidget import assign_aiLabelWidget
-from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
+from cls.scanning.paramLineEdit import IntLineEditParamObj, DblLineEditParamObj
 
 iconsDir = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "icons", "small"
@@ -222,7 +222,7 @@ class BasePanel(QtWidgets.QWidget):
 
         if (hlm is not None) and (llm is not None):
             if not hasattr(fld, "dpo"):
-                fld.dpo = dblLineEditParamObj(fld.objectName(), llm, hlm, 2, parent=fld)
+                fld.dpo = DblLineEditParamObj(fld.objectName(), llm, hlm, 2, parent=fld)
             fld.dpo._min = llm
             fld.dpo._max = hlm
         else:
@@ -458,7 +458,7 @@ class PositionersPanel(BasePanel):
 
         dev_ui.setPosFld.setStatusTip(dev.get_name())
 
-        dev_ui.setPosFld.dpo = dblLineEditParamObj(
+        dev_ui.setPosFld.dpo = DblLineEditParamObj(
             dev.get_name(), _min, _max, prec, parent=dev_ui.setPosFld
         )
         # dev_ui.setPosFld.dpo.valid_returnPressed.connect(on_changed_cb)

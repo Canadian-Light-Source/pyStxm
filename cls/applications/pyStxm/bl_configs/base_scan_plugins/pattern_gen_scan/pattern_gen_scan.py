@@ -13,7 +13,7 @@ import datetime
 
 from cls.stylesheets import get_style
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
-from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
+from cls.scanning.paramLineEdit import IntLineEditParamObj, DblLineEditParamObj
 
 from cls.appWidgets.dialogs import getOpenFileName
 
@@ -108,7 +108,7 @@ class BasePatternGeneratorScanParam(ScanParamWidget):
 
         self.maxPixelValFld.returnPressed.connect(self.update_est_time)
 
-        dpo = intLineEditParamObj("maxPixelValFld", 1, 10000, 0, parent=self.maxPixelValFld)
+        dpo = IntLineEditParamObj("maxPixelValFld", 1, 10000, 0, parent=self.maxPixelValFld)
         # self.init_test_module()
         self.init_loadscan_menu()
 

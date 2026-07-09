@@ -1,7 +1,7 @@
 ﻿ansi2html==1.8.0
 appdirs==1.4.4
 asciitree==0.3.3
-asteval==0.9.31
+asteval>=1.0.6
 asttokens==2.4.1
 attrs==23.2.0
 backcall==0.2.0
@@ -62,7 +62,7 @@ matplotlib==3.9.1
 matplotlib-inline==0.1.7
 mongoquery==1.4.2
 mplcursors==0.5.3
-msgpack==1.0.8
+msgpack>=1.2.1
 msgpack-numpy==0.4.8
 nest-asyncio==1.6.0
 networkx==3.3
@@ -131,7 +131,7 @@ toolz==0.12.1
 tornado>=6.4.2
 tqdm>=4.66.3
 traitlets==5.14.1
-typing_extensions==4.11.0
+typing_extensions==4.12.2
 tzdata==2024.1
 tzlocal==5.3.1
 uncertainties==3.1.7

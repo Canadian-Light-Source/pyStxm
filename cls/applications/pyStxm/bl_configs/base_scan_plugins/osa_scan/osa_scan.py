@@ -14,7 +14,7 @@ from cls.scanning.base import ScanParamWidget, zp_focus_modes
 # from cls.applications.pyStxm.scan_plugins import plugin_dir
 
 # from cls.applications.pyStxm.bl_configs.amb_bl10ID1.device_names import *
-from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
+from cls.scanning.paramLineEdit import IntLineEditParamObj, DblLineEditParamObj
 from cls.data_io.stxm_data_io import STXMDataIo
 from cls.data_io.utils import (
     test_eq,

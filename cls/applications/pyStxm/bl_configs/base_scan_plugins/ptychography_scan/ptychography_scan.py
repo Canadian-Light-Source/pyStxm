@@ -14,7 +14,7 @@ import os
 import time
 
 from cls.stylesheets import master_colors
-from cls.scanning.paramLineEdit import dblLineEditParamObj
+from cls.scanning.paramLineEdit import DblLineEditParamObj
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
 from cls.scanning.base import MultiRegionScanParamBase, zp_focus_modes
 from cls.appWidgets.dialogs import getSaveFileName

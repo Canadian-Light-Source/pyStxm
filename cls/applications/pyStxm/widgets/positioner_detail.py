@@ -12,7 +12,7 @@ from cls.appWidgets.main_object import POS_TYPE_BL, POS_TYPE_ES
 from cls.stylesheets import master_colors, get_style, font_sizes
 from cls.utils.log import get_module_logger
 from cls.utils.sig_utils import disconnect_signal, reconnect_signal
-from cls.scanning.paramLineEdit import dblLineEditParamObj
+from cls.scanning.paramLineEdit import DblLineEditParamObj
 #from cls.applications.pyStxm.widgets.spfbk_small import Ui_Form as spfbk_small
 from cls.applications.pyStxm.widgets.sp_small import Ui_Form as sp_small
 from cls.applications.pyStxm.widgets.button_small_wbtn import (
@@ -26,7 +26,7 @@ from cls.applications.pyStxm.widgets.combo_small import (
 # from cls.caWidgets.caPushBtn import caPushBtn, caPushBtnWithFbk
 from cls.devWidgets.ophydPushBtn import ophydPushBtn, ophydPushBtnWithFbk
 from cls.devWidgets.ophydLabelWidget import assign_aiLabelWidget
-from cls.scanning.paramLineEdit import intLineEditParamObj, dblLineEditParamObj
+from cls.scanning.paramLineEdit import IntLineEditParamObj, DblLineEditParamObj
 
 mtrDetailDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
 

@@ -18,7 +18,7 @@ from cls.plotWidgets.imageWidget import ImageWidgetPlot
 from cls.utils.log import get_module_logger, log_to_qt
 from cls.utils.cfgparser import ConfigClass
 
-from cls.scanning.paramLineEdit import dblLineEditParamObj
+from cls.scanning.paramLineEdit import DblLineEditParamObj
 from cls.appWidgets.dialogs import excepthook
 from cls.utils.enum_utils import Enum
 
@@ -107,7 +107,7 @@ class CameraRuler(QtWidgets.QWidget):
         # self.sampleZFld.returnPressed.connect(self.set_center_and_scale)
         # self.sampleZBtn.clicked.connect(self.set_center_and_scale)
 
-        self.zoneplateZFld.dpo = dblLineEditParamObj(
+        self.zoneplateZFld.dpo = DblLineEditParamObj(
             "zoneplateZFld",
             self.zpz.get_low_limit(),
             self.zpz.get_high_limit(),
@@ -118,7 +118,7 @@ class CameraRuler(QtWidgets.QWidget):
         # self.zoneplateZFld.returnPressed.connect(self.set_zoneplate)
         # self.zoneplateZBtn.clicked.connect(self.set_zoneplate)
 
-        self.osaZFld.dpo = dblLineEditParamObj(
+        self.osaZFld.dpo = DblLineEditParamObj(
             "osaZFld",
             self.osaz.get_low_limit(),
             self.osaz.get_high_limit(),
@@ -129,7 +129,7 @@ class CameraRuler(QtWidgets.QWidget):
         # self.osaZFld.returnPressed.connect(self.set_osa)
         # self.osaZBtn.clicked.connect(self.set_osa)
 
-        self.detZFld.dpo = dblLineEditParamObj(
+        self.detZFld.dpo = DblLineEditParamObj(
             "detZFld",
             self.detz.get_low_limit(),
             self.detz.get_high_limit(),

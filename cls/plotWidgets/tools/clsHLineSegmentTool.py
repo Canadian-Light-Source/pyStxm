@@ -24,6 +24,7 @@ _dir = os.path.dirname(os.path.abspath(__file__))
 class clsHLineSegmentTool(AnnotatedSegmentTool):
     TITLE = _("Select Horizontal Segment for Focus Scan")
     ICON = os.path.join(_dir, "horiz-segment.png")
+    SHAPE_STYLE_SECT = "plot"
     SHAPE_STYLE_KEY = "shape/segment"
     shapeNum = 0  # used in the TITLE that is displayed to the user
     unique_id = 0  # used as the key to a dict of shapeItems, not for display
@@ -33,8 +34,15 @@ class clsHLineSegmentTool(AnnotatedSegmentTool):
     def set_enabled(self, en):
         self.action.setEnabled(en)
 
-    # def set_shape_style(self, shape):
-    #     shape.set_style(self.shape_style_sect, self.shape_style_key)
+    def set_shape_style(self, shape):
+        """Override so that plotpy reads style settings from cls/plotWidgets/config.py
+        (which defines the 'russ/segment' entries) rather than from plotpy's own
+        built-in CONF, which doesn't know about that key."""
+        from cls.plotWidgets.config import CONF as LOCAL_CONF
+        shape.shape.shapeparam.read_config(
+            LOCAL_CONF, self.SHAPE_STYLE_SECT, self.SHAPE_STYLE_KEY
+        )
+        shape.shape.shapeparam.update_item(shape.shape)
 
     def re_init_unique_id(self):
         """
@@ -82,7 +90,6 @@ class clsHLineSegmentTool(AnnotatedSegmentTool):
         :returns: None
         """
         shape = AnnotatedHorizontalSegment(0, 0, 1, 1)
-        # shape = AnnotatedSegment(0, 0, 1, 1)
         self.set_shape_style(shape)
         return shape, 0, 1
 

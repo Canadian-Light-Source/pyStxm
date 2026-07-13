@@ -29,6 +29,16 @@ class clsPointTool(AnnotatedPointTool):
     def set_enabled(self, en):
         self.action.setEnabled(en)
 
+    def set_shape_style(self, shape):
+        """Override so that plotpy reads style settings from cls/plotWidgets/config.py
+        (which defines the 'russ/segment' entries) rather than from plotpy's own
+        built-in CONF, which doesn't know about that key."""
+        from cls.plotWidgets.config import CONF as LOCAL_CONF
+        shape.shape.shapeparam.read_config(
+            LOCAL_CONF, self.SHAPE_STYLE_SECT, self.SHAPE_STYLE_KEY
+        )
+        shape.shape.shapeparam.update_item(shape.shape)
+
     def re_init_unique_id(self):
         """
         re_init_unique_id(): description

@@ -68,8 +68,9 @@ class OSALaddPtychoHolderShape(BaseShape):
 
         :returns: None
         """
+        # print(f"OSALaddPtychoHolderShape: _create_shape called with do_it={do_it}")
         xc, yc = self.center
-        print(f"osa: center is {self.center}")
+        # print(f"osa: center is {self.center}")
         # Use self.base_rect for width and height
 
         x0 = xc - self.half_width
@@ -87,10 +88,14 @@ class OSALaddPtychoHolderShape(BaseShape):
         main_shape.get_center = self.get_center
         self.shape_item = main_shape
 
-        create_simple_circle(x0 + 1000, y0 - 1000, 25, title=f"{self.shape_prefix}1", plot=self.parent.plot)
-        create_simple_circle(x0 + 1000, y0 - 2000, 30, title=f"{self.shape_prefix}2", plot=self.parent.plot)
-        create_simple_circle(x0 + 1000, y0 - 3000, 35, title=f"{self.shape_prefix}3", plot=self.parent.plot)
-        create_simple_circle(x0 + 1000, y0 - 4000, 40, title=f"{self.shape_prefix}4", plot=self.parent.plot)
+        create_simple_circle(x0 + 1000, y0 - 1000, 25, title=f"{self.shape_prefix}1", plot=self.parent.plot,
+                             clr=main_shape.shapeparam.sel_line.color)
+        create_simple_circle(x0 + 1000, y0 - 2000, 30, title=f"{self.shape_prefix}2", plot=self.parent.plot,
+                             clr=main_shape.shapeparam.sel_line.color)
+        create_simple_circle(x0 + 1000, y0 - 3000, 35, title=f"{self.shape_prefix}3", plot=self.parent.plot,
+                             clr=main_shape.shapeparam.sel_line.color)
+        create_simple_circle(x0 + 1000, y0 - 4000, 40, title=f"{self.shape_prefix}4", plot=self.parent.plot,
+                             clr=main_shape.shapeparam.sel_line.color)
 
 
 # def _create_shape(self, do_it=True):

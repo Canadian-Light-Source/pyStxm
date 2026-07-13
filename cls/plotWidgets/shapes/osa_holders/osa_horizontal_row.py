@@ -85,8 +85,12 @@ class OSAHorizontalRowHolderShape(BaseShape):
         main_shape.get_center = self.get_center
         self.shape_item = main_shape
 
-        create_simple_circle(x0 + 500, y0 - 500, 20, title=f"{self.shape_prefix}1", plot=self.parent.plot )
-        create_simple_circle(x0 + 1000, y0 - 500, 25, title=f"{self.shape_prefix}2", plot=self.parent.plot )
-        create_simple_circle(x0 + 1500, y0 - 500, 30, title=f"{self.shape_prefix}3", plot=self.parent.plot )
-        create_simple_circle(x0 + 2000, y0 - 500, 35, title=f"{self.shape_prefix}4", plot=self.parent.plot )
+        create_simple_circle(x0 + 500, y0 - 500, 20, title=f"{self.shape_prefix}1", plot=self.parent.plot,
+                             clr=main_shape.shapeparam.sel_line.color)
+        create_simple_circle(x0 + 1000, y0 - 500, 25, title=f"{self.shape_prefix}2", plot=self.parent.plot,
+                             clr=main_shape.shapeparam.sel_line.color)
+        create_simple_circle(x0 + 1500, y0 - 500, 30, title=f"{self.shape_prefix}3", plot=self.parent.plot,
+                             clr=main_shape.shapeparam.sel_line.color)
+        create_simple_circle(x0 + 2000, y0 - 500, 35, title=f"{self.shape_prefix}4", plot=self.parent.plot,
+                             clr=main_shape.shapeparam.sel_line.color)
 

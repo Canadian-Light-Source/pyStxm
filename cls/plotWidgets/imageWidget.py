@@ -1328,48 +1328,11 @@ class ImageWidgetPlot(PlotDialog):
         """
         activate the given too specified by the toolstring if it exists on the current plot
         """
-        # tb = self.plot.manager.get_toolbar()
-        # actions = tb.actions()
-        # for ac in actions:
-        #     # print 'enable_menu_action: checking [%s]' % ac.text()
-        #     if ac.text().find(toolstr) > -1:
-        #         ac.setEnabled(1)
-        #         break
         dct = self.toolclasses_to_dct()
         if toolstr in list(dct.keys()):
             tool = dct[toolstr]
             if hasattr(tool, "activate"):
                 tool.activate()
-
-
-    # def register_osa_and_samplehldr_tool(
-    #     self, sample_pos_mode=types.sample_positioning_modes.COARSE
-    # ):
-    #     """
-    #     register_osa_and_samplehldr_tool(): register the osa and sample holder tools
-    #
-    #     :returns: None
-    #     """
-    #     global sample_holder_counter
-    #     self.standard_sample_holder = Standard6HoleHolderShape(self, shp_id=sample_holder_counter)
-    #     sht = self.add_tool(tools.StxmShowSampleHolderTool)
-    #     sample_holder_counter += 1
-    #
-    #     osat = self.add_tool(tools.StxmShowOSATool)
-    #
-    #     if sample_pos_mode == types.sample_positioning_modes.GONIOMETER:
-    #         self.osa_holder = OSALaddPtychoHolderShape(self)
-    #         osat.changed.connect(self.create_uhv_osa)
-    #         self.osa_type = OSA_CRYO
-    #         sht.changed.connect(self.create_goni_sample_holder)
-    #         self.sample_hldr_type = SAMPLE_GONI
-    #
-    #     else:
-    #         self.osa_type = OSA_AMBIENT
-    #         self.osa_holder = OSAHorizontalRowHolderShape(self)
-    #         osat.changed.connect(self.create_osa)
-    #         sht.changed.connect(self.create_stdrd_sample_holder)
-    #         self.sample_hldr_type = SAMPLE_STANDARD
 
     def register_osa_and_samplehldr_tool(
         self, sample_pos_mode=types.sample_positioning_modes.COARSE
@@ -1393,17 +1356,11 @@ class ImageWidgetPlot(PlotDialog):
         osa_holder_counter += 1
 
         if sample_pos_mode == types.sample_positioning_modes.GONIOMETER:
-            #self.osa_holder = OSALaddPtychoHolderShape(self)
-            #osat.changed.connect(self.create_uhv_osa)
             self.osa_type = OSA_CRYO
-            #sht.changed.connect(self.create_goni_sample_holder)
             self.sample_hldr_type = SAMPLE_GONI
 
         else:
             self.osa_type = OSA_AMBIENT
-            # self.osa_holder = OSAHorizontalRowHolderShape(self)
-            osat.changed.connect(self.create_osa)
-            sht.changed.connect(self.create_stdrd_sample_holder)
             self.sample_hldr_type = SAMPLE_STANDARD
 
 
@@ -1448,13 +1405,11 @@ class ImageWidgetPlot(PlotDialog):
         osa_holder_counter += 1
 
         if sample_pos_mode == types.sample_positioning_modes.GONIOMETER:
-            #self.osa_holder = OSALaddPtychoHolderShape(self)
-            #osat.changed.connect(self.create_uhv_osa)
             self.osa_type = OSA_CRYO
 
         else:
             self.osa_type = OSA_AMBIENT
-            osat.changed.connect(self.create_osa)
+
 
     def get_contrast_panel(self, plot=None):
         '''
@@ -2835,7 +2790,7 @@ class ImageWidgetPlot(PlotDialog):
         is_regd_shape = False
         shape = None
         item = plot.get_active_item()
-        # print('selected_item_changed:', item)
+
         if isinstance(item, AnnotatedRectangle):
             _logger.debug(
                 "ok here == an Annotated Rect, does it have a selection name?: %s"
@@ -2887,19 +2842,6 @@ class ImageWidgetPlot(PlotDialog):
                                 "selected_item_changed: on_selected handler registered for [%s]"
                                 % regd_shape["shape_title"]
                             )
-
-            #
-            # regd_shape = self.get_shape_from_registry(title)
-            # if(regd_shape):
-            #     #only look at first 5 chars
-            #
-            #     if (title.find(regd_shape['shape_title'][0:5]) > -1):
-            #         #call teh regsitered handler
-            #         if(regd_shape['on_selected']):
-            #             regd_shape['on_selected']()
-            #             is_regd_shape = True
-            #         else:
-            #             _logger.error('selected_item_changed: on_selected handler registered for [%s]' % regd_shape['shape_title'])
 
             if not is_regd_shape:
                 pass
@@ -5130,7 +5072,9 @@ class ImageWidgetPlot(PlotDialog):
         if key == Qt.Key_Delete:
             item = self.plot.get_active_item()
             if item:
-                # self.delPlotItem(item)
+                if "osa_" in item.title().text() or "sh_" in item.title().text():
+                    # do not delete osa or sample holder shapes
+                    return
                 self.delShapePlotItem(item)
                 cur_shapes = self.getShapeItemsByShapeType(item)
                 if (self.multi_region_enabled) or (len(cur_shapes) == 0):
@@ -7151,17 +7095,10 @@ def make_default_stand_alone_stxm_imagewidget(
     win.enable_tool_by_name("tools.clsPointTool", True)
 
     win.addTool("DummySeparatorTool")
-    win.register_samplehldr_tool(sample_pos_mode=sample_pos_mode)
-    # win.register_samplehldr_tool()
     win.addTool("DummySeparatorTool")
-    # win.addTool('ItemCenterTool')
     win.resize(600, 700)
 
     win.set_dataIO(data_io)
-    # win.enable_tool('FreeFormTool')
-    # win.resizeShapePlotItem('ROI 1', (200,200), (100,100), item_type='Rect')
-    # win.resizeShapePlotItem('SEG 1', (400,400), (500,400), item_type='Segment')
-    # win.resizeShapePlotItem('PNT 1', (600,600), (1,1), item_type='Point')
 
     return win
 

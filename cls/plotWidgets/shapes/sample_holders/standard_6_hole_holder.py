@@ -1,7 +1,73 @@
 import os
 
+from PyQt5.QtCore import QPointF, Qt
+from PyQt5.QtGui import QPainter
+from plotpy.items.shape.polygon import PolygonShape
+from plotpy.styles import ItemParameters
+
 from cls.plotWidgets.shapes.base_shape import BaseShape
-from cls.plotWidgets.shapes.utils import create_simple_circle, create_polygon
+
+
+class Standard6HoleCompositeShape(PolygonShape):
+    """Single plot item that draws the holder body and all six holes."""
+
+    CLOSED = True
+
+    def __init__(self, x_pts, y_pts, hole_centers, hole_radius, title):
+        super().__init__()
+        self.set_points(list(zip(x_pts, y_pts)))
+        self.hole_radius = hole_radius
+
+        # Keep holes in local coordinates so they follow item moves.
+        xc = sum(x_pts) / len(x_pts)
+        yc = sum(y_pts) / len(y_pts)
+        self.hole_offsets = [(hx - xc, hy - yc) for hx, hy in hole_centers]
+        self.set_resizable(False)
+
+        sh = self.shapeparam
+        sh._title = title
+        sh.label = title
+        sh.fill.alpha = 0.1
+        sh.fill.color = "#55ff7f"
+        sh.sel_fill.alpha = 0.2
+        sh.sel_fill.color = "#55ff7f"
+        sh.line._style = "SolidLine"
+        sh.line._color = "#55ff7f"
+        sh.sel_line._style = "SolidLine"
+        sh.sel_line._color = "#55ff7f"
+        sh.symbol.marker = "NoSymbol"
+        sh.sel_symbol.marker = "NoSymbol"
+
+        params = ItemParameters()
+        params.add("ShapeParam", self, sh)  # type: ignore[arg-type]
+        self.set_item_parameters(params)
+
+    def draw(self, painter, xMap, yMap, canvasRect):
+        points = self.transform_points(xMap, yMap)
+        pen, brush, _symbol = self.get_pen_brush(xMap, yMap)
+
+        xs = self.points[:, 0]
+        ys = self.points[:, 1]
+        xc = float(xs.mean())
+        yc = float(ys.mean())
+
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(pen)
+        painter.setBrush(brush)
+        painter.drawPolygon(points)
+
+        # Draw holes as part of the same selectable item.
+        painter.save()
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        for dx, dy in self.hole_offsets:
+            cx = xc + dx
+            cy = yc + dy
+            cpx = xMap.transform(cx)
+            cpy = yMap.transform(cy)
+            rx = abs(xMap.transform(cx + self.hole_radius) - cpx)
+            ry = abs(yMap.transform(cy + self.hole_radius) - cpy)
+            painter.drawEllipse(QPointF(cpx, cpy), rx, ry)
+        painter.restore()
 
 class Standard6HoleHolderShape(BaseShape):
     def __init__(self,parent=None, shp_id=None):
@@ -95,13 +161,6 @@ class Standard6HoleHolderShape(BaseShape):
             yc - half_height  # bottom right
         ]
 
-        (main_shape, shp_id) = create_polygon(x_pts=x_pts, y_pts=y_pts, title=f"{self.shape_prefix}rect", plot=self.parent.plot)
-        # the following assignemnts are required for a shape otherwise the positions will not be tracked
-        main_shape._shape_object = self
-        main_shape.get_rect = self.get_rect
-        main_shape.get_center = self.get_center
-        self.shape_item = main_shape
-
         # Hole parameters
         hole_diam = 2500
         hole_rad = hole_diam / 2
@@ -121,9 +180,23 @@ class Standard6HoleHolderShape(BaseShape):
         total_hole_width = (holes_per_row - 1) * (hole_diam + col_spacing)
         x_start = xc - total_hole_width / 2
 
-        # Draw holes
+        # Build hole coordinates for composite draw
+        hole_centers = []
         for row, y in enumerate([y_row1, y_row2]):
             for i in range(holes_per_row):
                 x = x_start + i * (hole_diam + col_spacing)
-                create_simple_circle(x, y, hole_rad, title=f"{self.shape_prefix}{row * 3 + i + 1}", plot=self.parent.plot)
+                hole_centers.append((x, y))
+
+        main_shape = Standard6HoleCompositeShape(
+            x_pts=x_pts,
+            y_pts=y_pts,
+            hole_centers=hole_centers,
+            hole_radius=hole_rad,
+            title=f"{self.shape_prefix}rect",
+        )
+        self.parent.plot.add_item(main_shape)
+        main_shape._shape_object = self
+        main_shape.get_rect = self.get_rect
+        main_shape.get_center = self.get_center
+        self.shape_item = main_shape
 

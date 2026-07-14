@@ -42,6 +42,7 @@ def create_segment(
 
     r.set_resizable(False)
     sh._title = title
+    sh.label = title
     sh.fill.alpha = alpha
     sh.sel_fill.alpha = alpha
     sh.symbol.alpha = alpha
@@ -87,6 +88,7 @@ def create_polygon(x_pts, y_pts, title="None", plot=None):
 
     r.set_resizable(False)
     sh._title = title
+    sh.label = title
     sh.fill.alpha = 0.2
     sh.sel_fill.alpha = 0.2
     sh.symbol.alpha = 0.2
@@ -149,6 +151,7 @@ def create_rectangle(
 
     r.set_resizable(False)
     sh._title = title
+    sh.label = title
     # sh.fill.alpha = alpha
     sh.fill.alpha = 0.2
     sh.fill.color = l_clr
@@ -168,7 +171,7 @@ def create_rectangle(
     if plot:
         plot.add_item(r, z)
         r.set_item_parameters({"ShapeParam": sh})
-    return (r, z)
+    return r, z
 
 
 def create_simple_circle(
@@ -197,9 +200,12 @@ def create_simple_circle(
     circ.set_resizable(False)
     sh = circ.shapeparam
     sh._title = title
+    sh.label = title
     if clr is not None:
         sh.sel_fill.color = clr
         sh.fill.color = clr
+        sh.line.color = clr
+        sh.sel_line.color = clr
 
     sh.fill.alpha = fill_alpha
     sh.sel_fill.alpha = fill_alpha
@@ -266,4 +272,4 @@ def create_simple_circle(
     if plot:
         plot.add_item(circ, z)
 
-    return (circ, z)
+    return(circ, z)

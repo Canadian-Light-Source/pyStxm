@@ -19,6 +19,7 @@ from cls.utils.roi_utils import get_unique_roi_id
 class clsSegmentTool(AnnotatedSegmentTool):
     TITLE = _("Select Segment for line Scan")
     ICON = "segment.png"
+    SHAPE_STYLE_SECT = "plot"
     SHAPE_STYLE_KEY = "shape/segment"
     shapeNum = 0  # used in the TITLE that is displayed to the user
     unique_id = 0  # used as the key to a dict of shapeItems, not for display
@@ -37,6 +38,15 @@ class clsSegmentTool(AnnotatedSegmentTool):
         """
         self.unique_id = get_unique_roi_id()
 
+    def set_shape_style(self, shape):
+        """Override so that plotpy reads style settings from cls/plotWidgets/config.py
+        (which defines the 'russ/segment' entries) rather than from plotpy's own
+        built-in CONF, which doesn't know about that key."""
+        from cls.plotWidgets.config import CONF as LOCAL_CONF
+        shape.shape.shapeparam.read_config(
+            LOCAL_CONF, self.SHAPE_STYLE_SECT, self.SHAPE_STYLE_KEY
+        )
+        shape.shape.shapeparam.update_item(shape.shape)
 
     def activate(self, checked=True):
         """Activate tool"""

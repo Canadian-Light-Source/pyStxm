@@ -1,7 +1,98 @@
 import os
 
+from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtGui import QPainter
+from plotpy.items.shape.polygon import PolygonShape
+from plotpy.styles import ItemParameters
+
 from cls.plotWidgets.shapes.base_shape import BaseShape
-from cls.plotWidgets.shapes.utils import create_rect_centerd_at
+
+
+class CryoGoniometerCompositeShape(PolygonShape):
+    """Single plot item that draws frame and all slot rectangles."""
+
+    CLOSED = True
+
+    def __init__(self, frame_rect, slot_rects, title):
+        super().__init__()
+        x0, y0, x1, y1 = frame_rect
+        self.set_points([(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+
+        fcx = (x0 + x1) * 0.5
+        fcy = (y0 + y1) * 0.5
+        self.slot_local_rects = []
+        for sx0, sy0, sx1, sy1 in slot_rects:
+            scx = (sx0 + sx1) * 0.5
+            scy = (sy0 + sy1) * 0.5
+            self.slot_local_rects.append(
+                {
+                    "offset": (scx - fcx, scy - fcy),
+                    "size": (abs(sx1 - sx0), abs(sy1 - sy0)),
+                }
+            )
+
+        self.set_resizable(False)
+        sh = self.shapeparam
+        sh._title = title
+        sh.label = title
+        sh.fill.alpha = 0.1
+        sh.fill.color = "#55ff7f"
+        sh.sel_fill.alpha = 0.2
+        sh.sel_fill.color = "#55ff7f"
+        sh.line._style = "SolidLine"
+        sh.line._color = "#55ff7f"
+        sh.sel_line._style = "SolidLine"
+        sh.sel_line._color = "#55ff7f"
+        sh.symbol.marker = "NoSymbol"
+        sh.sel_symbol.marker = "NoSymbol"
+
+        params = ItemParameters()
+        params.add("ShapeParam", self, sh)  # type: ignore[arg-type]
+        self.set_item_parameters(params)
+
+    def draw(self, painter, xMap, yMap, canvasRect):
+        points = self.transform_points(xMap, yMap)
+        pen, brush, _symbol = self.get_pen_brush(xMap, yMap)
+
+        xs = self.points[:, 0]
+        ys = self.points[:, 1]
+        fcx = float(xs.mean())
+        fcy = float(ys.mean())
+
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(pen)
+        painter.setBrush(brush)
+        painter.drawPolygon(points)
+
+        painter.save()
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        for slot in self.slot_local_rects:
+            dx, dy = slot["offset"]
+            w, h = slot["size"]
+            cx = fcx + dx
+            cy = fcy + dy
+            x0 = cx - (w * 0.5)
+            y0 = cy + (h * 0.5)
+            x1 = cx + (w * 0.5)
+            y1 = cy - (h * 0.5)
+
+            px0 = xMap.transform(x0)
+            py0 = yMap.transform(y0)
+            px1 = xMap.transform(x1)
+            py1 = yMap.transform(y1)
+            left = float(px0 if px0 < px1 else px1)
+            top = float(py0 if py0 < py1 else py1)
+            width = float(abs(px1 - px0))
+            height = float(abs(py1 - py0))
+            painter.drawRect(
+                QRectF(
+                    left,
+                    top,
+                    width,
+                    height,
+                )
+            )
+        painter.restore()
 
 class CryoGoniometerHolderShape(BaseShape):
     def __init__(self,parent=None, shp_id=None):
@@ -84,39 +175,38 @@ class CryoGoniometerHolderShape(BaseShape):
 
         hole = (-100, 400, 100, -400)
 
-        # self.create_rectangle(new_rect, title='sh_rect')
-        (main_shape, shp_id) = create_rect_centerd_at(frame, xc, yc, title="sh_rect", plot=self.parent.plot)
+        frame_rect = (
+            xc - ((frame[2] - frame[0]) * 0.5),
+            yc + ((frame[1] - frame[3]) * 0.5),
+            xc + ((frame[2] - frame[0]) * 0.5),
+            yc - ((frame[1] - frame[3]) * 0.5),
+        )
+
+        slot_centers = [385.0, 660.0, 935.0, 1210.0, 1485.0, 1760.0, 2035.0, 2310.0, 2585.0]
+        hole_w = abs(hole[2] - hole[0])
+        hole_h = abs(hole[1] - hole[3])
+        slot_rects = []
+        for xpos in slot_centers:
+            cx_slot = frame_outbrd_edge + xpos
+            slot_rects.append(
+                (
+                    cx_slot - (hole_w * 0.5),
+                    yc + (hole_h * 0.5),
+                    cx_slot + (hole_w * 0.5),
+                    yc - (hole_h * 0.5),
+                )
+            )
+
+        main_shape = CryoGoniometerCompositeShape(
+            frame_rect=frame_rect,
+            slot_rects=slot_rects,
+            title="sh_rect",
+        )
+        self.parent.plot.add_item(main_shape)
         # the following assignemnts are required for a shape otherwise the positions will not be tracked
         main_shape._shape_object = self
         main_shape.get_rect = self.get_rect
         main_shape.get_center = self.get_center
         self.shape_item = main_shape
 
-        create_rect_centerd_at(
-            hole, frame_outbrd_edge + 385.0, yc, title="sh_1", plot=self.parent.plot
-        )
-        create_rect_centerd_at(
-            hole, frame_outbrd_edge + 660.0, yc, title="sh_1", plot=self.parent.plot
-        )
-        create_rect_centerd_at(
-            hole, frame_outbrd_edge + 935.0, yc, title="sh_2", plot=self.parent.plot
-        )
-        create_rect_centerd_at(
-            hole, frame_outbrd_edge + 1210.0, yc, title="sh_3", plot=self.parent.plot
-        )
-        create_rect_centerd_at(
-            hole, frame_outbrd_edge + 1485.0, yc, title="sh_4", plot=self.parent.plot
-        )
-        create_rect_centerd_at(
-            hole, frame_outbrd_edge + 1760.0, yc, title="sh_5", plot=self.parent.plot
-        )
-        create_rect_centerd_at(
-            hole, frame_outbrd_edge + 2035.0, yc, title="sh_6", plot=self.parent.plot
-        )
-        create_rect_centerd_at(
-            hole, frame_outbrd_edge + 2310.0, yc, title="sh_7", plot=self.parent.plot
-        )
-        create_rect_centerd_at(
-            hole, frame_outbrd_edge + 2585.0, yc, title="sh_8", plot=self.parent.plot
-        )
 

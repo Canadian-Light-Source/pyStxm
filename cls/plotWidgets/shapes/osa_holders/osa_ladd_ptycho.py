@@ -1,7 +1,73 @@
 import os
 
+from PyQt5.QtCore import QPointF, Qt
+from PyQt5.QtGui import QPainter
+from plotpy.items.shape.polygon import PolygonShape
+from plotpy.styles import ItemParameters
+
 from cls.plotWidgets.shapes.base_shape import BaseShape
-from cls.plotWidgets.shapes.utils import create_simple_circle, create_rectangle, create_polygon
+
+
+class OSALaddPtychoCompositeShape(PolygonShape):
+    """Single plot item that draws the OSA body and all apertures."""
+
+    CLOSED = True
+
+    def __init__(self, x_pts, y_pts, hole_centers, hole_radii, title):
+        super().__init__()
+        self.set_points(list(zip(x_pts, y_pts)))
+        self.hole_radii = hole_radii
+
+        # Keep holes in local coordinates so they follow item moves.
+        xc = sum(x_pts) / len(x_pts)
+        yc = sum(y_pts) / len(y_pts)
+        self.hole_offsets = [(hx - xc, hy - yc) for hx, hy in hole_centers]
+        self.set_resizable(False)
+
+        sh = self.shapeparam
+        sh._title = title
+        sh.label = title
+        sh.fill.alpha = 0.1
+        sh.fill.color = "#55ff7f"
+        sh.sel_fill.alpha = 0.2
+        sh.sel_fill.color = "#55ff7f"
+        sh.line._style = "SolidLine"
+        sh.line._color = "#55ff7f"
+        sh.sel_line._style = "SolidLine"
+        sh.sel_line._color = "#55ff7f"
+        sh.symbol.marker = "NoSymbol"
+        sh.sel_symbol.marker = "NoSymbol"
+
+        params = ItemParameters()
+        params.add("ShapeParam", self, sh)  # type: ignore[arg-type]
+        self.set_item_parameters(params)
+
+    def draw(self, painter, xMap, yMap, canvasRect):
+        points = self.transform_points(xMap, yMap)
+        pen, brush, _symbol = self.get_pen_brush(xMap, yMap)
+
+        xs = self.points[:, 0]
+        ys = self.points[:, 1]
+        xc = float(xs.mean())
+        yc = float(ys.mean())
+
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(pen)
+        painter.setBrush(brush)
+        painter.drawPolygon(points)
+
+        # Draw OSA apertures as part of the same selectable item.
+        painter.save()
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        for (dx, dy), radius in zip(self.hole_offsets, self.hole_radii):
+            cx = xc + dx
+            cy = yc + dy
+            cpx = xMap.transform(cx)
+            cpy = yMap.transform(cy)
+            rx = abs(xMap.transform(cx + radius) - cpx)
+            ry = abs(yMap.transform(cy + radius) - cpy)
+            painter.drawEllipse(QPointF(cpx, cpy), rx, ry)
+        painter.restore()
 
 
 class OSALaddPtychoHolderShape(BaseShape):
@@ -77,92 +143,29 @@ class OSALaddPtychoHolderShape(BaseShape):
         y0 = yc - self.half_height
         x1 = xc + self.half_width
         y1 = yc + self.half_height
-        rect = (x0, y0, x1, y1)
-        # print(f"osa: _create_shape: rect is {rect}")
-        # x0, y0, x1, y1 = rect = self.base_rect
+        x_pts = [x0, x1, x1, x0]
+        y_pts = [y0, y0, y1, y1]
 
-        (main_shape, shp_id) = create_rectangle(rect, title=f"{self.shape_prefix}rect", plot=self.parent.plot)
+        hole_centers = [
+            (x0 + 1000, y0 - 1000),
+            (x0 + 1000, y0 - 2000),
+            (x0 + 1000, y0 - 3000),
+            (x0 + 1000, y0 - 4000),
+        ]
+        hole_radii = [25, 30, 35, 40]
+
+        main_shape = OSALaddPtychoCompositeShape(
+            x_pts=x_pts,
+            y_pts=y_pts,
+            hole_centers=hole_centers,
+            hole_radii=hole_radii,
+            title=f"{self.shape_prefix}rect",
+        )
+        self.parent.plot.add_item(main_shape)
         # the following assignemnts are required for a shape otherwise the positions will not be tracked
         main_shape._shape_object = self
         main_shape.get_rect = self.get_rect
         main_shape.get_center = self.get_center
         self.shape_item = main_shape
 
-        create_simple_circle(x0 + 1000, y0 - 1000, 25, title=f"{self.shape_prefix}1", plot=self.parent.plot,
-                             clr=main_shape.shapeparam.sel_line.color)
-        create_simple_circle(x0 + 1000, y0 - 2000, 30, title=f"{self.shape_prefix}2", plot=self.parent.plot,
-                             clr=main_shape.shapeparam.sel_line.color)
-        create_simple_circle(x0 + 1000, y0 - 3000, 35, title=f"{self.shape_prefix}3", plot=self.parent.plot,
-                             clr=main_shape.shapeparam.sel_line.color)
-        create_simple_circle(x0 + 1000, y0 - 4000, 40, title=f"{self.shape_prefix}4", plot=self.parent.plot,
-                             clr=main_shape.shapeparam.sel_line.color)
 
-
-# def _create_shape(self, do_it=True):
-#         """
-#         create_osa(): description
-#
-#         :returns: None
-#         """
-#         if do_it:
-#             if self.center is None:
-#                 self.center = (0, 0)
-#             xc, yc = self.center
-#             # Use self.base_rect for width and height
-#             x0, y0, x1, y1 = rect = self.base_rect
-#             # width = abs(x1 - x0)
-#             # height = abs(y1 - y0)
-#             # rect = [
-#             #     xc - width / 2,
-#             #     yc - height / 2,
-#             #     xc + width / 2,
-#             #     yc + height / 2
-#             # ]
-#
-#             create_rectangle(rect, title="osa_rect", plot=self.parent.plot)
-#
-#             create_simple_circle(x1 - 250, y1 - 250, 35, title="osa_1", plot=self.parent.plot)
-#             create_simple_circle(x1 - 250, y1 - 2250, 35, title="osa_2", plot=self.parent.plot)
-#
-#         else:
-#
-#             self.parent.blockSignals(True)
-#             shapes = self.parent.plot.get_items(item_type=IShapeItemType)
-#             for shape in shapes:
-#                 if hasattr(shape, "shapeparam"):
-#                     s = shape.shapeparam
-#                     title = s._title
-#
-#                     if title.find("osa_") > -1:
-#                         self.parent.delPlotItem(shape)
-#
-#             self.parent.blockSignals(False)
-
-        # if do_it:
-        #     xc, yc = self.ss.get("OSA_CRYO.CENTER")
-        #     rect = self.ss.get("OSA_CRYO.RECT")
-        #     x2 = rect[2]
-        #     y1 = rect[1]
-        #     create_rectangle(rect, title="osa_rect", plot=self.plot)
-        #     # from outboard to inboard
-        #     create_simple_circle(x2 - 250, y1 - 250, 35, title="osa_1", plot=self.plot)
-        #     create_simple_circle(x2 - 250, y1 - 2250, 35, title="osa_2", plot=self.plot)
-        #
-        # else:
-        #     # remove the sample_holder
-        #
-        #     self.blockSignals(True)
-        #     shapes = self.plot.get_items(item_type=IShapeItemType)
-        #
-        #     for shape in shapes:
-        #         title = ""
-        #         if hasattr(shape, "annotationparam"):
-        #             title = shape.annotationparam._title
-        #         elif hasattr(shape, "shapeparam"):
-        #             title = shape.shapeparam._title
-        #
-        #         if title.find("osa_") > -1:
-        #             self.delPlotItem(shape)
-        #
-        #     self.blockSignals(False)
-        # self.plot.replot()

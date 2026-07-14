@@ -2790,7 +2790,7 @@ class ImageWidgetPlot(PlotDialog):
         is_regd_shape = False
         shape = None
         item = plot.get_active_item()
-        # print('selected_item_changed:', item)
+
         if isinstance(item, AnnotatedRectangle):
             _logger.debug(
                 "ok here == an Annotated Rect, does it have a selection name?: %s"
@@ -2842,19 +2842,6 @@ class ImageWidgetPlot(PlotDialog):
                                 "selected_item_changed: on_selected handler registered for [%s]"
                                 % regd_shape["shape_title"]
                             )
-
-            #
-            # regd_shape = self.get_shape_from_registry(title)
-            # if(regd_shape):
-            #     #only look at first 5 chars
-            #
-            #     if (title.find(regd_shape['shape_title'][0:5]) > -1):
-            #         #call teh regsitered handler
-            #         if(regd_shape['on_selected']):
-            #             regd_shape['on_selected']()
-            #             is_regd_shape = True
-            #         else:
-            #             _logger.error('selected_item_changed: on_selected handler registered for [%s]' % regd_shape['shape_title'])
 
             if not is_regd_shape:
                 pass
@@ -5085,7 +5072,7 @@ class ImageWidgetPlot(PlotDialog):
         if key == Qt.Key_Delete:
             item = self.plot.get_active_item()
             if item:
-                if "osa_" or "sh_" in item.title().text():
+                if "osa_" in item.title().text() or "sh_" in item.title().text():
                     # do not delete osa or sample holder shapes
                     return
                 self.delShapePlotItem(item)

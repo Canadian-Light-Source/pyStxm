@@ -42,6 +42,7 @@ DEFAULTS = {
         "selected_curve_symbol/facecolor": MAIN_FG_COLOR,
         "selected_curve_symbol/alpha": 0.3,
         "selected_curve_symbol/size": 7,
+
         # Default parameters for plot axes
         "axis/title": "",
         "axis/unit": "",
@@ -54,6 +55,7 @@ DEFAULTS = {
         "axis/ticks_font/family": "default",
         "axis/ticks_font/bold": False,
         "axis/ticks_font/italic": False,
+
         # Default parameters for X/Y image axes
         "image_axis/title": "",
         "image_axis/unit": _("pixels"),
@@ -66,6 +68,7 @@ DEFAULTS = {
         "image_axis/ticks_font/family": "default",
         "image_axis/ticks_font/bold": False,
         "image_axis/ticks_font/italic": False,
+
         # Default parameters for color scale
         "color_axis/title": _("Intensity"),
         "color_axis/unit": _("lsb"),
@@ -78,6 +81,7 @@ DEFAULTS = {
         "color_axis/ticks_font/family": "default",
         "color_axis/ticks_font/bold": False,
         "color_axis/ticks_font/italic": False,
+
         "grid/background": MAIN_BG_COLOR,
         "grid/maj_xenabled": True,
         "grid/maj_yenabled": True,
@@ -89,6 +93,7 @@ DEFAULTS = {
         "grid/min_line/color": "#454545" if IS_DARK else "#eaeaea",
         "grid/min_line/width": 1,
         "grid/min_line/style": "DotLine",
+
         "marker/curve/symbol/marker": "Rect",
         "marker/curve/symbol/edgecolor": "blue",
         "marker/curve/symbol/facecolor": "cyan",
@@ -121,6 +126,7 @@ DEFAULTS = {
         "marker/curve/sel_line/width": 0,
         "marker/curve/markerstyle": "NoLine",
         "marker/curve/spacing": 7,
+
         "marker/cross/symbol/marker": "Cross",
         "marker/cross/symbol/edgecolor": MAIN_FG_COLOR,
         "marker/cross/symbol/facecolor": "red",
@@ -153,6 +159,7 @@ DEFAULTS = {
         "marker/cross/sel_line/width": 1,
         "marker/cross/markerstyle": "Cross",
         "marker/cross/spacing": 7,
+
         "marker/selectpoint/symbol/marker": "Rect",
         "marker/selectpoint/symbol/edgecolor": "blue",
         "marker/selectpoint/symbol/facecolor": "cyan",
@@ -185,38 +192,40 @@ DEFAULTS = {
         "marker/selectpoint/sel_line/width": 0,
         "marker/selectpoint/markerstyle": "NoLine",
         "marker/selectpoint/spacing": 7,
+
         "marker/cursor/line/style": "SolidLine",
-        "marker/cursor/line/color": "#ff9393",
-        "marker/cursor/line/width": 1.0,
+        "marker/cursor/line/color": "#49da6b",
+        "marker/cursor/line/width": 2.0,
         "marker/cursor/symbol/marker": "Ellipse",
         "marker/cursor/symbol/size": 7,
         "marker/cursor/symbol/edgecolor": MAIN_BG_COLOR,
-        "marker/cursor/symbol/facecolor": "#ff9393",
+        "marker/cursor/symbol/facecolor": "#49da6b",
         "marker/cursor/symbol/alpha": 1.0,
-        "marker/cursor/text/font/size": 8,
+        "marker/cursor/text/font/size": 10,
         "marker/cursor/text/font/family": "default",
         "marker/cursor/text/font/bold": False,
         "marker/cursor/text/font/italic": False,
-        "marker/cursor/text/textcolor": "#ff9393",
+        "marker/cursor/text/textcolor": "#49da6b",
         "marker/cursor/text/background_color": "#ffffff",
         "marker/cursor/text/background_alpha": 0.8,
         "marker/cursor/sel_line/style": "SolidLine",
-        "marker/cursor/sel_line/color": "red",
+        "marker/cursor/sel_line/color": "blue",
         "marker/cursor/sel_line/width": 2.0,
         "marker/cursor/sel_symbol/marker": "Ellipse",
         "marker/cursor/sel_symbol/size": 9,
         "marker/cursor/sel_symbol/edgecolor": MAIN_BG_COLOR,
         "marker/cursor/sel_symbol/facecolor": "red",
         "marker/cursor/sel_symbol/alpha": 0.9,
-        "marker/cursor/sel_text/font/size": 8,
+        "marker/cursor/sel_text/font/size": 10,
         "marker/cursor/sel_text/font/family": "default",
         "marker/cursor/sel_text/font/bold": True,
         "marker/cursor/sel_text/font/italic": False,
-        "marker/cursor/sel_text/textcolor": "red",
+        "marker/cursor/sel_text/textcolor": "white",
         "marker/cursor/sel_text/background_color": "#ffffff",
         "marker/cursor/sel_text/background_alpha": 0.8,
         "marker/cursor/markerstyle": "NoLine",
         "marker/cursor/spacing": 7,
+
         "shape/drag/line/style": "SolidLine",
         "shape/drag/line/color": "#ffff00",
         "shape/drag/line/width": 1,
@@ -239,6 +248,7 @@ DEFAULTS = {
         "shape/drag/sel_symbol/edgecolor": "#00aa00",
         "shape/drag/sel_symbol/facecolor": "#00ff00",
         "shape/drag/sel_symbol/alpha": 0.7,
+
         "shape/imageborder/line/style": "NoPen",
         "shape/imageborder/line/color": "gray",
         "shape/imageborder/line/width": 0,
@@ -267,6 +277,7 @@ DEFAULTS = {
         "shape/imageborder/sel_fill/angle": 0.0,
         "shape/imageborder/sel_fill/sx": 1.0,
         "shape/imageborder/sel_fill/sy": 1.0,
+
         "shape/imagefilter/line/style": "SolidLine",
         "shape/imagefilter/line/color": "#ffff00",
         "shape/imagefilter/line/width": 1,
@@ -289,6 +300,7 @@ DEFAULTS = {
         "shape/imagefilter/sel_symbol/edgecolor": "#0000ff",
         "shape/imagefilter/sel_symbol/facecolor": "#00ffff",
         "shape/imagefilter/sel_symbol/alpha": 0.8,
+
         # Contour ----------------------------------------------------------------------
         "shape/contour/line/style": "SolidLine",
         "shape/contour/line/color": "#000000",
@@ -302,18 +314,22 @@ DEFAULTS = {
         "shape/contour/sel_fill/color": MAIN_BG_COLOR,
         "shape/contour/sel_fill/alpha": 0.1,
         "shape/contour/sel_symbol/marker": "NoSymbol",
+
         # RectZoom ---------------------------------------------------------------------
         "shape/rectzoom/line/style": "SolidLine",
         "shape/rectzoom/line/color": "#bbbbbb",
         "shape/rectzoom/line/width": 2,
+
         # not used -- start
         "shape/rectzoom/sel_line/style": "SolidLine",
         "shape/rectzoom/sel_line/color": "green",
         "shape/rectzoom/sel_line/width": 2,
+
         # not used -- end
         "shape/rectzoom/fill/color": "yellow",
         "shape/rectzoom/fill/style": "SolidPattern",
         "shape/rectzoom/fill/alpha": 0.1,
+
         # not used -- start
         "shape/rectzoom/symbol/marker": "NoSymbol",
         "shape/rectzoom/symbol/size": 0,
@@ -325,6 +341,7 @@ DEFAULTS = {
         "shape/rectzoom/sel_symbol/edgecolor": MAIN_FG_COLOR,
         "shape/rectzoom/sel_symbol/facecolor": "yellow",
         "shape/rectzoom/sel_symbol/alpha": 1.0,
+
         # not used -- end
         "shape/axes/border/line/style": "SolidLine",
         "shape/axes/border/line/color": "magenta",
@@ -348,18 +365,22 @@ DEFAULTS = {
         "shape/axes/border/sel_symbol/edgecolor": MAIN_FG_COLOR,
         "shape/axes/border/sel_symbol/facecolor": "yellow",
         "shape/axes/border/sel_symbol/alpha": 1.0,
+
         "shape/axes/arrow_size": 8,
         "shape/axes/arrow_angle": 30,
+
         "shape/axes/xarrow_pen/style": "SolidLine",
         "shape/axes/xarrow_pen/color": "red",
         "shape/axes/xarrow_pen/width": 1,
         "shape/axes/xarrow_brush/color": "red",
         "shape/axes/xarrow_brush/alpha": 0.2,
+
         "shape/axes/yarrow_pen/style": "SolidLine",
         "shape/axes/yarrow_pen/color": "green",
         "shape/axes/yarrow_pen/width": 1,
         "shape/axes/yarrow_brush/color": "green",
         "shape/axes/yarrow_brush/alpha": 0.2,
+
         "shape/image_stats/line/style": "DashLine",
         "shape/image_stats/line/color": "#ff88dc",
         "shape/image_stats/line/width": 1,
@@ -382,6 +403,7 @@ DEFAULTS = {
         "shape/image_stats/sel_symbol/edgecolor": "#ff00dc",
         "shape/image_stats/sel_symbol/facecolor": "#ff88dc",
         "shape/image_stats/sel_symbol/alpha": 0.7,
+
         "shape/cross_section/line/style": "DotLine",
         "shape/cross_section/line/color": "#ff5555",
         "shape/cross_section/line/width": 1,
@@ -404,6 +426,7 @@ DEFAULTS = {
         "shape/cross_section/sel_symbol/edgecolor": "cyan",
         "shape/cross_section/sel_symbol/facecolor": "cyan",
         "shape/cross_section/sel_symbol/alpha": 0.7,
+
         "shape/average_cross_section/line/style": "DotLine",
         "shape/average_cross_section/line/color": "#ff5555",
         "shape/average_cross_section/line/width": 1,
@@ -426,89 +449,59 @@ DEFAULTS = {
         "shape/average_cross_section/sel_symbol/edgecolor": "#aa0000",
         "shape/average_cross_section/sel_symbol/facecolor": "#ff0000",
         "shape/average_cross_section/sel_symbol/alpha": 0.7,
+
         "shape/mask/line/style": "DotLine",
         "shape/mask/line/color": "#5555ff",
         "shape/mask/line/width": 1,
         "shape/mask/fill/style": "SolidPattern",
         "shape/mask/fill/color": MAIN_BG_COLOR,
         "shape/mask/fill/alpha": 0.1,
+
         "shape/mask/symbol/marker": "Rect",
         "shape/mask/symbol/size": 7,
         "shape/mask/symbol/edgecolor": "#5555ff",
         "shape/mask/symbol/facecolor": "#5555ff",
         "shape/mask/symbol/alpha": 0.6,
+
         "shape/mask/sel_line/style": "DotLine",
         "shape/mask/sel_line/color": "#0000ff",
         "shape/mask/sel_line/width": 1,
+
         "shape/mask/sel_fill/style": "SolidPattern",
         "shape/mask/sel_fill/color": MAIN_BG_COLOR,
         "shape/mask/sel_fill/alpha": 0.1,
+
         "shape/mask/sel_symbol/marker": "Rect",
         "shape/mask/sel_symbol/size": 9,
         "shape/mask/sel_symbol/edgecolor": "#0000aa",
         "shape/mask/sel_symbol/facecolor": "#0000ff",
         "shape/mask/sel_symbol/alpha": 0.7,
 
-        # "shape/point/line/style": "SolidLine",
-        # "shape/point/line/color": "#ffff00",
-        # "shape/point/line/width": 1,
-        # "shape/point/sel_line/style": "SolidLine",
-        # "shape/point/sel_line/color": "#00ff00",
-        # "shape/point/sel_line/width": 1,
-        # "shape/point/fill/style": "NoBrush",
-        # "shape/point/sel_fill/style": "NoBrush",
-        # "shape/point/symbol/marker": "XCross",
-        # "shape/point/symbol/size": 9,
-        # "shape/point/symbol/edgecolor": "#ffff00",
-        # "shape/point/symbol/facecolor": "#ffff00",
-        # "shape/point/symbol/alpha": 1.0,
-        # "shape/point/sel_symbol/marker": "XCross",
-        # "shape/point/sel_symbol/size": 12,
-        # "shape/point/sel_symbol/edgecolor": "#00aa00",
-        # "shape/point/sel_symbol/facecolor": "#00ff00",
-        # "shape/point/sel_symbol/alpha": 0.7,
-
         "shape/point/line/style": "SolidLine",
         "shape/point/line/color": "#ffff00",
         "shape/point/line/width": 1,
+
         "shape/point/sel_line/style": "SolidLine",
         "shape/point/sel_line/color": "#00ff00",
         "shape/point/sel_line/width": 3,
+
         "shape/point/fill/style": "NoBrush",
+
         "shape/point/sel_fill/style": "NoBrush",
+
         "shape/point/symbol/marker": "XCross",
         "shape/point/symbol/size": 12,
         "shape/point/symbol/edgecolor": "#ffff00",
         "shape/point/symbol/facecolor": "#ffff00",
         "shape/point/symbol/alpha": 1.0,
         "shape/point/symbol/edgewidth": 2.0,
+
         "shape/point/sel_symbol/marker": "XCross",
         "shape/point/sel_symbol/size": 25,
         "shape/point/sel_symbol/edgecolor": "#00aa00",
         "shape/point/sel_symbol/facecolor": "#00ff00",
         "shape/point/sel_symbol/edgewidth": 4.0,
         "shape/point/sel_symbol/alpha": 0.7,
-
-
-
-        # "shape/segment/line/style": "SolidLine",
-        # "shape/segment/line/color": "#ffff00",
-        # "shape/segment/line/width": 1,
-        # "shape/segment/sel_line/style": "SolidLine",
-        # "shape/segment/sel_line/color": "#00ff00",
-        # "shape/segment/sel_line/width": 1,
-        # "shape/segment/fill/style": "NoBrush",
-        # "shape/segment/sel_fill/style": "NoBrush",
-        # "shape/segment/symbol/marker": "XCross",
-        # "shape/segment/symbol/size": 9,
-        # "shape/segment/symbol/edgecolor": "#ffff00",
-        # "shape/segment/symbol/facecolor": "#ffff00",
-        # "shape/segment/symbol/alpha": 1.0,
-        # "shape/segment/sel_symbol/marker": "XCross",
-        # "shape/segment/sel_symbol/size": 12,
-        # "shape/segment/sel_symbol/edgecolor": "#00aa00",
-        # "shape/segment/sel_symbol/facecolor": "#00ff00",
-        # "shape/segment/sel_symbol/alpha": 0.7,
 
 
         "shape/segment/line/style": "SolidLine",
@@ -530,8 +523,6 @@ DEFAULTS = {
         "shape/segment/sel_symbol/alpha": 0.7,
         "shape/segment/sel_symbol/edgewidth": 1.0,
 
-
-
         "shape/label/symbol/marker": "NoSymbol",
         "shape/label/symbol/size": 0,
         "shape/label/symbol/edgecolor": MAIN_BG_COLOR,
@@ -548,17 +539,21 @@ DEFAULTS = {
         "shape/label/bgalpha": 0.25,
         "shape/label/abspos": False,
         "shape/label/move_anchor": True,
+
         "label/symbol/marker": "NoSymbol",
         "label/symbol/size": 0,
         "label/symbol/edgecolor": MAIN_BG_COLOR,
         "label/symbol/facecolor": MAIN_BG_COLOR,
+
         "label/border/style": "SolidLine",
         "label/border/color": "#cbcbcb",
         "label/border/width": 1,
+
         "label/font/size": 9,
         "label/font/family": "default",
         "label/font/bold": False,
         "label/font/italic": False,
+
         "label/color": MAIN_FG_COLOR,
         "label/bgcolor": MAIN_BG_COLOR,
         "label/bgalpha": 0.8,
@@ -569,6 +564,7 @@ DEFAULTS = {
         "label/absg": "TR",
         "label/xg": 0.0,
         "label/yg": 0.0,
+
         # info_label: used in builder.make.computation for example
         "info_label/symbol/marker": "NoSymbol",
         "info_label/symbol/size": 0,
@@ -591,13 +587,16 @@ DEFAULTS = {
         "info_label/absg": "TR",
         "info_label/xg": 0.0,
         "info_label/yg": 0.0,
+
         "legend/border/style": "SolidLine",
         "legend/border/color": "#cbcbcb",
         "legend/border/width": 1,
+
         "legend/font/size": 8,
         "legend/font/family": "default",
         "legend/font/bold": False,
         "legend/font/italic": False,
+
         "legend/color": MAIN_FG_COLOR,
         "legend/bgcolor": MAIN_BG_COLOR,
         "legend/bgalpha": 0.8,
@@ -608,49 +607,6 @@ DEFAULTS = {
         "legend/absg": "TR",
         "legend/xg": 0.0,
         "legend/yg": 0.0,
-
-
-        # #pystxm controlled params
-        # "pystxm/segment/line/style": "SolidLine",
-        # "pystxm/segment/line/color": "#ffff00",
-        # "pystxm/segment/line/width": 1,
-        # "pystxm/segment/sel_line/style": "SolidLine",
-        # "pystxm/segment/sel_line/color": "#00ff00",
-        # "pystxm/segment/sel_line/width": 1,
-        # "pystxm/segment/symbol/marker": "XCross",
-        # "pystxm/segment/symbol/size": 9,
-        # "pystxm/segment/symbol/edgecolor": "#e7ff0e",
-        # "pystxm/segment/symbol/facecolor": "#e7ff0e",
-        # "pystxm/segment/symbol/edgewidth": 2.0,
-        # "pystxm/segment/symbol/alpha": 1.0,
-        # "pystxm/segment/sel_symbol/marker": "Rect",
-        # "pystxm/segment/sel_symbol/size": 15,
-        # "pystxm/segment/sel_symbol/edgecolor": "#00aa00",
-        # "pystxm/segment/sel_symbol/facecolor": "#00ff00",
-        # "pystxm/segment/sel_symbol/alpha": 0.7,
-        # "pystxm/segment/sel_symbol/edgewidth": 1.0,
-
-        # "pystxm/point/line/style": "SolidLine",
-        # "pystxm/point/line/color": "#ffff00",
-        # "pystxm/point/line/width": 1,
-        # "pystxm/point/sel_line/style": "SolidLine",
-        # "pystxm/point/sel_line/color": "#00ff00",
-        # "pystxm/point/sel_line/width": 3,
-        # "pystxm/point/fill/style": "NoBrush",
-        # "pystxm/point/sel_fill/style": "NoBrush",
-        # "pystxm/point/symbol/marker": "XCross",
-        # "pystxm/point/symbol/size": 12,
-        # "pystxm/point/symbol/edgecolor": "#ffff00",
-        # "pystxm/point/symbol/facecolor": "#ffff00",
-        # "pystxm/point/symbol/alpha": 1.0,
-        # "pystxm/point/symbol/edgewidth": 2.0,
-        # "pystxm/point/sel_symbol/marker": "XCross",
-        # "pystxm/point/sel_symbol/size": 25,
-        # "pystxm/point/sel_symbol/edgecolor": "#00aa00",
-        # "pystxm/point/sel_symbol/facecolor": "#00ff00",
-        # "pystxm/point/sel_symbol/edgewidth": 4.0,
-        # "pystxm/point/sel_symbol/alpha": 0.7,
-
 
     },
     "histogram": {

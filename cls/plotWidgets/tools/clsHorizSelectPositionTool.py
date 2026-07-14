@@ -11,6 +11,7 @@ from plotpy.items.shape.marker import Marker
 
 from cls.plotWidgets.tools.utils import get_parent_who_has_attr, get_widget_with_objectname
 from cls.plotWidgets.config import _
+from cls.stylesheets import master_colors
 
 _dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -42,6 +43,32 @@ class clsHorizSelectPositionTool(HCursorTool):
     def create_shape(self):
         marker = Marker()
         marker.set_markerstyle("-")
+        mp = marker.markerparam
+
+        # Line
+        mp.line.style = "SolidLine"
+        mp.line.color = master_colors['app_drkblue']['rgb_hex'] # "#00ffaa"
+        mp.line.width = 10.0
+        mp.sel_line.style = "SolidLine"
+        mp.sel_line.color = master_colors['app_drkblue']['rgb_hex']
+        mp.sel_line.width = 10.0
+
+        # Annotation text (normal)
+        mp.text.textcolor = master_colors['white']['rgb_hex']
+        mp.text.background_color = master_colors['app_drkblue']['rgb_hex']
+        mp.text.background_alpha = 0.9
+        mp.text.font.size = 15
+        mp.text.font.family = "Arial"
+        mp.text.font.bold = True
+
+        # Annotation text (selected)
+        mp.sel_text.textcolor = master_colors['white']['rgb_hex']
+        mp.sel_text.background_color = master_colors['app_drkblue']['rgb_hex']
+        mp.sel_text.background_alpha = 0.9
+        mp.sel_text.font.size = 15
+        mp.sel_text.font.bold = True
+
+        mp.update_item(marker)
         return marker
 
     def set_enabled(self, en):

@@ -1346,6 +1346,16 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         # self.check_if_pv_exists()
 
+    def set_device_toggle_button(self, dev_name, value):
+        """
+        sometimes need to set a toggle button's value and visual from a child widget
+        """
+        pBtn = self.esPosPanel.get_toggle_btn(dev_name)
+        if pBtn is not None:
+            pBtn.clicked.emit(value)
+        else:
+            _logger.error(f"set_device_pushbutton: a pushbutton for the device {dev_name} does not exist")
+
     def on_autozero_piezos_set_coarse_position(self):
         """
         a very specific got_to_start function for scans that involve the fine motor in the scan
@@ -1373,8 +1383,12 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             ev_dev.enable_fl_change_with_energy_change(chkd)
             if chkd:
                 cmbo_btn.setText(cmbo_btn.on_str)
+                cmbo_btn.setStyleSheet(
+                    f"color: {master_colors['white']['rgb_str']}; background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 rgb(101, 112, 210), stop:1 rgb(62, 72, 255));")
             else:
                 cmbo_btn.setText(cmbo_btn.off_str)
+                cmbo_btn.setStyleSheet(
+                    f"color: {master_colors['app_yellow']['rgb_str']};background-color: {master_colors['app_red']['rgb_str']};")
 
     def on_change_focus_mode(self, chkd: bool = False):
         """

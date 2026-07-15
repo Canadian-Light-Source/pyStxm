@@ -336,6 +336,8 @@ class ophydPushBtnWithFbk(QtWidgets.QPushButton):
             val = self.off_val
         self.btn.setText(s)
         self.btn.device.put(val)
+        # fire whatever else is supposed to happen when the button has this value
+        self.btn.clicked.emit(chkd)
 
     def on_connect(self, pvname=None, conn=None, pv=None):
         # print 'ca_aiLabelWidget: on_connect has been called'

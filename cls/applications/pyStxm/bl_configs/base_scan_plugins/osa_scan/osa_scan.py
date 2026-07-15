@@ -129,6 +129,7 @@ class BaseOsaScanParam(ScanParamWidget):
         if self.isEnabled():
             self.energy_dev.set_focus_mode("OSA")
             osa_y_tracking_dev = self.main_obj.device("DNM_OSAY_TRACKING", do_warn=False)
+            self._parent.set_device_toggle_button("DNM_ZONEPLATE_FOCUS_MODE", False)
             # make sure that the OSA vertical tracking is off if it is on
             self.update_est_time()
             if self.osa_tracking_enabled and osa_y_tracking_dev:

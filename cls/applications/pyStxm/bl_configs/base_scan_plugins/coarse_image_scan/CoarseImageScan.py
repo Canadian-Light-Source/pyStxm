@@ -136,7 +136,7 @@ class BaseCoarseImageScanClass(BaseScan):
 
         # #before starting scan check the interferometers, note BOTH piezo's must be off first
         # if the volts of the piezo are not within threshold of the center (50 volts) then do a recenter otherwise dont
-        if not mtr_x.do_voltage_check(threashold=10.0) or not mtr_y.do_voltage_check(threshold=10.0):
+        if not mtr_x.do_voltage_check(threshold=10.0) or not mtr_y.do_voltage_check(threshold=10.0):
             self.mtr_recenter_msg.show()
 
             mtr_x.do_autozero()

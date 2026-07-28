@@ -258,7 +258,7 @@ class BaseCoarseImageScanParam(ScanParamWidget):
         rx = float(str(self.rangeXFld.text()))
         cy = float(str(self.centerYFld.text()))
         ry = float(str(self.rangeYFld.text()))
-        dwell = float(str(self.dwellFld.text()))
+        dwell = self.get_dwell_ms_from_widget(self.dwellFld)
         nx = int(str(self.npointsXFld.text()))
         ny = int(str(self.npointsYFld.text()))
         sx = float(str(self.stepXFld.text()))
@@ -295,7 +295,7 @@ class BaseCoarseImageScanParam(ScanParamWidget):
         to be overridden by inheriting class if need be (doesn't have standard param fields)
         """
         # time_per_line = 3 # seconds
-        dwell = float(str(self.dwellFld.text()))
+        dwell = self.get_dwell_ms_from_widget(self.dwellFld)
         nx = int(str(self.npointsXFld.text()))
         ny = int(str(self.npointsYFld.text()))
         self.estimate_scan_time(nx, ny, dwell)
@@ -309,7 +309,7 @@ class BaseCoarseImageScanParam(ScanParamWidget):
 
         to be overridden by inheriting class if need be (doesn't have standard param fields)
         """
-        dwell = float(str(self.dwellFld.text()))
+        dwell = self.get_dwell_ms_from_widget(self.dwellFld)
         nx = int(str(self.npointsXFld.text()))
         ny = int(str(self.npointsYFld.text()))
         self.add_scan_execution_time_to_model(elapsed_time, nx, ny, dwell)

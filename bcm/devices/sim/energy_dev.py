@@ -188,13 +188,23 @@ class EnergyDevice(FocusCalculations, Device):
         self.FLMode_0 = 0.0
         self.FLMode_1 = 0.0
 
-        skip_lst = ['OphydAttrList', 'move', 'put', 'set', 'stop']
+        skip_lst = [
+            'OphydAttrList',
+            'move',
+            'put',
+            'set',
+            'stop',
+            # Deprecated alias on ophyd Devices; accessing it emits a warning.
+            'signal_names',
+            # Keep metadata attrs from being copied to this wrapper.
+            'component_names',
+        ]
         for attr in dir(self.energy_posner):
             if attr.startswith('_') or (attr in skip_lst):
                 continue
-            val = getattr(self.energy_posner, attr)
             if attr.find("parent") > -1:
                 continue
+            val = getattr(self.energy_posner, attr)
             if callable(val):
                 setattr(self, attr, val)
 

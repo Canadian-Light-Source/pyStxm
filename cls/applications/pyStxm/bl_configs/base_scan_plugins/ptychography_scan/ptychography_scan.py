@@ -309,7 +309,7 @@ class BasePtychographyScanParam(MultiRegionScanParamBase):
         self.camera.tif_file_plugin.enable.put(0)
 
         # set the dwell time
-        dwell = float(self.dwellFld.text())
+        dwell = self.get_dwell_ms_from_widget(self.dwellFld)
         self.camera.set_dwell(dwell)
         self.camera.cam.image_mode.put(0)  # single
         self.camera.cam.num_images.put(1)

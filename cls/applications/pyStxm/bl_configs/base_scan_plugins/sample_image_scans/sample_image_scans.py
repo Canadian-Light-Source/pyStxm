@@ -152,7 +152,6 @@ class BaseSampleImageScansParam(MultiRegionScanParamBase):
 
         self.wdg_com = None
         self.load_from_defaults()
-        self.on_plugin_focus()
         self.init_loadscan_menu()
 
     def init_plugin(self):
@@ -203,6 +202,7 @@ class BaseSampleImageScansParam(MultiRegionScanParamBase):
         """
         if self.isEnabled():
             self.energy_dev.set_focus_mode("SAMPLE")
+            self._parent.set_device_toggle_button("DNM_ZONEPLATE_FOCUS_MODE", True)
             self.update_est_time()
             # call the standard init_base_values function for scan param widgets that contain a multiRegionWidget
             self.on_multiregion_widget_focus_init_base_values()

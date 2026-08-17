@@ -277,7 +277,7 @@ class BaseOsaFocusScanParam(ScanParamWidget):
         sy = float(str(self.startYFld.text()))
         ey = float(str(self.endYFld.text()))
 
-        dwell = float(str(self.dwellFld.text()))
+        dwell = self.get_dwell_ms_from_widget(self.dwellFld)
         nx = int(
             str(self.npointsXFld.text())
         )  # + NUM_POINTS_LOST_AFTER_EDIFF  #+1 for the first data point being the row

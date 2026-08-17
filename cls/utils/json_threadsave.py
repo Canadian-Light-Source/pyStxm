@@ -7,6 +7,7 @@ import os
 import datetime
 import simplejson as json
 import threading
+import tempfile
 import numpy as np
 import types
 
@@ -16,6 +17,52 @@ from cls.utils.log import get_module_logger
 from cls.data_utils.jsonEncoder import NumpyAwareJSONEncoder
 
 _logger = get_module_logger(__name__)
+
+_FILE_LOCKS = {}
+_FILE_LOCKS_GUARD = threading.Lock()
+
+
+def _get_file_lock(fpath):
+    """Return a process-local lock for a specific file path."""
+    norm = os.path.abspath(str(fpath))
+    with _FILE_LOCKS_GUARD:
+        if norm not in _FILE_LOCKS:
+            _FILE_LOCKS[norm] = threading.Lock()
+        return _FILE_LOCKS[norm]
+
+
+def atomic_save_json(filename, data_dct):
+    """Safely save JSON using temp-file + atomic replace to avoid partial writes."""
+    if data_dct is None:
+        return
+
+    fpath = os.path.abspath(str(filename))
+    dpath = os.path.dirname(fpath)
+    if dpath and (not os.path.exists(dpath)):
+        os.makedirs(dpath, exist_ok=True)
+
+    payload = json.dumps(data_dct, sort_keys=True, indent=4, cls=NumpyAwareJSONEncoder)
+    lock = _get_file_lock(fpath)
+
+    tmp_name = None
+    with lock:
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".tmp", prefix=".jsonsave_", dir=dpath if dpath else None, delete=False
+            ) as tf:
+                tmp_name = tf.name
+                tf.write(payload)
+                tf.flush()
+                os.fsync(tf.fileno())
+
+            os.replace(tmp_name, fpath)
+        except Exception:
+            if tmp_name and os.path.exists(tmp_name):
+                try:
+                    os.remove(tmp_name)
+                except Exception:
+                    pass
+            raise
 
 
 def mime_to_dct(mimeData):
@@ -54,15 +101,12 @@ class ThreadJsonSave(threading.Thread):
 
     def run(self):
         if self.data_dct != None:
-            j = json.dumps(
-                self.data_dct, sort_keys=True, indent=4, cls=NumpyAwareJSONEncoder
-            )
-            # fstr = self.data_dct['fpath'].replace('\\', '/')
-            #fstr = self.data_dct["fpath"]
             fstr = self.fpath
-            f = open(fstr, "w")
-            f.write(j)
-            f.close()
+            try:
+                atomic_save_json(fstr, self.data_dct)
+            except Exception as ex:
+                _logger.error("ThreadJsonSave: failed saving [%s]: %s", fstr, ex)
+                return
             # _logger.info('ThreadJsonSave: [%s] saved [%s]' % (self.name, self.data_dct['fpath']))
             if self.verbose:
                 print(
@@ -76,7 +120,8 @@ class ThreadJsonSave(threading.Thread):
 def loadJson(filename):
     """load json data from disk"""
     if os.path.exists(filename):
-        js = json.loads(file(filename).read())
+        with open(filename, "r") as fh:
+            js = json.loads(fh.read())
     else:
         print(
             "json_ThreadSave: loadJson: file [%s] doesn't exist: No File Loaded"
@@ -87,8 +132,4 @@ def loadJson(filename):
 
 
 def saveJson(filename, data_dct):
-    if data_dct != None:
-        j = json.dumps(data_dct, sort_keys=True, indent=4, cls=NumpyAwareJSONEncoder)
-        f = open(filename, "w")
-        f.write(j)
-        f.close()
+    atomic_save_json(filename, data_dct)

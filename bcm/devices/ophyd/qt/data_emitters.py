@@ -230,6 +230,9 @@ class BaseQtImageDataEmitter(QtDataEmitter):
                 #     print(f"  Index {i}: type={type(arr)}, shape={getattr(arr, 'shape', 'N/A')}")
                 try:
                     condensed[det] = np.stack(arrays)
+                    _rows, _cols = condensed[det].shape
+                    if self.rows != _rows and self.cols != _cols:
+                        condensed[det] = np.reshape(condensed[det], (self.rows, self.cols))
                 except Exception as e:
                     print(f"Error stacking arrays for detector '{det}': {e}")
                     raise

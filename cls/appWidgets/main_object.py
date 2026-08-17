@@ -241,21 +241,13 @@ class main_object_base(QtCore.QObject):
 
     def publish_progressive_stack_data(self, final_data_dct):
         """
-        add_line_to_plot(): a function to take data (a full line) and add it to the configured plotters
-            Needed a flag to monitor when to start a new image
-
-            CNTR2PLOT_ROW = 'row'           #a y position
-            CNTR2PLOT_COL = 'col'           #an x position
-            CNTR2PLOT_VAL = 'val'           #the point or array of data
-            CNTR2PLOT_IS_POINT = 'is_pxp'   #data is from a point by point scan
-            CNTR2PLOT_IS_LINE = 'is_lxl'    #data isfrom a line by line scan
 
         :returns: None
         """
         import orjson
         from cls.utils.arrays import convert_ndarrays_to_lists
         # import pprint
-        #print(f'publish_progressive_stack_data: plot_dct={final_data_dct}')
+        # print(f'publish_progressive_stack_data: plot_dct={final_data_dct}')
         # pprint.pprint(final_data_dct)
 
         if self.get_device_backend() == 'epics':

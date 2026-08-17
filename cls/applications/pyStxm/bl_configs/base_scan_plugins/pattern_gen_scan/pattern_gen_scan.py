@@ -168,7 +168,7 @@ class BasePatternGeneratorScanParam(ScanParamWidget):
         """
 
         """
-        val = float(self.maxPixelValFld.text())
+        val = self.get_dwell_ms_from_widget(self.maxPixelValFld)
         self.exp_data = convert_pixels_to_exposures(self.data, time_value_of_brightest_pixel_ms=val)
         # exp data is in milliseconds
         estimated_time_sec = calc_total_time_in_sec(self.exp_data)
@@ -191,7 +191,7 @@ class BasePatternGeneratorScanParam(ScanParamWidget):
             self.load_image.emit(fname)
             self.imgfileFld.setText(fname)
             self.imgfileFld.setToolTip(fname)
-            max_exposure_ms = float(self.maxPixelValFld.text())
+            max_exposure_ms = self.get_dwell_ms_from_widget(self.maxPixelValFld)
             self.data, self.exp_data, self.img_details = load_grayscale_image(fname, max_exposure_ms)
             total_time_sec = calc_total_time_in_sec(self.exp_data)
             cols, rows = self.img_details["image.size"]

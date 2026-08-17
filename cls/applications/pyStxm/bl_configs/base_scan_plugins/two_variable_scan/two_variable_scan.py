@@ -223,7 +223,7 @@ class BaseTwoVariableScanParam(ScanParamWidget):
 
         startx = float(str(self.startXFld.text()))
         stopx = float(str(self.endXFld.text()))
-        dwell = float(str(self.dwellFld.text()))
+        dwell = self.get_dwell_ms_from_widget(self.dwellFld)
         nx = int(str(self.npointsXFld.text()))
         sx = float(str(self.stepXFld.text()))
 

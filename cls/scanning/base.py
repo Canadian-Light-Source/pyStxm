@@ -294,6 +294,27 @@ class ScanParamWidget(QtWidgets.QFrame):
         """
         self._last_called_func_dict[function_name] = 0
 
+    @staticmethod
+    def get_float_from_qt_widget(widget, default=0.0):
+        """Return a float parsed from a Qt text widget, with optional default fallback."""
+        if widget is None:
+            return float(default)
+
+        txt = str(widget.text()).strip()
+        if len(txt) == 0:
+            return float(default)
+
+        # Allow users to enter dwell as "<value> ms" in UI fields.
+        txt = txt.replace("MS", "").replace("ms", "").strip()
+        try:
+            return float(txt)
+        except (TypeError, ValueError):
+            return float(default)
+
+    def get_dwell_ms_from_widget(self, widget, default=1.0):
+        """Centralized dwell parser for Qt widgets; dwell is always returned in milliseconds."""
+        return self.get_float_from_qt_widget(widget, default=default)
+
     def instanciate_scan_class(self, fpath, mod_nm, cls_nm):
         """
         This is a convienience function which handles relative imports for all scan pluggins of their respective scan classes.
@@ -370,10 +391,10 @@ class ScanParamWidget(QtWidgets.QFrame):
         npoints_pol = 1
 
         if hasattr(self, 'dwellFld'):
-            dwell = float(str(self.dwellFld.text()))
+            dwell = self.get_dwell_ms_from_widget(self.dwellFld)
         elif hasattr(self, 'maxPixelValFld'):
             # this is in the pattern generator scan
-            dwell = float(str(self.maxPixelValFld.text()))
+            dwell = self.get_dwell_ms_from_widget(self.maxPixelValFld)
 
         if hasattr(self, 'npointsXFld'):
             npoints_x = int(str(self.npointsXFld.text()))
@@ -410,9 +431,9 @@ class ScanParamWidget(QtWidgets.QFrame):
         """
         npoints_y = 1
         if hasattr(self, 'dwellFld'):
-            dwell = float(str(self.dwellFld.text()))
+            dwell = self.get_dwell_ms_from_widget(self.dwellFld)
         if hasattr(self, 'maxPixelValFld'):
-            dwell = float(str(self.maxPixelValFld.text()))
+            dwell = self.get_dwell_ms_from_widget(self.maxPixelValFld)
         if hasattr(self, 'npointsXFld'):
             npoints_x = int(str(self.npointsXFld.text()))
         if hasattr(self, 'npointsYFld'):
@@ -473,7 +494,7 @@ class ScanParamWidget(QtWidgets.QFrame):
         npoints_pol = 1
         is_multi_region_widget = False
         if hasattr(self, 'dwellFld'):
-            dwell = float(str(self.dwellFld.text()))
+            dwell = self.get_dwell_ms_from_widget(self.dwellFld)
         else:
             dwell = 1.0
         if hasattr(self, 'npointsXFld'):
@@ -2517,7 +2538,7 @@ class ScanParamWidget(QtWidgets.QFrame):
         self.update_flds_from_roi(zz_roi, SPDB_ZP)
         energy_pos = self.main_obj.device("DNM_ENERGY").get_position()
         if hasattr(self, "dwellFld"):
-            e_rois[0][DWELL] = float(str(self.dwellFld.text()))
+            e_rois[0][DWELL] = self.get_dwell_ms_from_widget(self.dwellFld)
             #energy_pos = self.main_obj.device("DNM_ENERGY").get_position()
             e_rois[0][START] = energy_pos
             e_rois[0][STOP] = energy_pos
@@ -3212,7 +3233,7 @@ class ScanParamWidget(QtWidgets.QFrame):
         on_stop_changed(y_roi)
         on_npoints_changed(y_roi)
 
-        dwell = float(str(self.dwellFld.text()))
+        dwell = self.get_dwell_ms_from_widget(self.dwellFld)
 
         zp_startY = float(str(self.centerZPFld.text()))
         zp_rngY = float(str(self.rangeZPFld.text()))

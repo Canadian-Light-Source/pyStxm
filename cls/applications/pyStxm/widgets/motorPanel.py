@@ -128,6 +128,7 @@ class PositionersPanel(QtWidgets.QWidget):
 
         self.setLayout(self.vbox)
         self.mtr_dict = {}
+        self.toggle_btn_dict = {}
 
         # devs_dct = self.main_obj.get_devices_in_category('POSITIONERS', pos_type=self.positioner_set)
         pos_keys = list(devs_dct.keys())
@@ -371,6 +372,7 @@ class PositionersPanel(QtWidgets.QWidget):
             mtr_ui.spComboBox.blockSignals(True)
             mtr_ui.spComboBox.setCurrentIndex(int(mtr_fbk))
             mtr_ui.spComboBox.blockSignals(False)
+
     def append_widget_to_positioner_layout(self, widg):
         self.vbox.addWidget(widg)
 
@@ -535,6 +537,8 @@ class PositionersPanel(QtWidgets.QWidget):
         dev_ui.mtrNameFld.setToolTip(desc_tt)
         id = dev.get_name() + "_btn"
         dev_ui.pushBtn.setObjectName(id)
+        # keep the pushbutton in a dict so that we can from another class find it and programatically set it
+        self.toggle_btn_dict[dev.name] = pBtn
 
         _fnt_size = int(_pbtn_font_size.replace("px",""))
         font = dev_ui.pushBtn.font()
@@ -550,6 +554,15 @@ class PositionersPanel(QtWidgets.QWidget):
         self.append_widget_to_positioner_layout(widg)
 
         return pBtn
+
+    def get_toggle_btn(self, dev_name: str):
+        """
+        Get the toggle button associated with the given device name.
+        """
+        if dev_name in self.toggle_btn_dict:
+            return self.toggle_btn_dict[dev_name]
+        else:
+            return None
 
     def append_combobox_device(self,
         name,

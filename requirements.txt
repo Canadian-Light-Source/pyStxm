@@ -113,6 +113,7 @@ requests>=2.32.4
 ruff==0.4.9
 scikit-learn==1.9.0
 scipy==1.17.1
+setuptools<82.0.0
 simplejson==3.19.2
 six==1.16.0
 slicerator==1.1.0

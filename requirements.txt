@@ -83,7 +83,7 @@ Pillow>=12.1.1
 PIMS==0.7
 Pint==0.24.1
 platformdirs==4.2.1
-PlotPy==2.10.0
+PlotPy==2.11.0
 pydantic>=2.8.0
 prettytable==3.10.2
 prompt-toolkit==3.0.48

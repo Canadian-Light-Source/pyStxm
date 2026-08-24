@@ -337,7 +337,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         _logger.info("####################### Starting pystxm ####################### ")
         self.setWindowTitle(
-            "pyStxm %s.%s.%s Canadian Light Source Inc. [%s] [br: %s] [%s]"
+            "pyStxm %s.%s.%s Canadian Light Source [%s] [br: %s] [%s]"
             % (
                 MAIN_OBJ.get("APP.MAJOR_VER"),
                 MAIN_OBJ.get("APP.MINOR_VER"),

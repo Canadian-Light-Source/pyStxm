@@ -426,6 +426,7 @@ class ImageDataEmitter(BaseQtImageDataEmitter):
         _func_name = "event(self, doc)"
         new_x = None
         new_y = None
+        seq_num = 0
         try:
             # This inner try/except block handles seq_num and time, which could
             # be keys in the data or accessing the standard entries in every
@@ -660,10 +661,10 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
                             # looks like a line reset array
                             print("SIS3820ImageDataEmitter: event: looks like a line reset array")
                             return
-                    #self._counter += 1
-                    #print(f"SIS3820ImageDataEmitter: event: self._counter={self._counter}")
-                    #self.update_idxs(seq_num)
-                    self.update_idxs(self._counter)
+                    # Prefer the running scan index; if the map only contains per-run
+                    # indices, fall back to the current event seq_num.
+                    seq_idx = self._counter if self._counter in self._seq_dct else seq_num
+                    self.update_idxs(seq_idx)
                     new_x = self.x_idx
                     new_y = self.y_idx
                     # print('SIS3820ImageDataEmitter: event: seq_num[%d] [%d, %d, %d]' % (seq_num, self.x_idx, self.y_idx, new_det))
@@ -699,30 +700,31 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
                 ev_idx = 0
                 pol_idx = 0
 
-                if self._counter in self._seq_dct:
-                    if 'img_num' in self._seq_dct[self._counter]:
-                        img_num = self._seq_dct[self._counter]["img_num"]
-                    if 'ev_idx' in self._seq_dct[self._counter]:
-                        ev_idx = self._seq_dct[self._counter]["ev_idx"]
-                    if 'pol_idx' in self._seq_dct[self._counter]:
-                        pol_idx = self._seq_dct[self._counter]["pol_idx"]
-                    if 'prog' in self._seq_dct[self._counter]:
-                        percent = self._seq_dct[self._counter]['prog']
+                seq_idx = self._counter if self._counter in self._seq_dct else seq_num
+                if seq_idx in self._seq_dct:
+                    if 'img_num' in self._seq_dct[seq_idx]:
+                        img_num = self._seq_dct[seq_idx]["img_num"]
+                    if 'ev_idx' in self._seq_dct[seq_idx]:
+                        ev_idx = self._seq_dct[seq_idx]["ev_idx"]
+                    if 'pol_idx' in self._seq_dct[seq_idx]:
+                        pol_idx = self._seq_dct[seq_idx]["pol_idx"]
+                    if 'prog' in self._seq_dct[seq_idx]:
+                        percent = self._seq_dct[seq_idx]['prog']
 
-                    set_prog_dict(self._prog_dct, sp_id=0, percent=percent, cur_img_idx=img_num, ev_idx=ev_idx,
-                                  pol_idx=pol_idx)
-                    # print('SIS3820ImageDataEmitter: emit x=%f y=%f' % (new_x, new_y))
-                    self._plot_dct[CNTR2PLOT_FUNC_NAME] = f"{self.__class__.__name__}.{_func_name}"
-                    self._plot_dct[CNTR2PLOT_DETID] = self.det_id
-                    self._plot_dct[CNTR2PLOT_ROW] = int(new_y)
-                    self._plot_dct[CNTR2PLOT_COL] = int(new_x)
-                    self._plot_dct[CNTR2PLOT_VAL] = new_det
-                    self._plot_dct[CNTR2PLOT_IS_LINE] = True if not self.is_pxp else False
-                    self._plot_dct[CNTR2PLOT_IS_POINT] = self.is_pxp
-                    self._plot_dct[CNTR2PLOT_PROG_DCT] = self._prog_dct
-                    # print(f"SIS3820ImageDataEmitter: event:: col = {self._plot_dct[CNTR2PLOT_COL]} row = {self._plot_dct[CNTR2PLOT_ROW]} = {new_det}")
-                    # print(f"SIS3820ImageDataEmitter: event: self._prog_dct={self._prog_dct}")
-                    self.new_plot_data.emit(self._plot_dct)
+                set_prog_dict(self._prog_dct, sp_id=0, percent=percent, cur_img_idx=img_num, ev_idx=ev_idx,
+                              pol_idx=pol_idx)
+                # print('SIS3820ImageDataEmitter: emit x=%f y=%f' % (new_x, new_y))
+                self._plot_dct[CNTR2PLOT_FUNC_NAME] = f"{self.__class__.__name__}.{_func_name}"
+                self._plot_dct[CNTR2PLOT_DETID] = self.det_id
+                self._plot_dct[CNTR2PLOT_ROW] = int(new_y)
+                self._plot_dct[CNTR2PLOT_COL] = int(new_x)
+                self._plot_dct[CNTR2PLOT_VAL] = new_det
+                self._plot_dct[CNTR2PLOT_IS_LINE] = True if not self.is_pxp else False
+                self._plot_dct[CNTR2PLOT_IS_POINT] = self.is_pxp
+                self._plot_dct[CNTR2PLOT_PROG_DCT] = self._prog_dct
+                # print(f"SIS3820ImageDataEmitter: event:: col = {self._plot_dct[CNTR2PLOT_COL]} row = {self._plot_dct[CNTR2PLOT_ROW]} = {new_det}")
+                # print(f"SIS3820ImageDataEmitter: event: self._prog_dct={self._prog_dct}")
+                self.new_plot_data.emit(self._plot_dct)
                 # self.update_plot()
                 self._counter += 1
 

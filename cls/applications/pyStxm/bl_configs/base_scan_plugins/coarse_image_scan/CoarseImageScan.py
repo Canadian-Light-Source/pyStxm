@@ -14,6 +14,7 @@ from ophyd.utils import (ReadOnlyError, LimitError, DestroyedError)
 from bcm.devices.ophyd.qt.daqmx_counter_output import trig_src_types
 
 from cls.scan_engine.bluesky.bluesky_defs import bs_dev_modes
+from cls.scan_engine.decorators import conditional_decorator
 from cls.applications.pyStxm import abs_path_to_ini_file
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
 
@@ -171,7 +172,103 @@ class BaseCoarseImageScanClass(BaseScan):
         else:
             return False
 
-    def make_pxp_scan_plan(self, dets, bi_dir=False, md={}):
+    def make_scan_plan(self, dets, md=None, bi_dir=False):
+        """
+        override the default make_scan_plan to set the scan_type
+        :param dets:
+        :param gate:
+        :param md:
+        :param bi_dir:
+        :return:
+        """
+        self.configure_devs(dets)
+        self.dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()
+        if self.numE == 1:
+            self.scan_type = scan_types.SAMPLE_IMAGE
+            return self.make_soft_stack_image_plan(dets, md=md, bi_dir=bi_dir)
+        else:
+            self.scan_type = scan_types.SAMPLE_IMAGE_STACK
+            return self.make_soft_stack_image_plan(dets, md=md, bi_dir=bi_dir)
+
+
+    def make_soft_stack_image_plan(self, dets, md=None, bi_dir=False):
+        #print("entering: make_soft_stack_image_plan")
+        self._saved_one = False
+        stagers = []
+        for d in dets:
+            stagers.append(d)
+
+        def do_scan():
+            energy_dev = self.main_obj.device("DNM_ENERGY_DEVICE")
+            pol_mtr = self.main_obj.device("DNM_EPU_POLARIZATION")
+            off_mtr = self.main_obj.device("DNM_EPU_OFFSET")
+            ang_mtr = self.main_obj.device("DNM_EPU_ANGLE")
+
+            # print('starting: make_soft_stack_image_plan: do_scan()')
+            entrys_lst = []
+            self._current_img_idx = 0
+            epu_sps = zip(self.setpointsPol, self.setpointsOff,self.setpointsAngle)
+
+            for pol, off, ang in epu_sps:
+                # switch to new polarization, offset and angle
+                if pol_mtr.get_position() != pol:
+                    yield from bps.mv(pol_mtr, pol)
+                if off_mtr.get_position() != off:
+                    yield from bps.mv(off_mtr, off)
+                if ang_mtr.get_position() != ang:
+                    yield from bps.mv(ang_mtr, ang)
+                # switch to new energy
+                for ev_sp in self.ev_setpoints:
+                    yield from bps.mv(energy_dev, ev_sp)
+                    # self.dwell = ev_roi[DWELL]
+                    self.dwell = self.setpointsDwell
+
+                    # now load and execute each spatial region
+                    for sp_id in self.sp_ids:
+                        self.sp_id = sp_id
+                        # this updates member vars x_roi, y_roi, etc... with current spatial id specifics
+                        self.update_roi_member_vars(self.sp_rois[self.sp_id])
+                        img_dct = self.img_idx_map["%d" % self._current_img_idx]
+
+                        md = {
+                            "metadata": dict_to_json(
+                                self.make_standard_metadata(
+                                    entry_name=img_dct["entry"],
+                                    dets=dets,
+                                    scan_type=self.scan_type,
+                                )
+                            )
+                        }
+                        if img_dct["entry"] not in entrys_lst:
+                            # only create the entry once
+                            if self.is_lxl:
+                                yield from self.make_lxl_scan_plan(
+                                    dets, md=md, do_baseline=True
+                                )
+                            else:
+                                yield from self.make_pxp_scan_plan(
+                                    dets, md=md, do_baseline=True
+                                )
+
+                        else:
+                            # this data will be used to add to previously created entries
+                            if self.is_lxl:
+                                yield from self.make_lxl_scan_plan(
+                                    dets, md=md, do_baseline=False
+                                )
+                            else:
+                                yield from self.make_pxp_scan_plan(
+                                    dets, md=md, do_baseline=False
+                                )
+
+                        self._current_img_idx += 1
+                        entrys_lst.append(img_dct["entry"])
+
+                self._saved_one = True
+
+        return (yield from do_scan())
+
+    def make_pxp_scan_plan(self, dets, bi_dir=False, md={}, do_baseline=True):
         dev_list = self.main_obj.main_obj[DEVICES].devs_as_list()  # skip_lst)
 
         self._bi_dir = bi_dir
@@ -184,6 +281,7 @@ class BaseCoarseImageScanClass(BaseScan):
                 )
             }
 
+        @conditional_decorator(bpp.baseline_decorator(self.dev_list), do_baseline)
         @bpp.baseline_decorator(dev_list)
         @bpp.run_decorator(md=md)
         def do_scan():
@@ -212,7 +310,7 @@ class BaseCoarseImageScanClass(BaseScan):
 
         return (yield from do_scan())
 
-    def make_lxl_scan_plan(self, dets, md=None, bi_dir=False):
+    def make_lxl_scan_plan(self, dets, md=None, bi_dir=False, do_baseline=True):
         """
         This produces a line by line scan that uses base level plans to do the scan
         due to the sis3820 requiring it to be running before the X motor moves across the scan line
@@ -234,6 +332,7 @@ class BaseCoarseImageScanClass(BaseScan):
                 )
             }
 
+        @conditional_decorator(bpp.baseline_decorator(self.dev_list), do_baseline)
         @bpp.baseline_decorator(dev_list)
         @bpp.run_decorator(md=md)
         def do_scan():
@@ -394,7 +493,9 @@ class BaseCoarseImageScanClass(BaseScan):
         # self.numE = self.sp_db[SPDB_EV_NPOINTS] * len(self.setpointsPol)
         self.numE = int(self.sp_db[SPDB_EV_NPOINTS])
         self.numSPIDS = len(self.sp_rois)
-        self.numImages = 1
+        self.numImages = int(
+                self.sp_db[SPDB_EV_NPOINTS] * self.numEPU * self.numSPIDS
+            )
 
         # set some flags that are used elsewhere
         self.stack = False
@@ -403,6 +504,9 @@ class BaseCoarseImageScanClass(BaseScan):
         self.is_point_spec = False
         self.file_saved = False
         self.sim_point = 0
+
+        if self.numImages > 1:
+            self.stack = True
 
         # users can request that the the ev and polarity portions of the scan can be executed in different orders
         # based on the order that requires a certain what for the sscan clases to be assigned in terms of their "level" so handle that in
@@ -431,7 +535,7 @@ class BaseCoarseImageScanClass(BaseScan):
         self.move_osaxy_to_its_center()
 
         self.seq_map_dct = self.generate_2d_seq_image_map(
-            num_evs=1, num_pols=1, nypnts=self.y_roi[NPOINTS], nxpnts=self.x_roi[NPOINTS], lxl=self.is_lxl
+            num_evs=self.numE, num_pols=self.numEPU, nypnts=self.y_roi[NPOINTS], nxpnts=self.x_roi[NPOINTS], lxl=self.is_lxl
         )
 
         # THIS must be the last call

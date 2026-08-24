@@ -333,7 +333,6 @@ class BaseCoarseImageScanClass(BaseScan):
             }
 
         @conditional_decorator(bpp.baseline_decorator(self.dev_list), do_baseline)
-        @bpp.baseline_decorator(dev_list)
         @bpp.run_decorator(md=md)
         def do_scan():
             try:

@@ -245,7 +245,6 @@ class ophyd_aiLabelWidget(BaseLabel):
         self.signal = signal
         self.hdrText = hdrText
         self.prefix = signal.get_name()
-        self.setToolTip(self.prefix)
         self.egu = egu
         self.title_color = title_color
         self.var_clr = var_clr
@@ -257,10 +256,11 @@ class ophyd_aiLabelWidget(BaseLabel):
 
         if (warn is not None) and (alarm is not None):
             self.setToolTip(
-                "%s: Warn level set to %5.2f, Alarm level is %5.2f"
-                % (hdrText, warn, alarm)
+                '<div style="max-width: 360px; white-space: normal; '
+                'background-color: rgb(255,255,255); color: rgb(0,0,0);">'
+                f'{hdrText}: Warn level set to {warn:.2f}, Alarm level is {alarm:.2f}'
+                '</div>'
             )
-        # self.setStatusTip('Warn level set to %5.2f, Alarm level is %5.2f' % (warn, alarm))
 
         self.signal.on_connect.connect(self.init_fbk)
 

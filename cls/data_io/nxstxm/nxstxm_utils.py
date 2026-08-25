@@ -566,8 +566,9 @@ def make_1d_array(numpts, val):
             mults = int(numpts / num_vals)
             arr[:] = np.tile(val, (mults))
     else:
-        if isinstance(val, float):
-            arr[:] = val
+        # Accept python and numpy scalar numerics (float32/float64/int, etc.)
+        if np.isscalar(val):
+            arr[:] = float(val)
 
     return arr
 

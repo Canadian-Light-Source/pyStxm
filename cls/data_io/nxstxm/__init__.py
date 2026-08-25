@@ -393,6 +393,7 @@ class Serializer(event_model.DocumentRouter):
         self._cur_uid = doc["uid"]
         self._wdg_com = json.loads(self._cur_scan_md[self._cur_uid]['wdg_com'])
         self._scan_type = _metadata_dct["scan_type"]
+        self._dwell = _metadata_dct["dwell"]
         self._scan_subtype = self.get_scan_subtype()
 
         # assign the member vars
@@ -767,6 +768,8 @@ class Serializer(event_model.DocumentRouter):
             # set attrs for the file
             _dataset(entry_nxgrp, "title", "NeXus sample", "NX_CHAR")
             _dataset(entry_nxgrp, "start_time", self._start_time_str, "NX_DATE_TIME")
+            # Seed end_time so every entry always has this field; stop() replaces it.
+            _dataset(entry_nxgrp, "end_time", self._start_time_str, "NX_DATE_TIME")
             _dataset(entry_nxgrp, "definition", "NXstxm", "NX_CHAR")
             _dataset(entry_nxgrp, "version", "1.0", "NX_CHAR")
             _string_attr(entry_nxgrp, "default", self._default_det)
@@ -1465,7 +1468,7 @@ class Serializer(event_model.DocumentRouter):
         :return:
         """
         rois = self.get_rois_from_current_md(doc["run_start"])
-        dwell = self._cur_scan_md[doc["run_start"]]["dwell"] * 0.001
+        dwell = self._dwell
         scan_type = self.get_stxm_scan_type(doc["run_start"])
         uid = self.get_current_uid()
         det_stream = self._det_strm_map[det_nm]
@@ -1507,7 +1510,7 @@ class Serializer(event_model.DocumentRouter):
             xdata = np.array(dct_get(rois, SPDB_XSETPOINTS), dtype=np.float32)
             ydata = np.array(dct_get(rois, SPDB_YSETPOINTS), dtype=np.float32)
             # make sure dwell is in seconds
-            dwell = self._cur_scan_md[doc["run_start"]]["dwell"] * 0.001
+            dwell = self._dwell * 0.001
             spid = list(self._wdg_com["SPATIAL_ROIS"].keys())[0]
             ev_setpoints = []
             for ev_roi in self._wdg_com["SPATIAL_ROIS"][spid]["EV_ROIS"]:
@@ -1568,8 +1571,8 @@ class Serializer(event_model.DocumentRouter):
         for cntr_nm in cntr_nm_lst:
             data_nxgrp = _group(entry_nxgrp, cntr_nm, "NXdata")
             dgrps.append(data_nxgrp)
-            # make sure dwell is in seconds
-            dwell = np.float32(self._cur_scan_md[doc["run_start"]]["dwell"]) * 0.001
+            # make sure dwell is in seconds (UI dwell is in milliseconds)
+            dwell = self._dwell * 0.001
             ev_setpoints = self._wdg_com["SINGLE_LST"]["EV_ROIS"]
             num_ev_points = len(ev_setpoints)
             _dataset(
@@ -1829,6 +1832,9 @@ class Serializer(event_model.DocumentRouter):
                 #make sure that the end_time is set for all entry's
                 for ekey in nf.keys():
                     if ekey.find("entry") > -1:
+                        # Avoid create_dataset collisions when end_time already exists.
+                        if "end_time" in nf[ekey].keys():
+                            del nf[ekey]["end_time"]
                         _dataset(nf[ekey], "end_time", _stop_time_str, "NX_DATE_TIME")
                 nf.close()
 

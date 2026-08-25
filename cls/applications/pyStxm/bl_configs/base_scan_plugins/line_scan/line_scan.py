@@ -123,7 +123,7 @@ class BaseLineScanParam(MultiRegionScanParamBase):
         #     self.scan_class = self.instanciate_scan_class(__file__, 'LineSpecSSCANWithE712WavegenScan', 'LineSpecScanWithE712WavegenClass')
         # else:
         #     self.scan_class = self.instanciate_scan_class(__file__, 'LineSpecScan', 'LineSpecScanClass')
-
+        self.center_plot_on_focus = True
         self.sub_type_override = self.sub_type
 
         self.wdg_com = None
@@ -182,6 +182,25 @@ class BaseLineScanParam(MultiRegionScanParamBase):
             else:
                 self.enable_line_select_btns(False)
             # call the standard init_base_values function for scan param widgets that contain a multiRegionWidget
+            sp_id = 0
+            scan = self.multi_region_widget.get_spatial_row_data(sp_id)
+            #get positions of current Sample_x and Y
+            cx = self.main_obj.device("DNM_SAMPLE_X").get_position()
+            cy = self.main_obj.device("DNM_SAMPLE_Y").get_position()
+            #make cur x pos as new center and set range to 3.0 microns
+            dct_put(scan, SPDB_XCENTER, cx)
+            on_center_changed(scan[SPDB_X])
+            dct_put(scan, SPDB_XRANGE, 3.0)
+            on_range_changed(scan[SPDB_X])
+
+            # make cur y pos as new center and set range to 0.0 microns (horizontal line)
+            dct_put(scan, SPDB_YCENTER, cy)
+            on_center_changed(scan[SPDB_Y])
+            dct_put(scan, SPDB_YRANGE, 0.0)
+            on_range_changed(scan[SPDB_Y])
+
+            self.multi_region_widget.modify_spatial_row_data(sp_id, scan)
+            # set the epu values in the multiRegionWidget to the current values of the EPU
             self.on_multiregion_widget_focus_init_base_values()
             self.multi_region_widget.resize_tableviews()
 
@@ -195,6 +214,13 @@ class BaseLineScanParam(MultiRegionScanParamBase):
         """
         super().on_plugin_defocus()
         self.update_last_settings()
+
+    def load_from_defaults(self):
+        """
+        just override the base level load_from_defaults() to set the scan subtype to line unidir
+        we want to leave the settings as they are when the user switches between scan param plugins,
+        """
+        pass
 
     def clear_params(self):
         """meant to clear all params from table"""

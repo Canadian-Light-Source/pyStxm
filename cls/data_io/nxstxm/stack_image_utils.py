@@ -16,7 +16,7 @@ from cls.data_io.nxstxm.roi_dict_defs import *
 #                                           get_nx_standard_epu_mode, get_nx_standard_epu_harmonic_new, translate_pol_id_to_stokes_vector, \
 #                                           readin_base_classes, make_NXclass, remove_unused_NXsensor_fields)
 
-from cls.data_io.nxstxm.nxstxm_utils import _dataset, _string_attr
+from cls.data_io.nxstxm.nxstxm_utils import _dataset, _string_attr, make_1d_array
 
 import cls.data_io.nxstxm.nx_key_defs as nxkd
 
@@ -185,6 +185,13 @@ def modify_stack_nxdata_group(parent, data_nxgrp, doc, scan_type):
     # wdg_com = json.loads(js_str)
     evs = parent._wdg_com["SINGLE_LST"]["EV_ROIS"]
     num_ev_points = len(evs)
+
+    # Keep count_time synchronized with this run's dwell (ms -> s).
+    dwell_sec = float(parent._cur_scan_md[doc["run_start"]]["dwell"]) * 0.001
+    if "count_time" in data_nxgrp.keys():
+        del data_nxgrp["count_time"]
+    _dataset(data_nxgrp, "count_time", make_1d_array(num_ev_points, dwell_sec), "NX_FLOAT")
+
     #rows, cols = det_data.shape
     # init_dat_arr = np.zeros((num_ev_points, rows, cols), dtype=np.float32)
     init_dat_arr = np.empty((num_ev_points, rows, cols), dtype=np.float32)

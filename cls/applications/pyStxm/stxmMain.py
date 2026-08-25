@@ -337,7 +337,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
 
         _logger.info("####################### Starting pystxm ####################### ")
         self.setWindowTitle(
-            "pyStxm %s.%s.%s Canadian Light Source Inc. [%s] [br: %s] [%s]"
+            "pyStxm %s.%s.%s Canadian Light Source [%s] [br: %s] [%s]"
             % (
                 MAIN_OBJ.get("APP.MAJOR_VER"),
                 MAIN_OBJ.get("APP.MINOR_VER"),
@@ -2680,16 +2680,6 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         status_title_color = master_colors["app_superltblue"]["rgb_str"]
         status_fbk_color = master_colors["status_fbk_color"]["rgb_str"]
 
-        # w = ophyd_aiLabelWidget(
-        #     MAIN_OBJ.device("DNM_MONO_EV_FBK"),
-        #     hdrText="Mono Energy:",
-        #     egu="eV",
-        #     title_color=status_title_color,
-        #     var_clr=status_fbk_color,
-        # )
-        # # w.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)
-        # self.beamStatusLayout.insertWidget(0, w)
-        # self.beamStatusLayout.insertSpacing(0, 10)
         # only show the ring current if device exists
         if MAIN_OBJ.device("DNM_RING_CURRENT", do_warn=False):
             w = ophyd_aiLabelWidget(

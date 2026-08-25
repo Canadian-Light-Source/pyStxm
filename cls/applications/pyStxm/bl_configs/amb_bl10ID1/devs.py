@@ -1,5 +1,5 @@
 
-SIM =  True
+SIM =  False
 dev_dct = {}
 
 
@@ -502,7 +502,7 @@ dev_dct["ENERGY_DEV"] = [
         "name": "DNM_ENERGY_DEVICE",
         "desc": "Energy device that includes focussing",
         "class": "EnergyDevice",
-        "dcs_nm": "SIMM_BL1610-I12:ENERGY" if SIM else "BL1610-I10:ENERGY",
+        "dcs_nm": "SIMM_BL1610-I12:ENERGY" if SIM else "BL1610-I10:energy",
         "energy_nm": "DNM_ENERGY",
         "zz_nm": "DNM_ZONEPLATE_Z",
         "cz_nm": "DNM_COARSE_Z",

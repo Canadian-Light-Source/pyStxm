@@ -159,6 +159,12 @@ class sample_abstract_motor(MotorQt):
         """
         self.move_to_position(pos)
 
+    def get_servo_power(self):
+        """
+        return state of servo power
+        """
+        return self._fine_mtr.servo_power.get()
+
     def set_piezo_power_off(self):
         """ convienience function to set the power off"""
         #print("set_piezo_power_off[%s] turning power off" % self._fine_mtr.name)
@@ -298,8 +304,13 @@ class sample_abstract_motor(MotorQt):
         volt_fbk = float(self._fine_mtr.output_volt_rbv.get())
         # threshold = 10.0
         # threshold = 30.0
-
-        return math.fabs(E712_MID_RANGE_VOLTS - volt_fbk) <= threshold
+        if threshold < 30:
+            print(f"do_voltage_check: why is threshold < 30?")
+        res = math.fabs(E712_MID_RANGE_VOLTS - volt_fbk) <= threshold
+        msg = f"do_voltage_check: returning [{res}] <-math.fabs(E712_MID_RANGE_VOLTS[{E712_MID_RANGE_VOLTS}] - volt_fbk[{volt_fbk}]) <= threshold[{threshold}]"
+        print(msg)
+        _logger.debug(msg)
+        return res
 
     def do_interferometer_check(self):
         """

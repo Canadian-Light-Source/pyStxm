@@ -137,8 +137,26 @@ class BaseCoarseImageScanClass(BaseScan):
 
         # #before starting scan check the interferometers, note BOTH piezo's must be off first
         # if the volts of the piezo are not within threshold of the center (50 volts) then do a recenter otherwise dont
-        if not mtr_x.do_voltage_check(threshold=10.0) or not mtr_y.do_voltage_check(threshold=10.0):
+        piezo_power_on = False
+        if mtr_x.get_servo_power() or mtr_y.get_servo_power():
+            piezo_power_on = True
+            print(f"CoarseImageScan: go_to_scan_start: piezo power is on so assuming fine scan just run, recentering")
+
+        # check if going from a coarse to coarse, fine or coarse
+        do_res_chg_recenter = False
+        if self.main_obj.prev_scan_class:
+            # if fine to coarse do a recenter else skip
+            if self.main_obj.prev_scan_class.is_fine_scan:
+                print(f"CoarseImageScan: go_to_scan_start: previous scan was a fine so recenter required")
+                do_res_chg_recenter = True
+
+        # recenter before coarse scan if the piezo power is on, the assumption is that if the piezo power is on then the previous scan was likely a fine scan
+        # and before we take a coarse scan we need to ensure the piezo's are recentered
+        if do_res_chg_recenter or piezo_power_on or not mtr_x.do_voltage_check(threshold=10.0) or not mtr_y.do_voltage_check(threshold=10.0):
             self.mtr_recenter_msg.show()
+
+            mtr_x.set_piezo_power_off()
+            mtr_y.set_piezo_power_off()
 
             mtr_x.do_autozero()
             mtr_x.reset_interferometers()
@@ -148,8 +166,6 @@ class BaseCoarseImageScanClass(BaseScan):
 
             self.mtr_recenter_msg.hide()
 
-        mtr_x.set_piezo_power_off()
-        mtr_y.set_piezo_power_off()
 
         mtr_x.move_coarse_to_scan_start(start=xstart, stop= self.x_roi[STOP], npts=self.x_roi[NPOINTS], dwell=self.dwell)
         mtr_y.move_coarse_to_position(ystart, False)

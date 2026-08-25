@@ -135,6 +135,7 @@ class main_object_base(QtCore.QObject):
         self.device_backend = BACKEND #default
         self.zmq_dev_mgr = None
         self.dcs_settings = None
+        self.prev_scan_class = None
         self.data_dir_is_local = True if beamline_cfg_dct["BL_CFG_MAIN"]['data_dir_is_local'] == 'true' else False
         self.data_dir = beamline_cfg_dct["BL_CFG_MAIN"]['data_dir']
         self.default_detector = beamline_cfg_dct["BL_CFG_MAIN"].get('default_detector', None)

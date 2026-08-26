@@ -1364,6 +1364,9 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             mtr_x = MAIN_OBJ.device("DNM_SAMPLE_X")
             mtr_y = MAIN_OBJ.device("DNM_SAMPLE_Y")
 
+            mtr_x.set_piezo_power_off()
+            mtr_y.set_piezo_power_off()
+
             mtr_x.do_autozero()
             mtr_y.do_autozero()
 

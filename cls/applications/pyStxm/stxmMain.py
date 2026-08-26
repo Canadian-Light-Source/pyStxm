@@ -4130,7 +4130,8 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.scan_elapsed_timer.start(1000)
 
         # set the cur scan as the previous scan so that the next scan can querey it for sample motor recenteing logic
-        MAIN_OBJ.prev_scan_class = scan_class
+        MAIN_OBJ.prev_scan_class = {'xroi' : copy.copy(scan_class.x_roi), 'yroi' : copy.copy(scan_class.y_roi),
+                                    'is_fine_scan': scan_class.is_fine_scan}
         #########################################################
         if MAIN_OBJ.get_device_backend().find("zmq") > -1:
             dct_put(self.executingScan.wdg_com, "SCAN_REQUEST", self.executingScan.ui_module.get_scan_request())

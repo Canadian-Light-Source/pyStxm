@@ -225,26 +225,55 @@ class sample_abstract_motor(MotorQt):
         max = roi[STOP]
         return min, max
 
-    def is_fine_in_range(self, roi):
+
+    def is_fine_in_range(self, roi, prev_center=None):
         """
         This function makes the assumption that the abstract motor is at the center of the previous scan
         given a roi dict determine if the fine motor is currently in range to perform the scan given in the roi
         """
+
         nr_cntr = self.is_fine_already_near_center(roi[CENTER])
         smin_in_range = False
         smax_in_range = False
-        smin, smax = self.calc_scan_range(roi)
+        scan_min, scan_max = self.calc_scan_range(roi)
         fbk = float(self._fine_mtr.user_readback.get())
-        # now calc max range from current center
-        cmin = fbk - self.max_delta_fine_range
-        cmax = fbk + self.max_delta_fine_range
+        # # now calc max range from current center
+
+        delta_dist = math.fabs(prev_center - roi[CENTER])
+        if delta_dist > self.max_delta_fine_range:
+            center_dist = False
+        else:
+            center_dist = True
+        #
+        if prev_center:
+            prev_scan_min = prev_center - self.max_delta_fine_range
+            prev_scan_max = prev_center + self.max_delta_fine_range
+        else:
+            prev_scan_min = fbk - self.max_delta_fine_range
+            prev_scan_max = fbk + self.max_delta_fine_range
         #if it is then check to see if the scan range will work
-        if smin > cmin:
+        if scan_min > prev_scan_min:
             smin_in_range = True
-        if smax < cmax:
+        if scan_max < prev_scan_max + 1:
             smax_in_range = True
-        print(f"is_fine_in_range: smin_in_range={smin_in_range}, smax_in_range={smax_in_range}")
-        return smin_in_range and smax_in_range
+
+        return center_dist and smin_in_range and smax_in_range
+
+        # print(
+        #     f"is_fine_in_range:\n"
+        #     f"  prev_center         = {prev_center}\n"
+        #     f"  fbk (fine rbv)      = {fbk:.4f}\n"
+        #     f"  smin                = {smin:.4f}\n"
+        #     f"  smax                = {smax:.4f}\n"
+        #     f"  cmin                = {cmin:.4f}\n"
+        #     f"  cmax                = {cmax:.4f}\n"
+        #     f"  max_fine_range      = {self.max_fine_range:.4f}\n"
+        #     f"  max_delta_fine_range= {self.max_delta_fine_range:.4f}\n"
+        #     f"  smin > cmin         = {smin:.4f} > {cmin:.4f} -> {smin_in_range}\n"
+        #     f"  smax < cmax         = {smax:.4f} < {cmax:.4f} -> {smax_in_range}\n"
+        #     f"  result (both in range) = {smin_in_range and smax_in_range}"
+        # )
+        # return smin_in_range and smax_in_range
 
     # def check_scan_limits(self, start: float, stop: float, coarse_only: bool = False) -> bool:
     #     # the fine piezo stage will have a small relative range,

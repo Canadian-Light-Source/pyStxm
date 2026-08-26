@@ -146,7 +146,7 @@ class BaseCoarseImageScanClass(BaseScan):
         do_res_chg_recenter = False
         if self.main_obj.prev_scan_class:
             # if fine to coarse do a recenter else skip
-            if self.main_obj.prev_scan_class.is_fine_scan:
+            if self.main_obj.prev_scan_class['is_fine_scan']:
                 print(f"CoarseImageScan: go_to_scan_start: previous scan was a fine so recenter required")
                 do_res_chg_recenter = True
 

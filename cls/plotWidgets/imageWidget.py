@@ -5909,7 +5909,7 @@ class ImageWidgetPlot(PlotDialog):
         scan_type=None,
         addimages=True,
         rotatable=False,
-        flipud=False,
+        flipud=True,
         dropped=False,
         alpha=1.0,
         use_current_plot_center=False,

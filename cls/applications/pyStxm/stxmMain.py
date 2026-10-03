@@ -2214,7 +2214,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 sample_pos_mode
             )
             self.lineByLineImageDataWidget.enable_tool_by_name(
-                "tools.clsOpenFileTool", False
+                "tools.clsOpenFileTool", True
             )
             self.lineByLineImageDataWidget.set_dataIO(STXMDataIo)
 

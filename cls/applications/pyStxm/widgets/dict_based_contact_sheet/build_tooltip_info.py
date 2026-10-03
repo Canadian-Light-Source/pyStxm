@@ -261,12 +261,12 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
                 format_info_text("step:", f"{dct['estep']:.2f} ev"),
             )
         else:
-            s += "%s" % format_info_text("Energy:", "%.2f eV" % e_pnt)
+            s += "%s" % format_info_text("Energy:", f"{e_pnt:.2f} eV")
 
         if (_scan_type in focus_scans):
             x_start, zpz_start = dct["start"]
             x_stop, zpz_stop = dct["stop"]
-            s += '%s' % format_info_text('ZoneplateZ:', '[%.2f ---> %.2f] um' % (zpz_start, zpz_stop))
+            s += '%s' % format_info_text('ZoneplateZ:', f"[{zpz_start:.2f} ---> {zpz_stop:.2f}] um")
 
         _s1 = "%s" % (
             format_info_text(
@@ -281,24 +281,24 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
         _s2 = "%s" % (
             format_info_text(
                 "Offset:",
-                "%.2f mm" % sp_db[EV_ROIS][ev_idx][EPU_OFF_PNTS][pol_idx],
+                f"{sp_db[EV_ROIS][ev_idx][EPU_OFF_PNTS][pol_idx]:.2f} mm",
                 newline=False,
             )
         )
         _s3 = "%s" % (
             format_info_text(
-                "Angle:", "%.2f deg" % sp_db[EV_ROIS][ev_idx][EPU_ANG_PNTS][pol_idx]
+                "Angle:", f"{sp_db[EV_ROIS][ev_idx][EPU_ANG_PNTS][pol_idx]:.2f} deg"
             )
         )
         s += "%s %s %s" % (_s1, _s2, _s3)
         s += "%s" % format_info_text(
-            "Dwell:", "%.2f ms" % (sp_db[EV_ROIS][ev_idx][DWELL] )
+            "Dwell:", f"{sp_db[EV_ROIS][ev_idx][DWELL]:.2f} ms"
         )
-        s += "%s" % format_info_text("Points:", "%d x %d " % (width, height))
+        s += "%s" % format_info_text("Points:", f"{width} x {height}")
 
         if dct["center"][0] is None:
             s += "%s" % format_info_text(
-                "Center:", "(?, ?) um"
+                "Center:", "(N/A, N/A) um"
             )
         else:
             _tpl = tuple_to_float_strings(dct["center"])
@@ -308,12 +308,9 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
 
         if dct["range"][0] is None:
             s += "%s" % format_info_text(
-                "Range:", "(?, ?) um"
+                "Range:", "(N/A, N/A) um"
             )
         else:
-            # s += "%s" % format_info_text(
-            #     "Range:", "(%.2f, %.2f) um" % dct["range"]
-            # )
             _tpl = tuple_to_float_strings(dct["range"])
             s += "%s" % format_info_text(
                 "Range:",f"({_tpl[0]}, {_tpl[1]}) um"
@@ -323,12 +320,9 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
 
             if dct["step"][0] is None:
                 s += "%s" % format_info_text(
-                    "StepSize:", "(?, ?) um"
+                    "StepSize:", "(N/A, N/A) um"
                 )
             else:
-                # s += "%s" % format_info_text(
-                #     "StepSize:", "(%.3f, %.3f) um" % dct["step"]
-                # )
                 _tpl = tuple_to_float_strings(dct["step"], format=".3f")
                 s += "%s" % format_info_text(
                      "StepSize:", f"({_tpl[0]}, {_tpl[1]}) um"
@@ -337,31 +331,25 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
             if "goni_z_cntr" in list(dct):
                 if dct["goni_z_cntr"][0] is None:
                     s += "%s" % format_info_text(
-                        "Goni Z:", "? um"
+                        "Goni Z:", "N/A um"
                     )
                 else:
                     s += "%s" % format_info_text(
-                        "Goni Z:", "%.3f um" % dct["goni_z_cntr"]
+                        "Goni Z:", f'{dct["goni_z_cntr"]:.3f} um'
                     )
 
             s += "%s" % format_info_text(
                 "Goni Theta:",
-                "%.2f deg" % (dct["goni_theta_cntr"]),
+                f'{dct["goni_theta_cntr"]:.2f} deg',
                 newline=False,
                 end_preformat=True,
             )
         else:
             if dct["step"][0] is None:
                 s += "%s" % format_info_text(
-                    "StepSize:", "(?, ?) um"
+                    "StepSize:", "(N/A, N/A) um"
                 )
             else:
-                # s += "%s" % format_info_text(
-                #     "StepSize:",
-                #     "(%.3f, %.3f) um" % dct["step"],
-                #     newline=False,
-                #     end_preformat=True,
-                # )
                 _tpl = tuple_to_float_strings(dct["step"], format=".3f")
                 s += "%s" % format_info_text(
                     "StepSize:",

@@ -702,6 +702,7 @@ class PositionersPanel(QtWidgets.QWidget):
         """
         dct['obj'].parent = QtCore.QObject()
         dct['obj'].parent.name = dct['obj'].get_name()
+        dct['obj'].parent.pvname = dct['obj'].get_name()
         dct['obj'].pvname = dct['obj'].get_name()
         self.update_moving(**dct)
 
@@ -725,7 +726,12 @@ class PositionersPanel(QtWidgets.QWidget):
         (dev, dev_ui, widg, mtr) = self.mtr_dict[pvname]
         val = float(kwargs["value"])
         txt_clr = "color: black;"
+
         # this is for the DMOV or DONE Moving, I want Moving so invert logic
+        if hasattr(kwargs['obj'], 'is_moving'):
+            # invert because this should be for move done I think
+            val = not kwargs['obj'].is_moving()
+
         if val:
             is_moving = False
             clr_str = _fbk_not_moving
@@ -826,7 +832,9 @@ class PositionersPanel(QtWidgets.QWidget):
         dct['obj']._read_pv = QtCore.QObject()
         dct['obj']._read_pv.pvname = dct['obj'].get_name()
         dct["pvname"] = dct['obj'].get_name()
+        dct['obj'].pvname = dct['obj'].get_name()
         self.update_fbk(**dct)
+        self.update_moving(**dct)
 
     def update_fbk(self, **kwargs):
         """

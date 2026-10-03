@@ -95,10 +95,10 @@ class ZMQBaseSignal(QObject):
                 self._is_moving = False
                 self._is_in_error = True
 
-            print(f"ZMQBaseSignal: [{self.name}] set_on_off: {value}")
-            print(f"ZMQBaseSignal: \t[{self.name}] is_on: {self._is_on}")
-            print(f"ZMQBaseSignal: \t[{self.name}] is_moving: {self._is_moving}")
-            print(f"ZMQBaseSignal: \t[{self.name}] is_in_error: {self._is_in_error}")
+            # print(f"ZMQBaseSignal: [{self.name}] set_on_off: {value}")
+            # print(f"ZMQBaseSignal: \t[{self.name}] is_on: {self._is_on}")
+            # print(f"ZMQBaseSignal: \t[{self.name}] is_moving: {self._is_moving}")
+            # print(f"ZMQBaseSignal: \t[{self.name}] is_in_error: {self._is_in_error}")
 
     def get_on_off_status(self):
         return self._is_on
@@ -233,7 +233,7 @@ class ZMQBaseDevice(ZMQBaseSignal):
         self.dcs_name = dcs_name
         self._user_readback = 0
         self._user_setpoint = 0
-        self.is_moving = False
+        # self.is_moving = False
         self._old_val = 0
         self._old_is_moving = 0
         self._egu = ""
@@ -366,7 +366,7 @@ class ZMQBaseDevice(ZMQBaseSignal):
 
         #dct = make_signal_dct(value, old_val=self._old_val, lower_ctrl_limit=lower_ctrl_limit, upper_ctrl_limit=upper_ctrl_limit, units=units, prec=5, is_moving=is_moving, obj=self)
         dct = make_signal_dct(value, old_val=self._old_val, lower_ctrl_limit=lower_ctrl_limit,
-                              upper_ctrl_limit=upper_ctrl_limit, units=units, prec=5, is_moving=self._is_moving, obj=self)
+                              upper_ctrl_limit=upper_ctrl_limit, units=units, prec=5, is_moving=self.is_moving(), obj=self)
         # print(f"ZMQBaseDevice: update_position: [{self.name}] just emitted changed of a dict[{dct}]")
         self.changed.emit(dct)
         self._old_val = value
@@ -385,7 +385,7 @@ class ZMQBaseDevice(ZMQBaseSignal):
             #remember this is for DONE moving so invert it
             value = False if is_moving else True
             dct = make_signal_dct(value, old_val=self._old_is_moving, lower_ctrl_limit=lower_ctrl_limit,
-                                  upper_ctrl_limit=upper_ctrl_limit, units=units, prec=5, is_moving=is_moving, obj=self)
+                                  upper_ctrl_limit=upper_ctrl_limit, units=units, prec=5, is_moving=self.is_moving(), obj=self)
             self.motor_done_move.changed.emit(dct)
             self._old_is_moving = is_moving
 

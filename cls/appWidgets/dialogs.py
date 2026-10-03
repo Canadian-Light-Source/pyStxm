@@ -215,7 +215,7 @@ class Dialog(QtWidgets.QDialog):
         self, title, filter_str="All Files (*);;Text Files (*.txt)", search_path=""
     ):
         options = QtWidgets.QFileDialog.Options()
-
+        filter_str = filter_str.replace(";", " ")
         if not self.native.isChecked():
             options |= QtWidgets.QFileDialog.DontUseNativeDialog
         files = QtWidgets.QFileDialog.getOpenFileNames(

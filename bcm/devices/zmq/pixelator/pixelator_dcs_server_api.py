@@ -828,6 +828,7 @@ class DcsServerApi(BaseDcsServerApi):
                     if pos is None or pos == 'null':
                         pos = -909090.9090909
                     status = values[i]['status']
+                    # print(f"positionerStatus: ************ [{app_devname}] {status} ***********")
                     self._update_device_feedback(app_devname, pos, app_devname=app_devname)
                     self._update_device_status(app_devname, status, app_devname=app_devname)
                     # print(f"process_SUB_rcv_messages:positionerStatus: [{app_devname}]  value={pos}")

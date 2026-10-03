@@ -12,6 +12,23 @@ from cls.types.stxmTypes import scan_types, scan_sub_types, image_type_scans, sp
 from cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils import get_first_sp_db_from_entry, format_info_text, extract_date_time_from_nx_time
 
 
+def tuple_to_float_strings(tpl, format='.2f'):
+    """
+    a single function to ensure that a tuple of values that should be floats will be handled if one or more a None
+    Parameters
+    ----------
+    tpl
+
+    Returns
+    -------
+
+    """
+    val1 = tpl[0]
+    val2 = tpl[1]
+    a = f"{val1:{format}}" if val1 is not None else "N/A"
+    b = f"{val2:{format}}" if val2 is not None else "N/A"
+    return [a, b]
+
 def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, pol_idx=0, stack_idx=None):
     """
     Generate an HTML tooltip string from sp_db_dict data
@@ -284,8 +301,9 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
                 "Center:", "(?, ?) um"
             )
         else:
+            _tpl = tuple_to_float_strings(dct["center"])
             s += "%s" % format_info_text(
-            "Center:", "(%.2f, %.2f) um" % dct["center"]
+            "Center:", f"({_tpl[0]}, {_tpl[1]}) um"
             )
 
         if dct["range"][0] is None:
@@ -293,8 +311,12 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
                 "Range:", "(?, ?) um"
             )
         else:
+            # s += "%s" % format_info_text(
+            #     "Range:", "(%.2f, %.2f) um" % dct["range"]
+            # )
+            _tpl = tuple_to_float_strings(dct["range"])
             s += "%s" % format_info_text(
-                "Range:", "(%.2f, %.2f) um" % dct["range"]
+                "Range:",f"({_tpl[0]}, {_tpl[1]}) um"
             )
 
         if "goni_theta_cntr" in list(dct):
@@ -304,8 +326,12 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
                     "StepSize:", "(?, ?) um"
                 )
             else:
+                # s += "%s" % format_info_text(
+                #     "StepSize:", "(%.3f, %.3f) um" % dct["step"]
+                # )
+                _tpl = tuple_to_float_strings(dct["step"], format=".3f")
                 s += "%s" % format_info_text(
-                    "StepSize:", "(%.3f, %.3f) um" % dct["step"]
+                     "StepSize:", f"({_tpl[0]}, {_tpl[1]}) um"
                 )
 
             if "goni_z_cntr" in list(dct):
@@ -330,12 +356,20 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
                     "StepSize:", "(?, ?) um"
                 )
             else:
+                # s += "%s" % format_info_text(
+                #     "StepSize:",
+                #     "(%.3f, %.3f) um" % dct["step"],
+                #     newline=False,
+                #     end_preformat=True,
+                # )
+                _tpl = tuple_to_float_strings(dct["step"], format=".3f")
                 s += "%s" % format_info_text(
                     "StepSize:",
-                    "(%.3f, %.3f) um" % dct["step"],
+                    f"({_tpl[0]}, {_tpl[1]})",
                     newline=False,
                     end_preformat=True,
                 )
+
 
         return (s, jstr)
     else:

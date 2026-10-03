@@ -332,7 +332,7 @@ class Device_Configure(QtWidgets.QWidget):
     ):
         """Populate one table row from a device record and bind all widgets."""
         pystxm_name = record["name"]
-        bg_color = QtGui.QColor("#d4edda") if record.get("connected") else QtGui.QColor("#f8d7da")
+        bg_color = QtGui.QColor("#d4edda") if record.get("connected") else QtGui.QColor("#d9ecff")
         row_bg = QtGui.QColor("#d9ecff") if is_synthetic else bg_color
         editable_bg = QtGui.QColor("#ffffff")
 

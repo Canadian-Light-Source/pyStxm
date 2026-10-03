@@ -55,6 +55,7 @@ from cls.types.stxmTypes import (
     endstation_id_types,
 )
 from cls.utils.log import get_module_logger
+from cls.utils.dict_utils import find_key_in_dict
 from cls.applications.pyStxm.bl_configs.utils import make_basedevice, make_base_simdevice
 
 _logger = get_module_logger(__name__)
@@ -223,21 +224,36 @@ class device_config(dev_config_base):
 
         elif dct['class'] == 'EnergyDevice':
             # get all of the positioners needed for this device
-            a0_dev = self.devices["PVS"]["DNM_A0"]
-            delta_a0_dev = self.devices["PVS"]["DNM_DELTA_A0"]
-            zpz_adjust_dev = self.devices["PVS"]["DNM_ZPZ_ADJUST"]
-            defocus_beam_dev = self.devices["PVS"]["DNM_BEAM_DEFOCUS"]
-            focal_len_dev = self.devices["PVS"]["DNM_FOCAL_LENGTH"]
-            zp_a1_dev = self.devices["PVS"]["DNM_ZP_A1"]
-            a0_max_dev = self.devices["PVS"]["DNM_A0MAXIMUM"]
-            calcd_zpz_dev = self.devices["PVS"]["DNM_CALCD_ZPZ"]
-            zp_focus_mode_dev = self.devices["PVS"]["DNM_ZONEPLATE_FOCUS_MODE"]
+            # a0_dev = self.devices["PVS"]["DNM_A0"]
+            # delta_a0_dev = self.devices["PVS"]["DNM_DELTA_A0"]
+            # zpz_adjust_dev = self.devices["PVS"]["DNM_ZPZ_ADJUST"]
+            # defocus_beam_dev = self.devices["PVS"]["DNM_BEAM_DEFOCUS"]
+            # focal_len_dev = self.devices["PVS"]["DNM_FOCAL_LENGTH"]
+            # zp_a1_dev = self.devices["PVS"]["DNM_ZP_A1"]
+            # a0_max_dev = self.devices["PVS"]["DNM_A0MAXIMUM"]
+            # calcd_zpz_dev = self.devices["PVS"]["DNM_CALCD_ZPZ"]
+            # zp_focus_mode_dev = self.devices["PVS"]["DNM_ZONEPLATE_FOCUS_MODE"]
+            #
+            # energy_posner = self.devices["POSITIONERS"][dct["energy_nm"]]
+            # zpz_posner = self.devices["POSITIONERS"][dct["zz_nm"]]
+            # cz_posner = None
+            # if dct["cz_nm"] in self.devices["POSITIONERS"].keys():
+            #     cz_posner = self.devices["POSITIONERS"][dct["cz_nm"]]
+            a0_dev = find_key_in_dict(self.devices, "DNM_A0")
+            delta_a0_dev = find_key_in_dict(self.devices, "DNM_DELTA_A0")
+            zpz_adjust_dev = find_key_in_dict(self.devices, "DNM_ZPZ_ADJUST")
+            defocus_beam_dev = find_key_in_dict(self.devices, "DNM_BEAM_DEFOCUS")
+            focal_len_dev = find_key_in_dict(self.devices, "DNM_FOCAL_LENGTH")
+            zp_a1_dev = find_key_in_dict(self.devices, "DNM_ZP_A1")
+            a0_max_dev = find_key_in_dict(self.devices, "DNM_A0MAXIMUM")
+            calcd_zpz_dev = find_key_in_dict(self.devices, "DNM_CALCD_ZPZ")
+            zp_focus_mode_dev = find_key_in_dict(self.devices, "DNM_ZONEPLATE_FOCUS_MODE")
 
-            energy_posner = self.devices["POSITIONERS"][dct["energy_nm"]]
-            zpz_posner = self.devices["POSITIONERS"][dct["zz_nm"]]
+            energy_posner = find_key_in_dict(self.devices, dct["energy_nm"])
+            zpz_posner = find_key_in_dict(self.devices, dct["zz_nm"])
             cz_posner = None
             if dct["cz_nm"] in self.devices["POSITIONERS"].keys():
-                cz_posner = self.devices["POSITIONERS"][dct["cz_nm"]]
+                cz_posner = find_key_in_dict(self.devices, dct["cz_nm"])
 
             energy_dev_dict = {
                 "a0_dev": a0_dev,

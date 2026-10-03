@@ -1236,13 +1236,11 @@ class main_object_base(QtCore.QObject):
 
     def device(self, name, do_warn=True):
         """return the device if it exists"""
+        from cls.utils.dict_utils import find_key_in_dict
         dev = None
         dn_lst = self.dev_db.search(devq.name == name)
         if len(dn_lst) > 0:
-            # dev = self.main_obj['DEVICES'].device(name, do_warn=do_warn)
-            dev_dct = dn_lst[0]
-            cat = dev_dct["category"]
-            dev = self.main_obj["DEVICES"].devices[cat][name]
+            dev = find_key_in_dict(self.main_obj["DEVICES"].devices, name)
         if dev is None:
             if do_warn:
                 _logger.warn(f"device [{name}] does not exist in master device dictionary or device name database")

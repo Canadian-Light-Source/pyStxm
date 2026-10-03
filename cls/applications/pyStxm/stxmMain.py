@@ -1304,7 +1304,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             rset_intfer_dev = dev_obj.device("DNM_RESET_INTERFERS", do_warn=False)
             if rset_intfer_dev:
                 self.esPosPanel.append_toggle_btn_device(
-                    "  AutoZero and Reset Interferometers  ",
+                    "  Reset Interferometers  ",
                     "Reset Interferometer positions to coarse positions",
                     rset_intfer_dev,
                     off_val=0,

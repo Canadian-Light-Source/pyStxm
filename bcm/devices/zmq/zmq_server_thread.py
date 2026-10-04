@@ -4,6 +4,9 @@ import asyncio
 import json
 from PyQt5.QtCore import QThread, pyqtSignal
 
+SUPRESS_SND_RCV_CONSOLE_OUTPUT=True
+
+
 if os.name == 'nt':
     from asyncio import WindowsSelectorEventLoopPolicy
 
@@ -37,14 +40,17 @@ class ZMQServerThread(QThread):
 
         if not isListOfStrings(command):
             #raise Exception("ERROR >> send_receive_async needs a list of strings (use json.dumps if you have a dictionary)")
-            print("send_receive_async: ERROR >> send_receive_async needs a list of strings (use json.dumps if you have a dictionary)")
+            if not SUPRESS_SND_RCV_CONSOLE_OUTPUT:
+                print("send_receive_async: ERROR >> send_receive_async needs a list of strings (use json.dumps if you have a dictionary)")
 
         # Serialize the dictionary to a JSON string
         #message_json = json.dumps(message_dict)
         if len(command) == 0:  # nothing to send
-            print("send_receive_async: WARNING >> send_receive_async called without data")
+            if not SUPRESS_SND_RCV_CONSOLE_OUTPUT:
+                print("send_receive_async: WARNING >> send_receive_async called without data")
             return {}
-        print(f"send_receive_async: Sending command [{command}]")
+        if not SUPRESS_SND_RCV_CONSOLE_OUTPUT:
+            print(f"send_receive_async: Sending command [{command}]")
 
         # print(f"send_receive_async: command={command}")
         # send all but last part
@@ -55,7 +61,8 @@ class ZMQServerThread(QThread):
 
         # Receive the multipart response
         reply_parts = await self.req_socket.recv_multipart()
-        print(f"send_receive_async: Received multipart reply: {reply_parts}")
+        if not SUPRESS_SND_RCV_CONSOLE_OUTPUT:
+            print(f"send_receive_async: Received multipart reply: {reply_parts}")
 
         # Assuming the server sends back a JSON-encoded response in one of the parts
         # We'll deserialize the first part into a Python dictionary
@@ -67,7 +74,8 @@ class ZMQServerThread(QThread):
         # Emit the signal with the received reply as a dictionary
         #self.message_received.emit(reply_dict)
         if not (type(response) is list and response[0] == {'status': 'ok'}):
-            print(f"ZMQ ERROR >> {response[0]['message']}")
+            if not SUPRESS_SND_RCV_CONSOLE_OUTPUT:
+                print(f"ZMQ ERROR >> {response[0]['message']}")
             self.message_received.emit(['ZMQ ERROR', f"{response[0]['message']}"])
         #socket.close()
         return response
@@ -83,7 +91,8 @@ class ZMQServerThread(QThread):
         loop = asyncio.get_event_loop()
 
         # Run the async send/receive function in the event loop and wait for it to finish
-        print(f"zmq_server_thread: send_receive called with message_dict={message_dict}")
+        if not SUPRESS_SND_RCV_CONSOLE_OUTPUT:
+            print(f"zmq_server_thread: send_receive called with message_dict={message_dict}")
         return loop.run_until_complete(self.send_receive_async(message_dict))
 
     def run(self):

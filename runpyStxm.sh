@@ -17,11 +17,11 @@ CONDA_CMD=$(find_conda)
 eval "$($CONDA_CMD shell.bash hook)" &> /dev/null
 
 # Activate the conda environment
-conda activate pyStxm &> /dev/null
+#conda activate pyStxm &> /dev/null
 
 # Activate the conda environment
 #source /home/bergr/pyStxm/miniconda/bin/activate pyStxm310 
-
+source /mnt/pub/SoftiMAX/Software/pyStxm/maxiv_testing_fall_2026/pyStxm_env/bin/activate
 source ./reqd_env_vars.sh
 python ./cls/applications/pyStxm/runPyStxm.py
 

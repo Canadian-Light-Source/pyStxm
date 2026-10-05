@@ -180,6 +180,7 @@ class BaseFocusScanParam(ScanParamWidget):
 
         # call the base class defocus
         super().on_plugin_defocus()
+        self.reset_focus_btns()
 
     def init_plugin(self):
         """

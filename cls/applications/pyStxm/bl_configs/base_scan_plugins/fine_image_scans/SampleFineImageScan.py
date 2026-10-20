@@ -56,6 +56,19 @@ class BaseSampleFineImageScanClass(BaseScan):
         self.spid_data = {}
         # set a default detctor name if the user has not selected any detector from the detector selection window
         # self.default_detector_nm = "C"
+        samplemtrx = self.main_obj.get_sample_positioner("X")
+        samplemtry = self.main_obj.get_sample_positioner("Y")
+        # finemtrx = self.main_obj.get_sample_fine_positioner("X")
+        # finemtry = self.main_obj.get_sample_fine_positioner("Y")
+        samplemtrx.set_coarse_fine_ranges(
+            coarse=main_obj.get_preset_as_float("max_coarse_x"),
+            fine=main_obj.get_preset_as_float("max_fine_x"),
+        )
+
+        samplemtry.set_coarse_fine_ranges(
+            coarse=main_obj.get_preset_as_float("max_coarse_y"),
+            fine=main_obj.get_preset_as_float("max_fine_y"),
+        )
 
     def config_devs_for_line(self, dets):
         '''

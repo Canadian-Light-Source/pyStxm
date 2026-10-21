@@ -4,7 +4,7 @@
 from PyQt5 import uic, QtCore
 import os
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
-from cls.scanning.base import ScanParamWidget
+from cls.scanning.baseScanParamWidget import ScanParamWidget
 from cls.types.stxmTypes import scan_sub_types
 from cls.data_io.stxm_data_io import STXMDataIo
 

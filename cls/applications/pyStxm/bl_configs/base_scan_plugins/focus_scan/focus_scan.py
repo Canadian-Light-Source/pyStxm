@@ -9,7 +9,7 @@ import math
 
 from PyQt5 import QtCore, uic
 
-from cls.scanning.base import ScanParamWidget, zp_focus_modes
+from cls.scanning.baseScanParamWidget import ScanParamWidget, zp_focus_modes
 from cls.devWidgets.ophydLabelWidget import assign_aiLabelWidget
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
 from cls.data_io.stxm_data_io import STXMDataIo

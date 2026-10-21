@@ -9,7 +9,7 @@ import os
 from cls.stylesheets import get_style
 
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
-from cls.scanning.base import ScanParamWidget, MultiRegionScanParamBase, zp_focus_modes
+from cls.scanning.baseScanParamWidget import ScanParamWidget, MultiRegionScanParamBase, zp_focus_modes
 from cls.applications.pyStxm.widgets.scan_table_view.multiRegionWidget import (
     MultiRegionWidget,
 )

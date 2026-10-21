@@ -9,7 +9,7 @@ from PyQt5 import uic
 import copy
 import os
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
-from cls.scanning.base import ScanParamWidget, zp_focus_modes
+from cls.scanning.baseScanParamWidget import ScanParamWidget, zp_focus_modes
 
 # from cls.applications.pyStxm.scan_plugins import plugin_dir
 

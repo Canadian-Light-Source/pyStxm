@@ -18,7 +18,7 @@ from cls.scan_engine.decorators import conditional_decorator
 from cls.applications.pyStxm import abs_path_to_ini_file
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
 
-from cls.scanning.BaseScan import BaseScan, SIM_SPEC_DATA, SIMULATE_SPEC_DATA
+from cls.scanning.baseScanClass import BaseScan, SIM_SPEC_DATA, SIMULATE_SPEC_DATA
 from cls.types.stxmTypes import (
     scan_types,
     scan_sub_types,

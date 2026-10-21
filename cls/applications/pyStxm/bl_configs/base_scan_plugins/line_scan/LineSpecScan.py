@@ -11,7 +11,7 @@ import bluesky.preprocessors as bpp
 # from cls.applications.pyStxm.bl_configs.amb_bl10ID1.device_names import *
 
 from cls.applications.pyStxm import abs_path_to_ini_file
-from cls.scanning.BaseScan import BaseScan, get_sequence_nums, get_rows
+from cls.scanning.baseScanClass import BaseScan, get_sequence_nums, get_rows
 from cls.utils.roi_dict_defs import *
 
 from cls.types.stxmTypes import scan_types, sample_positioning_modes

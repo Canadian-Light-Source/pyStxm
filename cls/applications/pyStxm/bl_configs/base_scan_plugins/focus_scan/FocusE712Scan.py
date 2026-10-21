@@ -12,7 +12,7 @@ from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
 
 # from cls.applications.pyStxm.bl_configs.amb_bl10ID1.device_names import *
 from bcm.devices import E712WGDevice
-from cls.scanning.BaseScan import BaseScan
+from cls.scanning.baseScanClass import BaseScan
 
 # from cls.scanning.SScanClass import SScanClass
 # from cls.scanning.scan_cfg_utils import set_devices_for_point_scan, set_devices_for_line_scan, \

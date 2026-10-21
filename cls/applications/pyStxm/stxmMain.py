@@ -65,7 +65,7 @@ from cls.plotWidgets.utils import *
 
 from cls.data_io.stxm_data_io import STXMDataIo
 from cls.data_io.exec_nxvalidate import validate_nxstxm_file
-from cls.scanning.BaseScan import LOAD_ALL
+from cls.scanning.baseScanClass import LOAD_ALL
 
 # from cls.scanning.dataRecorder import HdrData
 from cls.types.stxmTypes import (

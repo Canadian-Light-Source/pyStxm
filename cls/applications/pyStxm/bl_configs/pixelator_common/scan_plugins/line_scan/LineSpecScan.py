@@ -7,6 +7,8 @@ from cls.utils.log import get_module_logger
 from cls.applications.pyStxm.bl_configs.base_scan_plugins.line_scan.LineSpecScan import (
     BaseLineSpecScanClass,
 )
+from cls.utils.roi_dict_defs import *
+from cls.scanning.baseScanClass import get_sequence_nums, get_rows
 
 _logger = get_module_logger(__name__)
 
@@ -72,3 +74,41 @@ class LineSpecScanClass(BaseLineSpecScanClass):
         call a specific on_scan_done for fine scans
         """
         super().on_scan_done(call_base_class_only=True)
+
+    # def generate_linespec_seq_image_map(self, erois, x_roi, y_roi):
+    #     """
+    #         used primarily by Linespec scans that can have multiple images per scan where each image represents a
+    #         different energy range and resolution
+    #     :param erois:
+    #     :param nxpnts:
+    #     :return:
+    #     """
+    #
+    #     def get_columns(num_cols, npnts):
+    #         lst = list(range(0, num_cols))
+    #         return np.repeat(lst, npnts)
+    #
+    #     dct = {}
+    #     ev_idx = 0
+    #     seq_num = 0
+    #     nypnts = int(y_roi[NPOINTS])
+    #     ttl_ev_npnts = 0
+    #     for eroi in erois:
+    #         #this needs to include polarization points as well
+    #         ttl_ev_npnts += int(eroi[NPOINTS])
+    #
+    #     row_lst = list(range(0, nypnts))
+    #     if not self.is_horiz_line:
+    #         seq = get_sequence_nums(seq_num, ttl_ev_npnts * nypnts)
+    #         rows = get_rows(row_lst, ttl_ev_npnts)
+    #         cols = get_columns(ttl_ev_npnts, nypnts)
+    #
+    #         ttl = zip(seq, rows, cols)
+    #         for s, r, c in ttl:
+    #             dct[s] = {"img_num": 0, "row": r, "col": c}
+    #     else:
+    #         # each line is an event in the sequence
+    #         for seq in range(seq_num, seq_num + ttl_ev_npnts):
+    #             dct[seq] = {"img_num": 0, "row": 0, "col": seq}
+    #
+    #     return dct

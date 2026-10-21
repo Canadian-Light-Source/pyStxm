@@ -52,7 +52,7 @@ class BaseLineSpecScanClass(BaseScan):
         crs_x = self.main_obj.device("DNM_COARSE_X")
         piezo_mtr_x = self.main_obj.get_sample_fine_positioner("X")
         if self.is_pxp:
-            return(True)
+            return True
 
         if self.is_fine_scan:
             self.scan_velo = self.calc_scan_velo(piezo_mtr_x, self.x_roi[RANGE], self.x_roi[NPOINTS], self.dwell)
@@ -60,9 +60,9 @@ class BaseLineSpecScanClass(BaseScan):
             #coarse scan
             self.scan_velo = self.calc_scan_velo(crs_x, self.x_roi[RANGE], self.x_roi[NPOINTS], self.dwell)
         if self.scan_velo > 0:
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def init_subscriptions(self, ew, func, dets=[]):
         """
@@ -449,7 +449,7 @@ class BaseLineSpecScanClass(BaseScan):
         """
         ret = super().configure(wdg_com, sp_id=sp_id, line=line)
         if not ret:
-            return(ret)
+            return ret
 
         _logger.info("configure: LineScan %d" % sp_id)
 
@@ -518,7 +518,7 @@ class BaseLineSpecScanClass(BaseScan):
         # THIS must be the last call
         self.finish_setup()
         self.new_spatial_start.emit(ev_idx)
-        return(ret)
+        return ret
 
     def generate_linespec_seq_image_map(self, erois, x_roi, y_roi):
         """

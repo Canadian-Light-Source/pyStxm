@@ -1044,11 +1044,6 @@ class DcsServerApi(BaseDcsServerApi):
                         dev.set_connected(True)
                         dev.set_desc(positioner_dct['description'])
 
-                        #over ride the limits for the fine sample positioners to hack around naming of abstract motor for now
-                        if app_devname in ["DNM_SAMPLE_FINE_X", "DNM_SAMPLE_FINE_Y"]:
-                            positioner_dct['lowerSoftLimit'] = -7000
-                            positioner_dct['upperSoftLimit'] = 7000
-
                         if app_devname in ["DNM_ENERGY"]:
                             # set the value to something reasonable if it is currently 0.0 (noHardware)
                             if dev.get_position() == 0.0:
@@ -1230,13 +1225,22 @@ class DcsServerApi(BaseDcsServerApi):
         return dct
 
     def get_devices_from_settings(self, settings: dict={}):
-        """ if the keys exist return the device_settings"""
-        dev_settings = {}
+        """
+        if the keys exist return the device_settings
+        return only teh devices that are active in the settings file, so that we can build the devs dict and the devices dict
+
+        """
+        dev_settings = {'positioners': {}, 'detectors': {}}
         if 'referencedJsonFiles' in settings:
             if 'positionerConfigFileName' in settings['referencedJsonFiles']:
-                dev_settings = settings['referencedJsonFiles']['positionerConfigFileName']['content']
+                for k, _dct in settings['referencedJsonFiles']['positionerConfigFileName']['content'].items():
+                    if type(_dct) is dict:
+                        if _dct['active'] == 1:
+                            dev_settings['positioners'].update({k: _dct})
             if 'detectorConfigFileName' in settings['referencedJsonFiles']:
-                dev_settings.update(settings['referencedJsonFiles']['detectorConfigFileName']['content'])
+                for k, _dct in settings['referencedJsonFiles']['detectorConfigFileName']['content'].items():
+                    if _dct['active'] == 1:
+                        dev_settings['detectors'].update({k: _dct})
         self.device_settings = dev_settings
         return dev_settings
 

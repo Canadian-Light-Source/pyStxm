@@ -249,7 +249,8 @@ def get_scan_request_dct(self):
     To Be implemented by inheriting class
 
     """
-    dct = {}
+    # dct = {}
+    dct = init_scan_req_data(self)
     dct['adapt_precision'] = True if self.adaptPosPrecChkBox.isChecked() else False
     dct['auto_defocus'] = True if self.autoDefocusChkBox.isChecked() else False
     dct['y_axis_fast'] = True if self.yAxisFastChkBox.isChecked() else False
@@ -266,12 +267,19 @@ def get_scan_request_dct(self):
     dct['scan_point_or_line_mode'] = 'Point by Point' if self.scanTypeSelComboBox.currentIndex() == scan_sub_types.POINT_BY_POINT else 'Constant Velocity'
     dct['polarization'] = "" # self.polComboBox.currentText()
 
+    return dct
+
+def init_scan_req_data(self):
+    """
+    initialize the scan request data from the default_scan_rec_setting_dct
+    """
+    dct = {}
     for k, v in self.default_scan_rec_setting_dct.items():
         if v:
             # if the value is not None it was overridden in the plugin constructor to be used as a default value
             dct[k] = v
-
     return dct
+
 
 def get_empty_scan_request_dct(self):
     """

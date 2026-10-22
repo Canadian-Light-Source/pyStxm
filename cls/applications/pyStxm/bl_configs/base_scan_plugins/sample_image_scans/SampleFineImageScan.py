@@ -163,7 +163,7 @@ class BaseSampleFineImageScanClass(BaseScan):
         calc_scan_velo(self, mtr, rng, npoints, dwell)
         return True for scan velo checks out and False for it is invalid
         """
-        mtr_x = self.main_obj.device("DNM_SAMPLE_FINE_X")
+        mtr_x = self.main_obj.get_sample_fine_positioner("X")
 
         self.scan_velo = self.calc_scan_velo(mtr_x, self.x_roi[RANGE], self.x_roi[NPOINTS], self.dwell)
         if self.scan_velo > 0:

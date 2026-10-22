@@ -985,12 +985,16 @@ class main_object_base(QtCore.QObject):
             if zoneplate_mode:
                 posner = self.device("DNM_ZONEPLATE_X")
             else:
-                posner = self.device("DNM_SAMPLE_FINE_X")
+                posner = self.device("DNM_SAMPLE_FINE_X", do_warn=False)
+                if posner is None:
+                    posner = self.device("DNM_SAMPLE_X")
         else:
             if zoneplate_mode:
                 posner = self.device("DNM_ZONEPLATE_Y")
             else:
-                posner = self.device("DNM_SAMPLE_FINE_Y")
+                posner = self.device("DNM_SAMPLE_FINE_Y", do_warn=False)
+                if posner is None:
+                    posner = self.device("DNM_SAMPLE_Y")
         return posner
 
     def get_device_reverse_lu_dct(self):

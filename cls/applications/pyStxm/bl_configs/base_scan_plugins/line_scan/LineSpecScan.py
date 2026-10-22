@@ -466,6 +466,15 @@ class BaseLineSpecScanClass(BaseScan):
             (e_roi[START], self.x_roi[START], self.e_rois[-1][STOP], self.x_roi[STOP]),
         )
 
+        # ensure that the user has entered in a range of energy values as a single energy value causes plotting exceptions
+        # and so avoid it by failing a go_to_scan_ start() if the energy range is zero
+        if e_roi[START] == e_roi[STOP]:
+            _logger.error(
+                "configure: LineScan %d: Energy range cannot be zero, cannot configure scan"
+                % sp_id
+            )
+            return False
+
         self.configure_sample_motors_for_scan()
 
         self.setpointsDwell = dct_get(e_roi, DWELL)

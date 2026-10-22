@@ -84,11 +84,14 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             self.counter_data = data
             self.energy = energy
 
-        self.data = self.counter_data
-
         # Get scan info from sp_db_dct
         self.sp_db_dct = self.entry_dct.get('sp_db_dct', {})
         self.scan_type = self.sp_db_dct.get('pystxm_enum_scan_type', 'Unknown')
+
+        if self.scan_type is scan_types.SAMPLE_LINE_SPECTRUM:
+            self.counter_data = np.transpose(self.counter_data)
+
+        self.data = self.counter_data
 
         if is_stack:
             # create a draggable h5_file_dct for stacks

@@ -1,5 +1,7 @@
 import time
 import os
+from json.decoder import NaN
+
 from PyQt5.QtCore import QTimer
 from queue import Queue
 import re
@@ -794,6 +796,7 @@ class DcsServerApi(BaseDcsServerApi):
             self.parent.selected_detectors = detname_lst
 
         elif resp[0].find("chartmode_detector_update") > -1:
+            # THIS block updates teh Striptool when no scan is running
             value_dct_lst = json.loads(resp[1])
             for val_dct in value_dct_lst:
                 self._update_device_feedback(val_dct["name"], val_dct["value"])

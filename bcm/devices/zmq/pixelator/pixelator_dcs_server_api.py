@@ -799,6 +799,7 @@ class DcsServerApi(BaseDcsServerApi):
             # THIS block updates teh Striptool when no scan is running
             value_dct_lst = json.loads(resp[1])
             for val_dct in value_dct_lst:
+                #print(f"process_SUB_rcv_messages: received an update for [chartmode_detector_update]=[{val_dct['name']}]{val_dct}")
                 self._update_device_feedback(val_dct["name"], val_dct["value"])
 
         elif resp[0].find("detectorValues") > -1:

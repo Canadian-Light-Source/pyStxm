@@ -440,13 +440,16 @@ class ZMQRunEngine(QObject):
 
             elif isinstance(resp, list):
                 if resp[0] == 'chartmode_detector_update':
-                    _detectors = json.loads(resp[1])[0]
-                    app_devname = self.dcs_to_appname_map[_detectors['name']]
-                    value = _detectors["value"]
-                    dev = self.devs[app_devname]['dev']
-                    if not np.isnan(value):
-                        dev.update_position(value, False)
-                        # print(f"ZMQRunEngine: process_SUB_rcv_messages: [{dev.name}] called dev.update_position({value}, False) ")
+                    # print(f"ZMQRunEngine: process_SUB_rcv_messages[chartmode_detector_update]: resp={resp}")
+                    _dets = json.loads(resp[1])
+                    for _detector in _dets:
+                        #_detector = json.loads(resp[1])[0]
+                        app_devname = self.dcs_to_appname_map[_detector['name']]
+                        value = _detector["value"]
+                        dev = self.devs[app_devname]['dev']
+                        if not np.isnan(value):
+                            dev.update_position(value, False)
+                            #print(f"ZMQRunEngine: process_SUB_rcv_messages[chartmode_detector_update]: [{dev.name}] called dev.update_position({value}, False) ")
 
                 else:
                     #print(f"ZMQRunEngine: process_SUB_rcv_messages: resp IS A LIST resp={resp}")

@@ -436,7 +436,7 @@ class ChartingWidget(QtWidgets.QWidget):
         reset_color_idx()
 
     def on_sig_changed(self, kwargs):
-        # print('on_sig_changed', kwargs)
+        # print(f'chartWidget: [{kwargs["obj"].name}] on_sig_changed', kwargs)
         if "value" in kwargs.keys():
             val = kwargs["value"] * self.scale_factor
             signame = kwargs["obj"].name

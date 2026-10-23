@@ -12,7 +12,7 @@ from cycler import cycler
 
 
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
-from cls.scanning.BaseScan import BaseScan
+from cls.scanning.baseScanClass import BaseScan
 from cls.utils.roi_dict_defs import *
 
 from cls.types.stxmTypes import scan_sub_types

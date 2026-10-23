@@ -11,7 +11,7 @@ import bluesky.preprocessors as bpp
 # from cls.applications.pyStxm.bl_configs.amb_bl10ID1.device_names import *
 
 from cls.applications.pyStxm import abs_path_to_ini_file
-from cls.scanning.BaseScan import BaseScan, get_sequence_nums, get_rows
+from cls.scanning.baseScanClass import BaseScan, get_sequence_nums, get_rows
 from cls.utils.roi_dict_defs import *
 
 from cls.types.stxmTypes import scan_types, sample_positioning_modes
@@ -52,7 +52,7 @@ class BaseLineSpecScanClass(BaseScan):
         crs_x = self.main_obj.device("DNM_COARSE_X")
         piezo_mtr_x = self.main_obj.get_sample_fine_positioner("X")
         if self.is_pxp:
-            return(True)
+            return True
 
         if self.is_fine_scan:
             self.scan_velo = self.calc_scan_velo(piezo_mtr_x, self.x_roi[RANGE], self.x_roi[NPOINTS], self.dwell)
@@ -60,9 +60,9 @@ class BaseLineSpecScanClass(BaseScan):
             #coarse scan
             self.scan_velo = self.calc_scan_velo(crs_x, self.x_roi[RANGE], self.x_roi[NPOINTS], self.dwell)
         if self.scan_velo > 0:
-            return(True)
+            return True
         else:
-            return(False)
+            return False
 
     def init_subscriptions(self, ew, func, dets=[]):
         """
@@ -449,7 +449,7 @@ class BaseLineSpecScanClass(BaseScan):
         """
         ret = super().configure(wdg_com, sp_id=sp_id, line=line)
         if not ret:
-            return(ret)
+            return ret
 
         _logger.info("configure: LineScan %d" % sp_id)
 
@@ -465,6 +465,15 @@ class BaseLineSpecScanClass(BaseScan):
             SPDB_RECT,
             (e_roi[START], self.x_roi[START], self.e_rois[-1][STOP], self.x_roi[STOP]),
         )
+
+        # ensure that the user has entered in a range of energy values as a single energy value causes plotting exceptions
+        # and so avoid it by failing a go_to_scan_ start() if the energy range is zero
+        if e_roi[START] == e_roi[STOP]:
+            _logger.error(
+                "configure: LineScan %d: Energy range cannot be zero, cannot configure scan"
+                % sp_id
+            )
+            return False
 
         self.configure_sample_motors_for_scan()
 
@@ -518,7 +527,7 @@ class BaseLineSpecScanClass(BaseScan):
         # THIS must be the last call
         self.finish_setup()
         self.new_spatial_start.emit(ev_idx)
-        return(ret)
+        return ret
 
     def generate_linespec_seq_image_map(self, erois, x_roi, y_roi):
         """

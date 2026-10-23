@@ -15,7 +15,7 @@ from bcm.devices.ophyd.qt.daqmx_counter_output import trig_src_types
 
 from cls.applications.pyStxm import abs_path_to_ini_file
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
-from cls.scanning.BaseScan import BaseScan
+from cls.scanning.baseScanClass import BaseScan
 from cls.utils.roi_dict_defs import *
 from cls.utils.json_utils import dict_to_json
 

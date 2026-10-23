@@ -11,7 +11,7 @@ import bluesky.plan_stubs as bps
 
 from cls.applications.pyStxm import abs_path_to_ini_file
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
-from cls.scanning.BaseScan import BaseScan
+from cls.scanning.baseScanClass import BaseScan
 from cls.types.stxmTypes import (
     scan_types,
     sample_positioning_modes,

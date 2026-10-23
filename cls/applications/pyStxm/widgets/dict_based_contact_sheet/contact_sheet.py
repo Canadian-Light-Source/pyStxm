@@ -823,6 +823,8 @@ class ContactSheet(QtWidgets.QWidget):
             ylabel = dct.get("ylabel") or "Y"
             if dct["scan_type"] is scan_types.SAMPLE_LINE_SPECTRUM:
                 # sample line spec data may have different ev region resolutions so its special
+                xlabel = "Energy eV"
+                ylabel = "XY microns"
                 wdg_com = make_base_wdg_com()
                 #wdg_com = sp_db
                 dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)

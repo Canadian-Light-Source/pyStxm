@@ -28,7 +28,7 @@ from cls.types.stxmTypes import (
     scan_types,
     spatial_type_prefix,
 )
-from cls.scanning.base import ScanParamWidget, zp_focus_modes
+from cls.scanning.baseScanParamWidget import ScanParamWidget, zp_focus_modes
 
 from cls.plotWidgets.shape_restrictions import ROILimitObj, ROILimitDef
 from cls.plotWidgets.color_def import (

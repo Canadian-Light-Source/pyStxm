@@ -7,7 +7,7 @@ from PyQt5 import uic
 import os
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
 from cls.scanning.paramLineEdit import IntLineEditParamObj, DblLineEditParamObj
-from cls.scanning.base import ScanParamWidget, zp_focus_modes
+from cls.scanning.baseScanParamWidget import ScanParamWidget, zp_focus_modes
 from cls.types.stxmTypes import scan_sub_types
 # from cls.applications.pyStxm.bl_configs.amb_bl10ID1.device_names import *
 from cls.data_io.stxm_data_io import STXMDataIo

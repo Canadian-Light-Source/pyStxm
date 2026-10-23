@@ -8,7 +8,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
-from cls.scanning.BaseScan import BaseScan, MODE_SCAN_START
+from cls.scanning.baseScanClass import BaseScan, MODE_SCAN_START
 from cls.utils.dict_utils import dct_put
 from cls.utils.log import get_module_logger
 from cls.utils.roi_dict_defs import *

@@ -9,7 +9,7 @@ import re
 import os
 import math
 
-from cls.scanning.base import ScanParamWidget, zp_focus_modes
+from cls.scanning.baseScanParamWidget import ScanParamWidget, zp_focus_modes
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
 
 # from cls.applications.pyStxm.bl_configs.amb_bl10ID1.device_names import *

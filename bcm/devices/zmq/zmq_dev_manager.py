@@ -1,10 +1,10 @@
 import os
+import numpy as np
 import zmq
 import zmq.asyncio
 import queue
 import asyncio
-import pprint
-import simplejson as json
+import json
 
 from PyQt5.QtCore import QTimer, pyqtSignal, QObject
 from PyQt5.QtWidgets import QWidget
@@ -399,20 +399,18 @@ class ZMQRunEngine(QObject):
         call_task_done = False
         while not self.rcv_queue.empty():
             resp = self.rcv_queue.get()
-            # print(f"process_SUB_rcv_messages: msg={resp}")
             self.msg_changed.emit(resp)
+            # print(f"ZMQRunEngine: just called self.msg_changed.emit({resp})")
             if isinstance(resp, dict):
-                # print(f"ZMQDevManager: update_widgets: resp={resp}")
                 if resp['command'].find("UPDATE_POSITION") > -1:
                     dcs_devname = resp['dev_name']
                     app_devname = self.dcs_to_appname_map[dcs_devname]
                     if app_devname in self.devs.keys():
+                        # print(f"process_SUB_rcv_messages: UPDATE_POSITION: app_devname={app_devname} value={resp['value']} is_moving={resp['is_moving']}")
                         self.devs[app_devname]['dev'].update_position(resp['value'], resp['is_moving'])
 
                 elif resp['command'].find("MOVE") > -1:
                     dev_name = resp['dev_name']
-                    # print(f"[{dev_name}] setting value={resp['value']}")
-                    # self.devs[dev_name].move(resp['value'])
                     await self.zmq_dev_server_thread.send_message \
                         ({'dev_name': dev_name, 'command': 'MOVE', 'value': resp['value']})
 
@@ -437,11 +435,26 @@ class ZMQRunEngine(QObject):
                     print(f"RCVD from Client: REGISTER_COMMAND: [{resp['value']}] with response={resp['response']}")
 
                 else:
+                    #print(f"ZMQRunEngine: FALL THOUGH process_SUB_rcv_messages: resp IS A DICT resp={resp}")
                     await self.zmq_dev_server_thread.send_message(resp)
 
             elif isinstance(resp, list):
-                # let teh dcs_server_api handle messages coming from the PUB port of the DCS server
-                self.dcs_server_api.process_SUB_rcv_messages(resp)
+                if resp[0] == 'chartmode_detector_update':
+                    # print(f"ZMQRunEngine: process_SUB_rcv_messages[chartmode_detector_update]: resp={resp}")
+                    _dets = json.loads(resp[1])
+                    for _detector in _dets:
+                        #_detector = json.loads(resp[1])[0]
+                        app_devname = self.dcs_to_appname_map[_detector['name']]
+                        value = _detector["value"]
+                        dev = self.devs[app_devname]['dev']
+                        if not np.isnan(value):
+                            dev.update_position(value, False)
+                            #print(f"ZMQRunEngine: process_SUB_rcv_messages[chartmode_detector_update]: [{dev.name}] called dev.update_position({value}, False) ")
+
+                else:
+                    #print(f"ZMQRunEngine: process_SUB_rcv_messages: resp IS A LIST resp={resp}")
+                    # let teh dcs_server_api handle messages coming from the PUB port of the DCS server
+                    self.dcs_server_api.process_SUB_rcv_messages(resp)
 
 
         if call_task_done:

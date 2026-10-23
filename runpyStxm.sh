@@ -20,8 +20,6 @@ eval "$($CONDA_CMD shell.bash hook)" &> /dev/null
 conda activate pyStxm &> /dev/null
 
 # Activate the conda environment
-#source /home/bergr/pyStxm/miniconda/bin/activate pyStxm310 
-
 source ./reqd_env_vars.sh
 python ./cls/applications/pyStxm/runPyStxm.py
 

@@ -65,7 +65,7 @@ from cls.plotWidgets.utils import *
 
 from cls.data_io.stxm_data_io import STXMDataIo
 from cls.data_io.exec_nxvalidate import validate_nxstxm_file
-from cls.scanning.BaseScan import LOAD_ALL
+from cls.scanning.baseScanClass import LOAD_ALL
 
 # from cls.scanning.dataRecorder import HdrData
 from cls.types.stxmTypes import (
@@ -1304,7 +1304,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
             rset_intfer_dev = dev_obj.device("DNM_RESET_INTERFERS", do_warn=False)
             if rset_intfer_dev:
                 self.esPosPanel.append_toggle_btn_device(
-                    "  AutoZero and Reset Interferometers  ",
+                    "  Reset Interferometers  ",
                     "Reset Interferometer positions to coarse positions",
                     rset_intfer_dev,
                     off_val=0,
@@ -2214,7 +2214,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
                 sample_pos_mode
             )
             self.lineByLineImageDataWidget.enable_tool_by_name(
-                "tools.clsOpenFileTool", False
+                "tools.clsOpenFileTool", True
             )
             self.lineByLineImageDataWidget.set_dataIO(STXMDataIo)
 
@@ -4251,6 +4251,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         msg_key = list(msg.keys())[0]
         if msg_key == 'filename':
             self.scan_progress_table.override_filenames(msg['filename']['name'])
+        elif msg_key == 'error':
+            message = msg['error']['message'].replace("'", "").replace('"', "")
+            self.add_to_log(QtGui.QColor('#ff0000'), f"ERROR: {message}")
+            self.add_to_dcs_server_window(QtGui.QColor('#ff0000'), f"ERROR: {message}")
 
     def on_new_dcs_server_data(self, h5_file_dct: dict) -> None:
         """

@@ -10,7 +10,7 @@ import bluesky.preprocessors as bpp
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
 
 # from cls.applications.pyStxm.bl_configs.amb_bl10ID1.device_names import *
-from cls.scanning.BaseScan import BaseScan
+from cls.scanning.baseScanClass import BaseScan
 from cls.utils.roi_dict_defs import *
 from cls.utils.log import get_module_logger
 from cls.utils.dict_utils import dct_put

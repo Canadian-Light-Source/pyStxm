@@ -13,7 +13,7 @@ from bcm.devices.ophyd.qt.daqmx_counter_output import trig_src_types
 from bcm.devices.ophyd.qt.data_emitters import ImageDataEmitter
 from cls.applications.pyStxm import abs_path_to_ini_file
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
-from cls.scanning.BaseScan import BaseScan
+from cls.scanning.baseScanClass import BaseScan
 from cls.types.stxmTypes import (
     scan_types,
     scan_sub_types,

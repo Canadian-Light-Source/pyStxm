@@ -1229,6 +1229,9 @@ class BaseScan(QtCore.QObject):
         if self.main_obj.prev_scan_class:
             prev_center_x = self.main_obj.prev_scan_class['xroi'][CENTER]
             prev_center_y = self.main_obj.prev_scan_class['yroi'][CENTER]
+        else:
+            prev_center_x = self.x_roi[CENTER]
+            prev_center_y = self.y_roi[CENTER]
 
         volts_out_of_range = True if (not mtr_x.do_voltage_check() or not mtr_y.do_voltage_check()) else False
         fine_in_range = True if (mtr_x.is_fine_in_range(self.x_roi, prev_center=prev_center_x)
@@ -3438,8 +3441,16 @@ class BaseScan(QtCore.QObject):
             fy_name = "DNM_ZONEPLATE_Y"
 
         else:
-            fx_name = "DNM_SAMPLE_FINE_X"
-            fy_name = "DNM_SAMPLE_FINE_Y"
+            # can't assume that Sample Fine X exists (Pixelator)
+            if self.main_obj.device("DNM_SAMPLE_FINE_X") is None:
+                fx_name = "DNM_SAMPLE_X"
+                fy_name = "DNM_SAMPLE_Y"
+                self.x_roi[POSITIONER] = "DNM_SAMPLE_X"
+                self.y_roi[POSITIONER] = "DNM_SAMPLE_Y"
+
+            else:
+                fx_name = "DNM_SAMPLE_FINE_X"
+                fy_name = "DNM_SAMPLE_FINE_Y"
 
         if self.x_roi[SCAN_RES] == COARSE:
             # leave as is

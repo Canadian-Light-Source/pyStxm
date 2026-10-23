@@ -12,6 +12,23 @@ from cls.types.stxmTypes import scan_types, scan_sub_types, image_type_scans, sp
 from cls.applications.pyStxm.widgets.dict_based_contact_sheet.utils import get_first_sp_db_from_entry, format_info_text, extract_date_time_from_nx_time
 
 
+def tuple_to_float_strings(tpl, format='.2f'):
+    """
+    a single function to ensure that a tuple of values that should be floats will be handled if one or more a None
+    Parameters
+    ----------
+    tpl
+
+    Returns
+    -------
+
+    """
+    val1 = tpl[0]
+    val2 = tpl[1]
+    a = f"{val1:{format}}" if val1 is not None else "N/A"
+    b = f"{val2:{format}}" if val2 is not None else "N/A"
+    return [a, b]
+
 def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, pol_idx=0, stack_idx=None):
     """
     Generate an HTML tooltip string from sp_db_dict data
@@ -97,7 +114,10 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
             height = 1
             (width,) = data.shape
         else:
-            height, width = data.shape
+            if _scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
+                width, height = data.shape
+            else:
+                height, width = data.shape
 
         # s = 'File: %s  \n' %  (fprefix + '.hdf5')
         # if (fpath.find('12162') > -1):
@@ -129,7 +149,11 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
         dct["offset"] = sp_db[EV_ROIS][ev_idx][POL_ROIS][pol_idx][OFF]
         dct["angle"] = sp_db[EV_ROIS][ev_idx][POL_ROIS][pol_idx][ANGLE]
         dct["dwell"] = sp_db[EV_ROIS][ev_idx][DWELL] * 1000.0
-        dct['npoints'] = (width, height)
+
+        if _scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
+            dct['npoints'] = (height, width)
+        else:
+            dct['npoints'] = (width, height)
 
         start_date_str = sp_db[SPDB_ACTIVE_DATA_OBJECT][ADO_START_TIME]
         if isinstance(start_date_str, bytes):
@@ -182,25 +206,49 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
 
             dct["estop"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STOP]
         else:
-            dct["center"] = (
-                dct_get(sp_db, SPDB_XCENTER),
-                dct_get(sp_db, SPDB_YCENTER),
-            )
+            # Sample Line SPectrum and Sample Image scans have different positioners for X and Y, so we need to handle them separately
+            if _scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
+                dct["center"] = (
+                    (dct["estop"] + dct["estart"]) * 0.5,
+                    dct_get(sp_db, SPDB_YCENTER),
+                )
 
-            dct["range"] = (
-                dct_get(sp_db, SPDB_XRANGE),
-                dct_get(sp_db, SPDB_YRANGE),
-            )
+                dct["range"] = (
+                    dct["estop"] - dct["estart"],
+                    dct_get(sp_db, SPDB_YRANGE),
+                )
 
-            dct["step"] = (dct_get(sp_db, SPDB_XSTEP), dct_get(sp_db, SPDB_YSTEP))
-            dct["estep"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STEP]
-            dct["start"] = (
-                dct_get(sp_db, SPDB_XSTART),
-                dct_get(sp_db, SPDB_YSTART),
-            )
-            dct["stop"] = (dct_get(sp_db, SPDB_XSTOP), dct_get(sp_db, SPDB_YSTOP))
-            dct["xpositioner"] = dct_get(sp_db, SPDB_XPOSITIONER)
-            dct["ypositioner"] = dct_get(sp_db, SPDB_YPOSITIONER)
+
+                dct["estep"] = dct["range"][0] / float(width)
+                dct["step"] = (dct["estep"], dct_get(sp_db, SPDB_YSTEP))
+                dct["start"] = (
+                    dct["estart"],
+                    dct_get(sp_db, SPDB_YSTART),
+                )
+                dct["stop"] = (dct["estop"], dct_get(sp_db, SPDB_YSTOP))
+                dct["xpositioner"] = "Energy"
+                dct["ypositioner"] = dct_get(sp_db, SPDB_YPOSITIONER)
+
+            else:
+                dct["center"] = (
+                    dct_get(sp_db, SPDB_XCENTER),
+                    dct_get(sp_db, SPDB_YCENTER),
+                )
+
+                dct["range"] = (
+                    dct_get(sp_db, SPDB_XRANGE),
+                    dct_get(sp_db, SPDB_YRANGE),
+                )
+
+                dct["step"] = (dct_get(sp_db, SPDB_XSTEP), dct_get(sp_db, SPDB_YSTEP))
+                dct["estep"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STEP]
+                dct["start"] = (
+                    dct_get(sp_db, SPDB_XSTART),
+                    dct_get(sp_db, SPDB_YSTART),
+                )
+                dct["stop"] = (dct_get(sp_db, SPDB_XSTOP), dct_get(sp_db, SPDB_YSTOP))
+                dct["xpositioner"] = dct_get(sp_db, SPDB_XPOSITIONER)
+                dct["ypositioner"] = dct_get(sp_db, SPDB_YPOSITIONER)
 
         # if ('GONI' in sp_db.keys()):
         if "GONI" in list(sp_db):
@@ -244,12 +292,12 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
                 format_info_text("step:", f"{dct['estep']:.2f} ev"),
             )
         else:
-            s += "%s" % format_info_text("Energy:", "%.2f eV" % e_pnt)
+            s += "%s" % format_info_text("Energy:", f"{e_pnt:.2f} eV")
 
         if (_scan_type in focus_scans):
             x_start, zpz_start = dct["start"]
             x_stop, zpz_stop = dct["stop"]
-            s += '%s' % format_info_text('ZoneplateZ:', '[%.2f ---> %.2f] um' % (zpz_start, zpz_stop))
+            s += '%s' % format_info_text('ZoneplateZ:', f"[{zpz_start:.2f} ---> {zpz_stop:.2f}] um")
 
         _s1 = "%s" % (
             format_info_text(
@@ -264,78 +312,83 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
         _s2 = "%s" % (
             format_info_text(
                 "Offset:",
-                "%.2f mm" % sp_db[EV_ROIS][ev_idx][EPU_OFF_PNTS][pol_idx],
+                f"{sp_db[EV_ROIS][ev_idx][EPU_OFF_PNTS][pol_idx]:.2f} mm",
                 newline=False,
             )
         )
         _s3 = "%s" % (
             format_info_text(
-                "Angle:", "%.2f deg" % sp_db[EV_ROIS][ev_idx][EPU_ANG_PNTS][pol_idx]
+                "Angle:", f"{sp_db[EV_ROIS][ev_idx][EPU_ANG_PNTS][pol_idx]:.2f} deg"
             )
         )
         s += "%s %s %s" % (_s1, _s2, _s3)
         s += "%s" % format_info_text(
-            "Dwell:", "%.2f ms" % (sp_db[EV_ROIS][ev_idx][DWELL] )
+            "Dwell:", f"{sp_db[EV_ROIS][ev_idx][DWELL]:.2f} ms"
         )
-        s += "%s" % format_info_text("Points:", "%d x %d " % (width, height))
+        s += "%s" % format_info_text("Points:", f"{width} x {height}")
 
         if dct["center"][0] is None:
             s += "%s" % format_info_text(
-                "Center:", "(?, ?) um"
+                "Center:", "(N/A, N/A) um"
             )
         else:
+            _tpl = tuple_to_float_strings(dct["center"])
             s += "%s" % format_info_text(
-            "Center:", "(%.2f, %.2f) um" % dct["center"]
+            "Center:", f"({_tpl[0]}, {_tpl[1]}) um"
             )
 
         if dct["range"][0] is None:
             s += "%s" % format_info_text(
-                "Range:", "(?, ?) um"
+                "Range:", "(N/A, N/A) um"
             )
         else:
+            _tpl = tuple_to_float_strings(dct["range"])
             s += "%s" % format_info_text(
-                "Range:", "(%.2f, %.2f) um" % dct["range"]
+                "Range:",f"({_tpl[0]}, {_tpl[1]}) um"
             )
 
         if "goni_theta_cntr" in list(dct):
 
             if dct["step"][0] is None:
                 s += "%s" % format_info_text(
-                    "StepSize:", "(?, ?) um"
+                    "StepSize:", "(N/A, N/A) um"
                 )
             else:
+                _tpl = tuple_to_float_strings(dct["step"], format=".3f")
                 s += "%s" % format_info_text(
-                    "StepSize:", "(%.3f, %.3f) um" % dct["step"]
+                     "StepSize:", f"({_tpl[0]}, {_tpl[1]}) um"
                 )
 
             if "goni_z_cntr" in list(dct):
                 if dct["goni_z_cntr"][0] is None:
                     s += "%s" % format_info_text(
-                        "Goni Z:", "? um"
+                        "Goni Z:", "N/A um"
                     )
                 else:
                     s += "%s" % format_info_text(
-                        "Goni Z:", "%.3f um" % dct["goni_z_cntr"]
+                        "Goni Z:", f'{dct["goni_z_cntr"]:.3f} um'
                     )
 
             s += "%s" % format_info_text(
                 "Goni Theta:",
-                "%.2f deg" % (dct["goni_theta_cntr"]),
+                f'{dct["goni_theta_cntr"]:.2f} deg',
                 newline=False,
                 end_preformat=True,
             )
         else:
             if dct["step"][0] is None:
                 s += "%s" % format_info_text(
-                    "StepSize:", "(?, ?) um"
+                    "StepSize:", "(N/A, N/A) um"
                 )
             else:
+                _tpl = tuple_to_float_strings(dct["step"], format=".3f")
                 s += "%s" % format_info_text(
                     "StepSize:",
-                    "(%.3f, %.3f) um" % dct["step"],
+                    f"({_tpl[0]}, {_tpl[1]})",
                     newline=False,
                     end_preformat=True,
                 )
+
 
         return (s, jstr)
     else:

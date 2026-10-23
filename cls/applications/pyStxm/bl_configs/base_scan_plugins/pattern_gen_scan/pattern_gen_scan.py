@@ -36,7 +36,7 @@ from cls.utils.roi_utils import (
     on_npoints_changed
 )
 
-from cls.scanning.base import ScanParamWidget, zp_focus_modes
+from cls.scanning.baseScanParamWidget import ScanParamWidget, zp_focus_modes
 from cls.types.stxmTypes import (
     scan_types,
     scan_sub_types,

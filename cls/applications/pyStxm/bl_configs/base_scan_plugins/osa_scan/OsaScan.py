@@ -10,7 +10,7 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
-from cls.scanning.BaseScan import BaseScan
+from cls.scanning.baseScanClass import BaseScan
 from cls.utils.roi_dict_defs import *
 from cls.utils.json_utils import dict_to_json
 from cls.scan_engine.bluesky.bluesky_defs import bs_dev_modes

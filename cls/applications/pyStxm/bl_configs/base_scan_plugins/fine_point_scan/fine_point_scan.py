@@ -12,7 +12,7 @@ from cls.stylesheets import get_style
 from cls.applications.pyStxm.main_obj_init import MAIN_OBJ, DEFAULTS
 
 # from cls.applications.pyStxm.bl_configs.amb_bl10ID1.device_names import *
-from cls.scanning.base import MultiRegionScanParamBase, zp_focus_modes
+from cls.scanning.baseScanParamWidget import MultiRegionScanParamBase, zp_focus_modes
 
 # from cls.applications.pyStxm.scan_plugins import plugin_dir
 from cls.applications.pyStxm.widgets.scan_table_view.multiRegionWidget import (

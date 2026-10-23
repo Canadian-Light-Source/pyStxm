@@ -8,7 +8,7 @@ from bluesky.plans import grid_scan
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 
-from cls.scanning.BaseScan import BaseScan
+from cls.scanning.baseScanClass import BaseScan
 from cls.utils.roi_dict_defs import *
 from cls.utils.log import get_module_logger
 from cls.utils.json_utils import dict_to_json

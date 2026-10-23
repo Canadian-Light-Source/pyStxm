@@ -18,7 +18,6 @@ from cls.plotWidgets.config import _
 
 class clsOpenFileTool(CommandTool):
 
-    # openfile = pyqtSignal(str)
     openfile = pyqtSignal(object)
 
     def __init__(self, manager, formats="*.*", toolbar_id=DefaultToolbarID):
@@ -60,24 +59,6 @@ class clsOpenFileTool(CommandTool):
         """
         self.directory = dirname
 
-    # def get_filename(self, plot):
-    #     """
-    #     get_filename(): description
-    #
-    #     :param plot: plot description
-    #     :type plot: plot type
-    #
-    #     :returns: None
-    #     """
-    #     saved_in, saved_out, saved_err = sys.stdin, sys.stdout, sys.stderr
-    #     sys.stdout = None
-    #     filename, _f = getopenfilename(plot, _("Open"),
-    #                                    self.directory, self.formats)
-    #     sys.stdin, sys.stdout, sys.stderr = saved_in, saved_out, saved_err
-    #     filename = unicode(filename)
-    #     if filename:
-    #         self.directory = os.path.dirname(filename)
-    #     return filename
     def get_filename(self, plot):
         """
         get_filename(): description
@@ -87,24 +68,9 @@ class clsOpenFileTool(CommandTool):
 
         :returns: None
         """
-        # saved_in, saved_out, saved_err = sys.stdin, sys.stdout, sys.stderr
-        # sys.stdout = None
-        # filenames, _f = getopenfilenames(plot, _("Open"),
-        #                                self.directory, self.formats)
-        # exec_image_open_dialog(parent, basedir="", app_name=None, to_grayscale=True, dtype=None
-        # filenames, _f = exec_image_open_dialog(plot, basedir=self.directory, app_name=_("Open"), to_grayscale=True)
-        # filename = getOpenFileName(
-        #     "Open", filter_str="Images (%s)" % self.formats, search_path=self.directory
-        # )
+
         filenames = getOpenFileNames("Open", filter_str="Images (%s)" % self.formats, search_path=self.directory
         )
-
-        # sys.stdin, sys.stdout, sys.stderr = saved_in, saved_out, saved_err
-        # filename = str(filenames)
-        # if filename:
-        #    self.directory = os.path.dirname(filename)
-        # return filenames
-        #return [filename]
         return filenames
 
     def activate_command(self, plot, checked):

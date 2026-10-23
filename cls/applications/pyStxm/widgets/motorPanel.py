@@ -56,6 +56,10 @@ PREC = 3
 _sp_not_moving = master_colors["app_ltgray"]["rgb_str"]
 _fbk_not_moving = master_colors["app_superltblue"]["rgb_str"]
 _fbk_moving = master_colors["fbk_moving_ylw"]["rgb_str"]
+# Pixelator status
+_fbk_off = master_colors["white"]["rgb_str"]
+_fbk_error = master_colors["app_red"]["rgb_str"]
+
 _fbk_hardstopped = master_colors["fbk_hard_stopped"]["rgb_str"]
 _fbk_at_limit_true = master_colors["fbk_limit_bad"]["rgb_str"]
 _fbk_at_limit_false = master_colors["fbk_limit_okay"]["rgb_str"]
@@ -702,6 +706,7 @@ class PositionersPanel(QtWidgets.QWidget):
         """
         dct['obj'].parent = QtCore.QObject()
         dct['obj'].parent.name = dct['obj'].get_name()
+        dct['obj'].parent.pvname = dct['obj'].get_name()
         dct['obj'].pvname = dct['obj'].get_name()
         self.update_moving(**dct)
 
@@ -725,7 +730,12 @@ class PositionersPanel(QtWidgets.QWidget):
         (dev, dev_ui, widg, mtr) = self.mtr_dict[pvname]
         val = float(kwargs["value"])
         txt_clr = "color: black;"
+
         # this is for the DMOV or DONE Moving, I want Moving so invert logic
+        if hasattr(kwargs['obj'], 'is_moving'):
+            # invert because this should be for move done I think
+            val = not kwargs['obj'].is_moving()
+
         if val:
             is_moving = False
             clr_str = _fbk_not_moving
@@ -734,6 +744,17 @@ class PositionersPanel(QtWidgets.QWidget):
             is_moving = True
             clr_str = _fbk_moving
             # txt_clr = "color: white;"
+
+        # check for if Pixelator statuses exist
+        if hasattr(kwargs['obj'], 'is_in_error'):
+            # we assume all other Pixelator status funcs exist
+            is_on = kwargs['obj'].is_on()
+            is_error = kwargs['obj'].is_in_error()
+            if is_error:
+                clr_str = _fbk_error
+
+            elif not is_on:
+                clr_str = _fbk_off
 
         _dct = {}
         _dct["setStyleSheet"] = [
@@ -826,7 +847,9 @@ class PositionersPanel(QtWidgets.QWidget):
         dct['obj']._read_pv = QtCore.QObject()
         dct['obj']._read_pv.pvname = dct['obj'].get_name()
         dct["pvname"] = dct['obj'].get_name()
+        dct['obj'].pvname = dct['obj'].get_name()
         self.update_fbk(**dct)
+        self.update_moving(**dct)
 
     def update_fbk(self, **kwargs):
         """

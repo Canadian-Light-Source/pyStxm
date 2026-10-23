@@ -224,8 +224,20 @@ dev_dct["DETECTORS"] = [
     {
         "name": "DNM_PMT",
         "class": "make_basedevice",
+        # "dcs_nm": "SIMM_PMT:pmt" if SIM else "ASTXM1610:Ci-D1C2:cntr:SingleValue_RBV",
+        "dcs_nm": "SIMM_PMT:pmt" ,
+    },
+    {
+        "name": "DNM_PMT2",
+        "class": "make_basedevice",
         # "dcs_nm": "MCS1610-310-01:mcs09:fbk",
-        "dcs_nm": "SIMM_PMT:pmt" if SIM else "ASTXM1610:Ci-D1C2:cntr:SingleValue_RBV",
+        "dcs_nm": "SIMM_PMT:pmt2",
+    },
+    {
+        "name": "DNM_PMT3",
+        "class": "make_basedevice",
+        # "dcs_nm": "MCS1610-310-01:mcs09:fbk",
+        "dcs_nm": "SIMM_PMT:pmt3",
     },
     {
         "name": "DNM_TUCSEN_AD",

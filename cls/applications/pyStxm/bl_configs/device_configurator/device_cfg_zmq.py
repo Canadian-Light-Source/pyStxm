@@ -194,32 +194,38 @@ class Device_Configure(QtWidgets.QWidget):
         return active is True or active == 1
 
     def _build_dcs_name_options(self):
-        """Build the list of active DCS names with an empty unmapped entry first."""
+        """List active positioner and detector names, with an unmapped entry first."""
         dcs_names = [""]
         raw = self.dcs_devices or {}
+        groups = [raw]
+        if isinstance(raw, dict) and (
+            "positioners" in raw or "detectors" in raw
+        ):
+            groups = [raw.get("positioners", {}), raw.get("detectors", {})]
 
-        if isinstance(raw, dict):
-            for key, val in raw.items():
-                if isinstance(val, dict):
-                    entry = dict(val)
-                    if "name" not in entry:
-                        entry["name"] = key
-                    if self._is_active_dcs_entry(entry):
-                        nm = entry.get("name", "")
-                        if nm and nm not in dcs_names:
-                            dcs_names.append(nm)
-                elif isinstance(val, list):
-                    for item in val:
-                        if self._is_active_dcs_entry(item):
-                            nm = item.get("name", "")
+        for group in groups:
+            if isinstance(group, dict):
+                for key, val in group.items():
+                    if isinstance(val, dict):
+                        entry = dict(val)
+                        if "name" not in entry:
+                            entry["name"] = key
+                        if self._is_active_dcs_entry(entry):
+                            nm = entry.get("name", "")
                             if nm and nm not in dcs_names:
                                 dcs_names.append(nm)
-        elif isinstance(raw, list):
-            for item in raw:
-                if self._is_active_dcs_entry(item):
-                    nm = item.get("name", "")
-                    if nm and nm not in dcs_names:
-                        dcs_names.append(nm)
+                    elif isinstance(val, list):
+                        for item in val:
+                            if self._is_active_dcs_entry(item):
+                                nm = item.get("name", "")
+                                if nm and nm not in dcs_names:
+                                    dcs_names.append(nm)
+            elif isinstance(group, list):
+                for item in group:
+                    if self._is_active_dcs_entry(item):
+                        nm = item.get("name", "")
+                        if nm and nm not in dcs_names:
+                            dcs_names.append(nm)
 
         return dcs_names
 

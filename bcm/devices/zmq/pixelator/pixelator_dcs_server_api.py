@@ -1561,6 +1561,10 @@ class DcsServerApi(BaseDcsServerApi):
             self.scan_class.paused = False
         else:
             print(f"send_scan_request: send scanRequest failed, reply={reply}")
+            dct = {}
+            dct['error'] = {'message': f"send_scan_request: send scanRequest failed, reply={reply}"}
+            self.on_msg_to_app(dct)
+
 
     def set_default_detector(self, det_name):
         """

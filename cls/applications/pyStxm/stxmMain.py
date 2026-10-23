@@ -4251,6 +4251,10 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         msg_key = list(msg.keys())[0]
         if msg_key == 'filename':
             self.scan_progress_table.override_filenames(msg['filename']['name'])
+        elif msg_key == 'error':
+            message = msg['error']['message'].replace("'", "").replace('"', "")
+            self.add_to_log(QtGui.QColor('#ff0000'), f"ERROR: {message}")
+            self.add_to_dcs_server_window(QtGui.QColor('#ff0000'), f"ERROR: {message}")
 
     def on_new_dcs_server_data(self, h5_file_dct: dict) -> None:
         """

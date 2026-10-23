@@ -86,6 +86,8 @@ class ZMQMotor(ZMQBaseDevice):
         self.position = 0
         self._position_offset = 0
         self._auto_on_off = "Always"
+        self._max_coarse_range = 0
+        self._max_fine_range = 0
 
         if 'low_limit' in kwargs.keys():
             self._low_limit = kwargs['low_limit']
@@ -120,6 +122,12 @@ class ZMQMotor(ZMQBaseDevice):
         # in the range of the coarse motor, scanable range is the actual physical range of the piezo stage and will
         # come from the max_fine_x and max_fine_y declarations in the bealmline config file
         self._emit_move.connect(self.move)
+
+    def set_coarse_fine_ranges(self, coarse: float, fine: float):
+        if coarse:
+            self._max_coarse_range = coarse
+        if fine:
+            self._max_fine_range = fine
 
     def call_emit_move(self, position, wait=True, kwargs={}):
         """
@@ -350,10 +358,10 @@ class ZMQMotor(ZMQBaseDevice):
 
         """
         if start <= self.get_low_limit():
-            return(False)
+            return False
         if stop >= self.get_high_limit():
-            return(False)
-        return(True)
+            return False
+        return True
 
     def set_power(self, val):
         """

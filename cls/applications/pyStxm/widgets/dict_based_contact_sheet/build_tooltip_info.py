@@ -114,7 +114,10 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
             height = 1
             (width,) = data.shape
         else:
-            height, width = data.shape
+            if _scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
+                width, height = data.shape
+            else:
+                height, width = data.shape
 
         # s = 'File: %s  \n' %  (fprefix + '.hdf5')
         # if (fpath.find('12162') > -1):
@@ -146,7 +149,11 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
         dct["offset"] = sp_db[EV_ROIS][ev_idx][POL_ROIS][pol_idx][OFF]
         dct["angle"] = sp_db[EV_ROIS][ev_idx][POL_ROIS][pol_idx][ANGLE]
         dct["dwell"] = sp_db[EV_ROIS][ev_idx][DWELL] * 1000.0
-        dct['npoints'] = (width, height)
+
+        if _scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
+            dct['npoints'] = (height, width)
+        else:
+            dct['npoints'] = (width, height)
 
         start_date_str = sp_db[SPDB_ACTIVE_DATA_OBJECT][ADO_START_TIME]
         if isinstance(start_date_str, bytes):
@@ -199,25 +206,49 @@ def dict_based_build_image_params(h5_file_dct, energy=None, ev_idx=0, ev_pnt=0, 
 
             dct["estop"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STOP]
         else:
-            dct["center"] = (
-                dct_get(sp_db, SPDB_XCENTER),
-                dct_get(sp_db, SPDB_YCENTER),
-            )
+            # Sample Line SPectrum and Sample Image scans have different positioners for X and Y, so we need to handle them separately
+            if _scan_type == scan_types.SAMPLE_LINE_SPECTRUM:
+                dct["center"] = (
+                    (dct["estop"] + dct["estart"]) * 0.5,
+                    dct_get(sp_db, SPDB_YCENTER),
+                )
 
-            dct["range"] = (
-                dct_get(sp_db, SPDB_XRANGE),
-                dct_get(sp_db, SPDB_YRANGE),
-            )
+                dct["range"] = (
+                    dct["estop"] - dct["estart"],
+                    dct_get(sp_db, SPDB_YRANGE),
+                )
 
-            dct["step"] = (dct_get(sp_db, SPDB_XSTEP), dct_get(sp_db, SPDB_YSTEP))
-            dct["estep"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STEP]
-            dct["start"] = (
-                dct_get(sp_db, SPDB_XSTART),
-                dct_get(sp_db, SPDB_YSTART),
-            )
-            dct["stop"] = (dct_get(sp_db, SPDB_XSTOP), dct_get(sp_db, SPDB_YSTOP))
-            dct["xpositioner"] = dct_get(sp_db, SPDB_XPOSITIONER)
-            dct["ypositioner"] = dct_get(sp_db, SPDB_YPOSITIONER)
+
+                dct["estep"] = dct["range"][0] / float(width)
+                dct["step"] = (dct["estep"], dct_get(sp_db, SPDB_YSTEP))
+                dct["start"] = (
+                    dct["estart"],
+                    dct_get(sp_db, SPDB_YSTART),
+                )
+                dct["stop"] = (dct["estop"], dct_get(sp_db, SPDB_YSTOP))
+                dct["xpositioner"] = "Energy"
+                dct["ypositioner"] = dct_get(sp_db, SPDB_YPOSITIONER)
+
+            else:
+                dct["center"] = (
+                    dct_get(sp_db, SPDB_XCENTER),
+                    dct_get(sp_db, SPDB_YCENTER),
+                )
+
+                dct["range"] = (
+                    dct_get(sp_db, SPDB_XRANGE),
+                    dct_get(sp_db, SPDB_YRANGE),
+                )
+
+                dct["step"] = (dct_get(sp_db, SPDB_XSTEP), dct_get(sp_db, SPDB_YSTEP))
+                dct["estep"] = dct_get(sp_db, SPDB_EV_ROIS)[0][STEP]
+                dct["start"] = (
+                    dct_get(sp_db, SPDB_XSTART),
+                    dct_get(sp_db, SPDB_YSTART),
+                )
+                dct["stop"] = (dct_get(sp_db, SPDB_XSTOP), dct_get(sp_db, SPDB_YSTOP))
+                dct["xpositioner"] = dct_get(sp_db, SPDB_XPOSITIONER)
+                dct["ypositioner"] = dct_get(sp_db, SPDB_YPOSITIONER)
 
         # if ('GONI' in sp_db.keys()):
         if "GONI" in list(sp_db):

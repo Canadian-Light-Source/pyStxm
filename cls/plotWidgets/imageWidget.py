@@ -6698,7 +6698,8 @@ class ImageWidgetPlot(PlotDialog):
                 plot.add_item(self.items[img_idx], z=len(items) + 1 if item_z is None else item_z)
 
             (x1, y1, x2, y2) = dct_get(sp_db, SPDB_RECT)
-            self.set_image_parameters(img_idx, x1, y1, x2, y2)
+            # use the energy for X axis
+            self.set_image_parameters(img_idx, estart, y1, estop, y2)
 
             if show:
                 self.show_data(img_idx, True)

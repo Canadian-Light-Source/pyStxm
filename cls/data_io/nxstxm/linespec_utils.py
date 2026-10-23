@@ -101,8 +101,9 @@ def modify_line_spectra_ctrl_data_grps(parent, nxgrp, doc, scan_type):
     _sr_data = parent.get_baseline_all_data("DNM_BASELINE_RING_CURRENT")
     sr_data = np.linspace(_sr_data[0], _sr_data[1], ttlpnts)
 
-    _dataset(nxgrp, "data", np.reshape(sr_data, (xnpoints, num_ev_points)), "NX_NUMBER")
-    _string_attr(nxgrp, "axes", ["line_position", "energy"])
+    # make sure to store data in the order that NXstxm defines it, which is energy first then line_position
+    _dataset(nxgrp, "data", np.reshape(sr_data, (num_ev_points,xnpoints)), "NX_NUMBER")
+    _string_attr(nxgrp, "axes", ["energy", "line_position" ])
 
 
 def modify_line_spectra_nxdata_group(parent, data_nxgrp, doc, scan_type):
@@ -195,7 +196,6 @@ def modify_line_spectra_nxdata_group(parent, data_nxgrp, doc, scan_type):
     if resize_data:
         det_data = parent.fix_aborted_data(det_data, ttlpnts)
 
-    det_data = np.transpose(det_data)
     _dset = _dataset(data_nxgrp, "data", det_data, "NX_NUMBER")
     _string_attr(_dset, "signal", "1")
 

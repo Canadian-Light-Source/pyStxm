@@ -1,5 +1,7 @@
 import time
 import os
+from json.decoder import NaN
+
 from PyQt5.QtCore import QTimer
 from queue import Queue
 import re
@@ -794,8 +796,10 @@ class DcsServerApi(BaseDcsServerApi):
             self.parent.selected_detectors = detname_lst
 
         elif resp[0].find("chartmode_detector_update") > -1:
+            # THIS block updates teh Striptool when no scan is running
             value_dct_lst = json.loads(resp[1])
             for val_dct in value_dct_lst:
+                #print(f"process_SUB_rcv_messages: received an update for [chartmode_detector_update]=[{val_dct['name']}]{val_dct}")
                 self._update_device_feedback(val_dct["name"], val_dct["value"])
 
         elif resp[0].find("detectorValues") > -1:
@@ -1044,11 +1048,6 @@ class DcsServerApi(BaseDcsServerApi):
                         dev.set_connected(True)
                         dev.set_desc(positioner_dct['description'])
 
-                        #over ride the limits for the fine sample positioners to hack around naming of abstract motor for now
-                        if app_devname in ["DNM_SAMPLE_FINE_X", "DNM_SAMPLE_FINE_Y"]:
-                            positioner_dct['lowerSoftLimit'] = -7000
-                            positioner_dct['upperSoftLimit'] = 7000
-
                         if app_devname in ["DNM_ENERGY"]:
                             # set the value to something reasonable if it is currently 0.0 (noHardware)
                             if dev.get_position() == 0.0:
@@ -1230,13 +1229,22 @@ class DcsServerApi(BaseDcsServerApi):
         return dct
 
     def get_devices_from_settings(self, settings: dict={}):
-        """ if the keys exist return the device_settings"""
-        dev_settings = {}
+        """
+        if the keys exist return the device_settings
+        return only teh devices that are active in the settings file, so that we can build the devs dict and the devices dict
+
+        """
+        dev_settings = {'positioners': {}, 'detectors': {}}
         if 'referencedJsonFiles' in settings:
             if 'positionerConfigFileName' in settings['referencedJsonFiles']:
-                dev_settings = settings['referencedJsonFiles']['positionerConfigFileName']['content']
+                for k, _dct in settings['referencedJsonFiles']['positionerConfigFileName']['content'].items():
+                    if type(_dct) is dict:
+                        if _dct['active'] == 1:
+                            dev_settings['positioners'].update({k: _dct})
             if 'detectorConfigFileName' in settings['referencedJsonFiles']:
-                dev_settings.update(settings['referencedJsonFiles']['detectorConfigFileName']['content'])
+                for k, _dct in settings['referencedJsonFiles']['detectorConfigFileName']['content'].items():
+                    if _dct['active'] == 1:
+                        dev_settings['detectors'].update({k: _dct})
         self.device_settings = dev_settings
         return dev_settings
 
@@ -1553,6 +1561,10 @@ class DcsServerApi(BaseDcsServerApi):
             self.scan_class.paused = False
         else:
             print(f"send_scan_request: send scanRequest failed, reply={reply}")
+            dct = {}
+            dct['error'] = {'message': f"send_scan_request: send scanRequest failed, reply={reply}"}
+            self.on_msg_to_app(dct)
+
 
     def set_default_detector(self, det_name):
         """

@@ -31,7 +31,7 @@ event-model==1.19.7
 executing==2.0.1
 fasteners==0.19
 fonttools>=4.60.2
-fsspec==2024.3.1
+fsspec>=2026.6.0
 future==0.18.3
 guidata>=3.14.1
 h5py==3.16.0
@@ -117,7 +117,7 @@ setuptools<82.0.0
 simplejson==3.19.2
 six==1.16.0
 slicerator==1.1.0
-soupsieve==2.6
+soupsieve>=2.9.0
 stack-data==0.6.2
 suitcase-csv==0.3.0
 suitcase-mongo==0.4.0

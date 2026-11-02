@@ -682,6 +682,8 @@ class Serializer(event_model.DocumentRouter):
             _string_attr(nf, nxkd.NXD_FILE_NAME, self._tmp_fname)
             _string_attr(nf, nxkd.NXD_FILE_TIME, self._file_time_str)
             _string_attr(nf, "scan_uid", self.get_current_uid())
+            _string_attr(nf, "pystxm_version", self._cur_scan_md[self.get_current_uid()]["version_info"])
+
             nf.close()
 
         except:

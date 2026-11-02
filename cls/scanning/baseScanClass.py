@@ -653,6 +653,7 @@ class BaseScan(QtCore.QObject):
             self.img_idx_map["%d" % self._current_img_idx]
         )
         dct["rev_lu_dct"] = self.main_obj.get_device_reverse_lu_dct()
+        dct["version_info"] = self.main_obj.get_version_info()
         for d in dets:
             if d.name.find("SIS3820") > -1:
                 dct["sis3820_data_map"] = dict_to_json(copy.copy(d.enabled_channels_lst))

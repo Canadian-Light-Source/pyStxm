@@ -1,5 +1,5 @@
 
-SIM =  False
+SIM =  True
 dev_dct = {}
 
 
@@ -242,7 +242,8 @@ dev_dct["DETECTORS"] = [
     {
         "name": "DNM_TUCSEN_AD",
         "class": "TucsenDetector",
-        "dcs_nm": "SIMM_SCMOS1610-310:" if SIM else "SCMOS1610-310:",
+        #"dcs_nm": "SIMM_SCMOS1610-310:" if SIM else "SCMOS1610-310:",
+        "dcs_nm": "SIMCCD1610-I10-02:",
     },
     # {
     #     "name": "DNM_SIMM_CCD",

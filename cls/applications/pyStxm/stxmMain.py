@@ -336,18 +336,18 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         MAIN_OBJ.export_msg.connect(self.add_exporter_msg_to_log)
 
         _logger.info("####################### Starting pystxm ####################### ")
-        self.setWindowTitle(
-            "pyStxm %s.%s.%s Canadian Light Source [%s] [br: %s] [%s]"
-            % (
-                MAIN_OBJ.get("APP.MAJOR_VER"),
-                MAIN_OBJ.get("APP.MINOR_VER"),
-                MAIN_OBJ.get("APP.PATCH_VER"),
-                os.path.dirname(os.path.abspath(__file__)),
-                # MAIN_OBJ.get("APP.COMMIT")[0:8],
-                MAIN_OBJ.get("APP.BRANCH")[0:10],
-                MAIN_OBJ.get("APP.DATE"),
-            )
+        version_info = "pyStxm %s.%s.%s Canadian Light Source [%s] [br: %s] [%s]"  %(
+            MAIN_OBJ.get("APP.MAJOR_VER"),
+            MAIN_OBJ.get("APP.MINOR_VER"),
+            MAIN_OBJ.get("APP.PATCH_VER"),
+            os.path.dirname(os.path.abspath(__file__)),
+            # MAIN_OBJ.get("APP.COMMIT")[0:8],
+            MAIN_OBJ.get("APP.BRANCH")[0:10],
+            MAIN_OBJ.get("APP.DATE"),
         )
+        self.setWindowTitle(version_info)
+        MAIN_OBJ.set_version_info(version_info)
+
         # size the application, default app screen size comes from the sylesheets master_colors.ini file
         df_scrn_sz = get_default_screen_size()
         if df_scrn_sz[0] != None:

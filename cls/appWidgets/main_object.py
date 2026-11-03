@@ -146,6 +146,7 @@ class main_object_base(QtCore.QObject):
                                           # represent the progressive stack data being built
         self._progressive_stack_data_dir = None
         self._progressive_stack_data_file_prefix = None
+        self._version_info = None
 
         if DATA_SERVER_HOST is None:
             _logger.error("DATA_SERVER_HOST environment variable is not set, cannot continue")
@@ -229,6 +230,12 @@ class main_object_base(QtCore.QObject):
         self.start_sub_listener_thread()
         self._local_reload_active = False
         self._worker_pool = QtCore.QThreadPool.globalInstance()
+
+    def set_version_info(self, info_str: str):
+        self._version_info = info_str
+
+    def get_version_info(self):
+        return self._version_info
 
     def init_progressive_stack_data(self, stack_dir, file_prefix, detector_names: list, meta_data: dict=None):
         """

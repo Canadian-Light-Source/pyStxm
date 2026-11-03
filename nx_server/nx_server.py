@@ -26,7 +26,8 @@ from cls.utils.file_system_tools import master_get_seq_names
 import logging
 
 logging.basicConfig(
-    filename='/var/log/nx_server.log',
+    #filename='/var/log/nx_server.log',
+    filename='/tmp/nx_server.log',
     format='%(asctime)s - %(message)s',
     level=logging.INFO
 )

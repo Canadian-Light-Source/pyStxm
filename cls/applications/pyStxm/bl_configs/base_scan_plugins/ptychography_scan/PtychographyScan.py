@@ -5,6 +5,7 @@ Created on Sep 26, 2016
 """
 import os.path
 from pathlib import Path
+from PyQt5 import QtCore
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -39,7 +40,7 @@ DO_SOFTWARE_SCAN = False
 class BasePtychographyScanClass(BaseSampleFineImageWithE712WavegenScanClass):
 
     """a scan for executing a detector point scan in X and Y, it takes an existing instance of an XYZScan class"""
-
+    remove_files = QtCore.pyqtSignal(str, list)
     def __init__(self, main_obj=None):
         """
         __init__(): description
@@ -161,8 +162,9 @@ class BasePtychographyScanClass(BaseSampleFineImageWithE712WavegenScanClass):
             # counter_nm = det_lst[0].name
             # d = self.main_obj.device(counter_nm)
             d = det_lst[0]
-            d.new_plot_data.connect(func)
-            self._det_subscription = d
+            if hasattr(d, "new_plot_data"):
+                d.new_plot_data.connect(func)
+                self._det_subscription = d
 
     def configure_devs(self, dets):
         """
@@ -235,7 +237,7 @@ class BasePtychographyScanClass(BaseSampleFineImageWithE712WavegenScanClass):
         from cls.utils.list_utils import remove_items
 
         stack_dir = dct_get(self.sp_db[SPDB_ACTIVE_DATA_OBJECT], ADO_CFG_STACK_DIR)
-        nxs_file_path_parts = stack_dir.split("\\")
+        nxs_file_path_parts = stack_dir.split("/")
         cam_root_dir = dct_get(self.sp_db[SPDB_ACTIVE_DATA_OBJECT], ADO_CFG_PTYCHO_CAM_DATA_DIR)
         cam_fpath_parts = cam_root_dir.split("/")
         cam_fpath_parts = remove_items(cam_fpath_parts, '')
@@ -289,31 +291,23 @@ class BasePtychographyScanClass(BaseSampleFineImageWithE712WavegenScanClass):
         pystxm_write_path = dct_get(self.sp_db[SPDB_ACTIVE_DATA_OBJECT], ADO_CFG_STACK_DIR)
         cam_root_dir, cam_fpath, datarec_fname = self.determine_ptycho_cam_file_dir()
         img_details = dct_get(self.sp_db, SPDB_SCAN_PLUGIN_IMG_DETAILS)
-        is_hdf5 = False
-        if img_details["image.format"].find("HDF5") > -1:
-            is_hdf5 = True
-            self.ad_cam_file_plugin_info(cam.hdf5_file_plugin, cam_fpath)
-            self.ad_cam_file_plugin_info(cam.tif_file_plugin, cam_fpath)
-        else:
-            self.ad_cam_file_plugin_info(cam.hdf5_file_plugin, cam_fpath)
-            self.ad_cam_file_plugin_info(cam.tif_file_plugin, cam_fpath)
+        is_hdf5 = "HDF5" in img_details["image.format"]
+        cam.enable_file_plugin_by_name("HDF5" if is_hdf5 else "TIFF")
+        if is_hdf5:
+            cam.prime_hdf5_plugin()
+        self.ad_cam_file_plugin_info(cam.hdf5_file_plugin, cam_fpath)
+        self.ad_cam_file_plugin_info(cam.tif_file_plugin, cam_fpath)
 
         # # self.file_plugin.compression.put(6)  # set to LZ4
         # # cam.file_plugin.compression.put(0)  # set to NONE
 
         cam.cam.image_mode.put(1)  # multiple
-        cam.cam.num_images.put(num_imgs_per_inner)
+        #cam.cam.num_images.put(num_imgs_per_inner)
+        cam.cam.num_images.put(1)
         cam.cam.trigger_mode.put(1)  # standard╒
         cam.cam.array_counter.put(0)
         cam.set_dwell(self.dwell)
         cam.stage()
-        # cam.file_plugin.file_template.put("%s%s_%3.3d.h5")
-        #enabling a particular file plugin must come oadfter it has been staged as both
-        #file plugins are enabled by default when stage() is called
-        if is_hdf5:
-            cam.enable_file_plugin_by_name("HDF5")  # HDF5
-        else:
-            cam.enable_file_plugin_by_name("TIFF")  # TIFF
 
         if md is None:
             _meta = self.make_standard_metadata(
@@ -427,16 +421,21 @@ class BasePtychographyScanClass(BaseSampleFineImageWithE712WavegenScanClass):
                     # read the positions of the motors
                     yield from bps.create("primary")
 
-                    for d in dets:
-                        yield from bps.read(d)
-                        if hasattr(d, "init_indexs"):
-                            # new image so reset row/col indexes for data it emits to plotter
-                            d.init_indexs()
-                    for dev_dct in outer_lst:
-                        yield from bps.read(dev_dct["dev"])
-                    for dev_dct in i_lst:
-                        yield from bps.read(dev_dct["dev"])
-                    yield from bps.save()
+                    try:
+                        for d in dets:
+                            yield from bps.read(d)
+                            if hasattr(d, "init_indexs"):
+                                # Reset row/col indexes for data emitted to the plotter.
+                                d.init_indexs()
+                        for dev_dct in outer_lst:
+                            yield from bps.read(dev_dct["dev"])
+                        for dev_dct in i_lst:
+                            yield from bps.read(dev_dct["dev"])
+                    except Exception:
+                        yield from bps.drop()
+                        raise
+                    else:
+                        yield from bps.save()
                     img_cntr += 1
                     inner_cntr += 1
 
@@ -460,7 +459,7 @@ class BasePtychographyScanClass(BaseSampleFineImageWithE712WavegenScanClass):
                     d.enable_data_read_for_ptychography(False)
 
             #remove these image files
-            self.remove_row_change_images(file_removal_list)
+            self.remove_row_change_images(cam_fpath, file_removal_list)
             # print("PtychographyScanClass: make_scan_plan Leaving")
 
         return (yield from do_scan())
@@ -878,4 +877,3 @@ class BasePtychographyScanClass(BaseSampleFineImageWithE712WavegenScanClass):
         # self.finish_setup()
         #
         # return(ret)
-

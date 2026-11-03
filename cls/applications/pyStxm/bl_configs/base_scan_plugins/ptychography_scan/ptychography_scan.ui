@@ -193,35 +193,26 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_3">
              <item>
-              <widget class="QRadioButton" name="h5RadioBtn">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>20</height>
-                </size>
-               </property>
+              <widget class="QCheckBox" name="h5ChkBox">
                <property name="text">
                 <string>HDF5</string>
                </property>
-               <property name="checked">
-                <bool>false</bool>
-               </property>
+               <attribute name="buttonGroup">
+                <string notr="true">imageFileTypeBtnGroup</string>
+               </attribute>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="tiffRadioBtn">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>20</height>
-                </size>
-               </property>
+              <widget class="QCheckBox" name="tiffChkBox">
                <property name="text">
                 <string>TIFF</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
                </property>
+               <attribute name="buttonGroup">
+                <string notr="true">imageFileTypeBtnGroup</string>
+               </attribute>
               </widget>
              </item>
             </layout>
@@ -410,4 +401,7 @@
   <include location="../../../../../icons/icons.qrc"/>
  </resources>
  <connections/>
+ <buttongroups>
+  <buttongroup name="imageFileTypeBtnGroup"/>
+ </buttongroups>
 </ui>

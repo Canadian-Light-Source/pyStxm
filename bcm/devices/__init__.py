@@ -127,7 +127,8 @@ elif USE_OPHYD_EPICS:
     from .ophyd.pi_e712 import E712WGDevice
     from .ophyd.area_detectors import GreatEyesCCD, SimGreatEyesCCD
     from .ophyd.sis3820_scalar import SIS3820ScalarDevice
-    from .ophyd.ad_tucsen import TucsenDetector
+    # from .ophyd.ad_tucsen import TucsenDetector
+    from .ophyd.new_ad_tucsen import TucsenDetector
 
     #this is a placeholder for zmq testing when I jump back and forth to test
     from .ophyd.sis3820_scalar import SIS3820ScalarDevice as Counter

@@ -301,8 +301,9 @@ class BaseFocusScanClass(BaseScan):
             psmtr_x = self.main_obj.device("DNM_SAMPLE_X")
             psmtr_y = self.main_obj.device("DNM_SAMPLE_Y")
             if self.is_fine_scan:
-                mtr_x = self.main_obj.device(mtr_dct["fx_name"])
-                mtr_y = self.main_obj.device(mtr_dct["fy_name"])
+                mtr_x = self.main_obj.get_sample_fine_positioner("X")
+                mtr_y = self.main_obj.get_sample_fine_positioner("Y")
+
             else:
                 psmtr_x.set_piezo_power_off()
                 psmtr_y.set_piezo_power_off()
@@ -482,7 +483,7 @@ class BaseFocusScanClass(BaseScan):
         """ here if line == True then it is a line scan else config for point by point """
         ret = super().configure(wdg_com, sp_id=sp_id, line=line, z_enabled=True)
         if not ret:
-            return(ret)
+            return ret
 
         if USE_E712_HDW_ACCEL:
             self.main_obj.device("DNM_E712_CURRENT_SP_ID").put(sp_id)
@@ -526,7 +527,7 @@ class BaseFocusScanClass(BaseScan):
         # added this to try and stabalize the start of the scan (sends lines before proper start)
         # self.gate.wait_till_running_polling()
         # self.counter.wait_till_running_polling()
-        return(ret)
+        return ret
 
 
     

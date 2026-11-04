@@ -51,8 +51,8 @@ class PointSpecScanParam(BasePointSpecScanParam):
             for _id in sp_ids:
                 sp_db = get_sp_db_from_wdg_com(self.wdg_com, _id)
                 x_roi = dct_get(sp_db, SPDB_X)
-                x_roi[POSITIONER] = 'DNM_SAMPLE_FINE_X'
+                x_roi[POSITIONER] = 'DNM_SAMPLE_X'
                 y_roi = dct_get(sp_db, SPDB_Y)
-                y_roi[POSITIONER] = 'DNM_SAMPLE_FINE_Y'
+                y_roi[POSITIONER] = 'DNM_SAMPLE_Y'
 
         return self.wdg_com

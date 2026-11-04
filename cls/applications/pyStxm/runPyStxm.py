@@ -195,6 +195,11 @@ def go():
 
     app = QtWidgets.QApplication(sys.argv)
 
+    # Install local plotpy defaults before importing modules that create plots.
+    from cls.plotWidgets.config import configure_plotpy
+
+    configure_plotpy()
+
     debugger = sys.gettrace()
     from cls.appWidgets.dialogs import excepthook
 

@@ -204,7 +204,7 @@ class GenScanRequestClass(object):
     def gen_point_displayed_axis_dicts(self, axis_str_lst, axis_rois, inner_outer_lst):
         dct = {}
         axis_zip = zip(axis_str_lst, axis_rois,inner_outer_lst)
-        index = -1
+        index = 0
         for axis_str, roi, inout in axis_zip:
             dct[axis_str] = self.gen_displayed_axis_dict(inout, index)
             index += 1

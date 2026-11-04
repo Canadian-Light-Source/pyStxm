@@ -35,11 +35,11 @@ scanRequest = {
                     "trajectories": [
                         {
                             "center": 0,
-                            "positionerName": "FineX"
+                            "positionerName": "SampleX"
                         },
                         {
                             "center": 0,
-                            "positionerName": "FineY"
+                            "positionerName": "SampleY"
                         }
                     ]
                 }

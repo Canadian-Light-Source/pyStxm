@@ -272,7 +272,7 @@ class main_object_base(QtCore.QObject):
                                                  verbose=False, cmd_args=cmd_args)
                 print(f"Successful publish of progressive stack data to nx_server, response: {res_dct}")
             except Exception as e:
-                _logger.error(f"Error publishing progressive stack data to Pixeltor: {e}")
+                _logger.error(f"Error publishing progressive stack data: {e}")
         else:
             _logger.info(f"Publishing progressive stack data to Pixeltor not currently supported")
 

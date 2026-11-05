@@ -4,6 +4,9 @@ import logging
 import os
 import stat
 
+# HDF5 may read this setting when its library is first loaded.
+os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
+
 import h5py
 import numpy as np
 
@@ -16,6 +19,8 @@ def save_progressive_stack_data_to_hdf5(data_dct, data_dir, fprefix, metadata):
     Each image is stored under its ``img_idx``, with a ``data`` dataset for each
     detector. Write scan parameters once, when the file has no metadata group.
     Callers must serialize writes to the same file. Write failures are logged.
+    Set HDF5_USE_FILE_LOCKING=FALSE process-wide and explicitly disable locking
+    on this file, including when h5py was initialized before this module.
 
     Parameters
     ----------
@@ -34,12 +39,15 @@ def save_progressive_stack_data_to_hdf5(data_dct, data_dir, fprefix, metadata):
     None
     """
     try:
+        # Reassert the setting if application code changed it since module import.
+        os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
         os.makedirs(data_dir, exist_ok=True)
         h5_path = os.path.join(data_dir, f"{fprefix}.hdf5")
 
         file_exists = os.path.exists(h5_path)
         mode = 'r+' if file_exists else 'w'
-        kwargs = {'libver': 'latest'}
+        # The explicit option also handles an already-initialized HDF5 library.
+        kwargs = {'libver': 'latest', 'locking': False}
 
         with h5py.File(h5_path, mode, **kwargs) as h5f:
             os.chmod(h5_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)

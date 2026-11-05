@@ -82,6 +82,33 @@ def test_creates_directory_file_detectors_and_all_metadata(tmp_path, metadata, i
         assert stat.S_IMODE(path.stat().st_mode) == 0o644
 
 
+@pytest.mark.parametrize('previous_setting', [None, 'TRUE', 'FALSE'])
+def test_saving_disables_file_locking(
+    tmp_path, metadata, image, monkeypatch, previous_setting
+):
+    """Set the environment and file-open option even after h5py is imported."""
+    if previous_setting is None:
+        monkeypatch.delenv('HDF5_USE_FILE_LOCKING', raising=False)
+    else:
+        monkeypatch.setenv('HDF5_USE_FILE_LOCKING', previous_setting)
+    real_file = h5py.File
+    calls = []
+
+    def open_without_locking(*args, **kwargs):
+        """Check the environment and locking option at the actual file open."""
+        calls.append(kwargs)
+        assert os.environ['HDF5_USE_FILE_LOCKING'] == 'FALSE'
+        assert kwargs['locking'] is False
+        return real_file(*args, **kwargs)
+
+    monkeypatch.setattr(prog_stack_utils.h5py, 'File', open_without_locking)
+    prog_stack_utils.save_progressive_stack_data_to_hdf5(image, tmp_path, 'stack', metadata)
+    assert len(calls) == 1
+    assert os.environ['HDF5_USE_FILE_LOCKING'] == 'FALSE'
+    with real_file(tmp_path / 'stack.hdf5', 'r', locking=False) as saved:
+        np.testing.assert_array_equal(saved['0/detector_a/data'][:], image['det_data']['detector_a'])
+
+
 @pytest.mark.parametrize('img_idx', [2, np.int64(3), 'image_4'])
 def test_appends_image_and_preserves_original_metadata(tmp_path, metadata, image, img_idx):
     """Appending must retain previous images and the first scan parameters."""

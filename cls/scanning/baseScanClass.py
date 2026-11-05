@@ -572,7 +572,7 @@ class BaseScan(QtCore.QObject):
     def make_progressive_stack_metadata_dict(self):
         """
         looking at the sp_db for the stack scan pull out the following and place into a dictionary that will be passed
-        to nx_sever to save along with the data as it is acquired:
+        to the local HDF5 worker to save along with the data as it is acquired:
             - horizontal roi dict for image
             - vertical roi dict for image
             - energy list for stack

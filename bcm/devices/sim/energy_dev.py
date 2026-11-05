@@ -426,7 +426,13 @@ class EnergyDevice(FocusCalculations, Device):
             if 'D' in self.osa_def:
                 osa_D = self.osa_def['D']
                 zp_diam = self.zoneplate_def['zpD']
+                _energy = self.energy_posner.get()
+                if _energy == 0.0:
+                    self.energy_posner.set(1200.0)
                 fl = self.calc_focal_length(self.energy_posner.get())
+                if fl is None:
+                    # need to fix this when using sim devs
+                    fl = 8000.0
                 self.max_A0 = float((osa_D * fl) / zp_diam)
                 return self.max_A0
         return None

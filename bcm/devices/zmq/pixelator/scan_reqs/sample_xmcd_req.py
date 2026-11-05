@@ -41,7 +41,7 @@ scanRequest = {
                             "end": 250,
                             "range": 500,
                             "step": 5.05050505050505,
-                            "positionerName": "FineY"
+                            "positionerName": "SampleY"
                         }
                     ]
                 },
@@ -53,7 +53,7 @@ scanRequest = {
                             "end": 250,
                             "range": 500,
                             "step": 5.05050505050505,
-                            "positionerName": "FineX"
+                            "positionerName": "SampleX"
                         }
                     ]
                 }

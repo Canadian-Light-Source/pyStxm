@@ -322,7 +322,7 @@ class BasePtychographyScanParam(MultiRegionScanParamBase):
         #self.camera.cam.acquire.put(0)
 
     def on_save_img_as_btn(self):
-        datadir = self.main_obj.get_preset_section("BL_CFG_MAIN")['datadir']
+        datadir = self.main_obj.get_preset_section("BL_CFG_MAIN")['data_dir']
         fname = getSaveFileName("Save Image as", '*.tif', filter_str="Tif  Files(*.tif)", search_path=datadir)
         if fname:
             array_to_tiff_file(fname, self._cur_image_arr)
@@ -733,7 +733,7 @@ class BasePtychographyScanParam(MultiRegionScanParamBase):
         """
         a convienience function to return which image file format the user has selected
         """
-        if self.h5RadioBtn.isChecked():
+        if self.h5ChkBox.isChecked():
             fformat = "HDF5"
         else:
             fformat = "TIFF"

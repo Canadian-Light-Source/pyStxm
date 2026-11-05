@@ -24,7 +24,7 @@ class user_obj(object):
         data_sub_dir = blConfig["BL_CFG_MAIN"]["data_sub_dir"]
         if "ptycho_cam_data_dir" in blConfig["BL_CFG_MAIN"].keys():
             #self.ptycho_cam_data_dir = blConfig["BL_CFG_MAIN"]["ptycho_cam_data_dir"]
-            self.ptycho_cam_data_dir = blConfig["BL_CFG_MAIN"]["linux_data_dir"]
+            self.ptycho_cam_data_dir = blConfig["BL_CFG_MAIN"]["data_dir"]
         else:
             self.ptycho_cam_data_dir = None
 

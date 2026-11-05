@@ -33,12 +33,12 @@ scanRequest = {
                         {
                             "center": 1,
                             "range": 0.7071067811865476,
-                            "positionerName": "FineX"
+                            "positionerName": "SampleX"
                         },
                         {
                             "center": 1,
                             "range": 0.7071067811865476,
-                            "positionerName": "FineY"
+                            "positionerName": "SampleY"
                         }
                     ]
                 }
@@ -52,12 +52,12 @@ scanRequest = {
                         {
                             "center": 2,
                             "range": 0.7071067811865476,
-                            "positionerName": "FineX"
+                            "positionerName": "SampleX"
                         },
                         {
                             "center": 2,
                             "range": 0.7071067811865476,
-                            "positionerName": "FineY"
+                            "positionerName": "SampleY"
                         }
                     ]
                 }
@@ -70,7 +70,7 @@ scanRequest = {
     "displayedAxes": {
         "x": {
             "region": "outer",
-            "index": -1
+            "index": 1
         },
         "y": {
             "region": "inner",

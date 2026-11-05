@@ -480,6 +480,9 @@ class PI_E712(QtCore.QObject):
         self.is_pxp = False
 
         # self.ddl_tables_ss = SaveSettings('ddl_tables.json', dct_template=osa_smplhldr_dct)
+        self._is_simulating = False
+        if self.prefix.find("SIMM") > -1:
+            self._is_simulating = True
 
         self.xAxisId = BaseDevice("%sXAxisId_RBV" % self.prefix)
 
@@ -490,10 +493,17 @@ class PI_E712(QtCore.QObject):
         self.wg3 = PI_E712_wave_generator(prefix=prefix, wvgen_num=3)
         self.wg4 = PI_E712_wave_generator(prefix=prefix, wvgen_num=4)
 
-        self.e712_com_thrd = e712comThrd
-        self.e712_cmnd_queue = e712comQ
-        self.e712_wv_table_data = e712com
-        self.e712_wv_table_data.data_changed.connect(self.on_e712_com)
+        if not self._is_simulating:
+            self.e712_com_thrd = e712comThrd
+            self.e712_cmnd_queue = e712comQ
+            self.e712_wv_table_data = e712com
+            self.e712_wv_table_data.data_changed.connect(self.on_e712_com)
+        else:
+            self.e712_com_thrd = QtCore.QObject()
+            self.e712_cmnd_queue = QtCore.QObject()
+            self.e712_cmnd_queue.put_nowait = lambda x: None
+            self.e712_wv_table_data = QtCore.QObject()
+            self.e712_wv_table_data.data_changed = QtCore.pyqtSignal(object)
 
         # self.e712_cmnd_queue = Queue.Queue()
         # self.e712_wv_table_data = E712ComThread(self.prefix, self.e712_cmnd_queue)
@@ -811,6 +821,7 @@ class PI_E712(QtCore.QObject):
         e712com_dct = make_base_e712_com_dict(
             e712_cmds.SEND_COMMANDS, cmnds, None, cb=cb
         )
+
         self.e712_cmnd_queue.put_nowait(e712com_dct)
 
     def send_trig_command_string(self, cmnds, cb=None, verbose=True):
@@ -2089,15 +2100,18 @@ class PI_E712(QtCore.QObject):
         # it can take a few moments for the wavetable to update its length value
         # and we need this length to properly calulate the length of the Y segment
         #print("after define_pxp_segments called send_commands()")
-        for i in range(1000):
-            time.sleep(0.1)
-            xseg_len_pts = self.get_wav_tbl_length(X_WAVE_TABLE_ID)
-            if xseg_len_pts > 0:
-                if (i > 1) & (prev_x_len != xseg_len_pts):
-                    break
-                elif prev_x_len == xseg_len_pts:
-                    break
-            i += 1
+        if self._is_simulating:
+            xseg_len_pts = 500
+        else:
+            for i in range(1000):
+                time.sleep(0.1)
+                xseg_len_pts = self.get_wav_tbl_length(X_WAVE_TABLE_ID)
+                if xseg_len_pts > 0:
+                    if (i > 1) & (prev_x_len != xseg_len_pts):
+                        break
+                    elif prev_x_len == xseg_len_pts:
+                        break
+                i += 1
 
         xseg_time = xseg_len_pts * WAVEFORM_GEN_CYCLE_TIME
         #print(f"xseg_time = xseg_len_pts * WAVEFORM_GEN_CYCLE_TIME")

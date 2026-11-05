@@ -26,7 +26,8 @@ from cls.utils.file_system_tools import master_get_seq_names
 import logging
 
 logging.basicConfig(
-    filename='/var/log/nx_server.log',
+    #filename='/var/log/nx_server.log',
+    filename='/tmp/nx_server.log',
     format='%(asctime)s - %(message)s',
     level=logging.INFO
 )
@@ -211,7 +212,7 @@ def save_data_to_hdf5(data_dct, data_dir, fprefix, metadata):
 
         file_exists = os.path.exists(h5_path)
         mode = 'r+' if file_exists else 'w'
-        kwargs = {'libver': 'latest'} if not file_exists else {}
+        kwargs = {'libver': 'latest'}
 
         with h5py.File(h5_path, mode, **kwargs) as h5f:
             os.chmod(h5_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)

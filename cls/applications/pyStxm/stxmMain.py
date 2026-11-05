@@ -141,28 +141,6 @@ PLOTTER_SPECTRA_TAB = 1
 NUM_POINTS_LOST_AFTER_EDIFF = 2
 DATA_OFFSET = 1
 
-hostname = os.getenv("COMPUTERNAME")
-if hostname == "WKS-W001465":
-    # the new test computer in old magnet mapping room
-    FAKE_MARKER = False
-    UNIT_SCALAR = 0.001
-    # VELO_SCALAR = 1
-    # VELO_SCALAR = 0.001
-    VELO_SCALAR = 1000.0
-    USE_PIEZO = True
-elif hostname == "NBK-W001021":
-    # my notebook computer
-    FAKE_MARKER = True
-    UNIT_SCALAR = 1.0
-    USE_PIEZO = False
-else:
-    # the old stxm_control conmputer
-    FAKE_MARKER = False
-    UNIT_SCALAR = 0.001
-    VELO_SCALAR = 0.001
-    USE_PIEZO = True
-
-
 class MouseOverEventFilter(QtCore.QObject):
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.Enter:
@@ -3598,6 +3576,18 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.scan_tbox_widgets[self.scan_panel_idx].update_last_settings()
 
         self.cur_wdg_com = self.scan_tbox_widgets[self.scan_panel_idx].get_roi()
+
+        _dets = self.get_user_selected_counters()
+        if len(_dets) == 0:
+            self.scan_tbox_widgets[self.scan_panel_idx].blockSignals(False)
+            _logger.error("no detectors were selected, aborting scan")
+            self.set_buttons_for_starting()
+            dialog_notify(
+                title="No detector selected",
+                msg="In order to execute a scan, you must first select a detector.",
+                accept_str="Okay",
+            )
+            return
 
         if (self.cur_wdg_com is None) or (
                 len(self.cur_wdg_com[SPDB_SPATIAL_ROIS]) == 0

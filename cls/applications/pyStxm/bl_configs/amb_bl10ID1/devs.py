@@ -174,6 +174,7 @@ dev_dct["POSITIONERS"] = [
         "dcs_nm": "SIMM_BL1610-I12:epuHarmonic" if SIM else "BL1610-I10:epuHarmonic",
         "abstract_mtr": True,
         "pos_type": "POS_TYPE_BL",
+        "enums": ["1", "3", "5", "7", "9"]
     },
     {
         "name": "DNM_EPU_POLARIZATION",

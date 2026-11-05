@@ -575,10 +575,24 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         """
         icon_pixmap = QtGui.QPixmap(icon_path)
         if not icon_pixmap.isNull():
-            icon_pixmap = icon_pixmap.scaled(size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-            painter = QtGui.QPainter(base_pixmap)
+            icon_pixmap = icon_pixmap.scaled(
+                size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation
+            )
+            x = max(0, x)
+            y = max(0, y)
+
+            # Keep the icon at its requested size; partial stack data may need
+            # extra transparent canvas so the pixmap cannot clip the overlay.
+            width = max(base_pixmap.width(), x + icon_pixmap.width())
+            height = max(base_pixmap.height(), y + icon_pixmap.height())
+            pixmap = QtGui.QPixmap(width, height)
+            pixmap.fill(QtCore.Qt.transparent)
+
+            painter = QtGui.QPainter(pixmap)
+            painter.drawPixmap(0, 0, base_pixmap)
             painter.drawPixmap(x, y, icon_pixmap)
             painter.end()
+            return pixmap
         return base_pixmap
 
     def get_folder_pic(self, scale_it=True, as_thumbnail=True):

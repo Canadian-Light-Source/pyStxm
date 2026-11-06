@@ -33,8 +33,10 @@ python install_desktop_launcher.py
 This installs an executable `pyStxm.desktop` on your desktop using the
 repository's `pyStxm.desktop.in` template. The installer resolves the checkout
 and Conda paths locally; machine-specific paths are not kept in the repository.
-KDE may ask you to trust the launcher on first use. Konsole stays open to show
-startup errors.
+KDE may ask you to trust the launcher on first use. Konsole closes when the
+application exits or is interrupted with Ctrl+C. To keep startup errors visible
+while troubleshooting, temporarily add `--hold` after `konsole` in the installed
+desktop launcher's `Exec` line.
 
 The launcher uses `pyStxm.png` from the checkout as its icon. The installer
 resolves this repository-relative file to a local path for KDE.
@@ -286,7 +288,6 @@ The documentation for the software has been started and will soon be available o
 ## License
 
 This project is licensed under the GPL3 License - see the [LICENSE.md](LICENSE.md) file for details
-
 
 
 

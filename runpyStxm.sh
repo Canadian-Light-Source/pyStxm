@@ -33,4 +33,6 @@ conda activate pyStxm
 
 # Load the beamline settings and launch the application.
 source ./reqd_env_vars.sh
-exec python ./cls/applications/pyStxm/runPyStxm.py
+# Keep Bash as the terminal's child: Konsole retains sessions whose direct
+# child crashes, but can close when Bash exits after Python terminates.
+python ./cls/applications/pyStxm/runPyStxm.py

@@ -572,7 +572,7 @@ class BaseScan(QtCore.QObject):
     def make_progressive_stack_metadata_dict(self):
         """
         looking at the sp_db for the stack scan pull out the following and place into a dictionary that will be passed
-        to nx_sever to save along with the data as it is acquired:
+        to the local HDF5 worker to save along with the data as it is acquired:
             - horizontal roi dict for image
             - vertical roi dict for image
             - energy list for stack
@@ -831,8 +831,8 @@ class BaseScan(QtCore.QObject):
                     f"Calculated scan velocity {desired_velo:.2f} is too fast (max is {vmax:.2f}).\n"
                     f"Increase number of points, dwell time, or reduce the range and try again.\n\n"
                     f"  TO EXECUTE CURRENT SCAN ADJUST ONE OF THE FOLLOWING:\n"
-                    f"Minimum dwell time (ms) for [{npoints}] points: set dwell={min_dwell:.2f}\n"
-                    f"Minimum number of points for [{dwell}] ms dwell: set npoints={min_npoints}\n"
+                    f"Minimum dwell time (ms) for [{npoints}] points: set dwell > {min_dwell:.2f}\n"
+                    f"Minimum number of points for [{dwell:.3f}] ms dwell: set npoints > {min_npoints}\n"
                     f"To use current dwell and points, range must be below {max_range:.2f} um"
                 )
                 notify("Error: scan velocity exceeds motor's max velocity", msg, "Ok")

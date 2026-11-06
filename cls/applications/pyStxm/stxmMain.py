@@ -2182,6 +2182,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         self.lineByLineImageDataWidget = ImageWidgetPlot(
             parent=None,
             type="analyze",
+            main_obj=MAIN_OBJ,
         )
         if hasattr(self, "lineByLineImageDataWidget"):
             # self.lineByLineImageDataWidget.plot.setTitle('lineByLineImageDataWidget')
@@ -2253,7 +2254,7 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         """
         vbox = QtWidgets.QVBoxLayout()
         # self.spectraWidget = CurveViewerWidget(parent = self, winTitleStr = "Spectra Data Viewer")
-        self.spectraWidget = CurveViewerWidget(parent=self)
+        self.spectraWidget = CurveViewerWidget(parent=self, main_obj=MAIN_OBJ)
         self.spectraWidget.set_dataIO(STXMDataIo)
         self.spectraWidget.add_legend("TL")
         self.spectraWidget.addTool("tools.clsSignalSelectTool")
@@ -2315,7 +2316,9 @@ class pySTXMWindow(QtWidgets.QMainWindow):
         vbox = QtWidgets.QVBoxLayout()
         hbox = QtWidgets.QHBoxLayout()
         # self.roiSpectraWidget = CurveViewerWidget(toolbar=False, type="minimal", parent=self)
-        self.roiSpectraWidget = CurveViewerWidget(toolbar=True, type="minimal", parent=self)
+        self.roiSpectraWidget = CurveViewerWidget(
+            toolbar=True, type="minimal", parent=self, main_obj=MAIN_OBJ
+        )
         self.roiSpectraWidget.remove_all_tools()
         self.roiSpectraWidget.addTool("tools.clsSignalSelectTool")
         self.create_roi_btn = QtWidgets.QPushButton("Press to create ROI")

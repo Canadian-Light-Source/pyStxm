@@ -327,6 +327,7 @@ class ImageWidgetPlot(PlotDialog):
         type="basic",
         sample_pos_mode=None,
         options=None,
+        main_obj=None,
         #settings_fname="shape_settings.json",
     ):
         """
@@ -360,6 +361,7 @@ class ImageWidgetPlot(PlotDialog):
 
         self.fileFilterStr = filtStr
         self.type = type
+        self.main_obj = main_obj
         self._data_dir = ""
         self.data_io = None
         self._auto_contrast = True
@@ -812,19 +814,15 @@ class ImageWidgetPlot(PlotDialog):
                     formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
 
                     if format == "application/dict-based-imageplot-stxmscan":
-                            itemData = mimeData.data(format)
-                            # text = mimeData.text()
-                            _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
-                            _info_jstr = QtCore.QByteArray()
-                            _data_bytes = QtCore.QByteArray()
-                            _pos = QtCore.QPointF()
-                            _stream >> _info_jstr >> _data_bytes >> _pos
-                            _info_str = bytes(_info_jstr).decode()
-                            drop_dct = json.loads(_info_str)
+                            if self.main_obj is None:
+                                return
+                            drag_key = bytes(mimeData.data(format)).decode("ascii")
+                            drop_dct = self.main_obj.take_drag_drop_data(drag_key)
+                            if drop_dct is None:
+                                return
 
                             # fname = drop_dct["path"]
-                            # convert to array
-                            data = np.array(drop_dct["data"])
+                            data = drop_dct["data"]
                             sp_db = drop_dct["sp_db"]
                             title = drop_dct['title']
                             xlabel = drop_dct.get("xlabel") or "X"
@@ -6982,7 +6980,7 @@ def get_percentage_of_qrect(qrect, p):
 
 
 def make_default_stand_alone_stxm_imagewidget(
-    parent=None, data_io=None, _type=None, bndg_rect=None
+    parent=None, data_io=None, _type=None, bndg_rect=None, main_obj=None
 ):
     # from cls.applications.pyStxm.widgets.beam_spot_fbk import BeamSpotFeedbackObjStandAlone
     # from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
@@ -7022,6 +7020,7 @@ def make_default_stand_alone_stxm_imagewidget(
         parent=parent,
         filtStr=FILTER_STRING,
         type=_type,
+        main_obj=main_obj,
         options=PlotOptions(
             gridparam=gridparam,
             show_contrast=True,
@@ -7692,6 +7691,5 @@ if __name__ == "__main__":
     # profile_it('go', bias_val=7.40181638985e-07)
     # go()
     #astxm_lineplot_test()
-    #make_sig_selection()
-    make_style_test()
-
+    make_sig_selection()
+    #make_style_test()

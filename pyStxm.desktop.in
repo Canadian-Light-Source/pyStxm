@@ -2,7 +2,7 @@
 Type=Application
 Name=pyStxm
 Comment=Launch pyStxm
-Exec=konsole --hold -e env @CONDA_EXE@ bash @RUN_SCRIPT@
+Exec=konsole -e env @CONDA_EXE@ bash @RUN_SCRIPT@
 Path=@REPO_DIR@
 Icon=@ICON_PATH@
 Terminal=false

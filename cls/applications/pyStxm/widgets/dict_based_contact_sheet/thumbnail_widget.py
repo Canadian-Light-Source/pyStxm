@@ -589,7 +589,8 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             pixmap.fill(QtCore.Qt.transparent)
 
             painter = QtGui.QPainter(pixmap)
-            painter.drawPixmap(0, 0, base_pixmap)
+            # Anchor partial data to the bottom without flipping its orientation.
+            painter.drawPixmap(0, height - base_pixmap.height(), base_pixmap)
             painter.drawPixmap(x, y, icon_pixmap)
             painter.end()
             return pixmap
@@ -632,6 +633,16 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             if pmap is None:
                 # fallback to the icon
                 pmap = get_pixmap(os.path.join(utils.icoDir, image_fname), sz_x, sz_y)
+
+            # Wide stack images produce short pixmaps. Bottom-align the data
+            # in a square thumbnail canvas before drawing the icon at the top.
+            side = max(pmap.width(), pmap.height())
+            canvas = QtGui.QPixmap(side, side)
+            canvas.fill(QtCore.Qt.transparent)
+            painter = QtGui.QPainter(canvas)
+            painter.drawPixmap(0, side - pmap.height(), pmap)
+            painter.end()
+            pmap = canvas
 
             pmap = self.overlay_icon_on_pixmap(pmap, icon_path=os.path.join(utils.icoDir, 'stack_files.png'),
                                                x=100, y=3, size=44)

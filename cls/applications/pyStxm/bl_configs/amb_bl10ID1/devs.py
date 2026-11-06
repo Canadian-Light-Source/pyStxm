@@ -114,6 +114,27 @@ dev_dct["POSITIONERS"] = [
         "coarse_mtr_name": "DNM_COARSE_Y"
 
     },
+{
+        "name": "DNM_TOMO_ROT",
+        "desc": "TOMO ROT",
+        "class": "MotorQt",
+        "dcs_nm": "SIMM_ASTXMIOC:m712" if SIM else "PZAC1610-03",
+        "pos_type": "POS_TYPE_ES",
+    },
+    {
+        "name": "DNM_TOMO_X",
+        "desc": "TOMO X",
+        "class": "MotorQt",
+        "dcs_nm": "SIMM_ASTXMIOC:m713" if SIM else "PZAC1610-01",
+        "pos_type": "POS_TYPE_ES",
+    },
+    {
+        "name": "DNM_TOMO_Y",
+        "desc": "TOMO Y",
+        "class": "MotorQt",
+        "dcs_nm": "SIMM_ASTXMIOC:m714" if SIM else "PZAC1610-02",
+        "pos_type": "POS_TYPE_ES",
+    },
     {
         "name": "DNM_ENERGY",
         "desc": "Energy",

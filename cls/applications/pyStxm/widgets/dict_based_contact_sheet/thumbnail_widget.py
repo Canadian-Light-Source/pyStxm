@@ -629,23 +629,10 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             # make a thumbnail from the stack data
 
             arr = data_to_rgb(np.flipud(np.transpose(self.data, [1, 2, 0])), alpha=True)
-            pmap = numpy_rgb_to_qpixmap(arr)
+            pmap = numpy_rgb_to_qpixmap(arr, target_width=None, target_height=None)
             if pmap is None:
                 # fallback to the icon
                 pmap = get_pixmap(os.path.join(utils.icoDir, image_fname), sz_x, sz_y)
-
-            # Wide stack images produce short pixmaps. Bottom-align the data
-            # in a square thumbnail canvas before drawing the icon at the top.
-            side = max(pmap.width(), pmap.height())
-            canvas = QtGui.QPixmap(side, side)
-            canvas.fill(QtCore.Qt.transparent)
-            painter = QtGui.QPainter(canvas)
-            painter.drawPixmap(0, side - pmap.height(), pmap)
-            painter.end()
-            pmap = canvas
-
-            pmap = self.overlay_icon_on_pixmap(pmap, icon_path=os.path.join(utils.icoDir, 'stack_files.png'),
-                                               x=100, y=3, size=44)
 
         elif as_thumbnail:
             # return a lower res pmap for use as a thumbnail image
@@ -660,11 +647,31 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             )
 
         if as_thumbnail:
+            # Match get_2dimage_pic(): stack data fills the entire thumbnail,
+            # including unacquired pixels, rather than leaving aspect-ratio padding.
             pmap = pmap.scaled(
                 QtCore.QSize(QtCore.QSize(utils.THMB_SIZE, utils.THMB_SIZE)),
-                QtCore.Qt.KeepAspectRatio,
+                QtCore.Qt.IgnoreAspectRatio if is_stack else QtCore.Qt.KeepAspectRatio,
                 QtCore.Qt.SmoothTransformation,
             )
+
+        if is_stack:
+            # Overlay on the final data image without expanding its canvas.
+            # Only very narrow images need a smaller icon to keep it fully visible.
+            margin = min(3, max(0, (min(pmap.width(), pmap.height()) - 1) // 2))
+            icon_size = min(
+                24 if as_thumbnail else 44,
+                pmap.width() - 2 * margin,
+                pmap.height() - 2 * margin,
+            )
+            if icon_size > 0:
+                pmap = self.overlay_icon_on_pixmap(
+                    pmap,
+                    icon_path=os.path.join(utils.icoDir, 'stack_files.png'),
+                    x=pmap.width() - margin - icon_size,
+                    y=margin,
+                    size=icon_size,
+                )
 
         return pmap
 

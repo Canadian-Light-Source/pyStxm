@@ -824,7 +824,6 @@ class ImageWidgetPlot(PlotDialog):
                             # fname = drop_dct["path"]
                             data = drop_dct["data"]
                             sp_db = drop_dct["sp_db"]
-                            title = drop_dct['title']
                             xlabel = drop_dct.get("xlabel") or "X"
                             ylabel = drop_dct.get("ylabel") or "Y"
 
@@ -832,7 +831,6 @@ class ImageWidgetPlot(PlotDialog):
                             dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
                             dct_put(wdg_com, SPDB_SPATIAL_ROIS, {sp_db[ID_VAL]: sp_db})
                             drop_dct['wdg_com'] = wdg_com
-                            data_dir, fprefix, fsuffix = get_file_path_as_parts(drop_dct['path'])
                             rect = dct_get(sp_db, SPDB_RECT)
                             self.load_image_data(
                                 drop_dct['path'],
@@ -840,7 +838,7 @@ class ImageWidgetPlot(PlotDialog):
                                 data,
                                 addimages=True,
                                 flipud=False,
-                                name_lbl=True,
+                                name_lbl=False,
                                 item_z=None,
                                 show=True,
                                 dropped=True,
@@ -850,11 +848,7 @@ class ImageWidgetPlot(PlotDialog):
                                 self.setPlotAxisStrs(ylabel, xlabel)
                                 # self.show()
                                 self.set_autoscale(fill_plot_window=True)
-                                # self.raise_()
-                                if title is not None:
-                                    self.plot.set_title(title)
-                                else:
-                                    self.plot.set_title(f"{fprefix}{fsuffix}")
+                                # Dropped filenames should not accumulate as plot titles.
                             else:
                                 self.setPlotAxisStrs(ylabel, xlabel)
 
@@ -6359,6 +6353,9 @@ class ImageWidgetPlot(PlotDialog):
             _title = str(fname)
             self.setWindowTitle(_title)
             plot.set_title("%s%s" % (fprefix, fsuffix))
+        elif dropped:
+            # Keep the internal data key separate from the visible plot-item title.
+            _title = ""
         else:
             _title = str(img_idx)
 
@@ -6389,6 +6386,8 @@ class ImageWidgetPlot(PlotDialog):
                     colormap="gist_gray",
                     title=_title,
                 )
+                if dropped:
+                    self.items[img_idx].setItemAttribute(Qwt.QwtPlotItem.Legend, False)
                 plot = self.get_plot()
                 plot.add_item(self.items[img_idx], z=0)
 
@@ -6399,6 +6398,8 @@ class ImageWidgetPlot(PlotDialog):
                     colormap="gist_gray",
                     title=_title,
                 )
+                if dropped:
+                    self.items[img_idx].setItemAttribute(Qwt.QwtPlotItem.Legend, False)
                 items = self.plot.get_items(item_type=ICSImageItemType)
                 plot.add_item(self.items[img_idx], z=len(items) + 1 if item_z is None else item_z)
 

@@ -794,10 +794,50 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
             dct[ch_nm] = val
         return dct
 
+    def _read_simulated_data(self):
+        """Return random counts for a SIMM_ scalar waveform stub.
+
+        Called by read() only after identifying a numeric scalar from a SIMM_
+        device. Generate final channel arrays so hardware point-removal options
+        cannot truncate them. Buffered reads contain rows * columns samples per
+        channel; other reads contain one line. Advance indices once on success.
+        """
+        chan_nums, chan_names, _ = self.get_enabled_chans(update_map=False)
+        num_points = self.num_cols
+        if self.return_2D_data:
+            num_points *= self.num_rows
+        if self.num_cols <= 0 or num_points <= 0 or not chan_nums:
+            raise ValueError(
+                f"{self.name}: simulated SIS3820 data requires positive "
+                "scan dimensions and at least one enabled channel"
+            )
+        if not getattr(self, '_simulated_waveform_warning_logged', False):
+            _logger.warning(
+                f"{self.name}: SIMM_ waveform PV returns a scalar; "
+                "generating random SIS3820 scan data"
+            )
+            self._simulated_waveform_warning_logged = True
+        rng = np.random.default_rng()
+        data = {}
+        for chan_name in chan_names:
+            if self.is_spec_scan:
+                chan_name = gen_complete_spec_chan_name(chan_name, self.spec_spid)
+            data[chan_name] = rng.integers(0, 65536, size=num_points, dtype=np.uint32)
+        self.increment_indexes()
+        return {
+            self.name + '_waveform_rbv': {
+                'value': data, 'timestamp': time.time()
+            }
+        }
+
     def read(self):
-        '''
-        if the current scan is lxl then I need to have an
-        '''
+        """Return point readings or channel data from a one-dimensional waveform.
+
+        Accept list/tuple waveforms from simulated devices as well as NumPy
+        arrays. For SIMM_ scalar PV stubs, generate random counts per enabled
+        channel using the configured scan dimensions. Real hardware never uses
+        this fallback. Reject other non-vector data before advancing indices.
+        """
         # print('SIS3820ScalarDevice: read called')
         # return(self.waveform_rbv.get())
 
@@ -811,6 +851,18 @@ class SIS3820ScalarDevice(Device, MonitorFlyerMixin, BaseDetectorDev):
         else:
             #line data
             self.rawData = self.waveform_rbv.get()
+            if self.rawData is None:
+                raise ValueError(f"{self.name}: SIS3820 waveform is missing")
+            # Simulated waveform signals may return Python sequences, not arrays.
+            self.rawData = np.asarray(self.rawData)
+            if (self.prefix.startswith('SIMM_') and self.rawData.ndim == 0
+                    and np.issubdtype(self.rawData.dtype, np.number)):
+                return self._read_simulated_data()
+            if self.rawData.ndim != 1:
+                raise ValueError(
+                    f"{self.name}: expected a one-dimensional SIS3820 waveform, "
+                    f"got shape {self.rawData.shape}"
+                )
             # note the first data point in the array returned is the number of enabled channels
             if hasattr(self.rawData, "shape"):
                 _nsamples, = self.rawData.shape

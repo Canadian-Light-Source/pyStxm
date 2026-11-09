@@ -392,6 +392,7 @@ class CurveViewerWidget(PlotDialog):
         filtStr="*.hdf5",
         options=None,
         parent=None,
+        main_obj=None,
     ):
         if options == None:
             options = PlotOptions()
@@ -416,6 +417,7 @@ class CurveViewerWidget(PlotDialog):
             parent=parent
         )
         self.setObjectName("CurveViewerWidget")
+        self.main_obj = main_obj
         self.fileFilterStr = filtStr
         self.addtoplot = False
         self.plot = self.get_plot()
@@ -604,19 +606,14 @@ class CurveViewerWidget(PlotDialog):
                     break
 
                 elif format == "application/dict-based-lineplot-stxmscan":
-                    itemData = mimeData.data("application/dict-based-lineplot-stxmscan")
-                    _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
-                    _info_jstr = QtCore.QByteArray()
-                    _data_bytes = QtCore.QByteArray()
-                    _pos = QtCore.QPointF()
-                    _stream >> _info_jstr >> _data_bytes >> _pos
-                    _info_str = bytes(_info_jstr).decode()
-                    drop_dct = json.loads(_info_str)
+                    if self.main_obj is None:
+                        return
+                    drag_key = bytes(mimeData.data(format)).decode("ascii")
+                    drop_dct = self.main_obj.take_drag_drop_data(drag_key)
+                    if drop_dct is None:
+                        return
 
                     # fname = drop_dct["path"]
-                    # convert to array
-                    data = np.array(drop_dct["data"])
-                    drop_dct["data"] = data
                     sp_db = drop_dct["sp_db"]
                     title = drop_dct["title"]
                     xlabel = drop_dct.get("xlabel") or "X"
@@ -1522,13 +1519,13 @@ class CurveViewerWidget(PlotDialog):
 #        #print 'StxmImageWidget: wheel event'
 
 
-def make_spectra_viewer_window(data_io=None):
+def make_spectra_viewer_window(data_io=None, main_obj=None):
     if data_io is None:
         from cls.data_io.stxm_data_io import STXMDataIo
 
         data_io = STXMDataIo
 
-    win = CurveViewerWidget(toolbar=True, type="viewer")
+    win = CurveViewerWidget(toolbar=True, type="viewer", main_obj=main_obj)
     win.set_dataIO(data_io)
     return win
 

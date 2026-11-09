@@ -575,10 +575,25 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
         """
         icon_pixmap = QtGui.QPixmap(icon_path)
         if not icon_pixmap.isNull():
-            icon_pixmap = icon_pixmap.scaled(size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-            painter = QtGui.QPainter(base_pixmap)
+            icon_pixmap = icon_pixmap.scaled(
+                size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation
+            )
+            x = max(0, x)
+            y = max(0, y)
+
+            # Keep the icon at its requested size; partial stack data may need
+            # extra transparent canvas so the pixmap cannot clip the overlay.
+            width = max(base_pixmap.width(), x + icon_pixmap.width())
+            height = max(base_pixmap.height(), y + icon_pixmap.height())
+            pixmap = QtGui.QPixmap(width, height)
+            pixmap.fill(QtCore.Qt.transparent)
+
+            painter = QtGui.QPainter(pixmap)
+            # Anchor partial data to the bottom without flipping its orientation.
+            painter.drawPixmap(0, height - base_pixmap.height(), base_pixmap)
             painter.drawPixmap(x, y, icon_pixmap)
             painter.end()
+            return pixmap
         return base_pixmap
 
     def get_folder_pic(self, scale_it=True, as_thumbnail=True):
@@ -614,13 +629,10 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             # make a thumbnail from the stack data
 
             arr = data_to_rgb(np.flipud(np.transpose(self.data, [1, 2, 0])), alpha=True)
-            pmap = numpy_rgb_to_qpixmap(arr)
+            pmap = numpy_rgb_to_qpixmap(arr, target_width=None, target_height=None)
             if pmap is None:
                 # fallback to the icon
                 pmap = get_pixmap(os.path.join(utils.icoDir, image_fname), sz_x, sz_y)
-
-            pmap = self.overlay_icon_on_pixmap(pmap, icon_path=os.path.join(utils.icoDir, 'stack_files.png'),
-                                               x=100, y=3, size=44)
 
         elif as_thumbnail:
             # return a lower res pmap for use as a thumbnail image
@@ -635,11 +647,31 @@ class ThumbnailWidget(QtWidgets.QGraphicsWidget):
             )
 
         if as_thumbnail:
+            # Match get_2dimage_pic(): stack data fills the entire thumbnail,
+            # including unacquired pixels, rather than leaving aspect-ratio padding.
             pmap = pmap.scaled(
                 QtCore.QSize(QtCore.QSize(utils.THMB_SIZE, utils.THMB_SIZE)),
-                QtCore.Qt.KeepAspectRatio,
+                QtCore.Qt.IgnoreAspectRatio if is_stack else QtCore.Qt.KeepAspectRatio,
                 QtCore.Qt.SmoothTransformation,
             )
+
+        if is_stack:
+            # Overlay on the final data image without expanding its canvas.
+            # Only very narrow images need a smaller icon to keep it fully visible.
+            margin = min(3, max(0, (min(pmap.width(), pmap.height()) - 1) // 2))
+            icon_size = min(
+                24 if as_thumbnail else 44,
+                pmap.width() - 2 * margin,
+                pmap.height() - 2 * margin,
+            )
+            if icon_size > 0:
+                pmap = self.overlay_icon_on_pixmap(
+                    pmap,
+                    icon_path=os.path.join(utils.icoDir, 'stack_files.png'),
+                    x=pmap.width() - margin - icon_size,
+                    y=margin,
+                    size=icon_size,
+                )
 
         return pmap
 

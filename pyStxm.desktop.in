@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=pyStxm
+Comment=Launch pyStxm
+Exec=konsole -e env @CONDA_EXE@ bash @RUN_SCRIPT@
+Path=@REPO_DIR@
+Icon=@ICON_PATH@
+Terminal=false
+Categories=Science;

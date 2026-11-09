@@ -114,6 +114,27 @@ dev_dct["POSITIONERS"] = [
         "coarse_mtr_name": "DNM_COARSE_Y"
 
     },
+{
+        "name": "DNM_TOMO_ROT",
+        "desc": "TOMO ROT",
+        "class": "MotorQt",
+        "dcs_nm": "SIMM_ASTXMIOC:m712" if SIM else "PZAC1610-03",
+        "pos_type": "POS_TYPE_ES",
+    },
+    {
+        "name": "DNM_TOMO_X",
+        "desc": "TOMO X",
+        "class": "MotorQt",
+        "dcs_nm": "SIMM_ASTXMIOC:m713" if SIM else "PZAC1610-01",
+        "pos_type": "POS_TYPE_ES",
+    },
+    {
+        "name": "DNM_TOMO_Y",
+        "desc": "TOMO Y",
+        "class": "MotorQt",
+        "dcs_nm": "SIMM_ASTXMIOC:m714" if SIM else "PZAC1610-02",
+        "pos_type": "POS_TYPE_ES",
+    },
     {
         "name": "DNM_ENERGY",
         "desc": "Energy",
@@ -174,6 +195,7 @@ dev_dct["POSITIONERS"] = [
         "dcs_nm": "SIMM_BL1610-I12:epuHarmonic" if SIM else "BL1610-I10:epuHarmonic",
         "abstract_mtr": True,
         "pos_type": "POS_TYPE_BL",
+        "enums": ["1", "3", "5", "7", "9"]
     },
     {
         "name": "DNM_EPU_POLARIZATION",
@@ -217,33 +239,29 @@ dev_dct["DETECTORS"] = [
     {
         "name": "DNM_SIS3820",
         "class": "SIS3820ScalarDevice",
-        #"dcs_nm": "SIMM_MCS1610-310-01:" if SIM else "MCS1610-310-01:",
-        "dcs_nm": "MCS1610-310-01:",
+        "dcs_nm": "SIMM_MCS1610-310-01:" if SIM else "MCS1610-310-01:",
         "con_chk_nm": "mcs:startScan",
     },
     {
         "name": "DNM_PMT",
         "class": "make_basedevice",
-        # "dcs_nm": "SIMM_PMT:pmt" if SIM else "ASTXM1610:Ci-D1C2:cntr:SingleValue_RBV",
-        "dcs_nm": "SIMM_PMT:pmt" ,
-    },
+        "dcs_nm": "SIMM_PMT:pmt" if SIM else "ASTXM1610:Ci-D1C2:cntr:SingleValue_RBV",
+            },
     {
         "name": "DNM_PMT2",
         "class": "make_basedevice",
-        # "dcs_nm": "MCS1610-310-01:mcs09:fbk",
         "dcs_nm": "SIMM_PMT:pmt2",
     },
     {
         "name": "DNM_PMT3",
         "class": "make_basedevice",
-        # "dcs_nm": "MCS1610-310-01:mcs09:fbk",
         "dcs_nm": "SIMM_PMT:pmt3",
     },
     {
         "name": "DNM_TUCSEN_AD",
         "class": "TucsenDetector",
-        #"dcs_nm": "SIMM_SCMOS1610-310:" if SIM else "SCMOS1610-310:",
-        "dcs_nm": "SIMCCD1610-I10-02:",
+        "dcs_nm": "SIMCCD1610-I10-02:" if SIM else "SCMOS1610-310:",
+
     },
     # {
     #     "name": "DNM_SIMM_CCD",
@@ -325,7 +343,7 @@ dev_dct["PVS"] = [
         "name": "DNM_CALCD_ZPZ",
         "class": "make_base_simdevice",
         "cat": "PVS",
-        "dcs_nm": "ASTXM1610:bl_api:zp:fbk:tr:I" if SIM else "ASTXM1610:bl_api:zp:fbk:tr.I",
+        "dcs_nm": "SIMM_ASTXM1610:bl_api:zp:fbk:tr:I" if SIM else "ASTXM1610:bl_api:zp:fbk:tr.I",
     },
     {
         "name": "DNM_ZPZ_ADJUST",
@@ -354,13 +372,13 @@ dev_dct["PVS"] = [
         "name": "DNM_IDEAL_A0",
         "class": "make_base_simdevice",
         "cat": "PVS",
-        "dcs_nm": "ASTXM1610:bl_api:zp:fbk:tr:K" if SIM else "ASTXM1610:bl_api:zp:fbk:tr.K",
+        "dcs_nm": "SIMM_ASTXM1610:bl_api:zp:fbk:tr:K" if SIM else "ASTXM1610:bl_api:zp:fbk:tr.K",
     },
     {
         "name": "DNM_CALCD_ZPZ",
         "class": "make_base_simdevice",
         "cat": "PVS",
-        "dcs_nm": "ASTXM1610:bl_api:zp:fbk:tr:I" if SIM else "ASTXM1610:bl_api:zp:fbk:tr.I",
+        "dcs_nm": "SIMM_ASTXM1610:bl_api:zp:fbk:tr:I" if SIM else "ASTXM1610:bl_api:zp:fbk:tr.I",
     },
     {
         "name": "DNM_ZPZ_ADJUST",
@@ -404,7 +422,7 @@ dev_dct["PVS"] = [
         "name": "DNM_ZP_A1",
         "class": "make_base_simdevice",
         "cat": "PVS",
-        "dcs_nm": "ASTXM1610:bl_api:zp:def:A" if SIM else "ASTXM1610:bl_api:zp:def.A",
+        "dcs_nm": "SIMM_ASTXM1610:bl_api:zp:def:A" if SIM else "ASTXM1610:bl_api:zp:def.A",
     },
     {
         "name": "DNM_ZP_DEF",

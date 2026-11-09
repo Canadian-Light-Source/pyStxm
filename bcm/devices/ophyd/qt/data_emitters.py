@@ -654,9 +654,10 @@ class SIS3820ImageDataEmitter(BaseQtImageDataEmitter):
                     else:
                         #new_det = doc["data"][self.det]
                         new_det = doc["data"][klst[0]]
-                    if new_det == None:
+                    if new_det is None:
                         return
-                    if len(new_det) == 1:
+                    # A one-channel dictionary is data, not the [0] reset sentinel.
+                    if isinstance(new_det, (list, tuple, np.ndarray)) and len(new_det) == 1:
                         if new_det[0] == 0:
                             # looks like a line reset array
                             print("SIS3820ImageDataEmitter: event: looks like a line reset array")

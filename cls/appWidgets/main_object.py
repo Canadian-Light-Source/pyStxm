@@ -6,12 +6,15 @@ import zmq
 import zmq.asyncio
 from PyQt5 import QtCore, QtWidgets
 from datetime import datetime
+from copy import deepcopy
 import pathlib
+import uuid
 from importlib import import_module
 from tinydb import TinyDB, Query
 import simplejson as json
 
 from nx_server.nx_server import NX_SERVER_CMNDS, NX_SERVER_REPONSES
+from cls.utils.prog_stack_utils import save_progressive_stack_data_to_hdf5
 from cls.utils.arrays import nulls_to_nans
 from cls.utils.dict_utils import dct_put, dct_get, dct_merge, find_key_in_dict
 from cls.utils.version import get_version
@@ -144,8 +147,13 @@ class main_object_base(QtCore.QObject):
         self.nx_server_master_seq_dct = None
         self._progressive_stack_data = {} # this is a dict of detector names each containing a list of lists that
                                           # represent the progressive stack data being built
+        # Drag payloads stay in-process here; Qt MIME data carries only a short-lived lookup key.
+        self._drag_drop_data = {}
         self._progressive_stack_data_dir = None
         self._progressive_stack_data_file_prefix = None
+        # Serialize file writes, not data: overlapping saves must not open the same HDF5 file.
+        self._progressive_stack_worker_pool = QtCore.QThreadPool(self)
+        self._progressive_stack_worker_pool.setMaxThreadCount(1)
         self._version_info = None
 
         if DATA_SERVER_HOST is None:
@@ -249,30 +257,32 @@ class main_object_base(QtCore.QObject):
 
     def publish_progressive_stack_data(self, final_data_dct):
         """
+        Queue an EPICS progressive-stack image for local HDF5 saving.
 
+        Pass detector arrays and metadata directly to the progressive-stack writer, without
+        JSON serialization or ZMQ. Preserve the directory and file prefix
+        previously supplied in cmd_args; the writer supplies the .hdf5 extension.
+        Copy the payload before queuing so subsequent scan updates cannot alter
+        pending data. A single worker thread writes images in submission order.
+
+        :param final_data_dct: Dictionary containing img_idx and det_data arrays.
         :returns: None
         """
-        import orjson
-        from cls.utils.arrays import convert_ndarrays_to_lists
-        # import pprint
-        # print(f'publish_progressive_stack_data: plot_dct={final_data_dct}')
-        # pprint.pprint(final_data_dct)
-
         if self.get_device_backend() == 'epics':
             try:
+                # Keep the former command arguments as native Python objects.
                 cmd_args = {}
-                cmd_args['metadata'] = orjson.dumps(convert_ndarrays_to_lists(self._progressive_stack_data['metadata'])).decode('utf-8')
+                cmd_args['metadata'] = deepcopy(self._progressive_stack_data['metadata'])
                 cmd_args['directory'] = self._progressive_stack_data_dir
                 cmd_args['file_prefix'] = f"progressive-stack-{self._progressive_stack_data_file_prefix}"
-                cmd_args['extension'] = '.hdf5'
-                final_data_dct_serializable = convert_ndarrays_to_lists(final_data_dct)
-                cmd_args['data_dct'] = orjson.dumps(final_data_dct_serializable).decode('utf-8')
-                res_dct = self.send_to_nx_server(NX_SERVER_CMNDS.SAVE_PROGRESSIVE_STACK_DATA, [], self._progressive_stack_data_file_prefix, self._progressive_stack_data_dir, nx_app_def='nxstxm',
-                                                 host=self.nx_server_host, port=self.nx_server_port,
-                                                 verbose=False, cmd_args=cmd_args)
-                print(f"Successful publish of progressive stack data to nx_server, response: {res_dct}")
+                cmd_args['data_dct'] = deepcopy(final_data_dct)
+                # Reuse the existing worker; the progressive-stack writer logs write failures.
+                worker = Worker(save_progressive_stack_data_to_hdf5, cmd_args['data_dct'],
+                                cmd_args['directory'], cmd_args['file_prefix'],
+                                cmd_args['metadata'])
+                self._progressive_stack_worker_pool.start(worker)
             except Exception as e:
-                _logger.error(f"Error publishing progressive stack data to Pixeltor: {e}")
+                _logger.error(f"Error queuing progressive stack data for saving: {e}")
         else:
             _logger.info(f"Publishing progressive stack data to Pixeltor not currently supported")
 
@@ -1201,6 +1211,20 @@ class main_object_base(QtCore.QObject):
     def set(self, name, obj):
         """get the object section by name"""
         dct_put(self.main_obj, name, obj)
+
+    def register_drag_drop_data(self, data):
+        """Store an in-process drag payload and return its MIME-safe lookup key."""
+        key = uuid.uuid4().hex
+        self._drag_drop_data[key] = data
+        return key
+
+    def get_drag_drop_data(self, key):
+        """Read a drag payload without consuming it, for drag-enter inspection."""
+        return self._drag_drop_data.get(key)
+
+    def take_drag_drop_data(self, key):
+        """Read and remove a drag payload so a later drop cannot reuse it."""
+        return self._drag_drop_data.pop(key, None)
 
     def get_main_obj(self):
         """return the entire main object dict"""

@@ -1307,8 +1307,26 @@ class ScanParamWidget(QtWidgets.QFrame):
     def dragEnterEvent(self, event):
         from cls.types.stxmTypes import scan_type_to_panel_dct
 
-        dct = mime_to_dct(event.mimeData())
-        idx = self.get_scan_panel_id_from_scan_name(dct['stxm_scan_type'])
+        mime_data = event.mimeData()
+        if (mime_data.hasFormat("application/dict-based-lineplot-stxmscan")
+                or mime_data.hasFormat("application/dict-based-imageplot-stxmscan")):
+            # Inspect the shared payload without consuming it; dropEvent takes it.
+            drag_format = next(
+                fmt for fmt in mime_data.formats()
+                if fmt in ("application/dict-based-lineplot-stxmscan",
+                           "application/dict-based-imageplot-stxmscan")
+            )
+            drag_key = bytes(mime_data.data(drag_format)).decode("ascii")
+            dct = self.main_obj.get_drag_drop_data(drag_key)
+            if dct is None:
+                return
+            scan_name = dct_get(dct.get("sp_db", {}), SPDB_SCAN_PLUGIN_STXM_SCAN_TYPE)
+        else:
+            dct = mime_to_dct(mime_data)
+            scan_name = dct.get("stxm_scan_type")
+        if not scan_name:
+            return
+        idx = self.get_scan_panel_id_from_scan_name(scan_name)
         event.acceptProposedAction()
         self.selected.emit(idx)
 
@@ -1326,20 +1344,12 @@ class ScanParamWidget(QtWidgets.QFrame):
                 formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
 
                 if (format == 'application/dict-based-lineplot-stxmscan') or (format == 'application/dict-based-imageplot-stxmscan'):
-                    itemData = mimeData.data(format)
-                    # text = mimeData.text()
-                    _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
-                    _info_jstr = QtCore.QByteArray()
-                    _data_bytes = QtCore.QByteArray()
-                    _pos = QtCore.QPointF()
-                    _stream >> _info_jstr >> _data_bytes >> _pos
-                    _info_str = bytes(_info_jstr).decode()
-                    drop_dct = json.loads(_info_str)
+                    drag_key = bytes(mimeData.data(format)).decode("ascii")
+                    drop_dct = self.main_obj.take_drag_drop_data(drag_key)
+                    if drop_dct is None:
+                        return
 
                     # fname = drop_dct["path"]
-                    #convert to array
-                    data = np.array(drop_dct["data"])
-                    drop_dct["data"] = data
                     sp_db = drop_dct["sp_db"]
                     # title = drop_dct["title"]
                     # xlabel = drop_dct.get("xlabel") or "X"

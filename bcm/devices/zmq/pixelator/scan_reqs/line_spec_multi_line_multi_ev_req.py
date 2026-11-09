@@ -59,11 +59,11 @@ scanRequest = {
                     "trajectories": [
                         {
                             "center": 0,
-                            "positionerName": "FineX"
+                            "positionerName": "SampleX"
                         },
                         {
                             "center": 0,
-                            "positionerName": "FineY"
+                            "positionerName": "SampleX"
                         }
                     ]
                 }
@@ -79,11 +79,11 @@ scanRequest = {
                     "trajectories": [
                         {
                             "center": -10,
-                            "positionerName": "FineX"
+                            "positionerName": "SampleX"
                         },
                         {
                             "center": -20,
-                            "positionerName": "FineY"
+                            "positionerName": "SampleX"
                         }
                     ]
                 }
@@ -99,11 +99,11 @@ scanRequest = {
                     "trajectories": [
                         {
                             "center": 75,
-                            "positionerName": "FineX"
+                            "positionerName": "SampleX"
                         },
                         {
                             "center": 73,
-                            "positionerName": "FineY"
+                            "positionerName": "SampleX"
                         }
                     ]
                 }

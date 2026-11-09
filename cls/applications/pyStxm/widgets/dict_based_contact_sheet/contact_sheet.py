@@ -31,17 +31,14 @@ Example:
 """
 
 from PyQt5 import QtCore, QtWidgets
-import simplejson as json
 
 from cls.appWidgets.dialogs import setExistingDirectory
 from cls.types.stxmTypes import spectra_type_scans, scan_types
 from cls.utils.log import get_module_logger
 from cls.utils.fileUtils import get_file_path_as_parts
 from cls.utils.dict_utils import dct_get, dct_put
-from cls.utils.json_threadsave import NumpyAwareJSONEncoder
 from cls.utils.roi_dict_defs import *
 from cls.stylesheets import master_colors
-from cls.utils.arrays import convert_numpy_to_python
 from cls.utils.roi_utils import make_base_wdg_com, widget_com_cmnd_types
 from cls.plotWidgets.imageWidget import make_default_stand_alone_stxm_imagewidget
 from cls.data_io.stxm_data_io import STXMDataIo
@@ -165,6 +162,7 @@ class ContactSheet(QtWidgets.QWidget):
 
     def __init__(self, main_obj=None, data_dir=None, data_io=None, base_data_dir='/tmp', parent=None):
         super(ContactSheet, self).__init__(parent)
+        self.main_obj = main_obj
         self.data_dir = data_dir
         self.base_data_dir = base_data_dir
         data_dir_display_name = self.get_directory_display_name(self.data_dir)
@@ -342,7 +340,9 @@ class ContactSheet(QtWidgets.QWidget):
         min_clr = master_colors["plot_gridmaj"]["rgb_str"]
         maj_clr = master_colors["plot_gridmin"]["rgb_str"]
 
-        image_win = make_default_stand_alone_stxm_imagewidget(data_io=STXMDataIo)
+        image_win = make_default_stand_alone_stxm_imagewidget(
+            data_io=STXMDataIo, main_obj=self.main_obj
+        )
         image_win.setWindowTitle("Image Viewer")
         qssheet = get_style()
         image_win.setStyleSheet(qssheet)
@@ -360,7 +360,9 @@ class ContactSheet(QtWidgets.QWidget):
         min_clr = master_colors["plot_gridmaj"]["rgb_str"]
         maj_clr = master_colors["plot_gridmin"]["rgb_str"]
 
-        spectra_win = make_spectra_viewer_window(data_io=STXMDataIo)
+        spectra_win = make_spectra_viewer_window(
+            data_io=STXMDataIo, main_obj=self.main_obj
+        )
         spectra_win.setWindowTitle("Spectra Viewer")
         qssheet = get_style()
         spectra_win.setStyleSheet(qssheet)
@@ -627,13 +629,14 @@ class ContactSheet(QtWidgets.QWidget):
 
         :returns: None
         """
-        import orjson
-        import timeit
-
         # print("on_drag: Entered.")
         event.accept()
 
         if self.get_drag_enabled():
+            if self.main_obj is None:
+                _logger.error("Cannot start an in-process data drag without main_obj")
+                return
+
             if obj.scan_type is scan_types.GENERIC_SCAN:
                 format = "application/dict-based-lineplot-stxmscan"
                 dct = obj.get_generic_scan_launch_viewer_dct()
@@ -643,71 +646,27 @@ class ContactSheet(QtWidgets.QWidget):
             else:
                 format = "application/dict-based-imageplot-stxmscan"
                 dct = obj.get_standard_image_launch_viewer_dct()
-            # print("\n")
-            start = timeit.default_timer()
-            #jstr = json.dumps(convert_numpy_to_python(dct), cls=NumpyAwareJSONEncoder)
-            py_dict = convert_numpy_to_python(dct)
-            end = timeit.default_timer()
-            # print(f"\tconvert_numpy_to_python: Elapsed: {end - start} seconds")
+            # Keep arrays and nested dictionaries in main_obj; MIME data carries only a key.
+            drag_key = self.main_obj.register_drag_drop_data(dct)
+            try:
+                mimeData = QtCore.QMimeData()
+                mimeData.setData(format, QtCore.QByteArray(drag_key.encode("ascii")))
 
-            start = timeit.default_timer()
-            jstr_bytes = orjson.dumps(py_dict)
-            end = timeit.default_timer()
-            # print(f"\torjson.dumps: Elapsed: {end - start} seconds")
+                drag = QtGui.QDrag(self)
+                drag.setMimeData(mimeData)
+                pos = event.pos() - obj.rect().topLeft()
+                drag.setHotSpot(QtCore.QPoint(int(pos.x()), int(pos.y())))
 
-            itemData = QtCore.QByteArray()
-            dataStream = QtCore.QDataStream(itemData, QtCore.QIODevice.WriteOnly)
+                if obj.pixmap is not None:
+                    drag.setPixmap(obj.pixmap)
 
-            start = timeit.default_timer()
-            if obj.is_stack:
-                # if its a stack we only need 1 images worth of data
-                # print("\ton_drag: Stack detected, using first image data only.")
-                #data_bytes = obj.data[0].tobytes()
-                data_bytes = b''
-            else:
-                # print("\ton_drag: Single image detected, using full data.")
-                data_bytes = obj.data.tobytes()
-            end = timeit.default_timer()
-            # print(f"\ttobytes(): Elapsed: {end - start} seconds")
-
-            start = timeit.default_timer()
-            (
-                    dataStream
-                    << QtCore.QByteArray(bytearray(jstr_bytes))
-                    << QtCore.QByteArray(data_bytes)
-                    << (event.pos() - obj.rect().topLeft())
-            )
-            end = timeit.default_timer()
-            # print(f"\tdataStream << << << : Elapsed: {end - start} seconds")
-
-            start = timeit.default_timer()
-            mimeData = QtCore.QMimeData()
-            mimeData.setData(format, itemData)
-            mimeData.setText(obj.info_jstr)
-            end = timeit.default_timer()
-            # print(f"\tmimeData : Elapsed: {end - start} seconds")
-
-            start = timeit.default_timer()
-            drag = QtGui.QDrag(self)
-            drag.setMimeData(mimeData)
-            pos = event.pos() - obj.rect().topLeft()
-            drag.setHotSpot(QtCore.QPoint(int(pos.x()), int(pos.y())))
-
-            end = timeit.default_timer()
-            # print(f"\tdrag.setHotSpot : Elapsed: {end - start} seconds")
-
-            if obj.pixmap is not None:
-                drag.setPixmap(obj.pixmap)
-
-            if (
                 drag.exec_(
                     QtCore.Qt.MoveAction | QtCore.Qt.CopyAction, QtCore.Qt.CopyAction
                 )
-                == QtCore.Qt.MoveAction
-            ):
-                pass
-            else:
-                pass
+            finally:
+                # The drop target consumes the entry; this also clears cancelled or
+                # unhandled drags so their payload cannot be mistaken for a later drop.
+                self.main_obj.take_drag_drop_data(drag_key)
         # print("on_drag: Leaving.")
 
     def resizeEvent(self, event):

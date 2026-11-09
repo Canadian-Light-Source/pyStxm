@@ -327,6 +327,7 @@ class ImageWidgetPlot(PlotDialog):
         type="basic",
         sample_pos_mode=None,
         options=None,
+        main_obj=None,
         #settings_fname="shape_settings.json",
     ):
         """
@@ -360,6 +361,7 @@ class ImageWidgetPlot(PlotDialog):
 
         self.fileFilterStr = filtStr
         self.type = type
+        self.main_obj = main_obj
         self._data_dir = ""
         self.data_io = None
         self._auto_contrast = True
@@ -812,21 +814,16 @@ class ImageWidgetPlot(PlotDialog):
                     formatItem.setTextAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
 
                     if format == "application/dict-based-imageplot-stxmscan":
-                            itemData = mimeData.data(format)
-                            # text = mimeData.text()
-                            _stream = QtCore.QDataStream(itemData, QtCore.QIODevice.ReadOnly)
-                            _info_jstr = QtCore.QByteArray()
-                            _data_bytes = QtCore.QByteArray()
-                            _pos = QtCore.QPointF()
-                            _stream >> _info_jstr >> _data_bytes >> _pos
-                            _info_str = bytes(_info_jstr).decode()
-                            drop_dct = json.loads(_info_str)
+                            if self.main_obj is None:
+                                return
+                            drag_key = bytes(mimeData.data(format)).decode("ascii")
+                            drop_dct = self.main_obj.take_drag_drop_data(drag_key)
+                            if drop_dct is None:
+                                return
 
                             # fname = drop_dct["path"]
-                            # convert to array
-                            data = np.array(drop_dct["data"])
+                            data = drop_dct["data"]
                             sp_db = drop_dct["sp_db"]
-                            title = drop_dct['title']
                             xlabel = drop_dct.get("xlabel") or "X"
                             ylabel = drop_dct.get("ylabel") or "Y"
 
@@ -834,7 +831,6 @@ class ImageWidgetPlot(PlotDialog):
                             dct_put(wdg_com, WDGCOM_CMND, widget_com_cmnd_types.LOAD_SCAN)
                             dct_put(wdg_com, SPDB_SPATIAL_ROIS, {sp_db[ID_VAL]: sp_db})
                             drop_dct['wdg_com'] = wdg_com
-                            data_dir, fprefix, fsuffix = get_file_path_as_parts(drop_dct['path'])
                             rect = dct_get(sp_db, SPDB_RECT)
                             self.load_image_data(
                                 drop_dct['path'],
@@ -842,7 +838,7 @@ class ImageWidgetPlot(PlotDialog):
                                 data,
                                 addimages=True,
                                 flipud=False,
-                                name_lbl=True,
+                                name_lbl=False,
                                 item_z=None,
                                 show=True,
                                 dropped=True,
@@ -852,11 +848,7 @@ class ImageWidgetPlot(PlotDialog):
                                 self.setPlotAxisStrs(ylabel, xlabel)
                                 # self.show()
                                 self.set_autoscale(fill_plot_window=True)
-                                # self.raise_()
-                                if title is not None:
-                                    self.plot.set_title(title)
-                                else:
-                                    self.plot.set_title(f"{fprefix}{fsuffix}")
+                                # Dropped filenames should not accumulate as plot titles.
                             else:
                                 self.setPlotAxisStrs(ylabel, xlabel)
 
@@ -6361,6 +6353,9 @@ class ImageWidgetPlot(PlotDialog):
             _title = str(fname)
             self.setWindowTitle(_title)
             plot.set_title("%s%s" % (fprefix, fsuffix))
+        elif dropped:
+            # Keep the internal data key separate from the visible plot-item title.
+            _title = ""
         else:
             _title = str(img_idx)
 
@@ -6391,6 +6386,8 @@ class ImageWidgetPlot(PlotDialog):
                     colormap="gist_gray",
                     title=_title,
                 )
+                if dropped:
+                    self.items[img_idx].setItemAttribute(Qwt.QwtPlotItem.Legend, False)
                 plot = self.get_plot()
                 plot.add_item(self.items[img_idx], z=0)
 
@@ -6401,6 +6398,8 @@ class ImageWidgetPlot(PlotDialog):
                     colormap="gist_gray",
                     title=_title,
                 )
+                if dropped:
+                    self.items[img_idx].setItemAttribute(Qwt.QwtPlotItem.Legend, False)
                 items = self.plot.get_items(item_type=ICSImageItemType)
                 plot.add_item(self.items[img_idx], z=len(items) + 1 if item_z is None else item_z)
 
@@ -6982,7 +6981,7 @@ def get_percentage_of_qrect(qrect, p):
 
 
 def make_default_stand_alone_stxm_imagewidget(
-    parent=None, data_io=None, _type=None, bndg_rect=None
+    parent=None, data_io=None, _type=None, bndg_rect=None, main_obj=None
 ):
     # from cls.applications.pyStxm.widgets.beam_spot_fbk import BeamSpotFeedbackObjStandAlone
     # from cls.applications.pyStxm.main_obj_init import MAIN_OBJ
@@ -7022,6 +7021,7 @@ def make_default_stand_alone_stxm_imagewidget(
         parent=parent,
         filtStr=FILTER_STRING,
         type=_type,
+        main_obj=main_obj,
         options=PlotOptions(
             gridparam=gridparam,
             show_contrast=True,
@@ -7692,6 +7692,5 @@ if __name__ == "__main__":
     # profile_it('go', bias_val=7.40181638985e-07)
     # go()
     #astxm_lineplot_test()
-    #make_sig_selection()
-    make_style_test()
-
+    make_sig_selection()
+    #make_style_test()

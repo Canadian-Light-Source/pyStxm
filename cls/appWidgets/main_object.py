@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtWidgets
 from datetime import datetime
 from copy import deepcopy
 import pathlib
+import uuid
 from importlib import import_module
 from tinydb import TinyDB, Query
 import simplejson as json
@@ -146,6 +147,8 @@ class main_object_base(QtCore.QObject):
         self.nx_server_master_seq_dct = None
         self._progressive_stack_data = {} # this is a dict of detector names each containing a list of lists that
                                           # represent the progressive stack data being built
+        # Drag payloads stay in-process here; Qt MIME data carries only a short-lived lookup key.
+        self._drag_drop_data = {}
         self._progressive_stack_data_dir = None
         self._progressive_stack_data_file_prefix = None
         # Serialize file writes, not data: overlapping saves must not open the same HDF5 file.
@@ -1208,6 +1211,20 @@ class main_object_base(QtCore.QObject):
     def set(self, name, obj):
         """get the object section by name"""
         dct_put(self.main_obj, name, obj)
+
+    def register_drag_drop_data(self, data):
+        """Store an in-process drag payload and return its MIME-safe lookup key."""
+        key = uuid.uuid4().hex
+        self._drag_drop_data[key] = data
+        return key
+
+    def get_drag_drop_data(self, key):
+        """Read a drag payload without consuming it, for drag-enter inspection."""
+        return self._drag_drop_data.get(key)
+
+    def take_drag_drop_data(self, key):
+        """Read and remove a drag payload so a later drop cannot reuse it."""
+        return self._drag_drop_data.pop(key, None)
 
     def get_main_obj(self):
         """return the entire main object dict"""

@@ -1,4 +1,4 @@
-﻿ansi2html==1.8.0
+ansi2html==1.8.0
 appdirs==1.4.4
 asciitree==0.3.3
 asteval>=1.0.6
@@ -24,7 +24,7 @@ dask==2024.3.0
 databroker==1.2.5
 debugpy==1.8.1
 decorator==5.1.1
-dnspython==2.6.1
+dnspython==2.9.0
 doct==1.1.0
 entrypoints==0.4
 event-model==1.19.7
